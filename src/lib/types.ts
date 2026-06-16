@@ -16,9 +16,13 @@ export interface Restaurant {
   slug: string;
   logo_url: string | null;
   banner_url: string | null;
+  phone: string | null;
+  contact_email: string | null;
+  address: string | null;
   instagram_url: string | null;
   facebook_url: string | null;
   website_url: string | null;
+  whatsapp_url: string | null;
   is_premium: boolean;
   accepts_reservations: boolean;
 }

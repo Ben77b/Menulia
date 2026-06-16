@@ -1,7 +1,7 @@
 import { fetchDemoRestaurant, fetchRestaurantBySlug } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { DesignSettings } from "@/components/dashboard/design-settings";
-import { LinksSettings } from "@/components/dashboard/links-settings";
+import { SettingsInfoPanel } from "@/components/dashboard/settings-info-panel";
 
 export const metadata = { title: "Settings" };
 
@@ -12,7 +12,7 @@ export default async function SettingsPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold">Settings</h1>
-      <p className="mt-1 text-text-secondary">Manage your restaurant profile, design, and links.</p>
+      <p className="mt-1 text-text-secondary">Manage your restaurant profile, design, and public page content.</p>
 
       <div className="mt-8 max-w-3xl space-y-6">
         <div className="rounded-2xl border border-border bg-white p-6">
@@ -42,14 +42,17 @@ export default async function SettingsPage() {
 
         <DesignSettings restaurantId={restaurant.id} />
 
-        {full && (
-          <LinksSettings
-            initialLinks={full.custom_links}
-            instagramUrl={restaurant.instagram_url}
-            facebookUrl={restaurant.facebook_url}
-            websiteUrl={restaurant.website_url}
-          />
-        )}
+        <SettingsInfoPanel
+          restaurantId={restaurant.id}
+          defaultPhone={restaurant.phone}
+          defaultEmail={restaurant.contact_email}
+          defaultAddress={restaurant.address}
+          defaultInstagram={restaurant.instagram_url}
+          defaultFacebook={restaurant.facebook_url}
+          defaultWebsite={restaurant.website_url}
+          defaultWhatsapp={restaurant.whatsapp_url}
+          defaultHours={full?.operating_hours ?? []}
+        />
 
         <div className="rounded-2xl border border-border bg-white p-6">
           <h2 className="font-semibold">Plan</h2>
@@ -67,3 +70,4 @@ export default async function SettingsPage() {
     </div>
   );
 }
+

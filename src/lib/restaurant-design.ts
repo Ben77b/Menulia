@@ -3,6 +3,9 @@ export interface RestaurantDesign {
   backgroundColor: string;
   cardRadius: "rounded" | "sharp" | "pill";
   headerStyle: "minimal" | "bold";
+  showFooterContact: boolean;
+  showFooterHours: boolean;
+  showFooterLinks: boolean;
 }
 
 export const DEFAULT_DESIGN: RestaurantDesign = {
@@ -10,6 +13,9 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
   backgroundColor: "#fafafa",
   cardRadius: "rounded",
   headerStyle: "minimal",
+  showFooterContact: true,
+  showFooterHours: true,
+  showFooterLinks: true,
 };
 
 const STORAGE_KEY = "menulia_restaurant_design";
