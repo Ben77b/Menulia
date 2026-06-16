@@ -1,4 +1,4 @@
-# menulia.io
+# menulia.net
 
 Premium SaaS platform for restaurant owners — digital menus, reservations, and analytics.
 
