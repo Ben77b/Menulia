@@ -37,6 +37,7 @@ export default function MenuPage() {
   const [draggedDishCategoryId, setDraggedDishCategoryId] = useState<string | null>(null);
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [showTagManager, setShowTagManager] = useState(false);
+  const [newGlobalTag, setNewGlobalTag] = useState("");
   
   // Dish form state
   const [showDishForm, setShowDishForm] = useState(false);
@@ -226,6 +227,20 @@ export default function MenuPage() {
     );
   }
 
+  function addGlobalTag() {
+    if (!newGlobalTag.trim()) return;
+    const tag = newGlobalTag.trim();
+    
+    // Prevent duplicate tags
+    if (customTags.includes(tag)) {
+      setNewGlobalTag("");
+      return;
+    }
+    
+    setCustomTags((prev) => [...prev, tag]);
+    setNewGlobalTag("");
+  }
+
   // Drag and drop handlers for categories
   function handleCategoryDragStart(index: number) {
     setDraggedCategoryIndex(index);
@@ -283,31 +298,30 @@ export default function MenuPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Builder</h1>
-          <p className="mt-1 text-sm text-gray-600">Manage your restaurant menu categories and dishes</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowTagManager(true)}
-            className="gap-2"
-          >
-            <Edit className="h-4 w-4" />
-            Manage Global Tags
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowAddCategory(!showAddCategory)}
-            className="gap-2"
-          >
-            <FolderPlus className="h-4 w-4" />
-            Add Category
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Menu Builder</h1>
+        <p className="mt-1 text-sm text-gray-600">Manage your restaurant menu categories and dishes</p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowAddCategory(!showAddCategory)}
+          className="gap-2 w-fit"
+        >
+          <FolderPlus className="h-4 w-4" />
+          Add Category
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowTagManager(true)}
+          className="gap-2 w-fit"
+        >
+          <Edit className="h-4 w-4" />
+          Manage Global Tags
+        </Button>
       </div>
 
       {showAddCategory && (
@@ -621,6 +635,25 @@ export default function MenuPage() {
               <p className="text-sm text-gray-600 mb-4">
                 These custom tags are available for all dishes in your menu. Deleting a tag will remove it from all dishes.
               </p>
+              
+              {/* Add New Global Tag */}
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Create New Global Tag</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g., Keto, Dairy-Free"
+                    value={newGlobalTag}
+                    onChange={(e) => setNewGlobalTag(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && addGlobalTag()}
+                    className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                  <Button size="sm" onClick={addGlobalTag} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Tag
+                  </Button>
+                </div>
+              </div>
               
               {customTags.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
