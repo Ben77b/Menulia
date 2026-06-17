@@ -1,6 +1,7 @@
 export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "completed";
 export type ExpenseCategory = "Staff" | "Inventory" | "Rent" | "Utilities" | "Marketing";
 import type { LanguageCode } from "./languages";
+import type { RestaurantDesign } from "./restaurant-design";
 export type { LanguageCode };
 
 export interface Profile {
@@ -98,6 +99,9 @@ export interface RestaurantFull extends Restaurant {
   custom_links: CustomRestaurantLink[];
   operating_hours: OperatingHour[];
   categories: (MenuCategory & { items: MenuItemWithTranslations[] })[];
+  phone: string | null;
+  email: string | null;
+  design?: RestaurantDesign;
 }
 
 export interface MenuItemWithTranslations extends MenuItem {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, Instagram, Facebook, Globe, ExternalLink, ChevronDown } from "lucide-react";
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
@@ -18,6 +18,7 @@ interface RestaurantHeaderProps {
   language: LanguageCode;
   onLanguageChange: (lang: LanguageCode) => void;
   design: RestaurantDesign;
+  restaurantId: string;
 }
 
 export function RestaurantHeader({
@@ -30,9 +31,19 @@ export function RestaurantHeader({
   language,
   onLanguageChange,
   design,
+  restaurantId,
 }: RestaurantHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [visibleLanguages, setVisibleLanguages] = useState<Set<LanguageCode>>(new Set(["en"]));
+
+  useEffect(() => {
+    // Load visible languages from localStorage
+    const saved = localStorage.getItem(`visible-languages-${restaurantId}`);
+    if (saved) {
+      setVisibleLanguages(new Set(JSON.parse(saved)));
+    }
+  }, [restaurantId]);
 
   const links = [
     instagramUrl && { label: "Instagram", url: instagramUrl, icon: Instagram },
@@ -42,11 +53,12 @@ export function RestaurantHeader({
   ].filter(Boolean) as { label: string; url: string; icon: typeof Instagram }[];
 
   const currentLang = LANGUAGES.find((l) => l.code === language)!;
+  const availableLanguages = LANGUAGES.filter((l) => visibleLanguages.has(l.code));
 
   return (
-    <header className="relative z-20 flex shrink-0 items-center justify-between px-4 py-3">
+    <header className="fixed top-0 left-0 right-0 z-50 flex shrink-0 items-center px-4 py-3" style={{ backgroundColor: design.headerColor }}>
       {/* Burger menu */}
-      <div className="relative">
+      <div className="relative w-10 flex-shrink-0">
         <button
           onClick={() => { setMenuOpen(!menuOpen); setLangOpen(false); }}
           className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded-full bg-white/95 shadow-sm"
@@ -92,23 +104,13 @@ export function RestaurantHeader({
       </div>
 
       {/* Logo */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-        <div
-          className={cn(
-            "relative h-14 w-14 overflow-hidden rounded-full border-2 border-white shadow-md",
-            design.headerStyle === "bold" && "h-16 w-16"
-          )}
-          style={
-            design.headerStyle === "bold"
-              ? { boxShadow: `0 0 0 3px white, 0 0 0 5px ${design.accentColor}` }
-              : undefined
-          }
-        >
+      <div className="flex-1 flex justify-center">
+        <div className="relative h-20 w-20 overflow-hidden">
           {logoUrl ? (
-            <Image src={logoUrl} alt={name} fill className="object-cover" sizes="64px" />
+            <Image src={logoUrl} alt={name} fill className="object-contain" sizes="80px" />
           ) : (
             <div
-              className="flex h-full w-full items-center justify-center text-lg font-bold text-white"
+              className="flex h-full w-full items-center justify-center text-2xl font-bold text-white"
               style={{ backgroundColor: design.accentColor }}
             >
               {name.charAt(0)}
@@ -118,7 +120,7 @@ export function RestaurantHeader({
       </div>
 
       {/* Language */}
-      <div className="relative">
+      <div className="relative w-10 flex-shrink-0 flex justify-end">
         <button
           onClick={() => { setLangOpen(!langOpen); setMenuOpen(false); }}
           className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-2 text-xs font-medium shadow-sm"
@@ -131,7 +133,7 @@ export function RestaurantHeader({
           <>
             <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
             <div className="absolute right-0 top-12 z-50 max-h-64 min-w-[160px] overflow-y-auto rounded-2xl border border-border bg-white p-1 shadow-xl">
-              {LANGUAGES.map((lang) => (
+              {availableLanguages.map((lang) => (
                 <button
                   key={lang.code}
                   onClick={() => { onLanguageChange(lang.code); setLangOpen(false); }}

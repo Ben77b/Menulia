@@ -43,7 +43,7 @@ export function ReservationView({ restaurantName, operatingHours }: ReservationV
   }
 
   return (
-    <div className="px-4 pb-28">
+    <div className="mx-auto max-w-md w-full px-4 pb-28">
       {/* Step indicator */}
       <div className="mb-6 flex justify-center gap-2">
         {(["date", "time", "details"] as Step[]).map((s, i) => (
