@@ -19,7 +19,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     { icon: Home, label: "Home", href: "/dashboard" },
     { icon: LayoutTemplate, label: "Menu Builder", href: "/dashboard/menu" },
     { icon: Palette, label: "Branding & Design", href: "/dashboard/branding" },
-    { icon: Calendar, label: "Reservations", href: "/dashboard/reservations", badge: "Coming Soon" },
+    { icon: Calendar, label: "Reservations", href: "/dashboard/reservations", subtitle: "Coming Soon" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];
 
@@ -96,10 +96,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <item.icon className="h-5 w-5" />
-                <span className="font-medium flex-1">{item.label}</span>
-                {item.badge && (
-                  <span className="text-xs text-gray-400">{item.badge}</span>
-                )}
+                <div className="flex-1">
+                  <span className="font-medium block">{item.label}</span>
+                  {item.subtitle && (
+                    <span className="text-xs text-gray-400">{item.subtitle}</span>
+                  )}
+                </div>
               </Link>
             ))}
           </nav>
