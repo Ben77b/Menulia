@@ -4,6 +4,21 @@ import { useState, useEffect, useRef } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { Upload } from "lucide-react";
 
+// Google Fonts imports
+const googleFonts = [
+  "Playfair Display:wght@400;600;700",
+  "Source Sans Pro:wght@400;600",
+  "Inter:wght@400;500;600;700",
+  "Lora:wght@400;600;700",
+  "Open Sans:wght@400;600",
+  "Montserrat:wght@400;600;700",
+  "Roboto:wght@400;500;600",
+  "Space Grotesk:wght@400;600;700",
+  "DM Sans:wght@400;500;600",
+  "Merriweather:wght@400;600;700",
+  "Lato:wght@400;600;700",
+].join("&");
+
 // Utility function to calculate brightness and determine text color
 function getContrastColor(hexColor: string): string {
   // Remove hash if present
@@ -30,7 +45,6 @@ export default function BrandingPage() {
   const [matchMainBackground, setMatchMainBackground] = useState(false);
   
   // Font selection state
-  const [fontMode, setFontMode] = useState<"presets" | "custom">("presets");
   const [selectedPreset, setSelectedPreset] = useState("minimalist-cafe");
   const [customHeadingFont, setCustomHeadingFont] = useState("");
   const [customBodyFont, setCustomBodyFont] = useState("");
@@ -44,42 +58,36 @@ export default function BrandingPage() {
       name: "The Elegant Feast",
       headingFont: "Playfair Display",
       bodyFont: "Source Sans Pro",
-      description: "Sophisticated serif headers with clean sans-serif body",
     },
     {
       id: "minimalist-cafe",
       name: "The Minimalist Cafe",
       headingFont: "Inter",
       bodyFont: "Inter",
-      description: "Modern, clean, and highly readable",
     },
     {
       id: "organic-bistro",
       name: "The Organic Bistro",
       headingFont: "Lora",
       bodyFont: "Open Sans",
-      description: "Warm, inviting serif with friendly sans-serif",
     },
     {
       id: "bold-diner",
       name: "The Bold Diner",
       headingFont: "Montserrat",
       bodyFont: "Roboto",
-      description: "Strong, geometric fonts for impact",
     },
     {
       id: "trendy-eatery",
       name: "The Trendy Eatery",
       headingFont: "Space Grotesk",
       bodyFont: "DM Sans",
-      description: "Contemporary, playful, and distinctive",
     },
     {
       id: "classic-pizzeria",
       name: "The Classic Pizzeria",
       headingFont: "Merriweather",
       bodyFont: "Lato",
-      description: "Traditional, trustworthy, and timeless",
     },
   ];
 
@@ -104,13 +112,11 @@ export default function BrandingPage() {
       const savedFonts = localStorage.getItem(`branding-fonts-${currentRestaurant.id}`);
       if (savedFonts) {
         const fonts = JSON.parse(savedFonts);
-        setFontMode(fonts.fontMode || "presets");
         setSelectedPreset(fonts.selectedPreset || "minimalist-cafe");
         setCustomHeadingFont(fonts.customHeadingFont || "");
         setCustomBodyFont(fonts.customBodyFont || "");
       } else {
         // Default fonts
-        setFontMode("presets");
         setSelectedPreset("minimalist-cafe");
         setCustomHeadingFont("");
         setCustomBodyFont("");
@@ -134,13 +140,12 @@ export default function BrandingPage() {
   useEffect(() => {
     if (currentRestaurant) {
       localStorage.setItem(`branding-fonts-${currentRestaurant.id}`, JSON.stringify({
-        fontMode,
         selectedPreset,
         customHeadingFont,
         customBodyFont,
       }));
     }
-  }, [fontMode, selectedPreset, customHeadingFont, customBodyFont, currentRestaurant]);
+  }, [selectedPreset, customHeadingFont, customBodyFont, currentRestaurant]);
 
   // Sync color2 with color3 when match is enabled
   useEffect(() => {
@@ -301,66 +306,57 @@ export default function BrandingPage() {
         <div className="mt-8 pt-8 border-t border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Typography</h2>
           
-          {/* Tab Toggle */}
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setFontMode("presets")}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                fontMode === "presets"
-                  ? "bg-indigo-100 text-indigo-700 border border-indigo-200"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              Option A: Curated Packs
-            </button>
-            <button
-              onClick={() => setFontMode("custom")}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                fontMode === "custom"
-                  ? "bg-indigo-100 text-indigo-700 border border-indigo-200"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              Option B: Custom Fonts
-            </button>
+          {/* Font Packs */}
+          <div className="mb-8">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Font Packs</h3>
+            <div className="space-y-3">
+              {fontPresets.map((preset) => {
+                const currentPreset = fontPresets.find(p => p.id === selectedPreset);
+                const headingFont = currentPreset?.headingFont || "Inter";
+                const bodyFont = currentPreset?.bodyFont || "Inter";
+                
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => setSelectedPreset(preset.id)}
+                    className={`w-full p-4 rounded-lg border text-left transition-all ${
+                      selectedPreset === preset.id
+                        ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
+                        : "border-gray-200 hover:border-gray-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 
+                          className="font-medium text-gray-900"
+                          style={{ fontFamily: preset.headingFont }}
+                        >
+                          {preset.name}
+                        </h3>
+                        <p 
+                          className="text-sm text-gray-600 mt-2"
+                          style={{ fontFamily: preset.bodyFont }}
+                        >
+                          The quick brown fox jumps over the lazy dog.
+                        </p>
+                      </div>
+                      {selectedPreset === preset.id && (
+                        <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center ml-3">
+                          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Option A: Curated Packs */}
-          {fontMode === "presets" && (
-            <div className="space-y-3">
-              {fontPresets.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => setSelectedPreset(preset.id)}
-                  className={`w-full p-4 rounded-lg border text-left transition-all ${
-                    selectedPreset === preset.id
-                      ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{preset.name}</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {preset.headingFont} (Headers) + {preset.bodyFont} (Body)
-                      </p>
-                      <p className="text-xs text-gray-400 mt-2">{preset.description}</p>
-                    </div>
-                    {selectedPreset === preset.id && (
-                      <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center">
-                        <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Option B: Custom Fonts */}
-          {fontMode === "custom" && (
+          {/* Custom Fonts */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Custom Fonts</h3>
             <div className="space-y-6">
               {/* Heading Font */}
               <div>
@@ -424,7 +420,7 @@ export default function BrandingPage() {
                 )}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Contrast Preview */}
@@ -477,17 +473,146 @@ export default function BrandingPage() {
         </div>
       </div>
 
-      {/* Right Panel - Mobile Preview Placeholder (2/3 width) */}
+      {/* Right Panel - Mobile Preview (2/3 width) */}
       <div className="w-2/3 bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-64 h-96 mx-auto border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center bg-white">
-            <div className="text-gray-400">
-              <p className="text-sm font-medium">Mobile Preview</p>
-              <p className="text-xs mt-1">Coming Soon</p>
+        <div className="w-full max-w-sm">
+          {/* Phone Frame */}
+          <div 
+            className="mx-auto border-8 border-gray-900 rounded-[2.5rem] overflow-hidden shadow-2xl"
+            style={{ backgroundColor: color1 }}
+          >
+            {/* Phone Notch */}
+            <div className="bg-gray-900 h-6 w-32 mx-auto rounded-b-xl"></div>
+            
+            {/* Phone Screen */}
+            <div 
+              className="h-[600px] overflow-y-auto"
+              style={{ 
+                backgroundColor: color3,
+                fontFamily: fontPresets.find(p => p.id === selectedPreset)?.bodyFont || "Inter",
+              }}
+            >
+              {/* Category Navigation Bar */}
+              <div 
+                className="sticky top-0 z-10 px-4 py-3 border-b"
+                style={{ 
+                  backgroundColor: color2,
+                  borderColor: color2,
+                }}
+              >
+                <div className="flex gap-3 overflow-x-auto">
+                  {["Appetizers", "Mains", "Desserts"].map((category) => (
+                    <button
+                      key={category}
+                      className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                      style={{ 
+                        color: getContrastColor(color2),
+                        backgroundColor: category === "Appetizers" ? "rgba(255,255,255,0.2)" : "transparent",
+                      }}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Menu Content */}
+              <div className="p-4 space-y-4">
+                {/* Dish Card 1 */}
+                <div className="bg-white rounded-lg shadow-sm p-3">
+                  <div className="flex gap-3">
+                    <div 
+                      className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"
+                      style={{ backgroundColor: "#E5E7EB" }}
+                    ></div>
+                    <div className="flex-1">
+                      <h4 
+                        className="font-semibold text-sm"
+                        style={{ 
+                          fontFamily: fontPresets.find(p => p.id === selectedPreset)?.headingFont || "Inter",
+                          color: "#111827",
+                        }}
+                      >
+                        Grilled Salmon
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Fresh Atlantic salmon with herbs
+                      </p>
+                      <p className="text-sm font-medium mt-2" style={{ color: "#111827" }}>
+                        $24.99
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">Gluten-Free</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">Fresh</span>
+                  </div>
+                </div>
+
+                {/* Dish Card 2 */}
+                <div className="bg-white rounded-lg shadow-sm p-3">
+                  <div className="flex gap-3">
+                    <div 
+                      className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"
+                      style={{ backgroundColor: "#E5E7EB" }}
+                    ></div>
+                    <div className="flex-1">
+                      <h4 
+                        className="font-semibold text-sm"
+                        style={{ 
+                          fontFamily: fontPresets.find(p => p.id === selectedPreset)?.headingFont || "Inter",
+                          color: "#111827",
+                        }}
+                      >
+                        Caesar Salad
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Crisp romaine with parmesan
+                      </p>
+                      <p className="text-sm font-medium mt-2" style={{ color: "#111827" }}>
+                        $14.99
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-700">Vegetarian</span>
+                  </div>
+                </div>
+
+                {/* Dish Card 3 */}
+                <div className="bg-white rounded-lg shadow-sm p-3">
+                  <div className="flex gap-3">
+                    <div 
+                      className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"
+                      style={{ backgroundColor: "#E5E7EB" }}
+                    ></div>
+                    <div className="flex-1">
+                      <h4 
+                        className="font-semibold text-sm"
+                        style={{ 
+                          fontFamily: fontPresets.find(p => p.id === selectedPreset)?.headingFont || "Inter",
+                          color: "#111827",
+                        }}
+                      >
+                        Chocolate Cake
+                      </h4>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Rich dark chocolate ganache
+                      </p>
+                      <p className="text-sm font-medium mt-2" style={{ color: "#111827" }}>
+                        $8.99
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-pink-100 text-pink-700">Sweet</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <p className="mt-4 text-sm text-gray-500">
-            Live preview of your menu will appear here
+          <p className="mt-4 text-sm text-gray-500 text-center">
+            Live preview updates instantly
           </p>
         </div>
       </div>
