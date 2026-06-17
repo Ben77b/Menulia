@@ -20,9 +20,8 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
       {/* Main Content Area */}
       <div className="flex-1 md:pl-64 min-h-screen bg-gray-50/50 overflow-y-auto">
         {/* Mobile Header */}
-        <header className="md:hidden sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-3">
+        <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-100 px-4 py-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold text-gray-900">Menulia</h1>
             <Button
               variant="ghost"
               size="sm"
@@ -30,11 +29,12 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
             >
               <MenuIcon className="h-6 w-6" />
             </Button>
+            <h1 className="text-lg font-bold text-gray-900">Menulia</h1>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="p-6">
+        <main className="p-6 md:p-6 pt-20 md:pt-6">
           {children}
         </main>
       </div>
