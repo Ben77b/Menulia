@@ -45,7 +45,8 @@ export default function MenuPage() {
     price: "",
     description: "",
     image: "" as string,
-    imageAlt: "",
+    tags: [] as string[],
+    customTag: "",
   });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,7 +86,7 @@ export default function MenuPage() {
   function handleAddDish(categoryId: string) {
     setEditingDish(null);
     setEditingCategoryIdForDish(categoryId);
-    setDishForm({ name: "", price: "", description: "", image: "", imageAlt: "" });
+    setDishForm({ name: "", price: "", description: "", image: "", tags: [], customTag: "" });
     setShowDishForm(true);
   }
 
@@ -97,7 +98,8 @@ export default function MenuPage() {
       price: item.price.toString(),
       description: item.description,
       image: item.image_url || "",
-      imageAlt: item.image_alt || "",
+      tags: item.tags,
+      customTag: "",
     });
     setShowDishForm(true);
   }
@@ -111,9 +113,9 @@ export default function MenuPage() {
       price: parseFloat(dishForm.price) || 0,
       description: dishForm.description,
       image_url: dishForm.image || null,
-      image_alt: dishForm.imageAlt,
+      image_alt: "",
       allergens: [],
-      tags: [],
+      tags: dishForm.tags,
       keywords: "",
       is_available: true,
     };
@@ -131,7 +133,7 @@ export default function MenuPage() {
     setShowDishForm(false);
     setEditingDish(null);
     setEditingCategoryIdForDish(null);
-    setDishForm({ name: "", price: "", description: "", image: "", imageAlt: "" });
+    setDishForm({ name: "", price: "", description: "", image: "", tags: [], customTag: "" });
   }
 
   function handleDeleteDish(item: MenuItem, categoryId: string) {
@@ -161,7 +163,25 @@ export default function MenuPage() {
   }
 
   function handleRemoveImage() {
-    setDishForm((prev) => ({ ...prev, image: "", imageAlt: "" }));
+    setDishForm((prev) => ({ ...prev, image: "" }));
+  }
+
+  function toggleTag(tagValue: string) {
+    setDishForm((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tagValue)
+        ? prev.tags.filter((t) => t !== tagValue)
+        : [...prev.tags, tagValue],
+    }));
+  }
+
+  function addCustomTag() {
+    if (!dishForm.customTag.trim()) return;
+    setDishForm((prev) => ({
+      ...prev,
+      tags: [...prev.tags, dishForm.customTag.trim()],
+      customTag: "",
+    }));
   }
 
   // Drag and drop handlers for categories
@@ -329,6 +349,18 @@ export default function MenuPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900">{item.name}</p>
                           <p className="text-sm text-gray-500 line-clamp-2">{item.description}</p>
+                          {item.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {item.tags.map((tag: string) => (
+                                <span
+                                  key={tag}
+                                  className="px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 shrink-0">
                           <p className="font-semibold text-gray-900">€{item.price.toFixed(2)}</p>
@@ -428,18 +460,6 @@ export default function MenuPage() {
                 </div>
               </div>
 
-              {/* Image Description for SEO/Accessibility */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Describe this dish for customers</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Crispy golden fries with sea salt"
-                  value={dishForm.imageAlt}
-                  onChange={(e) => setDishForm({ ...dishForm, imageAlt: e.target.value })}
-                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">This description helps with accessibility and SEO</p>
-              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Dish Name</label>
@@ -475,6 +495,41 @@ export default function MenuPage() {
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
                 />
+              </div>
+
+              {/* Dietary Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Tags</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {["Vegan", "Vegetarian", "Gluten-Free", "Spicy", "Contains Nuts"].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                        dishForm.tags.includes(tag)
+                          ? "bg-indigo-100 text-indigo-700 border-indigo-200"
+                          : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Custom tag (e.g., Keto, Dairy-Free)"
+                    value={dishForm.customTag}
+                    onChange={(e) => setDishForm({ ...dishForm, customTag: e.target.value })}
+                    onKeyPress={(e) => e.key === "Enter" && addCustomTag()}
+                    className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                  <Button size="sm" variant="outline" onClick={addCustomTag}>
+                    Add
+                  </Button>
+                </div>
               </div>
             </div>
 
