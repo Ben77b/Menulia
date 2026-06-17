@@ -39,6 +39,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+Pro:wght@400;600&family=Inter:wght@400;500;600;700&family=Lora:wght@400;600;700&family=Open+Sans:wght@400;600&family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;600&family=Space+Grotesk:wght@400;600;700&family=DM+Sans:wght@400;500;600&family=Merriweather:wght@400;600;700&family=Lato:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className={inter.variable}>
         <RestaurantProvider>{children}</RestaurantProvider>
       </body>

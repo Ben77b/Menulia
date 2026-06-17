@@ -5,6 +5,7 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { Plus, Trash2, Edit, FolderPlus, X, GripVertical, Upload, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 interface Category {
   id: string;
@@ -55,13 +56,80 @@ export default function MenuPage() {
 
   useEffect(() => {
     if (currentRestaurant) {
+      loadMenuData();
+    }
+  }, [currentRestaurant]);
+
+  async function loadMenuData() {
+    if (!currentRestaurant) return;
+
+    try {
+      // Load categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('restaurant_id', currentRestaurant.id)
+        .order('order_index');
+
+      if (categoriesError) throw categoriesError;
+
+      // Load dishes for each category
+      const categoriesWithItems = await Promise.all(
+        (categoriesData || []).map(async (category) => {
+          const { data: dishesData, error: dishesError } = await supabase
+            .from('dishes')
+            .select('*')
+            .eq('category_id', category.id);
+
+          if (dishesError) throw dishesError;
+
+          return {
+            id: category.id,
+            name: category.name,
+            items: (dishesData || []).map((dish) => ({
+              id: dish.id,
+              name: dish.name,
+              description: dish.description || "",
+              price: parseFloat(dish.price) || 0,
+              image_url: dish.image,
+              image_alt: "",
+              allergens: [],
+              tags: dish.tags || [],
+              keywords: "",
+              is_available: true,
+            })),
+          };
+        })
+      );
+
+      setCategories(categoriesWithItems);
+
+      // Load custom tags from restaurant theme
+      const { data: restaurantData, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('typography')
+        .eq('id', currentRestaurant.id)
+        .single();
+
+      if (restaurantError) throw restaurantError;
+
+      // For now, custom tags are stored in localStorage as a fallback
+      const savedTags = localStorage.getItem(`custom-tags-${currentRestaurant.id}`);
+      if (savedTags) {
+        setCustomTags(JSON.parse(savedTags));
+      } else {
+        setCustomTags([]);
+      }
+    } catch (error) {
+      console.error('Error loading menu data:', error);
+      // Fallback to localStorage
       const saved = localStorage.getItem(`menu-categories-${currentRestaurant.id}`);
       if (saved) {
         setCategories(JSON.parse(saved));
       } else {
         setCategories([]);
       }
-      
+
       const savedTags = localStorage.getItem(`custom-tags-${currentRestaurant.id}`);
       if (savedTags) {
         setCustomTags(JSON.parse(savedTags));
@@ -69,13 +137,111 @@ export default function MenuPage() {
         setCustomTags([]);
       }
     }
-  }, [currentRestaurant]);
+  }
 
   useEffect(() => {
     if (currentRestaurant) {
-      localStorage.setItem(`menu-categories-${currentRestaurant.id}`, JSON.stringify(categories));
+      saveCategories();
     }
   }, [categories, currentRestaurant]);
+
+  async function saveCategories() {
+    if (!currentRestaurant) return;
+
+    try {
+      // Get existing categories
+      const { data: existingCategories, error: fetchError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('restaurant_id', currentRestaurant.id);
+
+      if (fetchError) throw fetchError;
+
+      const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
+
+      // Upsert categories
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i];
+        
+        if (existingCategoryIds.has(category.id)) {
+          // Update existing category
+          await supabase
+            .from('categories')
+            .update({
+              name: category.name,
+              order_index: i,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', category.id);
+        } else {
+          // Insert new category
+          const { error: insertError } = await supabase
+            .from('categories')
+            .insert({
+              id: category.id,
+              restaurant_id: currentRestaurant.id,
+              name: category.name,
+              order_index: i,
+            });
+
+          if (insertError) throw insertError;
+        }
+
+        // Handle dishes for this category
+        const existingDishesResponse = await supabase
+          .from('dishes')
+          .select('id')
+          .eq('category_id', category.id);
+
+        const existingDishIds = new Set((existingDishesResponse.data || []).map(d => d.id));
+
+        for (const item of category.items) {
+          if (existingDishIds.has(item.id)) {
+            // Update existing dish
+            await supabase
+              .from('dishes')
+              .update({
+                name: item.name,
+                description: item.description,
+                price: item.price.toString(),
+                image: item.image_url,
+                tags: item.tags,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', item.id);
+          } else {
+            // Insert new dish
+            await supabase
+              .from('dishes')
+              .insert({
+                id: item.id,
+                category_id: category.id,
+                name: item.name,
+                description: item.description,
+                price: item.price.toString(),
+                image: item.image_url,
+                tags: item.tags,
+              });
+          }
+        }
+      }
+
+      // Delete categories that no longer exist
+      const currentCategoryIds = new Set(categories.map(c => c.id));
+      for (const existingCat of existingCategories || []) {
+        if (!currentCategoryIds.has(existingCat.id)) {
+          await supabase
+            .from('categories')
+            .delete()
+            .eq('id', existingCat.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving categories:', error);
+      // Fallback to localStorage
+      localStorage.setItem(`menu-categories-${currentRestaurant.id}`, JSON.stringify(categories));
+    }
+  }
 
   useEffect(() => {
     if (currentRestaurant) {

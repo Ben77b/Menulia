@@ -3,21 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { Upload } from "lucide-react";
-
-// Google Fonts imports
-const googleFonts = [
-  "Playfair Display:wght@400;600;700",
-  "Source Sans Pro:wght@400;600",
-  "Inter:wght@400;500;600;700",
-  "Lora:wght@400;600;700",
-  "Open Sans:wght@400;600",
-  "Montserrat:wght@400;600;700",
-  "Roboto:wght@400;500;600",
-  "Space Grotesk:wght@400;600;700",
-  "DM Sans:wght@400;500;600",
-  "Merriweather:wght@400;600;700",
-  "Lato:wght@400;600;700",
-].join("&");
+import { supabase } from "@/lib/supabase";
 
 // Utility function to calculate brightness and determine text color
 function getContrastColor(hexColor: string): string {
@@ -94,6 +80,39 @@ export default function BrandingPage() {
   // Load saved colors and fonts when restaurant changes
   useEffect(() => {
     if (currentRestaurant) {
+      loadRestaurantData();
+    }
+  }, [currentRestaurant]);
+
+  async function loadRestaurantData() {
+    if (!currentRestaurant) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('theme_colors, typography')
+        .eq('id', currentRestaurant.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        if (data.theme_colors) {
+          setColor1(data.theme_colors.color1 || "#FFFFFF");
+          setColor2(data.theme_colors.color2 || "#F3F4F6");
+          setColor3(data.theme_colors.color3 || "#FFFFFF");
+          setMatchMainBackground(data.theme_colors.matchMainBackground || false);
+        }
+
+        if (data.typography) {
+          setSelectedPreset(data.typography.selectedPreset || "minimalist-cafe");
+          setCustomHeadingFont(data.typography.customHeadingFont || "");
+          setCustomBodyFont(data.typography.customBodyFont || "");
+        }
+      }
+    } catch (error) {
+      console.error('Error loading restaurant data:', error);
+      // Fallback to localStorage if Supabase fails
       const saved = localStorage.getItem(`branding-colors-${currentRestaurant.id}`);
       if (saved) {
         const colors = JSON.parse(saved);
@@ -101,12 +120,6 @@ export default function BrandingPage() {
         setColor2(colors.color2 || "#F3F4F6");
         setColor3(colors.color3 || "#FFFFFF");
         setMatchMainBackground(colors.matchMainBackground || false);
-      } else {
-        // Default colors
-        setColor1("#FFFFFF");
-        setColor2("#F3F4F6");
-        setColor3("#FFFFFF");
-        setMatchMainBackground(false);
       }
 
       const savedFonts = localStorage.getItem(`branding-fonts-${currentRestaurant.id}`);
@@ -115,37 +128,56 @@ export default function BrandingPage() {
         setSelectedPreset(fonts.selectedPreset || "minimalist-cafe");
         setCustomHeadingFont(fonts.customHeadingFont || "");
         setCustomBodyFont(fonts.customBodyFont || "");
-      } else {
-        // Default fonts
-        setSelectedPreset("minimalist-cafe");
-        setCustomHeadingFont("");
-        setCustomBodyFont("");
       }
     }
-  }, [currentRestaurant]);
+  }
 
-  // Save colors when they change
+  // Save colors and fonts when they change
   useEffect(() => {
     if (currentRestaurant) {
+      saveRestaurantData();
+    }
+  }, [color1, color2, color3, matchMainBackground, selectedPreset, customHeadingFont, customBodyFont, currentRestaurant]);
+
+  async function saveRestaurantData() {
+    if (!currentRestaurant) return;
+
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({
+          theme_colors: {
+            color1,
+            color2,
+            color3,
+            matchMainBackground,
+          },
+          typography: {
+            selectedPreset,
+            customHeadingFont,
+            customBodyFont,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentRestaurant.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving restaurant data:', error);
+      // Fallback to localStorage if Supabase fails
       localStorage.setItem(`branding-colors-${currentRestaurant.id}`, JSON.stringify({
         color1,
         color2,
         color3,
         matchMainBackground,
       }));
-    }
-  }, [color1, color2, color3, matchMainBackground, currentRestaurant]);
-
-  // Save fonts when they change
-  useEffect(() => {
-    if (currentRestaurant) {
       localStorage.setItem(`branding-fonts-${currentRestaurant.id}`, JSON.stringify({
         selectedPreset,
         customHeadingFont,
         customBodyFont,
       }));
     }
-  }, [selectedPreset, customHeadingFont, customBodyFont, currentRestaurant]);
+  }
 
   // Sync color2 with color3 when match is enabled
   useEffect(() => {
@@ -470,150 +502,6 @@ export default function BrandingPage() {
               </span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Right Panel - Mobile Preview (2/3 width) */}
-      <div className="w-2/3 bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6 flex items-center justify-center">
-        <div className="w-full max-w-sm">
-          {/* Phone Frame */}
-          <div 
-            className="mx-auto border-8 border-gray-900 rounded-[2.5rem] overflow-hidden shadow-2xl"
-            style={{ backgroundColor: color1 }}
-          >
-            {/* Phone Notch */}
-            <div className="bg-gray-900 h-6 w-32 mx-auto rounded-b-xl"></div>
-            
-            {/* Phone Screen */}
-            <div 
-              className="h-[600px] overflow-y-auto"
-              style={{ 
-                backgroundColor: color3,
-                fontFamily: fontPresets.find(p => p.id === selectedPreset)?.bodyFont || "Inter",
-              }}
-            >
-              {/* Category Navigation Bar */}
-              <div 
-                className="sticky top-0 z-10 px-4 py-3 border-b"
-                style={{ 
-                  backgroundColor: color2,
-                  borderColor: color2,
-                }}
-              >
-                <div className="flex gap-3 overflow-x-auto">
-                  {["Appetizers", "Mains", "Desserts"].map((category) => (
-                    <button
-                      key={category}
-                      className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                      style={{ 
-                        color: getContrastColor(color2),
-                        backgroundColor: category === "Appetizers" ? "rgba(255,255,255,0.2)" : "transparent",
-                      }}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Menu Content */}
-              <div className="p-4 space-y-4">
-                {/* Dish Card 1 */}
-                <div className="bg-white rounded-lg shadow-sm p-3">
-                  <div className="flex gap-3">
-                    <div 
-                      className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"
-                      style={{ backgroundColor: "#E5E7EB" }}
-                    ></div>
-                    <div className="flex-1">
-                      <h4 
-                        className="font-semibold text-sm"
-                        style={{ 
-                          fontFamily: fontPresets.find(p => p.id === selectedPreset)?.headingFont || "Inter",
-                          color: "#111827",
-                        }}
-                      >
-                        Grilled Salmon
-                      </h4>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Fresh Atlantic salmon with herbs
-                      </p>
-                      <p className="text-sm font-medium mt-2" style={{ color: "#111827" }}>
-                        $24.99
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">Gluten-Free</span>
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">Fresh</span>
-                  </div>
-                </div>
-
-                {/* Dish Card 2 */}
-                <div className="bg-white rounded-lg shadow-sm p-3">
-                  <div className="flex gap-3">
-                    <div 
-                      className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"
-                      style={{ backgroundColor: "#E5E7EB" }}
-                    ></div>
-                    <div className="flex-1">
-                      <h4 
-                        className="font-semibold text-sm"
-                        style={{ 
-                          fontFamily: fontPresets.find(p => p.id === selectedPreset)?.headingFont || "Inter",
-                          color: "#111827",
-                        }}
-                      >
-                        Caesar Salad
-                      </h4>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Crisp romaine with parmesan
-                      </p>
-                      <p className="text-sm font-medium mt-2" style={{ color: "#111827" }}>
-                        $14.99
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-700">Vegetarian</span>
-                  </div>
-                </div>
-
-                {/* Dish Card 3 */}
-                <div className="bg-white rounded-lg shadow-sm p-3">
-                  <div className="flex gap-3">
-                    <div 
-                      className="w-20 h-20 bg-gray-200 rounded-lg flex-shrink-0"
-                      style={{ backgroundColor: "#E5E7EB" }}
-                    ></div>
-                    <div className="flex-1">
-                      <h4 
-                        className="font-semibold text-sm"
-                        style={{ 
-                          fontFamily: fontPresets.find(p => p.id === selectedPreset)?.headingFont || "Inter",
-                          color: "#111827",
-                        }}
-                      >
-                        Chocolate Cake
-                      </h4>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Rich dark chocolate ganache
-                      </p>
-                      <p className="text-sm font-medium mt-2" style={{ color: "#111827" }}>
-                        $8.99
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <span className="px-2 py-0.5 rounded-full text-xs bg-pink-100 text-pink-700">Sweet</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p className="mt-4 text-sm text-gray-500 text-center">
-            Live preview updates instantly
-          </p>
         </div>
       </div>
     </div>
