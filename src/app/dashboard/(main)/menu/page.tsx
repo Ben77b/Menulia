@@ -25,13 +25,6 @@ interface MenuItem {
   is_available: boolean;
 }
 
-const DIETARY_TAGS = [
-  { label: "Vegan", value: "vegan", color: "bg-green-100 text-green-700 border-green-200" },
-  { label: "Vegetarian", value: "vegetarian", color: "bg-green-50 text-green-600 border-green-200" },
-  { label: "Gluten-Free", value: "gluten-free", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  { label: "Dairy-Free", value: "dairy-free", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  { label: "Spicy", value: "spicy", color: "bg-red-100 text-red-700 border-red-200" },
-];
 
 export default function MenuPage() {
   const { currentRestaurant } = useRestaurant();
@@ -39,6 +32,9 @@ export default function MenuPage() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
+  const [draggedDishIndex, setDraggedDishIndex] = useState<number | null>(null);
+  const [draggedDishCategoryId, setDraggedDishCategoryId] = useState<string | null>(null);
   
   // Dish form state
   const [showDishForm, setShowDishForm] = useState(false);
@@ -48,11 +44,8 @@ export default function MenuPage() {
     name: "",
     price: "",
     description: "",
-    tags: [] as string[],
-    customTag: "",
     image: "" as string,
     imageAlt: "",
-    keywords: "",
   });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,7 +85,7 @@ export default function MenuPage() {
   function handleAddDish(categoryId: string) {
     setEditingDish(null);
     setEditingCategoryIdForDish(categoryId);
-    setDishForm({ name: "", price: "", description: "", tags: [], customTag: "", image: "", imageAlt: "", keywords: "" });
+    setDishForm({ name: "", price: "", description: "", image: "", imageAlt: "" });
     setShowDishForm(true);
   }
 
@@ -103,11 +96,8 @@ export default function MenuPage() {
       name: item.name,
       price: item.price.toString(),
       description: item.description,
-      tags: item.tags,
-      customTag: "",
       image: item.image_url || "",
       imageAlt: item.image_alt || "",
-      keywords: item.keywords || "",
     });
     setShowDishForm(true);
   }
@@ -123,8 +113,8 @@ export default function MenuPage() {
       image_url: dishForm.image || null,
       image_alt: dishForm.imageAlt,
       allergens: [],
-      tags: dishForm.tags,
-      keywords: dishForm.keywords,
+      tags: [],
+      keywords: "",
       is_available: true,
     };
 
@@ -141,7 +131,7 @@ export default function MenuPage() {
     setShowDishForm(false);
     setEditingDish(null);
     setEditingCategoryIdForDish(null);
-    setDishForm({ name: "", price: "", description: "", tags: [], customTag: "", image: "", imageAlt: "", keywords: "" });
+    setDishForm({ name: "", price: "", description: "", image: "", imageAlt: "" });
   }
 
   function handleDeleteDish(item: MenuItem, categoryId: string) {
@@ -154,23 +144,6 @@ export default function MenuPage() {
     );
   }
 
-  function toggleTag(tagValue: string) {
-    setDishForm((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(tagValue)
-        ? prev.tags.filter((t) => t !== tagValue)
-        : [...prev.tags, tagValue],
-    }));
-  }
-
-  function addCustomTag() {
-    if (!dishForm.customTag.trim()) return;
-    setDishForm((prev) => ({
-      ...prev,
-      tags: [...prev.tags, dishForm.customTag.trim()],
-      customTag: "",
-    }));
-  }
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -189,6 +162,57 @@ export default function MenuPage() {
 
   function handleRemoveImage() {
     setDishForm((prev) => ({ ...prev, image: "", imageAlt: "" }));
+  }
+
+  // Drag and drop handlers for categories
+  function handleCategoryDragStart(index: number) {
+    setDraggedCategoryIndex(index);
+  }
+
+  function handleCategoryDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+
+  function handleCategoryDrop(index: number) {
+    if (draggedCategoryIndex === null || draggedCategoryIndex === index) return;
+    
+    const newCategories = [...categories];
+    const [draggedCategory] = newCategories.splice(draggedCategoryIndex, 1);
+    newCategories.splice(index, 0, draggedCategory);
+    
+    setCategories(newCategories);
+    setDraggedCategoryIndex(null);
+  }
+
+  // Drag and drop handlers for dishes
+  function handleDishDragStart(categoryId: string, dishIndex: number) {
+    setDraggedDishCategoryId(categoryId);
+    setDraggedDishIndex(dishIndex);
+  }
+
+  function handleDishDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+
+  function handleDishDrop(targetCategoryId: string, targetDishIndex: number) {
+    if (draggedDishCategoryId === null || draggedDishIndex === null) return;
+    if (draggedDishCategoryId !== targetCategoryId) return;
+    if (draggedDishIndex === targetDishIndex) return;
+    
+    setCategories((prev) =>
+      prev.map((cat) => {
+        if (cat.id !== targetCategoryId) return cat;
+        
+        const newItems = [...cat.items];
+        const [draggedDish] = newItems.splice(draggedDishIndex, 1);
+        newItems.splice(targetDishIndex, 0, draggedDish);
+        
+        return { ...cat, items: newItems };
+      })
+    );
+    
+    setDraggedDishCategoryId(null);
+    setDraggedDishIndex(null);
   }
 
   if (!currentRestaurant) {
@@ -241,8 +265,15 @@ export default function MenuPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {categories.map((category) => (
-            <div key={category.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          {categories.map((category, catIndex) => (
+            <div
+              key={category.id}
+              className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden"
+              draggable
+              onDragStart={() => handleCategoryDragStart(catIndex)}
+              onDragOver={handleCategoryDragOver}
+              onDrop={() => handleCategoryDrop(catIndex)}
+            >
               {/* Category Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
@@ -278,10 +309,14 @@ export default function MenuPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {category.items.map((item) => (
+                    {category.items.map((item, dishIndex) => (
                       <div
                         key={item.id}
                         className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        draggable
+                        onDragStart={() => handleDishDragStart(category.id, dishIndex)}
+                        onDragOver={handleDishDragOver}
+                        onDrop={() => handleDishDrop(category.id, dishIndex)}
                       >
                         <GripVertical className="h-5 w-5 text-gray-400 cursor-move shrink-0" />
                         {item.image_url && (
@@ -294,18 +329,6 @@ export default function MenuPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900">{item.name}</p>
                           <p className="text-sm text-gray-500 line-clamp-2">{item.description}</p>
-                          {item.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {item.tags.map((tag: string) => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                         <div className="flex items-center gap-4 shrink-0">
                           <p className="font-semibold text-gray-900">€{item.price.toFixed(2)}</p>
@@ -405,17 +428,17 @@ export default function MenuPage() {
                 </div>
               </div>
 
-              {/* Alt-Text for SEO/Accessibility */}
+              {/* Image Description for SEO/Accessibility */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image Alt Text (SEO/Accessibility)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Describe this dish for customers</label>
                 <input
                   type="text"
-                  placeholder="e.g., Grilled salmon with lemon butter sauce"
+                  placeholder="e.g., Crispy golden fries with sea salt"
                   value={dishForm.imageAlt}
                   onChange={(e) => setDishForm({ ...dishForm, imageAlt: e.target.value })}
                   className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
-                <p className="text-xs text-gray-500 mt-1">Describe the image for screen readers and SEO</p>
+                <p className="text-xs text-gray-500 mt-1">This description helps with accessibility and SEO</p>
               </div>
 
               <div>
@@ -452,53 +475,6 @@ export default function MenuPage() {
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Tags</label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {DIETARY_TAGS.map((tag) => (
-                    <button
-                      key={tag.value}
-                      type="button"
-                      onClick={() => toggleTag(tag.value)}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                        dishForm.tags.includes(tag.value)
-                          ? tag.color
-                          : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-                      )}
-                    >
-                      {tag.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Custom tag (e.g., Keto)"
-                    value={dishForm.customTag}
-                    onChange={(e) => setDishForm({ ...dishForm, customTag: e.target.value })}
-                    onKeyPress={(e) => e.key === "Enter" && addCustomTag()}
-                    className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                  <Button size="sm" variant="outline" onClick={addCustomTag}>
-                    Add
-                  </Button>
-                </div>
-              </div>
-
-              {/* Keywords for SEO */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Keywords</label>
-                <input
-                  type="text"
-                  placeholder="e.g., salmon, grilled, healthy, dinner"
-                  value={dishForm.keywords}
-                  onChange={(e) => setDishForm({ ...dishForm, keywords: e.target.value })}
-                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">Comma-separated keywords to help your menu rank in search results</p>
               </div>
             </div>
 
