@@ -18,7 +18,7 @@ export function CleanLayoutWrapper({ children }: CleanLayoutWrapperProps) {
       <CleanSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
       {/* Main Content Area */}
-      <div className="flex-1 md:pl-64 min-h-screen bg-gray-50/50">
+      <div className="flex-1 md:pl-64 min-h-screen bg-gray-50/50 overflow-y-auto">
         {/* Mobile Header */}
         <header className="md:hidden sticky top-0 z-30 bg-white border-b border-gray-100 px-4 py-3">
           <div className="flex items-center justify-between">
