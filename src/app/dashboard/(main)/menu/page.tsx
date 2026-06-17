@@ -35,6 +35,8 @@ export default function MenuPage() {
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
   const [draggedDishIndex, setDraggedDishIndex] = useState<number | null>(null);
   const [draggedDishCategoryId, setDraggedDishCategoryId] = useState<string | null>(null);
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [showTagManager, setShowTagManager] = useState(false);
   
   // Dish form state
   const [showDishForm, setShowDishForm] = useState(false);
@@ -58,6 +60,13 @@ export default function MenuPage() {
       } else {
         setCategories([]);
       }
+      
+      const savedTags = localStorage.getItem(`custom-tags-${currentRestaurant.id}`);
+      if (savedTags) {
+        setCustomTags(JSON.parse(savedTags));
+      } else {
+        setCustomTags([]);
+      }
     }
   }, [currentRestaurant]);
 
@@ -66,6 +75,12 @@ export default function MenuPage() {
       localStorage.setItem(`menu-categories-${currentRestaurant.id}`, JSON.stringify(categories));
     }
   }, [categories, currentRestaurant]);
+
+  useEffect(() => {
+    if (currentRestaurant) {
+      localStorage.setItem(`custom-tags-${currentRestaurant.id}`, JSON.stringify(customTags));
+    }
+  }, [customTags, currentRestaurant]);
 
   function handleAddCategory() {
     if (!newCategoryName.trim()) return;
@@ -177,11 +192,38 @@ export default function MenuPage() {
 
   function addCustomTag() {
     if (!dishForm.customTag.trim()) return;
+    const newTag = dishForm.customTag.trim();
+    
+    // Prevent duplicate tags in the dish
+    if (dishForm.tags.includes(newTag)) {
+      setDishForm((prev) => ({ ...prev, customTag: "" }));
+      return;
+    }
+    
     setDishForm((prev) => ({
       ...prev,
-      tags: [...prev.tags, dishForm.customTag.trim()],
+      tags: [...prev.tags, newTag],
       customTag: "",
     }));
+    
+    // Add to custom tags if not already there
+    if (!customTags.includes(newTag)) {
+      setCustomTags((prev) => [...prev, newTag]);
+    }
+  }
+
+  function deleteCustomTag(tag: string) {
+    setCustomTags((prev) => prev.filter((t) => t !== tag));
+    // Also remove from all dishes
+    setCategories((prev) =>
+      prev.map((cat) => ({
+        ...cat,
+        items: cat.items.map((item) => ({
+          ...item,
+          tags: item.tags.filter((t) => t !== tag),
+        })),
+      }))
+    );
   }
 
   // Drag and drop handlers for categories
@@ -246,15 +288,26 @@ export default function MenuPage() {
           <h1 className="text-2xl font-bold text-gray-900">Menu Builder</h1>
           <p className="mt-1 text-sm text-gray-600">Manage your restaurant menu categories and dishes</p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setShowAddCategory(!showAddCategory)}
-          className="gap-2"
-        >
-          <FolderPlus className="h-4 w-4" />
-          Add Category
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowTagManager(true)}
+            className="gap-2"
+          >
+            <Edit className="h-4 w-4" />
+            Manage Global Tags
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowAddCategory(!showAddCategory)}
+            className="gap-2"
+          >
+            <FolderPlus className="h-4 w-4" />
+            Add Category
+          </Button>
+        </div>
       </div>
 
       {showAddCategory && (
@@ -501,7 +554,7 @@ export default function MenuPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Tags</label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {["Vegan", "Vegetarian", "Gluten-Free", "Spicy", "Contains Nuts"].map((tag) => (
+                  {["Vegan", "Vegetarian", "Gluten-Free", "Spicy", "Contains Nuts", ...customTags].map((tag) => (
                     <button
                       key={tag}
                       type="button"
@@ -540,6 +593,65 @@ export default function MenuPage() {
               </Button>
               <Button onClick={handleSaveDish}>
                 {editingDish ? "Update Dish" : "Add Dish"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Tag Manager Modal */}
+      {showTagManager && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="w-[calc(100%-2rem)] max-w-md mx-auto max-h-[85vh] bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col">
+            {/* Fixed Header */}
+            <div className="p-5 border-b border-gray-50 bg-white rounded-t-2xl flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">Manage Global Tags</h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowTagManager(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="p-5 overflow-y-auto">
+              <p className="text-sm text-gray-600 mb-4">
+                These custom tags are available for all dishes in your menu. Deleting a tag will remove it from all dishes.
+              </p>
+              
+              {customTags.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  No custom tags created yet
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {customTags.map((tag) => (
+                    <div
+                      key={tag}
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                    >
+                      <span className="text-sm font-medium text-gray-900">{tag}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteCustomTag(tag)}
+                        className="h-8 w-8 p-0 text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Fixed Footer */}
+            <div className="p-5 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end">
+              <Button onClick={() => setShowTagManager(false)}>
+                Done
               </Button>
             </div>
           </div>
