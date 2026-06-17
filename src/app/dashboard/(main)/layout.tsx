@@ -1,4 +1,4 @@
-import { CleanLayoutWrapper } from "@/components/dashboard/clean-layout-wrapper";
+import { LayoutWrapper } from "@/components/dashboard/layout-wrapper";
 
 export default function DashboardMainLayout({
   children,
@@ -6,8 +6,8 @@ export default function DashboardMainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <CleanLayoutWrapper>
+    <LayoutWrapper>
       {children}
-    </CleanLayoutWrapper>
+    </LayoutWrapper>
   );
 }

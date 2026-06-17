@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { RestaurantProvider } from "@/contexts/restaurant-context";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -38,7 +39,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.variable}>{children}</body>
+      <body className={inter.variable}>
+        <RestaurantProvider>{children}</RestaurantProvider>
+      </body>
     </html>
   );
 }

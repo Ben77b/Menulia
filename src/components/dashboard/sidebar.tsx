@@ -1,160 +1,154 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  Home,
-  Utensils,
-  Palette,
-  Calendar,
-  QrCode,
-  Settings,
-  Crown,
-  X,
-  ChevronDown,
-  Store,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { Home, LayoutTemplate, Palette, Calendar, Settings, User, ChevronDown, Building2, X } from "lucide-react";
+import Link from "next/link";
+import { useRestaurant } from "@/contexts/restaurant-context";
 
-const NAV = [
-  { href: "/dashboard", label: "Home", icon: Home, premium: false },
-  { href: "/dashboard/menu", label: "Menu Builder", icon: Utensils, premium: false },
-  { href: "/dashboard/design", label: "Branding & Design", icon: Palette, premium: false },
-  { href: "/dashboard/reservations", label: "Reservations", icon: Calendar, premium: true },
-  { href: "/dashboard/share", label: "QR Code Access", icon: QrCode, premium: false },
-  { href: "/dashboard/settings", label: "Business Settings", icon: Settings, premium: false },
-];
-
-interface DashboardSidebarProps {
-  isPremium: boolean;
-  restaurantName: string;
-  restaurantSlug: string;
+interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
-  restaurants?: { id: string; name: string; slug: string }[];
-  currentRestaurantId?: string;
-  onRestaurantChange?: (id: string) => void;
 }
 
-export function DashboardSidebar({ 
-  isPremium, 
-  restaurantName,
-  restaurantSlug,
-  isOpen, 
-  onToggle,
-  restaurants = [],
-  currentRestaurantId,
-  onRestaurantChange 
-}: DashboardSidebarProps) {
-  const pathname = usePathname();
-  const [restaurantDropdownOpen, setRestaurantDropdownOpen] = useState(false);
+export function Sidebar({ isOpen, onToggle }: SidebarProps) {
+  const [restaurantOpen, setRestaurantOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const { currentRestaurant, setCurrentRestaurant, restaurants } = useRestaurant();
+
+  const navItems = [
+    { icon: Home, label: "Home", href: "/dashboard" },
+    { icon: LayoutTemplate, label: "Menu Builder", href: "/dashboard/menu" },
+    { icon: Palette, label: "Branding & Design", href: "/dashboard/branding" },
+    { icon: Calendar, label: "Reservations", href: "/dashboard/reservations", badge: "Coming Soon" },
+    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  ];
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={onToggle}
         />
       )}
-      
+
       {/* Sidebar */}
       <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-surface-elevated transition-transform duration-300 lg:relative lg:translate-x-0 lg:w-64",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )}
+        className={`
+          fixed md:fixed top-0 left-0 z-50 h-full
+          bg-white border-r border-gray-100
+          transition-transform duration-300 ease-in-out
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0 md:w-64
+          ${isOpen ? "w-72" : ""}
+        `}
       >
-        <div className="flex items-center justify-between border-b border-border p-4 lg:p-5">
-          <Link href="/" className="text-sm font-semibold text-emerald-brand">
-            menulia.io
-          </Link>
-          <button
-            onClick={onToggle}
-            className="rounded-lg p-2 hover:bg-muted lg:hidden"
-            aria-label="Close sidebar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        
-        {/* Restaurant switcher */}
-        <div className="border-b border-border p-4 pb-3 lg:p-5 lg:pb-4">
-          <div className="relative">
-            <button
-              onClick={() => setRestaurantDropdownOpen(!restaurantDropdownOpen)}
-              className="flex w-full items-center justify-between gap-2 rounded-lg bg-muted px-3 py-2 text-left hover:bg-muted/80"
-            >
-              <div className="flex items-center gap-2 overflow-hidden">
-                <Store className="h-4 w-4 shrink-0 text-emerald-brand" />
-                <span className="truncate text-sm font-medium">{restaurantName}</span>
-              </div>
-              <ChevronDown className="h-4 w-4 shrink-0 text-text-secondary" />
-            </button>
-            
-            {restaurantDropdownOpen && restaurants.length > 1 && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setRestaurantDropdownOpen(false)} />
-                <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-border bg-white p-1 shadow-xl">
-                  {restaurants.map((r) => (
+        <div className="flex flex-col h-full p-5">
+          {/* Logo */}
+          <div className="mb-4">
+            <h1 className="text-xl font-bold text-gray-900">Menulia</h1>
+          </div>
+
+          {/* Restaurant/Brand Switcher */}
+          <div className="mb-6 pb-6 border-b border-gray-100">
+            <div className="relative">
+              <button
+                onClick={() => setRestaurantOpen(!restaurantOpen)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <Building2 className="h-5 w-5 text-gray-600" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-gray-900">
+                    {currentRestaurant?.name || "Select Restaurant"}
+                  </p>
+                  <p className="text-xs text-gray-500">Switch restaurant</p>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </button>
+
+              {restaurantOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-gray-200 bg-white p-2 shadow-xl z-10">
+                  {restaurants.map((restaurant) => (
                     <button
-                      key={r.id}
+                      key={restaurant.id}
                       onClick={() => {
-                        onRestaurantChange?.(r.id);
-                        setRestaurantDropdownOpen(false);
+                        setCurrentRestaurant(restaurant);
+                        setRestaurantOpen(false);
                       }}
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted",
-                        r.id === currentRestaurantId && "bg-muted font-medium"
-                      )}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                     >
-                      <Store className="h-4 w-4 shrink-0 text-emerald-brand" />
-                      <span className="truncate">{r.name}</span>
+                      {restaurant.name}
                     </button>
                   ))}
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
-          
-          {isPremium ? (
-            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-brand-light px-2 py-0.5 text-xs font-medium text-emerald-brand">
-              <Crown className="h-3 w-3" /> Premium
-            </span>
-          ) : (
-            <span className="mt-2 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-text-secondary">
-              Free plan
-            </span>
-          )}
-        </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-3 lg:p-4">
-          {NAV.map((item) => {
-            const active = pathname === item.href;
-            const Icon = item.icon;
-            return (
+          {/* Navigation Menu */}
+          <nav className="flex-1 space-y-1">
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => window.innerWidth < 1024 && onToggle()}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all",
-                  active
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                )}
+                onClick={onToggle}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {item.premium && !isPremium && (
-                  <Crown className="h-3.5 w-3.5 text-amber-500" />
+                <item.icon className="h-5 w-5" />
+                <span className="font-medium flex-1">{item.label}</span>
+                {item.badge && (
+                  <span className="text-xs text-gray-400">{item.badge}</span>
                 )}
               </Link>
-            );
-          })}
-        </nav>
+            ))}
+          </nav>
+
+          {/* User Profile/Account Settings */}
+          <div className="pt-6 border-t border-gray-100">
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                  <User className="h-4 w-4 text-gray-600" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-gray-900">Account</p>
+                  <p className="text-xs text-gray-500">Settings</p>
+                </div>
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-gray-200 bg-white p-2 shadow-xl z-10">
+                  <Link
+                    href="/dashboard/settings"
+                    onClick={() => setProfileOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                  >
+                    Profile Settings
+                  </Link>
+                  <Link
+                    href="/logout"
+                    className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                  >
+                    Sign Out
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Close Button */}
+          <button
+            onClick={onToggle}
+            className="md:hidden absolute top-5 right-5 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
       </aside>
     </>
   );
