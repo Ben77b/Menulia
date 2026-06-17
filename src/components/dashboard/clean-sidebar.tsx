@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Home, LayoutTemplate, Palette, Calendar, Menu as MenuIcon, User, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Home, LayoutTemplate, Palette, Calendar, User, ChevronDown } from "lucide-react";
+import Link from "next/link";
 
 interface CleanSidebarProps {
   isOpen: boolean;
@@ -77,18 +77,18 @@ export function CleanSidebar({ isOpen, onToggle }: CleanSidebarProps) {
 
             {profileOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-gray-200 bg-white p-2 shadow-xl">
-                <a
+                <Link
                   href="/settings"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
                   Profile Settings
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/logout"
                   className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
                 >
                   Sign Out
-                </a>
+                </Link>
               </div>
             )}
           </div>
