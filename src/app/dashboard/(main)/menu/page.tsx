@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { fetchDemoRestaurant, fetchRestaurantBySlug } from "@/lib/data";
-import { Plus, Trash2, Edit, FolderPlus, X, GripVertical, Upload, Camera, Wand2 } from "lucide-react";
+import { useRestaurant } from "@/contexts/restaurant-context";
+import { Plus, Trash2, Edit, FolderPlus, X, GripVertical, Upload, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -18,8 +18,10 @@ interface MenuItem {
   description: string;
   price: number;
   image_url: string | null;
+  image_alt: string;
   allergens: string[];
   tags: string[];
+  keywords: string;
   is_available: boolean;
 }
 
@@ -32,15 +34,16 @@ const DIETARY_TAGS = [
 ];
 
 export default function MenuPage() {
-  const [restaurant, setRestaurant] = useState<any>(null);
+  const { currentRestaurant } = useRestaurant();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showAddCategory, setShowAddCategory] = useState(false);
   
   // Dish form state
   const [showDishForm, setShowDishForm] = useState(false);
   const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
+  const [editingCategoryIdForDish, setEditingCategoryIdForDish] = useState<string | null>(null);
   const [dishForm, setDishForm] = useState({
     name: "",
     price: "",
@@ -48,29 +51,27 @@ export default function MenuPage() {
     tags: [] as string[],
     customTag: "",
     image: "" as string,
+    imageAlt: "",
+    keywords: "",
   });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    async function loadData() {
-      const r = await fetchDemoRestaurant();
-      const f = await fetchRestaurantBySlug(r.slug);
-      setRestaurant(r);
-      const saved = localStorage.getItem(`menu-categories-${r.id}`);
+    if (currentRestaurant) {
+      const saved = localStorage.getItem(`menu-categories-${currentRestaurant.id}`);
       if (saved) {
         setCategories(JSON.parse(saved));
       } else {
         setCategories([]);
       }
     }
-    loadData();
-  }, []);
+  }, [currentRestaurant]);
 
   useEffect(() => {
-    if (restaurant) {
-      localStorage.setItem(`menu-categories-${restaurant.id}`, JSON.stringify(categories));
+    if (currentRestaurant) {
+      localStorage.setItem(`menu-categories-${currentRestaurant.id}`, JSON.stringify(categories));
     }
-  }, [categories, restaurant]);
+  }, [categories, currentRestaurant]);
 
   function handleAddCategory() {
     if (!newCategoryName.trim()) return;
@@ -82,24 +83,22 @@ export default function MenuPage() {
     setCategories([...categories, newCategory]);
     setNewCategoryName("");
     setShowAddCategory(false);
-    setSelectedCategoryId(newCategory.id);
   }
 
   function handleDeleteCategory(categoryId: string) {
     setCategories(categories.filter((cat) => cat.id !== categoryId));
-    if (selectedCategoryId === categoryId) {
-      setSelectedCategoryId(null);
-    }
   }
 
-  function handleAddDish() {
+  function handleAddDish(categoryId: string) {
     setEditingDish(null);
-    setDishForm({ name: "", price: "", description: "", tags: [], customTag: "", image: "" });
+    setEditingCategoryIdForDish(categoryId);
+    setDishForm({ name: "", price: "", description: "", tags: [], customTag: "", image: "", imageAlt: "", keywords: "" });
     setShowDishForm(true);
   }
 
-  function handleEditDish(item: MenuItem) {
+  function handleEditDish(item: MenuItem, categoryId: string) {
     setEditingDish(item);
+    setEditingCategoryIdForDish(categoryId);
     setDishForm({
       name: item.name,
       price: item.price.toString(),
@@ -107,12 +106,14 @@ export default function MenuPage() {
       tags: item.tags,
       customTag: "",
       image: item.image_url || "",
+      imageAlt: item.image_alt || "",
+      keywords: item.keywords || "",
     });
     setShowDishForm(true);
   }
 
   function handleSaveDish() {
-    if (!selectedCategoryId) return;
+    if (!editingCategoryIdForDish) return;
     
     const dishData: MenuItem = {
       id: editingDish?.id || `item-${Date.now()}`,
@@ -120,14 +121,16 @@ export default function MenuPage() {
       price: parseFloat(dishForm.price) || 0,
       description: dishForm.description,
       image_url: dishForm.image || null,
+      image_alt: dishForm.imageAlt,
       allergens: [],
       tags: dishForm.tags,
+      keywords: dishForm.keywords,
       is_available: true,
     };
 
     setCategories((prev) =>
       prev.map((cat) =>
-        cat.id === selectedCategoryId
+        cat.id === editingCategoryIdForDish
           ? editingDish
             ? { ...cat, items: cat.items.map((i) => i.id === editingDish.id ? dishData : i) }
             : { ...cat, items: [...cat.items, dishData] }
@@ -137,14 +140,14 @@ export default function MenuPage() {
 
     setShowDishForm(false);
     setEditingDish(null);
-    setDishForm({ name: "", price: "", description: "", tags: [], customTag: "", image: "" });
+    setEditingCategoryIdForDish(null);
+    setDishForm({ name: "", price: "", description: "", tags: [], customTag: "", image: "", imageAlt: "", keywords: "" });
   }
 
-  function handleDeleteDish(item: MenuItem) {
-    if (!selectedCategoryId) return;
+  function handleDeleteDish(item: MenuItem, categoryId: string) {
     setCategories((prev) =>
       prev.map((cat) =>
-        cat.id === selectedCategoryId
+        cat.id === categoryId
           ? { ...cat, items: cat.items.filter((i) => i.id !== item.id) }
           : cat
       )
@@ -185,160 +188,115 @@ export default function MenuPage() {
   }
 
   function handleRemoveImage() {
-    setDishForm((prev) => ({ ...prev, image: "" }));
+    setDishForm((prev) => ({ ...prev, image: "", imageAlt: "" }));
   }
 
-  const selectedCategory = categories.find((cat) => cat.id === selectedCategoryId);
-
-  if (!restaurant) {
+  if (!currentRestaurant) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Menu Builder</h1>
-        <p className="mt-1 text-sm text-gray-600">Manage your restaurant menu categories and dishes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Menu Builder</h1>
+          <p className="mt-1 text-sm text-gray-600">Manage your restaurant menu categories and dishes</p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setShowAddCategory(!showAddCategory)}
+          className="gap-2"
+        >
+          <FolderPlus className="h-4 w-4" />
+          Add Category
+        </Button>
       </div>
 
-      <div className="flex flex-col md:grid md:grid-cols-12 gap-4 md:gap-6 items-start">
-        {/* Left Column - Categories */}
-        <div className="w-full md:col-span-4">
-          <div className="rounded-xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Categories</h2>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowAddCategory(!showAddCategory)}
-                className="gap-2"
-              >
-                <FolderPlus className="h-4 w-4" />
-                Add
-              </Button>
-            </div>
-
-            {showAddCategory && (
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                <input
-                  type="text"
-                  placeholder="Category name..."
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
-                />
-                <div className="flex gap-2 mt-2">
-                  <Button size="sm" onClick={handleAddCategory} className="flex-1">
-                    Add Category
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowAddCategory(false)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Mobile: Horizontal scrolling row */}
-            <div className="md:hidden">
-              {categories.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No categories yet</p>
-              ) : (
-                <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategoryId(cat.id)}
-                      className={cn(
-                        "flex-shrink-0 px-4 py-2 rounded-lg border text-sm font-medium transition-all whitespace-nowrap",
-                        selectedCategoryId === cat.id
-                          ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                          : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
-                      )}
-                    >
-                      {cat.name}
-                      <span className="ml-2 text-xs text-gray-400">({cat.items.length})</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Desktop: Vertical list */}
-            <div className="hidden md:block space-y-2 max-h-96 overflow-y-auto">
-              {categories.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No categories yet</p>
-              ) : (
-                categories.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className={cn(
-                      "flex items-center gap-2 p-3 rounded-lg border transition-all cursor-pointer group",
-                      selectedCategoryId === cat.id
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                    )}
-                    onClick={() => setSelectedCategoryId(cat.id)}
-                  >
-                    <GripVertical className="h-4 w-4 text-gray-400" />
-                    <span className="flex-1 text-sm font-medium">{cat.name}</span>
-                    <span className="text-xs text-gray-500">{cat.items.length}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCategory(cat.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
+      {showAddCategory && (
+        <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <input
+            type="text"
+            placeholder="Category name..."
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
+          />
+          <div className="flex gap-2 mt-2">
+            <Button size="sm" onClick={handleAddCategory}>
+              Add Category
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowAddCategory(false)}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+      )}
 
-        {/* Right Column - Dishes */}
-        <div className="w-full md:col-span-8">
-          <div className="rounded-xl border border-gray-100 bg-white p-4 md:p-6 shadow-sm">
-            {!selectedCategory ? (
-              <div className="text-center py-12">
-                <FolderPlus className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">Select a category to manage dishes</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">{selectedCategory.name}</h2>
-                    <p className="text-sm text-gray-500">{selectedCategory.items.length} dishes</p>
-                  </div>
-                  <Button size="sm" onClick={handleAddDish} className="gap-2">
+      {categories.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <FolderPlus className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No categories yet. Add your first category to get started.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {categories.map((category) => (
+            <div key={category.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              {/* Category Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <GripVertical className="h-5 w-5 text-gray-400 cursor-move" />
+                  <h2 className="text-lg font-semibold text-gray-900">{category.name}</h2>
+                  <span className="text-sm text-gray-500">({category.items.length} dishes)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handleAddDish(category.id)}
+                    className="gap-2"
+                  >
                     <Plus className="h-4 w-4" />
                     Add Dish
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDeleteCategory(category.id)}
+                    className="h-8 w-8 p-0 text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
+              </div>
 
-                {selectedCategory.items.length === 0 ? (
+              {/* Dishes List */}
+              <div className="p-4">
+                {category.items.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     No dishes in this category yet
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {selectedCategory.items.map((item) => (
+                    {category.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                       >
+                        <GripVertical className="h-5 w-5 text-gray-400 cursor-move shrink-0" />
+                        {item.image_url && (
+                          <img
+                            src={item.image_url}
+                            alt={item.image_alt || item.name}
+                            className="w-16 h-16 object-cover rounded-lg shrink-0"
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{item.name}</p>
-                          <p className="text-sm text-gray-500 truncate">{item.description}</p>
+                          <p className="font-medium text-gray-900">{item.name}</p>
+                          <p className="text-sm text-gray-500 line-clamp-2">{item.description}</p>
                           {item.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {item.tags.map((tag) => (
+                              {item.tags.map((tag: string) => (
                                 <span
                                   key={tag}
                                   className="px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-700"
@@ -355,7 +313,7 @@ export default function MenuPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleEditDish(item)}
+                              onClick={() => handleEditDish(item, category.id)}
                               className="h-8 w-8 p-0"
                             >
                               <Edit className="h-4 w-4" />
@@ -363,7 +321,7 @@ export default function MenuPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleDeleteDish(item)}
+                              onClick={() => handleDeleteDish(item, category.id)}
                               className="h-8 w-8 p-0 text-red-500"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -374,11 +332,11 @@ export default function MenuPage() {
                     ))}
                   </div>
                 )}
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
       {/* Dish Editor Modal */}
       {showDishForm && (
@@ -443,18 +401,21 @@ export default function MenuPage() {
                       onChange={handleImageUpload}
                       className="hidden"
                     />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => alert("Premium Feature: AI Background Removal is enabled on production subscription tiers.")}
-                      className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50 w-full"
-                    >
-                      <Wand2 className="h-4 w-4" />
-                      Magic Background Remover (AI)
-                    </Button>
                   </div>
                 </div>
+              </div>
+
+              {/* Alt-Text for SEO/Accessibility */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Image Alt Text (SEO/Accessibility)</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Grilled salmon with lemon butter sauce"
+                  value={dishForm.imageAlt}
+                  onChange={(e) => setDishForm({ ...dishForm, imageAlt: e.target.value })}
+                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">Describe the image for screen readers and SEO</p>
               </div>
 
               <div>
@@ -525,6 +486,19 @@ export default function MenuPage() {
                     Add
                   </Button>
                 </div>
+              </div>
+
+              {/* Keywords for SEO */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Keywords</label>
+                <input
+                  type="text"
+                  placeholder="e.g., salmon, grilled, healthy, dinner"
+                  value={dishForm.keywords}
+                  onChange={(e) => setDishForm({ ...dishForm, keywords: e.target.value })}
+                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">Comma-separated keywords to help your menu rank in search results</p>
               </div>
             </div>
 
