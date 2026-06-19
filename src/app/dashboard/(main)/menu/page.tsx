@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic';
+
 interface Category {
   id: string;
   name: string;

@@ -5,6 +5,8 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic';
+
 // Utility function to calculate brightness and determine text color
 function getContrastColor(hexColor: string): string {
   // Remove hash if present
