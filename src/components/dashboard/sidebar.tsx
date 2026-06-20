@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, LayoutTemplate, Palette, Calendar, Settings, User, ChevronDown, Building2, X } from "lucide-react";
+import { Home, LayoutTemplate, Palette, Calendar, Settings, User, ChevronDown, Building2, X, QrCode } from "lucide-react";
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
 
@@ -19,6 +19,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     { icon: Home, label: "Home", href: "/dashboard" },
     { icon: LayoutTemplate, label: "Menu Builder", href: "/dashboard/menu" },
     { icon: Palette, label: "Branding & Design", href: "/dashboard/branding" },
+    { icon: QrCode, label: "QR Code", href: "/dashboard/qr" },
     { icon: Calendar, label: "Reservations", href: "/dashboard/reservations", subtitle: "Coming Soon" },
     { icon: Settings, label: "Settings", href: "/dashboard/settings" },
   ];

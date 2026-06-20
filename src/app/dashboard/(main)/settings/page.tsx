@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, QrCode, Download } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 
 interface OperatingHour {
   day: string;
@@ -25,13 +25,11 @@ export default function SettingsPage() {
     { day: "Sunday", isOpen: true, startTime: "10:00", endTime: "21:00" },
   ]);
   const [maxCapacity, setMaxCapacity] = useState(20);
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (currentRestaurant) {
       loadRestaurantData();
-      generateQrCode();
     }
   }, [currentRestaurant]);
 
@@ -100,23 +98,6 @@ export default function SettingsPage() {
     const newHours = [...operatingHours];
     newHours[index] = { ...newHours[index], [field]: value };
     setOperatingHours(newHours);
-  }
-
-  function generateQrCode() {
-    if (!currentRestaurant) return;
-    const baseUrl = window.location.origin;
-    const restaurantUrl = `${baseUrl}/${currentRestaurant.slug}?table=true`;
-    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(restaurantUrl)}`);
-  }
-
-  function downloadQrCode() {
-    const link = document.createElement('a');
-    link.href = qrCodeUrl;
-    link.download = `qr-code-${currentRestaurant?.slug || 'restaurant'}.png`;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   }
 
   if (loading) return <div>Loading...</div>;
@@ -200,35 +181,6 @@ export default function SettingsPage() {
           </div>
           
           <Button className="mt-4" onClick={saveMaxCapacity}>Save Capacity Settings</Button>
-        </div>
-
-        {/* QR Code Generator */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <QrCode className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">QR Code Generator</h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-4">Generate a QR code for your in-house menu</p>
-          
-          <div className="flex items-start gap-6">
-            <div className="p-4 border border-gray-200 rounded-lg bg-white">
-              {qrCodeUrl && (
-                <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
-              )}
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-2">
-                This QR code links to your restaurant's menu with the in-house layout view.
-              </p>
-              <p className="text-xs text-gray-500 mb-4">
-                URL: {window.location.origin}/{currentRestaurant.slug}?table=true
-              </p>
-              <Button onClick={downloadQrCode} className="gap-2">
-                <Download className="h-4 w-4" />
-                Download QR Code
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
