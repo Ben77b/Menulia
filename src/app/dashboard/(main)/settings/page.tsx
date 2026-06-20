@@ -4,13 +4,19 @@ import { useState, useEffect } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, Link2 } from "lucide-react";
+import { Clock, Users, Link2, Trash2, Plus } from "lucide-react";
 
 interface OperatingHour {
   day: string;
   isOpen: boolean;
   startTime: string;
   endTime: string;
+}
+
+interface CustomLink {
+  id: string;
+  label: string;
+  url: string;
 }
 
 export default function SettingsPage() {
@@ -25,9 +31,7 @@ export default function SettingsPage() {
     { day: "Sunday", isOpen: true, startTime: "10:00", endTime: "21:00" },
   ]);
   const [maxCapacity, setMaxCapacity] = useState(20);
-  const [instagramUrl, setInstagramUrl] = useState("");
-  const [facebookUrl, setFacebookUrl] = useState("");
-  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +47,7 @@ export default function SettingsPage() {
     try {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('operating_hours, max_capacity, external_links, footer_slogan')
+        .select('operating_hours, max_capacity, custom_links, footer_slogan')
         .eq('id', currentRestaurant.id)
         .single();
 
@@ -56,10 +60,8 @@ export default function SettingsPage() {
         if (data.max_capacity) {
           setMaxCapacity(data.max_capacity);
         }
-        if (data.external_links) {
-          setInstagramUrl(data.external_links.instagram || "");
-          setFacebookUrl(data.external_links.facebook || "");
-          setWebsiteUrl(data.external_links.website || "");
+        if (data.custom_links) {
+          setCustomLinks(data.custom_links);
         }
         if (data.footer_slogan) {
           setFooterSlogan(data.footer_slogan || "");
@@ -113,11 +115,7 @@ export default function SettingsPage() {
       const { error } = await supabase
         .from('restaurants')
         .update({
-          external_links: {
-            instagram: instagramUrl,
-            facebook: facebookUrl,
-            website: websiteUrl,
-          },
+          custom_links: customLinks,
           footer_slogan: footerSlogan,
           updated_at: new Date().toISOString(),
         })
@@ -135,6 +133,25 @@ export default function SettingsPage() {
     const newHours = [...operatingHours];
     newHours[index] = { ...newHours[index], [field]: value };
     setOperatingHours(newHours);
+  }
+
+  function addCustomLink() {
+    const newLink: CustomLink = {
+      id: Date.now().toString(),
+      label: "",
+      url: "",
+    };
+    setCustomLinks([...customLinks, newLink]);
+  }
+
+  function removeCustomLink(id: string) {
+    setCustomLinks(customLinks.filter(link => link.id !== id));
+  }
+
+  function updateCustomLink(id: string, field: keyof CustomLink, value: string) {
+    setCustomLinks(customLinks.map(link => 
+      link.id === id ? { ...link, [field]: value } : link
+    ));
   }
 
   if (loading) return <div>Loading...</div>;
@@ -229,41 +246,57 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-600 mb-4">Configure external links and footer content for your public menu page</p>
           
           <div className="grid grid-cols-2 gap-6">
-            {/* Left: External Links */}
+            {/* Left: Custom Links */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">External Links</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Instagram URL</label>
-                  <input
-                    type="url"
-                    value={instagramUrl}
-                    onChange={(e) => setInstagramUrl(e.target.value)}
-                    placeholder="https://instagram.com/yourrestaurant"
-                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Facebook URL</label>
-                  <input
-                    type="url"
-                    value={facebookUrl}
-                    onChange={(e) => setFacebookUrl(e.target.value)}
-                    placeholder="https://facebook.com/yourrestaurant"
-                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Website URL</label>
-                  <input
-                    type="url"
-                    value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value)}
-                    placeholder="https://yourrestaurant.com"
-                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCustomLink}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Link
+                </Button>
               </div>
+              
+              {customLinks.length === 0 ? (
+                <p className="text-xs text-gray-500 italic">No custom links added yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {customLinks.map((link) => (
+                    <div key={link.id} className="flex items-start gap-2 p-3 border border-gray-200 rounded-lg">
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          value={link.label}
+                          onChange={(e) => updateCustomLink(link.id, 'label', e.target.value)}
+                          placeholder="Link label (e.g., TripAdvisor)"
+                          className="w-full h-9 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        />
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) => updateCustomLink(link.id, 'url', e.target.value)}
+                          placeholder="https://..."
+                          className="w-full h-9 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeCustomLink(link.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Right: Footer Slogan */}

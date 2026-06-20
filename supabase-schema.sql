@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   typography JSONB DEFAULT '{"selectedPreset":"minimalist-cafe","customHeadingFont":"","customBodyFont":""}'::jsonb,
   external_links JSONB DEFAULT '{"instagram":"","facebook":"","website":""}'::jsonb,
   footer_slogan TEXT DEFAULT '',
+  custom_links JSONB DEFAULT '[]'::jsonb,
   operating_hours JSONB DEFAULT '[
     {"day":"Monday","isOpen":true,"startTime":"09:00","endTime":"22:00"},
     {"day":"Tuesday","isOpen":true,"startTime":"09:00","endTime":"22:00"},
