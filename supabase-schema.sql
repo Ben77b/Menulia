@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
   logo TEXT,
   theme_colors JSONB DEFAULT '{"color1":"#FFFFFF","color2":"#F3F4F6","color3":"#FFFFFF","matchMainBackground":false}'::jsonb,
   typography JSONB DEFAULT '{"selectedPreset":"minimalist-cafe","customHeadingFont":"","customBodyFont":""}'::jsonb,
+  external_links JSONB DEFAULT '{"instagram":"","facebook":"","website":""}'::jsonb,
+  footer_slogan TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

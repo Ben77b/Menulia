@@ -39,6 +39,12 @@ export default function BrandingPage() {
   const headingFontInputRef = useRef<HTMLInputElement>(null);
   const bodyFontInputRef = useRef<HTMLInputElement>(null);
 
+  // External links and footer state
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [footerSlogan, setFooterSlogan] = useState("");
+
   // Font presets
   const fontPresets = [
     {
@@ -92,7 +98,7 @@ export default function BrandingPage() {
     try {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('theme_colors, typography')
+        .select('theme_colors, typography, external_links, footer_slogan')
         .eq('id', currentRestaurant.id)
         .single();
 
@@ -110,6 +116,16 @@ export default function BrandingPage() {
           setSelectedPreset(data.typography.selectedPreset || "minimalist-cafe");
           setCustomHeadingFont(data.typography.customHeadingFont || "");
           setCustomBodyFont(data.typography.customBodyFont || "");
+        }
+
+        if (data.external_links) {
+          setInstagramUrl(data.external_links.instagram || "");
+          setFacebookUrl(data.external_links.facebook || "");
+          setWebsiteUrl(data.external_links.website || "");
+        }
+
+        if (data.footer_slogan) {
+          setFooterSlogan(data.footer_slogan || "");
         }
       }
     } catch (error) {
@@ -139,7 +155,7 @@ export default function BrandingPage() {
     if (currentRestaurant) {
       saveRestaurantData();
     }
-  }, [color1, color2, color3, matchMainBackground, selectedPreset, customHeadingFont, customBodyFont, currentRestaurant]);
+  }, [color1, color2, color3, matchMainBackground, selectedPreset, customHeadingFont, customBodyFont, instagramUrl, facebookUrl, websiteUrl, footerSlogan, currentRestaurant]);
 
   async function saveRestaurantData() {
     if (!currentRestaurant) return;
@@ -159,6 +175,12 @@ export default function BrandingPage() {
             customHeadingFont,
             customBodyFont,
           },
+          external_links: {
+            instagram: instagramUrl,
+            facebook: facebookUrl,
+            website: websiteUrl,
+          },
+          footer_slogan: footerSlogan,
           updated_at: new Date().toISOString(),
         })
         .eq('id', currentRestaurant.id);
@@ -178,6 +200,12 @@ export default function BrandingPage() {
         customHeadingFont,
         customBodyFont,
       }));
+      localStorage.setItem(`branding-external-links-${currentRestaurant.id}`, JSON.stringify({
+        instagram: instagramUrl,
+        facebook: facebookUrl,
+        website: websiteUrl,
+      }));
+      localStorage.setItem(`branding-footer-slogan-${currentRestaurant.id}`, footerSlogan);
     }
   }
 
@@ -234,11 +262,17 @@ export default function BrandingPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-6">
-      {/* Left Panel - Controls (1/3 width) */}
-      <div className="w-1/3 bg-white rounded-xl border border-gray-100 shadow-sm p-6 overflow-y-auto">
+    <div className="space-y-6">
+      <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Branding & Design</h1>
-        <p className="text-sm text-gray-600 mb-6">Customize your menu's appearance</p>
+        <p className="text-sm text-gray-600">Customize your menu's appearance</p>
+      </div>
+
+      {/* Full-page width workspace with balanced two-column grid */}
+      <div className="grid grid-cols-2 gap-6">
+        {/* Column 1: Color Editors and Canvas Matrix tools */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Color Configuration</h2>
 
         {/* Color 1: Wrapper Background */}
         <div className="mb-6">
@@ -336,9 +370,59 @@ export default function BrandingPage() {
           </div>
         </div>
 
-        {/* Typography Section */}
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Typography</h2>
+        {/* Contrast Preview */}
+        <div className="mt-8 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Contrast Preview</h3>
+          <div className="space-y-2">
+            <div
+              className="p-3 rounded-lg flex items-center justify-between"
+              style={{ backgroundColor: color1 }}
+            >
+              <span style={{ color: getContrastColor(color1) }}>
+                Wrapper Background
+              </span>
+              <span
+                className="text-xs font-mono"
+                style={{ color: getContrastColor(color1) }}
+              >
+                {getContrastColor(color1)}
+              </span>
+            </div>
+            <div
+              className="p-3 rounded-lg flex items-center justify-between"
+              style={{ backgroundColor: color2 }}
+            >
+              <span style={{ color: getContrastColor(color2) }}>
+                Category Bar
+              </span>
+              <span
+                className="text-xs font-mono"
+                style={{ color: getContrastColor(color2) }}
+              >
+                {getContrastColor(color2)}
+              </span>
+            </div>
+            <div
+              className="p-3 rounded-lg flex items-center justify-between"
+              style={{ backgroundColor: color3 }}
+            >
+              <span style={{ color: getContrastColor(color3) }}>
+                Main Canvas
+              </span>
+              <span
+                className="text-xs font-mono"
+                style={{ color: getContrastColor(color3) }}
+              >
+                {getContrastColor(color3)}
+              </span>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        {/* Column 2: Typography selection cards and Footer & Branding Settings */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Typography & Branding</h2>
           
           {/* Font Packs */}
           <div className="mb-8">
@@ -389,7 +473,7 @@ export default function BrandingPage() {
           </div>
 
           {/* Custom Fonts */}
-          <div>
+          <div className="mb-8">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Custom Fonts</h3>
             <div className="space-y-6">
               {/* Heading Font */}
@@ -455,53 +539,65 @@ export default function BrandingPage() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Contrast Preview */}
-        <div className="mt-8 p-4 border border-gray-200 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Contrast Preview</h3>
-          <div className="space-y-2">
-            <div
-              className="p-3 rounded-lg flex items-center justify-between"
-              style={{ backgroundColor: color1 }}
-            >
-              <span style={{ color: getContrastColor(color1) }}>
-                Wrapper Background
-              </span>
-              <span
-                className="text-xs font-mono"
-                style={{ color: getContrastColor(color1) }}
-              >
-                {getContrastColor(color1)}
-              </span>
+          {/* Footer & Branding Settings */}
+          <div className="pt-8 border-t border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-4">Footer & Branding Settings</h3>
+            
+            {/* External Links */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                External Links
+              </label>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Instagram URL</label>
+                  <input
+                    type="url"
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    placeholder="https://instagram.com/yourrestaurant"
+                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={facebookUrl}
+                    onChange={(e) => setFacebookUrl(e.target.value)}
+                    placeholder="https://facebook.com/yourrestaurant"
+                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Website URL</label>
+                  <input
+                    type="url"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    placeholder="https://yourrestaurant.com"
+                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
             </div>
-            <div
-              className="p-3 rounded-lg flex items-center justify-between"
-              style={{ backgroundColor: color2 }}
-            >
-              <span style={{ color: getContrastColor(color2) }}>
-                Category Bar
-              </span>
-              <span
-                className="text-xs font-mono"
-                style={{ color: getContrastColor(color2) }}
-              >
-                {getContrastColor(color2)}
-              </span>
-            </div>
-            <div
-              className="p-3 rounded-lg flex items-center justify-between"
-              style={{ backgroundColor: color3 }}
-            >
-              <span style={{ color: getContrastColor(color3) }}>
-                Main Canvas
-              </span>
-              <span
-                className="text-xs font-mono"
-                style={{ color: getContrastColor(color3) }}
-              >
-                {getContrastColor(color3)}
-              </span>
+
+            {/* Footer Slogan / Note */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Footer Slogan / Note
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Add a custom note to display in your menu footer
+              </p>
+              <textarea
+                value={footerSlogan}
+                onChange={(e) => setFooterSlogan(e.target.value)}
+                placeholder="We recommend reservations after 12 PM"
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+              />
             </div>
           </div>
         </div>
