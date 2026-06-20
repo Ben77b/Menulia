@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Users } from "lucide-react";
+import { Clock, Users, Link2 } from "lucide-react";
 
 interface OperatingHour {
   day: string;
@@ -25,6 +25,10 @@ export default function SettingsPage() {
     { day: "Sunday", isOpen: true, startTime: "10:00", endTime: "21:00" },
   ]);
   const [maxCapacity, setMaxCapacity] = useState(20);
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [footerSlogan, setFooterSlogan] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +43,7 @@ export default function SettingsPage() {
     try {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('operating_hours, max_capacity')
+        .select('operating_hours, max_capacity, external_links, footer_slogan')
         .eq('id', currentRestaurant.id)
         .single();
 
@@ -51,6 +55,14 @@ export default function SettingsPage() {
         }
         if (data.max_capacity) {
           setMaxCapacity(data.max_capacity);
+        }
+        if (data.external_links) {
+          setInstagramUrl(data.external_links.instagram || "");
+          setFacebookUrl(data.external_links.facebook || "");
+          setWebsiteUrl(data.external_links.website || "");
+        }
+        if (data.footer_slogan) {
+          setFooterSlogan(data.footer_slogan || "");
         }
       }
     } catch (error) {
@@ -91,6 +103,31 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error saving max capacity:', error);
       alert("Failed to save max capacity");
+    }
+  }
+
+  async function saveFooterSettings() {
+    if (!currentRestaurant) return;
+
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({
+          external_links: {
+            instagram: instagramUrl,
+            facebook: facebookUrl,
+            website: websiteUrl,
+          },
+          footer_slogan: footerSlogan,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentRestaurant.id);
+
+      if (error) throw error;
+      alert("Footer settings saved!");
+    } catch (error) {
+      console.error('Error saving footer settings:', error);
+      alert("Failed to save footer settings");
     }
   }
 
@@ -181,6 +218,71 @@ export default function SettingsPage() {
           </div>
           
           <Button className="mt-4" onClick={saveMaxCapacity}>Save Capacity Settings</Button>
+        </div>
+
+        {/* Public Page Footer & Links Settings */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Link2 className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Public Page Footer & Links Settings</h2>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">Configure external links and footer content for your public menu page</p>
+          
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left: External Links */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">External Links</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Instagram URL</label>
+                  <input
+                    type="url"
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    placeholder="https://instagram.com/yourrestaurant"
+                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={facebookUrl}
+                    onChange={(e) => setFacebookUrl(e.target.value)}
+                    placeholder="https://facebook.com/yourrestaurant"
+                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Website URL</label>
+                  <input
+                    type="url"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    placeholder="https://yourrestaurant.com"
+                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Footer Slogan */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Footer Slogan / Note</h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Add a custom note to display in your menu footer
+              </p>
+              <textarea
+                value={footerSlogan}
+                onChange={(e) => setFooterSlogan(e.target.value)}
+                placeholder="We recommend reservations after 12 PM"
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+              />
+            </div>
+          </div>
+          
+          <Button className="mt-4" onClick={saveFooterSettings}>Save Footer Settings</Button>
         </div>
       </div>
     </div>

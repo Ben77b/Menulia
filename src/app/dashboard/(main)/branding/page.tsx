@@ -39,11 +39,6 @@ export default function BrandingPage() {
   const headingFontInputRef = useRef<HTMLInputElement>(null);
   const bodyFontInputRef = useRef<HTMLInputElement>(null);
 
-  // External links and footer state
-  const [instagramUrl, setInstagramUrl] = useState("");
-  const [facebookUrl, setFacebookUrl] = useState("");
-  const [websiteUrl, setWebsiteUrl] = useState("");
-  const [footerSlogan, setFooterSlogan] = useState("");
 
   // Font presets
   const fontPresets = [
@@ -98,7 +93,7 @@ export default function BrandingPage() {
     try {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('theme_colors, typography, external_links, footer_slogan')
+        .select('theme_colors, typography')
         .eq('id', currentRestaurant.id)
         .single();
 
@@ -116,16 +111,6 @@ export default function BrandingPage() {
           setSelectedPreset(data.typography.selectedPreset || "minimalist-cafe");
           setCustomHeadingFont(data.typography.customHeadingFont || "");
           setCustomBodyFont(data.typography.customBodyFont || "");
-        }
-
-        if (data.external_links) {
-          setInstagramUrl(data.external_links.instagram || "");
-          setFacebookUrl(data.external_links.facebook || "");
-          setWebsiteUrl(data.external_links.website || "");
-        }
-
-        if (data.footer_slogan) {
-          setFooterSlogan(data.footer_slogan || "");
         }
       }
     } catch (error) {
@@ -155,7 +140,7 @@ export default function BrandingPage() {
     if (currentRestaurant) {
       saveRestaurantData();
     }
-  }, [color1, color2, color3, matchMainBackground, selectedPreset, customHeadingFont, customBodyFont, instagramUrl, facebookUrl, websiteUrl, footerSlogan, currentRestaurant]);
+  }, [color1, color2, color3, matchMainBackground, selectedPreset, customHeadingFont, customBodyFont, currentRestaurant]);
 
   async function saveRestaurantData() {
     if (!currentRestaurant) return;
@@ -175,12 +160,6 @@ export default function BrandingPage() {
             customHeadingFont,
             customBodyFont,
           },
-          external_links: {
-            instagram: instagramUrl,
-            facebook: facebookUrl,
-            website: websiteUrl,
-          },
-          footer_slogan: footerSlogan,
           updated_at: new Date().toISOString(),
         })
         .eq('id', currentRestaurant.id);
@@ -200,12 +179,6 @@ export default function BrandingPage() {
         customHeadingFont,
         customBodyFont,
       }));
-      localStorage.setItem(`branding-external-links-${currentRestaurant.id}`, JSON.stringify({
-        instagram: instagramUrl,
-        facebook: facebookUrl,
-        website: websiteUrl,
-      }));
-      localStorage.setItem(`branding-footer-slogan-${currentRestaurant.id}`, footerSlogan);
     }
   }
 
@@ -544,64 +517,6 @@ export default function BrandingPage() {
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Footer & Branding Settings Card */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Footer & Branding Settings</h2>
-          <div className="grid grid-cols-2 gap-6">
-            {/* Left: External Links */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">External Links</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Instagram URL</label>
-                  <input
-                    type="url"
-                    value={instagramUrl}
-                    onChange={(e) => setInstagramUrl(e.target.value)}
-                    placeholder="https://instagram.com/yourrestaurant"
-                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Facebook URL</label>
-                  <input
-                    type="url"
-                    value={facebookUrl}
-                    onChange={(e) => setFacebookUrl(e.target.value)}
-                    placeholder="https://facebook.com/yourrestaurant"
-                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Website URL</label>
-                  <input
-                    type="url"
-                    value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value)}
-                    placeholder="https://yourrestaurant.com"
-                    className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Footer Slogan */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Footer Slogan / Note</h3>
-              <p className="text-xs text-gray-500 mb-3">
-                Add a custom note to display in your menu footer
-              </p>
-              <textarea
-                value={footerSlogan}
-                onChange={(e) => setFooterSlogan(e.target.value)}
-                placeholder="We recommend reservations after 12 PM"
-                rows={6}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
-              />
             </div>
           </div>
         </div>
