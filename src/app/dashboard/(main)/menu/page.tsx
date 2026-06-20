@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 interface Category {
   id: string;
   name: string;
+  layout_type: 'stacked' | 'carousel';
   items: MenuItem[];
 }
 
@@ -34,6 +35,7 @@ export default function MenuPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryLayoutType, setNewCategoryLayoutType] = useState<'stacked' | 'carousel'>('stacked');
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
   const [draggedDishIndex, setDraggedDishIndex] = useState<number | null>(null);
@@ -88,6 +90,7 @@ export default function MenuPage() {
           return {
             id: category.id,
             name: category.name,
+            layout_type: (category.layout_type as 'stacked' | 'carousel') || 'stacked',
             items: (dishesData || []).map((dish) => ({
               id: dish.id,
               name: dish.name,
@@ -171,6 +174,7 @@ export default function MenuPage() {
             .from('categories')
             .update({
               name: category.name,
+              layout_type: category.layout_type,
               order_index: i,
               updated_at: new Date().toISOString(),
             })
@@ -183,6 +187,7 @@ export default function MenuPage() {
               id: category.id,
               restaurant_id: currentRestaurant.id,
               name: category.name,
+              layout_type: category.layout_type,
               order_index: i,
             });
 
@@ -256,15 +261,25 @@ export default function MenuPage() {
     const newCategory: Category = {
       id: `cat-${Date.now()}`,
       name: newCategoryName,
+      layout_type: newCategoryLayoutType,
       items: [],
     };
     setCategories([...categories, newCategory]);
     setNewCategoryName("");
+    setNewCategoryLayoutType('stacked');
     setShowAddCategory(false);
   }
 
   function handleDeleteCategory(categoryId: string) {
     setCategories(categories.filter((cat) => cat.id !== categoryId));
+  }
+
+  function handleCategoryLayoutTypeChange(categoryId: string, layoutType: 'stacked' | 'carousel') {
+    setCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === categoryId ? { ...cat, layout_type: layoutType } : cat
+      )
+    );
   }
 
   function handleAddDish(categoryId: string) {
@@ -502,7 +517,36 @@ export default function MenuPage() {
             className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
           />
-          <div className="flex gap-2 mt-2">
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Display Layout
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setNewCategoryLayoutType('stacked')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  newCategoryLayoutType === 'stacked'
+                    ? "bg-indigo-100 text-indigo-700 border border-indigo-200"
+                    : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                Stacked List
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewCategoryLayoutType('carousel')}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  newCategoryLayoutType === 'carousel'
+                    ? "bg-indigo-100 text-indigo-700 border border-indigo-200"
+                    : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                }`}
+              >
+                Infinite Carousel
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-3">
             <Button size="sm" onClick={handleAddCategory}>
               Add Category
             </Button>
@@ -537,6 +581,30 @@ export default function MenuPage() {
                   <span className="text-sm text-gray-500">({category.items.length} dishes)</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <div className="flex gap-1 mr-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCategoryLayoutTypeChange(category.id, 'stacked')}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                        category.layout_type === 'stacked'
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      Stacked
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCategoryLayoutTypeChange(category.id, 'carousel')}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                        category.layout_type === 'carousel'
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      Carousel
+                    </button>
+                  </div>
                   <Button
                     size="sm"
                     onClick={() => handleAddDish(category.id)}

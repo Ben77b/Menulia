@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS categories (
   restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   order_index INTEGER DEFAULT 0,
+  layout_type TEXT DEFAULT 'stacked' CHECK (layout_type IN ('stacked', 'carousel')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
