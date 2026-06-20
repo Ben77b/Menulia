@@ -7,6 +7,16 @@ CREATE TABLE IF NOT EXISTS restaurants (
   typography JSONB DEFAULT '{"selectedPreset":"minimalist-cafe","customHeadingFont":"","customBodyFont":""}'::jsonb,
   external_links JSONB DEFAULT '{"instagram":"","facebook":"","website":""}'::jsonb,
   footer_slogan TEXT DEFAULT '',
+  operating_hours JSONB DEFAULT '[
+    {"day":"Monday","isOpen":true,"startTime":"09:00","endTime":"22:00"},
+    {"day":"Tuesday","isOpen":true,"startTime":"09:00","endTime":"22:00"},
+    {"day":"Wednesday","isOpen":true,"startTime":"09:00","endTime":"22:00"},
+    {"day":"Thursday","isOpen":true,"startTime":"09:00","endTime":"22:00"},
+    {"day":"Friday","isOpen":true,"startTime":"09:00","endTime":"23:00"},
+    {"day":"Saturday","isOpen":true,"startTime":"10:00","endTime":"23:00"},
+    {"day":"Sunday","isOpen":true,"startTime":"10:00","endTime":"21:00"}
+  ]'::jsonb,
+  max_capacity INTEGER DEFAULT 20,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
