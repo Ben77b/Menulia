@@ -268,287 +268,293 @@ export default function BrandingPage() {
         <p className="text-sm text-gray-600">Customize your menu's appearance</p>
       </div>
 
-      {/* Full-page width workspace with balanced two-column grid */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Column 1: Color Editors and Canvas Matrix tools */}
+      {/* Single centered full-width container with sectioned cards */}
+      <div className="space-y-6">
+        {/* Section 1: Color Configuration Card */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Color Configuration</h2>
-
-        {/* Color 1: Wrapper Background */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Wrapper Background
-          </label>
-          <p className="text-xs text-gray-500 mb-3">
-            Outer page layout, header, and footer of the public menu
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={color1}
-              onChange={(e) => handleColor1Change(e.target.value)}
-              className="h-12 w-12 rounded-lg border border-gray-200 cursor-pointer"
-            />
-            <input
-              type="text"
-              value={color1}
-              onChange={(e) => handleColor1Change(e.target.value)}
-              className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="#FFFFFF"
-            />
-          </div>
-        </div>
-
-        {/* Color 2: Category Navigation Bar */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Category Navigation Bar
-          </label>
-          <p className="text-xs text-gray-500 mb-3">
-            Sticky category anchor link menu
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={color2}
-              onChange={(e) => handleColor2Change(e.target.value)}
-              disabled={matchMainBackground}
-              className={`h-12 w-12 rounded-lg border border-gray-200 cursor-pointer ${
-                matchMainBackground ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            />
-            <input
-              type="text"
-              value={color2}
-              onChange={(e) => handleColor2Change(e.target.value)}
-              disabled={matchMainBackground}
-              className={`flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
-                matchMainBackground ? "opacity-50 cursor-not-allowed bg-gray-50" : ""
-              }`}
-              placeholder="#F3F4F6"
-            />
-          </div>
-          <div className="mt-3 flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="matchMainBackground"
-              checked={matchMainBackground}
-              onChange={(e) => handleMatchToggle(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <label
-              htmlFor="matchMainBackground"
-              className="text-sm text-gray-700 cursor-pointer"
-            >
-              Match main background color
-            </label>
-          </div>
-        </div>
-
-        {/* Color 3: Main Canvas Background */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Main Canvas Background
-          </label>
-          <p className="text-xs text-gray-500 mb-3">
-            Inner section directly behind the food cards
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={color3}
-              onChange={(e) => handleColor3Change(e.target.value)}
-              className="h-12 w-12 rounded-lg border border-gray-200 cursor-pointer"
-            />
-            <input
-              type="text"
-              value={color3}
-              onChange={(e) => handleColor3Change(e.target.value)}
-              className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              placeholder="#FFFFFF"
-            />
-          </div>
-        </div>
-
-        {/* Contrast Preview */}
-        <div className="mt-8 p-4 border border-gray-200 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Contrast Preview</h3>
-          <div className="space-y-2">
-            <div
-              className="p-3 rounded-lg flex items-center justify-between"
-              style={{ backgroundColor: color1 }}
-            >
-              <span style={{ color: getContrastColor(color1) }}>
-                Wrapper Background
-              </span>
-              <span
-                className="text-xs font-mono"
-                style={{ color: getContrastColor(color1) }}
-              >
-                {getContrastColor(color1)}
-              </span>
-            </div>
-            <div
-              className="p-3 rounded-lg flex items-center justify-between"
-              style={{ backgroundColor: color2 }}
-            >
-              <span style={{ color: getContrastColor(color2) }}>
-                Category Bar
-              </span>
-              <span
-                className="text-xs font-mono"
-                style={{ color: getContrastColor(color2) }}
-              >
-                {getContrastColor(color2)}
-              </span>
-            </div>
-            <div
-              className="p-3 rounded-lg flex items-center justify-between"
-              style={{ backgroundColor: color3 }}
-            >
-              <span style={{ color: getContrastColor(color3) }}>
-                Main Canvas
-              </span>
-              <span
-                className="text-xs font-mono"
-                style={{ color: getContrastColor(color3) }}
-              >
-                {getContrastColor(color3)}
-              </span>
-            </div>
-          </div>
-        </div>
-        </div>
-
-        {/* Column 2: Typography selection cards and Footer & Branding Settings */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Typography & Branding</h2>
-          
-          {/* Font Packs */}
-          <div className="mb-8">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Font Packs</h3>
-            <div className="space-y-3">
-              {fontPresets.map((preset) => {
-                const currentPreset = fontPresets.find(p => p.id === selectedPreset);
-                const headingFont = currentPreset?.headingFont || "Inter";
-                const bodyFont = currentPreset?.bodyFont || "Inter";
-                
-                return (
-                  <button
-                    key={preset.id}
-                    onClick={() => setSelectedPreset(preset.id)}
-                    className={`w-full p-4 rounded-lg border text-left transition-all ${
-                      selectedPreset === preset.id
-                        ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
-                        : "border-gray-200 hover:border-gray-300 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 
-                          className="font-medium text-gray-900"
-                          style={{ fontFamily: preset.headingFont }}
-                        >
-                          {preset.name}
-                        </h3>
-                        <p 
-                          className="text-sm text-gray-600 mt-2"
-                          style={{ fontFamily: preset.bodyFont }}
-                        >
-                          The quick brown fox jumps over the lazy dog.
-                        </p>
-                      </div>
-                      {selectedPreset === preset.id && (
-                        <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center ml-3">
-                          <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Custom Fonts */}
-          <div className="mb-8">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Custom Fonts</h3>
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left: Color inputs */}
             <div className="space-y-6">
-              {/* Heading Font */}
+              {/* Color 1: Wrapper Background */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Heading Font
+                  Wrapper Background
                 </label>
                 <p className="text-xs text-gray-500 mb-3">
-                  Applies to Titles, Categories, and Dish Names (.woff2 / .ttf)
+                  Outer page layout, header, and footer of the public menu
                 </p>
-                <input
-                  type="file"
-                  ref={headingFontInputRef}
-                  onChange={handleHeadingFontUpload}
-                  accept=".woff2,.ttf"
-                  className="hidden"
-                />
-                <button
-                  onClick={() => headingFontInputRef.current?.click()}
-                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Upload className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600">
-                    {customHeadingFont ? "Font uploaded" : "Upload heading font"}
-                  </span>
-                </button>
-                {customHeadingFont && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Font file uploaded successfully
-                  </p>
-                )}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={color1}
+                    onChange={(e) => handleColor1Change(e.target.value)}
+                    className="h-12 w-12 rounded-lg border border-gray-200 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={color1}
+                    onChange={(e) => handleColor1Change(e.target.value)}
+                    className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="#FFFFFF"
+                  />
+                </div>
               </div>
 
-              {/* Body Font */}
+              {/* Color 2: Category Navigation Bar */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Body Font
+                  Category Navigation Bar
                 </label>
                 <p className="text-xs text-gray-500 mb-3">
-                  Applies to Descriptions, Prices, and Tags (.woff2 / .ttf)
+                  Sticky category anchor link menu
                 </p>
-                <input
-                  type="file"
-                  ref={bodyFontInputRef}
-                  onChange={handleBodyFontUpload}
-                  accept=".woff2,.ttf"
-                  className="hidden"
-                />
-                <button
-                  onClick={() => bodyFontInputRef.current?.click()}
-                  className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Upload className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600">
-                    {customBodyFont ? "Font uploaded" : "Upload body font"}
-                  </span>
-                </button>
-                {customBodyFont && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Font file uploaded successfully
-                  </p>
-                )}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={color2}
+                    onChange={(e) => handleColor2Change(e.target.value)}
+                    disabled={matchMainBackground}
+                    className={`h-12 w-12 rounded-lg border border-gray-200 cursor-pointer ${
+                      matchMainBackground ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  />
+                  <input
+                    type="text"
+                    value={color2}
+                    onChange={(e) => handleColor2Change(e.target.value)}
+                    disabled={matchMainBackground}
+                    className={`flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
+                      matchMainBackground ? "opacity-50 cursor-not-allowed bg-gray-50" : ""
+                    }`}
+                    placeholder="#F3F4F6"
+                  />
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="matchMainBackground"
+                    checked={matchMainBackground}
+                    onChange={(e) => handleMatchToggle(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <label
+                    htmlFor="matchMainBackground"
+                    className="text-sm text-gray-700 cursor-pointer"
+                  >
+                    Match main background color
+                  </label>
+                </div>
+              </div>
+
+              {/* Color 3: Main Canvas Background */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Main Canvas Background
+                </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  Inner section directly behind the food cards
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={color3}
+                    onChange={(e) => handleColor3Change(e.target.value)}
+                    className="h-12 w-12 rounded-lg border border-gray-200 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={color3}
+                    onChange={(e) => handleColor3Change(e.target.value)}
+                    className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="#FFFFFF"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Contrast Preview */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Contrast Preview</h3>
+              <div className="p-4 border border-gray-200 rounded-lg">
+                <div className="space-y-2">
+                  <div
+                    className="p-3 rounded-lg flex items-center justify-between"
+                    style={{ backgroundColor: color1 }}
+                  >
+                    <span style={{ color: getContrastColor(color1) }}>
+                      Wrapper Background
+                    </span>
+                    <span
+                      className="text-xs font-mono"
+                      style={{ color: getContrastColor(color1) }}
+                    >
+                      {getContrastColor(color1)}
+                    </span>
+                  </div>
+                  <div
+                    className="p-3 rounded-lg flex items-center justify-between"
+                    style={{ backgroundColor: color2 }}
+                  >
+                    <span style={{ color: getContrastColor(color2) }}>
+                      Category Bar
+                    </span>
+                    <span
+                      className="text-xs font-mono"
+                      style={{ color: getContrastColor(color2) }}
+                    >
+                      {getContrastColor(color2)}
+                    </span>
+                  </div>
+                  <div
+                    className="p-3 rounded-lg flex items-center justify-between"
+                    style={{ backgroundColor: color3 }}
+                  >
+                    <span style={{ color: getContrastColor(color3) }}>
+                      Main Canvas
+                    </span>
+                    <span
+                      className="text-xs font-mono"
+                      style={{ color: getContrastColor(color3) }}
+                    >
+                      {getContrastColor(color3)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Footer & Branding Settings */}
-          <div className="pt-8 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Footer & Branding Settings</h3>
-            
-            {/* External Links */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                External Links
-              </label>
+        {/* Section 2: Typography & Branding Card */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Typography</h2>
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left: Font Packs */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Font Packs</h3>
+              <div className="space-y-3">
+                {fontPresets.map((preset) => {
+                  const currentPreset = fontPresets.find(p => p.id === selectedPreset);
+                  const headingFont = currentPreset?.headingFont || "Inter";
+                  const bodyFont = currentPreset?.bodyFont || "Inter";
+                  
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => setSelectedPreset(preset.id)}
+                      className={`w-full p-4 rounded-lg border text-left transition-all ${
+                        selectedPreset === preset.id
+                          ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
+                          : "border-gray-200 hover:border-gray-300 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 
+                            className="font-medium text-gray-900"
+                            style={{ fontFamily: preset.headingFont }}
+                          >
+                            {preset.name}
+                          </h3>
+                          <p 
+                            className="text-sm text-gray-600 mt-2"
+                            style={{ fontFamily: preset.bodyFont }}
+                          >
+                            The quick brown fox jumps over the lazy dog.
+                          </p>
+                        </div>
+                        {selectedPreset === preset.id && (
+                          <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center ml-3">
+                            <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right: Custom Fonts */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Custom Fonts</h3>
+              <div className="space-y-6">
+                {/* Heading Font */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Heading Font
+                  </label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Applies to Titles, Categories, and Dish Names (.woff2 / .ttf)
+                  </p>
+                  <input
+                    type="file"
+                    ref={headingFontInputRef}
+                    onChange={handleHeadingFontUpload}
+                    accept=".woff2,.ttf"
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => headingFontInputRef.current?.click()}
+                    className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Upload className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {customHeadingFont ? "Font uploaded" : "Upload heading font"}
+                    </span>
+                  </button>
+                  {customHeadingFont && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Font file uploaded successfully
+                    </p>
+                  )}
+                </div>
+
+                {/* Body Font */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Body Font
+                  </label>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Applies to Descriptions, Prices, and Tags (.woff2 / .ttf)
+                  </p>
+                  <input
+                    type="file"
+                    ref={bodyFontInputRef}
+                    onChange={handleBodyFontUpload}
+                    accept=".woff2,.ttf"
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => bodyFontInputRef.current?.click()}
+                    className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Upload className="h-5 w-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">
+                      {customBodyFont ? "Font uploaded" : "Upload body font"}
+                    </span>
+                  </button>
+                  {customBodyFont && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Font file uploaded successfully
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Footer & Branding Settings Card */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Footer & Branding Settings</h2>
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left: External Links */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">External Links</h3>
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Instagram URL</label>
@@ -583,11 +589,9 @@ export default function BrandingPage() {
               </div>
             </div>
 
-            {/* Footer Slogan / Note */}
+            {/* Right: Footer Slogan */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Footer Slogan / Note
-              </label>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Footer Slogan / Note</h3>
               <p className="text-xs text-gray-500 mb-3">
                 Add a custom note to display in your menu footer
               </p>
@@ -595,7 +599,7 @@ export default function BrandingPage() {
                 value={footerSlogan}
                 onChange={(e) => setFooterSlogan(e.target.value)}
                 placeholder="We recommend reservations after 12 PM"
-                rows={3}
+                rows={6}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
               />
             </div>
