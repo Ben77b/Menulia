@@ -14,9 +14,10 @@ interface MenuViewProps {
   restaurant: RestaurantFull;
   language: LanguageCode;
   design: RestaurantDesign;
+  fontClasses?: { heading: string; body: string };
 }
 
-export function MenuView({ restaurant, language, design }: MenuViewProps) {
+export function MenuView({ restaurant, language, design, fontClasses }: MenuViewProps) {
   const [categories, setCategories] = useState(restaurant.categories);
   const [activeCategory, setActiveCategory] = useState(
     restaurant.categories[0]?.id ?? ""
@@ -92,23 +93,23 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col pt-20" style={{ backgroundColor: design.backgroundColor }}>
+    <div className={`flex flex-1 flex-col pt-20 ${fontClasses?.body || ''}`} style={{ backgroundColor: design.mainContentBackgroundColor }}>
       {/* Header with title, slogan */}
-      <div className="shrink-0 px-4 py-6 text-center" style={{ backgroundColor: design.headerColor }}>
+      <div className="shrink-0 px-4 py-6 text-center" style={{ backgroundColor: design.headerFooterBackgroundColor }}>
         {design.restaurantName && (
-          <h1 className="text-2xl font-bold text-center" style={{ color: design.titleColor, fontFamily: design.titleFont }}>
+          <h1 className={`text-2xl font-bold text-center ${fontClasses?.heading || ''}`} style={{ color: design.headerFooterFontColor }}>
             {design.restaurantName}
           </h1>
         )}
         {design.slogan && (
-          <p className="mt-1 text-sm text-center" style={{ color: design.textColor, fontFamily: design.textFont }}>
+          <p className={`mt-1 text-sm text-center ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
             {design.slogan}
           </p>
         )}
       </div>
 
       {/* Category bar - centered, wraps naturally */}
-      <div className="flex shrink-0 justify-center gap-2 flex-wrap px-4 py-3" style={{ backgroundColor: design.headerColor }}>
+      <div className="flex shrink-0 justify-center gap-2 flex-wrap px-4 py-3" style={{ backgroundColor: design.categoryBackgroundColor }}>
         {categories.map((cat: any) => (
           <button
             key={cat.id}
@@ -119,8 +120,8 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
             )}
             style={
               activeCategory === cat.id
-                ? { backgroundColor: design.categoryColor, color: design.categoryTextColor }
-                : { color: design.categoryTextColor }
+                ? { backgroundColor: design.buttonColor, color: "#ffffff" }
+                : { color: design.categoryFontColor }
             }
           >
             {cat.name}
@@ -153,14 +154,14 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
                   </div>
                 )}
                 <div className="flex-1">
-                  <h3 className="font-semibold" style={{ color: design.titleColor, fontFamily: design.titleFont }}>{item.name}</h3>
-                  <p className="mt-1 text-sm line-clamp-2" style={{ color: design.textColor, fontFamily: design.textFont }}>
+                  <h3 className={`font-semibold ${fontClasses?.heading || ''}`} style={{ color: design.mainContentFontColor }}>{item.name}</h3>
+                  <p className={`mt-1 text-sm line-clamp-2 ${fontClasses?.body || ''}`} style={{ color: design.mainContentFontColor }}>
                     {item.description}
                   </p>
                   <div className="mt-2 flex items-center justify-between">
                     <span
-                      className="font-bold"
-                      style={{ color: design.priceColor }}
+                      className={`font-bold ${fontClasses?.body || ''}`}
+                      style={{ color: design.buttonColor }}
                     >
                       {formatPrice(item.price)}
                     </span>
@@ -172,7 +173,7 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
                           return (
                             <span
                               key={tag}
-                              className="flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium"
+                              className={`flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium ${fontClasses?.body || ''}`}
                             >
                               <span className="text-xs">{filter.icon}</span>
                               {filter.label}
@@ -196,7 +197,7 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
             </div>
           ))}
           {filteredItems.length === 0 && (
-            <p className="text-center text-sm" style={{ color: design.textColor }}>
+            <p className={`text-center text-sm ${fontClasses?.body || ''}`} style={{ color: design.mainContentFontColor }}>
               No dishes match your filters.
             </p>
           )}
@@ -204,7 +205,7 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
       )}
 
       {/* Dietary filter icons — bottom, compact */}
-      <div className="flex shrink-0 items-center justify-center gap-2 border-t border-border/50 px-4 py-4" style={{ backgroundColor: design.footerColor }}>
+      <div className="flex shrink-0 items-center justify-center gap-2 border-t border-border/50 px-4 py-4" style={{ backgroundColor: design.headerFooterBackgroundColor }}>
         {DIETARY_FILTERS.map((filter) => {
           const active = activeFilters.has(filter.tag);
           return (
@@ -229,13 +230,13 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
       </div>
 
       {/* Footer */}
-      <footer className="shrink-0 px-6 py-12" style={{ backgroundColor: design.footerColor }}>
+      <footer className="shrink-0 px-6 py-12" style={{ backgroundColor: design.headerFooterBackgroundColor }}>
         <div className="mx-auto max-w-4xl space-y-8">
           {/* Logo - Creative centered design */}
           {design.showFooterLogo && design.logo && (
             <div className="flex flex-col items-center text-center space-y-3">
               <div className="relative">
-                <div className="absolute inset-0 rounded-full opacity-10" style={{ backgroundColor: design.accentColor, transform: 'scale(1.2)' }}></div>
+                <div className="absolute inset-0 rounded-full opacity-10" style={{ backgroundColor: design.buttonColor, transform: 'scale(1.2)' }}></div>
                 <img
                   src={design.logo}
                   alt={design.restaurantName || restaurant.name}
@@ -243,15 +244,15 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
                 />
               </div>
               <h2
-                className="text-2xl font-bold"
-                style={{ color: design.titleColor, fontFamily: design.titleFont }}
+                className={`text-2xl font-bold ${fontClasses?.heading || ''}`}
+                style={{ color: design.headerFooterFontColor }}
               >
                 {design.restaurantName || restaurant.name}
               </h2>
               {design.slogan && (
                 <p
-                  className="text-sm italic"
-                  style={{ color: design.textColor, fontFamily: design.textFont }}
+                  className={`text-sm italic ${fontClasses?.body || ''}`}
+                  style={{ color: design.headerFooterFontColor }}
                 >
                   {design.slogan}
                 </p>
@@ -269,8 +270,8 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-medium hover:opacity-80 transition-opacity underline"
-                    style={{ color: design.accentColor, fontFamily: design.textFont }}
+                    className={`text-sm font-medium hover:opacity-80 transition-opacity underline ${fontClasses?.body || ''}`}
+                    style={{ color: design.buttonColor }}
                   >
                     {link.label}
                   </a>
@@ -283,18 +284,18 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
           {(design.showFooterContact || design.showFooterHours) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {design.showFooterContact && (restaurant.phone || restaurant.email || design.location || design.contactInfo) && (
-                <div className="flex flex-col items-center space-y-3 p-4 rounded-2xl" style={{ backgroundColor: `${design.accentColor}08` }}>
-                  <h3 className="font-bold text-center" style={{ color: design.titleColor, fontFamily: design.titleFont }}>Contact</h3>
+                <div className="flex flex-col items-center space-y-3 p-4 rounded-2xl" style={{ backgroundColor: `${design.buttonColor}08` }}>
+                  <h3 className={`font-bold text-center ${fontClasses?.heading || ''}`} style={{ color: design.headerFooterFontColor }}>Contact</h3>
                   {design.location && (
-                    <p className="text-sm text-center" style={{ color: design.textColor, fontFamily: design.textFont }}>
+                    <p className={`text-sm text-center ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
                       {design.location}
                     </p>
                   )}
                   {restaurant.phone && (
                     <a
                       href={`tel:${restaurant.phone}`}
-                      className="text-sm text-center hover:opacity-80 transition-opacity"
-                      style={{ color: design.accentColor, fontFamily: design.textFont }}
+                      className={`text-sm text-center hover:opacity-80 transition-opacity ${fontClasses?.body || ''}`}
+                      style={{ color: design.buttonColor }}
                     >
                       {restaurant.phone}
                     </a>
@@ -302,25 +303,25 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
                   {restaurant.email && (
                     <a
                       href={`mailto:${restaurant.email}`}
-                      className="text-sm text-center hover:opacity-80 transition-opacity"
-                      style={{ color: design.accentColor, fontFamily: design.textFont }}
+                      className={`text-sm text-center hover:opacity-80 transition-opacity ${fontClasses?.body || ''}`}
+                      style={{ color: design.buttonColor }}
                     >
                       {restaurant.email}
                     </a>
                   )}
                   {design.contactInfo && (
-                    <p className="text-sm text-center" style={{ color: design.textColor, fontFamily: design.textFont }}>
+                    <p className={`text-sm text-center ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
                       {design.contactInfo}
                     </p>
                   )}
                 </div>
               )}
               {design.showFooterHours && restaurant.operating_hours && restaurant.operating_hours.length > 0 && (
-                <div className="flex flex-col items-center space-y-3 p-4 rounded-2xl text-center" style={{ backgroundColor: `${design.accentColor}08` }}>
-                  <h3 className="font-bold" style={{ color: design.titleColor, fontFamily: design.titleFont }}>Hours</h3>
+                <div className="flex flex-col items-center space-y-3 p-4 rounded-2xl text-center" style={{ backgroundColor: `${design.buttonColor}08` }}>
+                  <h3 className={`font-bold ${fontClasses?.heading || ''}`} style={{ color: design.headerFooterFontColor }}>Hours</h3>
                   <div className="space-y-2">
                     {restaurant.operating_hours.map((hour, index) => (
-                      <div key={index} className="text-sm" style={{ color: design.textColor, fontFamily: design.textFont }}>
+                      <div key={index} className={`text-sm ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
                         <span className="font-medium">
                           {hour.day}
                         </span>
@@ -348,17 +349,16 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
             if (tagsArray.length === 0) return null;
             return (
               <div className="flex flex-col items-center space-y-3">
-                <h3 className="font-bold text-center" style={{ color: design.titleColor, fontFamily: design.titleFont }}>Menu Tags</h3>
+                <h3 className={`font-bold text-center ${fontClasses?.heading || ''}`} style={{ color: design.headerFooterFontColor }}>Menu Tags</h3>
                 <div className="flex flex-wrap justify-center gap-2">
                   {tagsArray.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full px-4 py-2 text-xs font-medium border hover:scale-105 transition-transform"
+                      className={`rounded-full px-4 py-2 text-xs font-medium border hover:scale-105 transition-transform ${fontClasses?.body || ''}`}
                       style={{
-                        backgroundColor: `${design.accentColor}12`,
-                        color: design.accentColor,
-                        borderColor: design.accentColor,
-                        fontFamily: design.textFont,
+                        backgroundColor: `${design.buttonColor}12`,
+                        color: design.buttonColor,
+                        borderColor: design.buttonColor,
                       }}
                     >
                       {tag}
