@@ -1,4 +1,3 @@
-export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "completed";
 export type ExpenseCategory = "Staff" | "Inventory" | "Rent" | "Utilities" | "Marketing";
 import type { LanguageCode } from "./languages";
 import type { RestaurantDesign } from "./restaurant-design";
@@ -21,14 +20,12 @@ export interface Restaurant {
   facebook_url: string | null;
   website_url: string | null;
   is_premium: boolean;
-  accepts_reservations: boolean;
   theme_colors: any;
   typography: any;
   external_links: any;
   footer_slogan: string | null;
   custom_links: CustomLink[];
   operating_hours: OperatingHourData[];
-  max_capacity: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,22 +41,6 @@ export interface OperatingHourData {
   isOpen: boolean;
   startTime: string;
   endTime: string;
-}
-
-export interface CustomRestaurantLink {
-  id: string;
-  restaurant_id: string;
-  label: string;
-  url: string;
-}
-
-export interface OperatingHour {
-  id: string;
-  restaurant_id: string;
-  day_of_week: number;
-  open_time: string | null;
-  close_time: string | null;
-  is_closed: boolean;
 }
 
 export interface MenuCategory {
@@ -87,19 +68,6 @@ export interface MenuTranslation {
   language_code: LanguageCode;
   translated_name: string;
   translated_description: string;
-}
-
-export interface Reservation {
-  id: string;
-  restaurant_id: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  date: string;
-  time: string;
-  party_size: number;
-  status: ReservationStatus;
-  special_requests: string | null;
 }
 
 export interface PageView {

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Users, Link2, Trash2, Plus } from "lucide-react";
+import { Clock, Link2, Trash2, Plus } from "lucide-react";
 
 interface OperatingHour {
   day: string;
@@ -30,7 +30,6 @@ export default function SettingsPage() {
     { day: "Saturday", isOpen: true, startTime: "10:00", endTime: "23:00" },
     { day: "Sunday", isOpen: true, startTime: "10:00", endTime: "21:00" },
   ]);
-  const [maxCapacity, setMaxCapacity] = useState(20);
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
   const [loading, setLoading] = useState(true);
@@ -47,7 +46,7 @@ export default function SettingsPage() {
     try {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('operating_hours, max_capacity, custom_links, footer_slogan')
+        .select('operating_hours, custom_links, footer_slogan')
         .eq('id', currentRestaurant.id)
         .single();
 
@@ -56,9 +55,6 @@ export default function SettingsPage() {
       if (data) {
         if (data.operating_hours) {
           setOperatingHours(data.operating_hours);
-        }
-        if (data.max_capacity) {
-          setMaxCapacity(data.max_capacity);
         }
         if (data.custom_links) {
           setCustomLinks(data.custom_links);
@@ -88,23 +84,6 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error saving operating hours:', error);
       alert("Failed to save operating hours");
-    }
-  }
-
-  async function saveMaxCapacity() {
-    if (!currentRestaurant) return;
-
-    try {
-      const { error } = await supabase
-        .from('restaurants')
-        .update({ max_capacity: maxCapacity, updated_at: new Date().toISOString() })
-        .eq('id', currentRestaurant.id);
-
-      if (error) throw error;
-      alert("Max capacity saved!");
-    } catch (error) {
-      console.error('Error saving max capacity:', error);
-      alert("Failed to save max capacity");
     }
   }
 
@@ -208,33 +187,6 @@ export default function SettingsPage() {
           </div>
           
           <Button className="mt-4" onClick={saveOperatingHours}>Save Operating Hours</Button>
-        </div>
-
-        {/* Reservation Settings */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Users className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Reservation Settings</h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-4">Configure your restaurant's capacity for reservations</p>
-          
-          <div className="max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Max Capacity per Time Slot
-            </label>
-            <p className="text-xs text-gray-500 mb-3">
-              Maximum total seats/covers the restaurant can accept every 30 or 60 minutes
-            </p>
-            <input
-              type="number"
-              value={maxCapacity}
-              onChange={(e) => setMaxCapacity(parseInt(e.target.value) || 0)}
-              min="1"
-              className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-            />
-          </div>
-          
-          <Button className="mt-4" onClick={saveMaxCapacity}>Save Capacity Settings</Button>
         </div>
 
         {/* Public Page Footer & Links Settings */}
