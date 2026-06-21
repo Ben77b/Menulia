@@ -128,8 +128,8 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
         ))}
       </div>
 
-      {/* Menu content - carousel or stacked based on design */}
-      {design.menuViewMode === "carousel" ? (
+      {/* Menu content - carousel or stacked based on category layout_type */}
+      {activeCat?.layout_type === 'carousel' ? (
         <div className="py-7">
           <MenuCarousel items={filteredItems} design={design} />
         </div>
@@ -259,69 +259,23 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
             </div>
           )}
 
-          {/* Social Links - Same as header */}
-          {design.showFooterLinks && (restaurant.website_url || restaurant.instagram_url || restaurant.facebook_url || restaurant.custom_links.length > 0) && (
+          {/* Social Links - Using custom_links */}
+          {design.showFooterLinks && restaurant.custom_links.length > 0 && (
             <div className="flex flex-col items-center space-y-4">
-              <div className="flex justify-center gap-4">
-                {restaurant.website_url && (
+              <div className="flex flex-wrap justify-center gap-3">
+                {restaurant.custom_links.map((link) => (
                   <a
-                    href={restaurant.website_url}
+                    key={link.id}
+                    href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 hover:scale-110 transition-all"
-                    style={{ borderColor: design.accentColor, color: design.accentColor }}
-                    aria-label="Website"
+                    className="text-sm font-medium hover:opacity-80 transition-opacity underline"
+                    style={{ color: design.accentColor, fontFamily: design.textFont }}
                   >
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                    </svg>
+                    {link.label}
                   </a>
-                )}
-                {restaurant.instagram_url && (
-                  <a
-                    href={restaurant.instagram_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 hover:scale-110 transition-all"
-                    style={{ borderColor: design.accentColor, color: design.accentColor }}
-                    aria-label="Instagram"
-                  >
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm0 18c-4.554 0-8.25-3.696-8.25-8.25S7.446 3.75 12 3.75s8.25 3.696 8.25 8.25-3.696 8.25-8.25 8.25z" />
-                    </svg>
-                  </a>
-                )}
-                {restaurant.facebook_url && (
-                  <a
-                    href={restaurant.facebook_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 hover:scale-110 transition-all"
-                    style={{ borderColor: design.accentColor, color: design.accentColor }}
-                    aria-label="Facebook"
-                  >
-                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                  </a>
-                )}
+                ))}
               </div>
-              {restaurant.custom_links.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-3">
-                  {restaurant.custom_links.map((link) => (
-                    <a
-                      key={link.id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium hover:opacity-80 transition-opacity underline"
-                      style={{ color: design.accentColor, fontFamily: design.textFont }}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
@@ -365,14 +319,14 @@ export function MenuView({ restaurant, language, design }: MenuViewProps) {
                 <div className="flex flex-col items-center space-y-3 p-4 rounded-2xl text-center" style={{ backgroundColor: `${design.accentColor}08` }}>
                   <h3 className="font-bold" style={{ color: design.titleColor, fontFamily: design.titleFont }}>Hours</h3>
                   <div className="space-y-2">
-                    {restaurant.operating_hours.map((hour) => (
-                      <div key={hour.id} className="text-sm" style={{ color: design.textColor, fontFamily: design.textFont }}>
+                    {restaurant.operating_hours.map((hour, index) => (
+                      <div key={index} className="text-sm" style={{ color: design.textColor, fontFamily: design.textFont }}>
                         <span className="font-medium">
-                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][hour.day_of_week]}
+                          {hour.day}
                         </span>
                         <span className="mx-2">•</span>
                         <span>
-                          {hour.is_closed ? "Closed" : `${hour.open_time} - ${hour.close_time}`}
+                          {!hour.isOpen ? "Closed" : `${hour.startTime} - ${hour.endTime}`}
                         </span>
                       </div>
                     ))}
