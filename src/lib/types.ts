@@ -1,6 +1,6 @@
-export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "completed";
 export type ExpenseCategory = "Staff" | "Inventory" | "Rent" | "Utilities" | "Marketing";
 import type { LanguageCode } from "./languages";
+import type { RestaurantDesign } from "./restaurant-design";
 export type { LanguageCode };
 
 export interface Profile {
@@ -14,7 +14,7 @@ export interface Restaurant {
   user_id: string;
   name: string;
   slug: string;
-  logo_url: string | null;
+  logo: string | null;
   banner_url: string | null;
   phone: string | null;
   contact_email: string | null;
@@ -24,23 +24,28 @@ export interface Restaurant {
   website_url: string | null;
   whatsapp_url: string | null;
   is_premium: boolean;
-  accepts_reservations: boolean;
+  theme_colors: any;
+  typography: any;
+  external_links: any;
+  footer_slogan: string | null;
+  custom_links: CustomLink[];
+  operating_hours: OperatingHourData[];
+  font_pack_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface CustomRestaurantLink {
+export interface CustomLink {
   id: string;
-  restaurant_id: string;
   label: string;
   url: string;
 }
 
-export interface OperatingHour {
-  id: string;
-  restaurant_id: string;
-  day_of_week: number;
-  open_time: string | null;
-  close_time: string | null;
-  is_closed: boolean;
+export interface OperatingHourData {
+  day: string;
+  isOpen: boolean;
+  startTime: string;
+  endTime: string;
 }
 
 export interface MenuCategory {
@@ -70,19 +75,6 @@ export interface MenuTranslation {
   translated_description: string;
 }
 
-export interface Reservation {
-  id: string;
-  restaurant_id: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  date: string;
-  time: string;
-  party_size: number;
-  status: ReservationStatus;
-  special_requests: string | null;
-}
-
 export interface PageView {
   id: string;
   restaurant_id: string;
@@ -99,9 +91,10 @@ export interface BusinessExpense {
 }
 
 export interface RestaurantFull extends Restaurant {
-  custom_links: CustomRestaurantLink[];
-  operating_hours: OperatingHour[];
-  categories: (MenuCategory & { items: MenuItemWithTranslations[] })[];
+  categories: (MenuCategory & { items: MenuItemWithTranslations[]; layout_type?: string })[];
+  phone: string | null;
+  email: string | null;
+  design?: RestaurantDesign;
 }
 
 export interface MenuItemWithTranslations extends MenuItem {

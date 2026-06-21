@@ -10,6 +10,7 @@ import type {
   BusinessExpense,
   RestaurantFull,
 } from "./types";
+import { DEFAULT_DESIGN } from "./restaurant-design";
 
 // Fixed UUIDs for deterministic sandbox testing
 const U = {
@@ -320,6 +321,9 @@ export function getRestaurantBySlug(slug: string): RestaurantFull | null {
     custom_links: MOCK_CUSTOM_LINKS.filter((l) => l.restaurant_id === restaurant.id),
     operating_hours: MOCK_OPERATING_HOURS.filter((h) => h.restaurant_id === restaurant.id),
     categories,
+    phone: restaurant.id === U.taco ? "+1 555-0101" : restaurant.id === U.sushi ? "+1 555-0102" : restaurant.id === U.trattoria ? "+1 555-0103" : "+1 555-0104",
+    email: restaurant.id === U.taco ? "info@lacalletacos.com" : restaurant.id === U.sushi ? "info@sakuraomakase.com" : restaurant.id === U.trattoria ? "info@nonnarosa.it" : "info@smashandco.com",
+    design: DEFAULT_DESIGN,
   };
 }
 

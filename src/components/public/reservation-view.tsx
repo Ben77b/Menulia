@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { format, addDays } from "date-fns";
-import type { OperatingHour } from "@/lib/types";
+import type { OperatingHourData } from "@/lib/types";
 import { generateTimeSlots } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 
 interface ReservationViewProps {
   restaurantName: string;
-  operatingHours: OperatingHour[];
+  operatingHours: OperatingHourData[];
 }
 
 type Step = "date" | "time" | "details" | "done";
@@ -43,7 +43,7 @@ export function ReservationView({ restaurantName, operatingHours }: ReservationV
   }
 
   return (
-    <div className="px-4 pb-28">
+    <div className="mx-auto max-w-md w-full px-4 pb-28">
       {/* Step indicator */}
       <div className="mb-6 flex justify-center gap-2">
         {(["date", "time", "details"] as Step[]).map((s, i) => (

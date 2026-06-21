@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import { ALLERGEN_ICONS } from "@/lib/types";
 import { DIETARY_FILTERS } from "@/lib/dietary-tags";
 import type { RestaurantDesign } from "@/lib/restaurant-design";
-import { radiusClass } from "@/lib/restaurant-design";
 
 interface CarouselItem {
   id: string;
@@ -25,39 +24,35 @@ interface MenuCarouselProps {
 }
 
 export function MenuCarousel({ items, design }: MenuCarouselProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(items.length);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  function scrollTo(index: number) {
-    const el = scrollRef.current;
-    if (!el || items.length === 0) return;
-    const clamped = Math.max(0, Math.min(index, items.length - 1));
-    const card = el.children[clamped] as HTMLElement | undefined;
-    card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-    setActiveIndex(clamped);
+  function handleNext() {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentIndex((prev) => prev + 1);
   }
 
+  function handlePrev() {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentIndex((prev) => prev - 1);
+  }
+
+  // Seamless infinite loop reset
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const cards = Array.from(el.children) as HTMLElement[];
-      const center = el.scrollLeft + el.clientWidth / 2;
-      let closest = 0;
-      let minDist = Infinity;
-      cards.forEach((card, i) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-        const dist = Math.abs(center - cardCenter);
-        if (dist < minDist) {
-          minDist = dist;
-          closest = i;
+    if (isTransitioning) {
+      const timer = setTimeout(() => {
+        if (currentIndex >= items.length * 2) {
+          setCurrentIndex(items.length);
+        } else if (currentIndex < items.length) {
+          setCurrentIndex(items.length + (currentIndex % items.length));
         }
-      });
-      setActiveIndex(closest);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [items.length]);
+        setIsTransitioning(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, isTransitioning, items.length]);
 
   if (items.length === 0) {
     return (
@@ -67,103 +62,119 @@ export function MenuCarousel({ items, design }: MenuCarouselProps) {
     );
   }
 
-  const r = radiusClass(design);
+  // Create extended items for infinite loop visual (5x for buffer)
+  const extendedItems = [...items, ...items, ...items, ...items, ...items];
 
   return (
-    <div className="relative flex flex-1 flex-col min-h-0">
+    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
       <button
-        onClick={() => scrollTo(activeIndex - 1)}
-        disabled={activeIndex === 0}
-        className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-md transition hover:scale-105 disabled:opacity-30"
+        onClick={handlePrev}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/95 shadow-lg transition hover:scale-105"
         aria-label="Previous dish"
       >
-        <ChevronLeft className="h-5 w-5" style={{ color: design.accentColor }} />
+        <ChevronLeft className="h-6 w-6" style={{ color: design.priceColor }} />
       </button>
 
-      <div
-        ref={scrollRef}
-        className="scrollbar-hide flex flex-1 snap-x snap-mandatory items-stretch gap-4 overflow-x-auto px-12 py-2"
-      >
-        {items.map((item) => (
-          <article
-            key={item.id}
-            className={cn(
-              "flex w-[85vw] max-w-sm shrink-0 snap-center flex-col overflow-hidden bg-white shadow-md",
-              r
-            )}
-          >
-            <div className="relative h-48 w-full shrink-0 bg-muted">
-              {item.image_url ? (
-                <Image
-                  src={item.image_url}
-                  alt={item.name}
-                  fill
-                  className="object-cover"
-                  sizes="85vw"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-4xl">🍽️</div>
-              )}
-            </div>
-            <div className="flex flex-1 flex-col p-4">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-lg font-semibold leading-tight">{item.name}</h3>
-                <span
-                  className="shrink-0 text-lg font-bold"
-                  style={{ color: design.accentColor }}
-                >
-                  {formatPrice(item.price)}
-                </span>
-              </div>
-              <p className="mt-2 flex-1 text-sm leading-relaxed text-text-secondary">
-                {item.description}
-              </p>
-              {item.allergens.length > 0 && (
-                <div className="mt-3 flex gap-1">
-                  {item.allergens.map((a) => (
-                    <span key={a} className="text-base" title={a}>
-                      {ALLERGEN_ICONS[a] ?? "⚠️"}
-                    </span>
-                  ))}
+      <div className="w-full max-w-2xl overflow-hidden px-16">
+        <div 
+          className={`flex flex-row nowrap items-stretch ${isTransitioning ? 'transition-transform duration-500 ease-in-out' : ''}`}
+          style={{ transform: `translateX(calc(-${currentIndex * 352}px + 50% - 160px))` }}
+        >
+          {extendedItems.map((item, index) => {
+            const distanceFromCenter = Math.abs(index - currentIndex);
+            const isActive = distanceFromCenter === 0;
+            const isAdjacent = distanceFromCenter === 1;
+            
+            return (
+              <article
+                key={`${item.id}-${index}`}
+                className={`
+                  flex shrink-0 flex-col w-80 mr-8 transition-all duration-500 ease-in-out
+                  ${isActive ? 'scale-100 opacity-100' : isAdjacent ? 'scale-75 opacity-50' : 'scale-50 opacity-20'}
+                `}
+              >
+                <div className="relative aspect-square w-full shrink-0 bg-transparent rounded-2xl overflow-hidden">
+                  {item.image_url ? (
+                    <Image
+                      src={item.image_url}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="320px"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-4xl bg-muted rounded-2xl">🍽️</div>
+                  )}
                 </div>
-              )}
-              {item.tags.length > 0 && (
-                <div className="mt-2 flex gap-2">
-                  {item.tags.map((tag) => {
-                    const filter = DIETARY_FILTERS.find((f) => f.tag === tag);
-                    if (!filter) return null;
-                    return (
-                      <span key={tag} className="text-xl" title={filter.label}>
-                        {filter.icon}
-                      </span>
-                    );
-                  })}
+                
+                <div className="flex flex-col px-2 py-3 text-center">
+                  <h3 className="font-semibold leading-tight" style={{ color: design.titleColor, fontFamily: design.titleFont }}>
+                    {item.name}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed line-clamp-2" style={{ color: design.textColor, fontFamily: design.textFont }}>
+                    {item.description}
+                  </p>
+                  <span
+                    className="mt-1 font-bold text-sm"
+                    style={{ color: design.priceColor }}
+                  >
+                    {formatPrice(item.price)}
+                  </span>
+                  {isActive && item.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                      {item.tags.map((tag: string) => {
+                        const filter = DIETARY_FILTERS.find((f) => f.tag === tag);
+                        if (!filter) return null;
+                        return (
+                          <span
+                            key={tag}
+                            className="flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium"
+                          >
+                            <span className="text-xs">{filter.icon}</span>
+                            {filter.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {isActive && item.allergens.length > 0 && (
+                    <div className="mt-1 flex justify-center gap-0.5">
+                      {item.allergens.map((a: string) => (
+                        <span key={a} className="text-xs" title={a}>
+                          {ALLERGEN_ICONS[a] ?? "⚠️"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </article>
-        ))}
+              </article>
+            );
+          })}
+        </div>
       </div>
 
       <button
-        onClick={() => scrollTo(activeIndex + 1)}
-        disabled={activeIndex === items.length - 1}
-        className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-md transition hover:scale-105 disabled:opacity-30"
+        onClick={handleNext}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/95 shadow-lg transition hover:scale-105"
         aria-label="Next dish"
       >
-        <ChevronRight className="h-5 w-5" style={{ color: design.accentColor }} />
+        <ChevronRight className="h-6 w-6" style={{ color: design.priceColor }} />
       </button>
 
-      <div className="flex justify-center gap-1.5 py-2">
+      <div className="flex justify-center gap-2 py-2">
         {items.map((_, i) => (
           <button
             key={i}
-            onClick={() => scrollTo(i)}
-            className={cn(
-              "h-1.5 rounded-full transition-all",
-              i === activeIndex ? "w-6" : "w-1.5 bg-border"
-            )}
-            style={i === activeIndex ? { backgroundColor: design.accentColor } : undefined}
+            onClick={() => {
+              if (!isTransitioning) {
+                setIsTransitioning(true);
+                setCurrentIndex(items.length + i);
+              }
+            }}
+            className={`h-2 rounded-full transition-all ${
+              (currentIndex % items.length) === i ? "w-8" : "w-2 bg-border"
+            }`}
+            style={(currentIndex % items.length) === i ? { backgroundColor: design.priceColor } : undefined}
             aria-label={`Go to dish ${i + 1}`}
           />
         ))}
