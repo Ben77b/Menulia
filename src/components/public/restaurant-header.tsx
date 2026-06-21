@@ -2,19 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { X, Instagram, Facebook, Globe, ExternalLink, ChevronDown } from "lucide-react";
+import { X, ExternalLink, ChevronDown } from "lucide-react";
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
-import type { CustomRestaurantLink } from "@/lib/types";
+import type { CustomLink } from "@/lib/types";
 import type { RestaurantDesign } from "@/lib/restaurant-design";
 import { cn } from "@/lib/utils";
 
 interface RestaurantHeaderProps {
   name: string;
   logoUrl: string | null;
-  instagramUrl: string | null;
-  facebookUrl: string | null;
-  websiteUrl: string | null;
-  customLinks: CustomRestaurantLink[];
+  customLinks: CustomLink[];
   language: LanguageCode;
   onLanguageChange: (lang: LanguageCode) => void;
   design: RestaurantDesign;
@@ -24,9 +21,6 @@ interface RestaurantHeaderProps {
 export function RestaurantHeader({
   name,
   logoUrl,
-  instagramUrl,
-  facebookUrl,
-  websiteUrl,
   customLinks,
   language,
   onLanguageChange,
@@ -45,12 +39,7 @@ export function RestaurantHeader({
     }
   }, [restaurantId]);
 
-  const links = [
-    instagramUrl && { label: "Instagram", url: instagramUrl, icon: Instagram },
-    facebookUrl && { label: "Facebook", url: facebookUrl, icon: Facebook },
-    websiteUrl && { label: "Website", url: websiteUrl, icon: Globe },
-    ...customLinks.map((l) => ({ label: l.label, url: l.url, icon: ExternalLink })),
-  ].filter(Boolean) as { label: string; url: string; icon: typeof Instagram }[];
+  const links = customLinks.map((l) => ({ label: l.label, url: l.url, icon: ExternalLink }));
 
   const currentLang = LANGUAGES.find((l) => l.code === language)!;
   const availableLanguages = LANGUAGES.filter((l) => visibleLanguages.has(l.code));

@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { addMinutes, format, parse, isBefore } from "date-fns";
-import type { OperatingHour } from "./types";
+import type { OperatingHourData } from "./types";
 import { LANGUAGE_CODES, type LanguageCode } from "./languages";
 
 export function cn(...inputs: ClassValue[]) {
@@ -13,21 +13,21 @@ export function formatPrice(price: number, locale = "en-US"): string {
 }
 
 export function generateTimeSlots(
-  hours: OperatingHour[],
+  hours: OperatingHourData[],
   date: Date,
   intervalMinutes = 30
 ): string[] {
-  const dayOfWeek = date.getDay();
-  const dayHours = hours.find((h) => h.day_of_week === dayOfWeek);
+  const dayName = format(date, "EEEE");
+  const dayHours = hours.find((h) => h.day === dayName);
 
-  if (!dayHours || dayHours.is_closed || !dayHours.open_time || !dayHours.close_time) {
+  if (!dayHours || !dayHours.isOpen || !dayHours.startTime || !dayHours.endTime) {
     return [];
   }
 
   const slots: string[] = [];
   const baseDate = format(date, "yyyy-MM-dd");
-  let current = parse(`${baseDate} ${dayHours.open_time}`, "yyyy-MM-dd HH:mm:ss", new Date());
-  const close = parse(`${baseDate} ${dayHours.close_time}`, "yyyy-MM-dd HH:mm:ss", new Date());
+  let current = parse(`${baseDate} ${dayHours.startTime}`, "yyyy-MM-dd HH:mm", new Date());
+  const close = parse(`${baseDate} ${dayHours.endTime}`, "yyyy-MM-dd HH:mm", new Date());
 
   while (isBefore(current, close)) {
     slots.push(format(current, "HH:mm"));

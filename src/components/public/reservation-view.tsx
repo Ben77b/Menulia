@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { format, addDays } from "date-fns";
-import type { OperatingHour } from "@/lib/types";
+import type { OperatingHourData } from "@/lib/types";
 import { generateTimeSlots } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 
 interface ReservationViewProps {
   restaurantName: string;
-  operatingHours: OperatingHour[];
+  operatingHours: OperatingHourData[];
 }
 
 type Step = "date" | "time" | "details" | "done";

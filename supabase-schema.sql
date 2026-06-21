@@ -1,8 +1,16 @@
 -- Create restaurants table
 CREATE TABLE IF NOT EXISTS restaurants (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID,
   name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
   logo TEXT,
+  banner_url TEXT,
+  instagram_url TEXT,
+  facebook_url TEXT,
+  website_url TEXT,
+  is_premium BOOLEAN DEFAULT false,
+  accepts_reservations BOOLEAN DEFAULT true,
   theme_colors JSONB DEFAULT '{"color1":"#FFFFFF","color2":"#F3F4F6","color3":"#FFFFFF","matchMainBackground":false}'::jsonb,
   typography JSONB DEFAULT '{"selectedPreset":"minimalist-cafe","customHeadingFont":"","customBodyFont":""}'::jsonb,
   external_links JSONB DEFAULT '{"instagram":"","facebook":"","website":""}'::jsonb,
@@ -21,6 +29,22 @@ CREATE TABLE IF NOT EXISTS restaurants (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migration: Add slug column if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'restaurants' AND column_name = 'slug'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN slug TEXT UNIQUE;
+    -- Generate slugs from names for existing records
+    UPDATE restaurants SET slug = LOWER(REGEXP_REPLACE(name, '[^a-zA-Z0-9\s-]', '', 'g'));
+    UPDATE restaurants SET slug = REGEXP_REPLACE(slug, '\s+', '-', 'g');
+    UPDATE restaurants SET slug = REGEXP_REPLACE(slug, '-+', '-', 'g');
+    UPDATE restaurants SET slug = TRIM(slug, '-');
+  END IF;
+END $$;
 
 -- Create categories table
 CREATE TABLE IF NOT EXISTS categories (

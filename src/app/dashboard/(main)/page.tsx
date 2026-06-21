@@ -9,11 +9,52 @@ export default async function DashboardPage() {
   const restaurant = await fetchDemoRestaurant();
   const allRestaurants = await fetchAllRestaurants();
 
+  if (!restaurant) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">Welcome back</h1>
+        <p className="mt-1 text-text-secondary">
+          Please select a restaurant to manage.
+        </p>
+
+        <div className="mt-8 rounded-2xl border border-border bg-white p-6">
+          <h2 className="font-semibold">Sandbox demo restaurants</h2>
+          <p className="mt-1 text-sm text-text-secondary">
+            Switch between pre-loaded profiles to test free vs. premium features.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {allRestaurants.map((r) => (
+              <div
+                key={r.id}
+                className="flex items-center justify-between rounded-xl border border-border p-4"
+              >
+                <div>
+                  <p className="font-medium">{r.name}</p>
+                  <p className="text-xs text-text-secondary">
+                    {(r as any).is_premium ? "Premium" : "Free"}
+                    {(r as any).accepts_reservations && " · Reservations"}
+                  </p>
+                </div>
+                <Link href={`/${(r as any).slug || r.id}`} target="_blank">
+                  <Button variant="outline" size="sm">
+                    View
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const restaurantAny = restaurant as any;
+
   return (
     <div>
       <h1 className="text-2xl font-bold">Welcome back</h1>
       <p className="mt-1 text-text-secondary">
-        Managing <span className="font-medium text-text-primary">{restaurant.name}</span>
+        Managing <span className="font-medium text-text-primary">{restaurantAny.name}</span>
       </p>
 
       <Link
@@ -62,11 +103,11 @@ export default async function DashboardPage() {
               <div>
                 <p className="font-medium">{r.name}</p>
                 <p className="text-xs text-text-secondary">
-                  {r.is_premium ? "Premium" : "Free"}
-                  {r.accepts_reservations && " · Reservations"}
+                  {(r as any).is_premium ? "Premium" : "Free"}
+                  {(r as any).accepts_reservations && " · Reservations"}
                 </p>
               </div>
-              <Link href={`/${r.slug}`} target="_blank">
+              <Link href={`/${(r as any).slug || r.id}`} target="_blank">
                 <Button variant="outline" size="sm">
                   View
                 </Button>

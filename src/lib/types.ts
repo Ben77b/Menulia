@@ -15,13 +15,35 @@ export interface Restaurant {
   user_id: string;
   name: string;
   slug: string;
-  logo_url: string | null;
+  logo: string | null;
   banner_url: string | null;
   instagram_url: string | null;
   facebook_url: string | null;
   website_url: string | null;
   is_premium: boolean;
   accepts_reservations: boolean;
+  theme_colors: any;
+  typography: any;
+  external_links: any;
+  footer_slogan: string | null;
+  custom_links: CustomLink[];
+  operating_hours: OperatingHourData[];
+  max_capacity: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
+export interface OperatingHourData {
+  day: string;
+  isOpen: boolean;
+  startTime: string;
+  endTime: string;
 }
 
 export interface CustomRestaurantLink {
@@ -96,9 +118,7 @@ export interface BusinessExpense {
 }
 
 export interface RestaurantFull extends Restaurant {
-  custom_links: CustomRestaurantLink[];
-  operating_hours: OperatingHour[];
-  categories: (MenuCategory & { items: MenuItemWithTranslations[] })[];
+  categories: (MenuCategory & { items: MenuItemWithTranslations[]; layout_type?: string })[];
   phone: string | null;
   email: string | null;
   design?: RestaurantDesign;

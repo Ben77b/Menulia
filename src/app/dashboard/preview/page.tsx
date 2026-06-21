@@ -8,7 +8,21 @@ export const metadata = { title: "Preview Your Restaurant" };
 
 export default async function PreviewPage() {
   const restaurant = await fetchDemoRestaurant();
-  const full = await fetchRestaurantBySlug(restaurant.slug);
+
+  if (!restaurant) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white">
+        <p className="text-zinc-400">Please select a restaurant to preview.</p>
+        <Link href="/dashboard">
+          <Button className="mt-4">Go to Dashboard</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const restaurantAny = restaurant as any;
+  const slug = restaurantAny.slug || restaurantAny.id;
+  const full = await fetchRestaurantBySlug(slug);
 
   if (!full) return null;
 
@@ -24,9 +38,9 @@ export default async function PreviewPage() {
           Back to Dashboard
         </Link>
         <span className="text-sm text-zinc-400">
-          Preview — how guests see <strong className="text-white">{restaurant.name}</strong>
+          Preview — how guests see <strong className="text-white">{restaurantAny.name}</strong>
         </span>
-        <Link href={`/${restaurant.slug}`} target="_blank" rel="noopener noreferrer">
+        <Link href={`/${slug}`} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" className="border-zinc-600 text-white hover:bg-zinc-800">
             <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
             Open full screen

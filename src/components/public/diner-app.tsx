@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import type { RestaurantFull, LanguageCode } from "@/lib/types";
 import { detectBrowserLanguage } from "@/lib/utils";
 import { RestaurantHeader } from "./restaurant-header";
@@ -15,20 +16,30 @@ interface DinerAppProps {
 }
 
 function DinerAppContent({ restaurant, previewMode }: DinerAppProps) {
+  const searchParams = useSearchParams();
   const [language, setLanguage] = useState<LanguageCode>("en");
   const [activeView, setActiveView] = useState<"menu" | "reservation">("menu");
   const [footerNote, setFooterNote] = useState("");
   const { design } = useDesign();
 
+  const isTableMode = searchParams.get("table") === "true";
   const showReservation =
-    restaurant.is_premium && restaurant.accepts_reservations;
+    !isTableMode && restaurant.is_premium && restaurant.accepts_reservations;
 
   useEffect(() => {
     setLanguage(detectBrowserLanguage());
-    // Load footer note from localStorage
-    const savedFooter = localStorage.getItem(`footer-note-${restaurant.id}`);
-    if (savedFooter) setFooterNote(savedFooter);
-  }, [restaurant.id]);
+    // Load footer note from restaurant data
+    if (restaurant.footer_slogan) {
+      setFooterNote(restaurant.footer_slogan);
+    }
+  }, [restaurant.footer_slogan]);
+
+  // SEO View: Default to Reservations tab
+  useEffect(() => {
+    if (!isTableMode && showReservation) {
+      setActiveView("reservation");
+    }
+  }, [isTableMode, showReservation]);
 
   return (
     <div
@@ -37,11 +48,8 @@ function DinerAppContent({ restaurant, previewMode }: DinerAppProps) {
     >
       <RestaurantHeader
         name={restaurant.name}
-        logoUrl={design.logo || restaurant.logo_url}
-        instagramUrl={restaurant.instagram_url}
-        facebookUrl={restaurant.facebook_url}
-        websiteUrl={restaurant.website_url}
-        customLinks={restaurant.custom_links}
+        logoUrl={design.logo || restaurant.logo}
+        customLinks={restaurant.custom_links || []}
         language={language}
         onLanguageChange={setLanguage}
         design={design}
@@ -67,12 +75,15 @@ function DinerAppContent({ restaurant, previewMode }: DinerAppProps) {
         </footer>
       )}
 
-      <BottomNavPill
-        activeView={activeView}
-        onViewChange={setActiveView}
-        showReservation={showReservation}
-        accentColor={design.accentColor}
-      />
+      {/* Only show BottomNavPill if not in table mode and reservations are available */}
+      {!isTableMode && showReservation && (
+        <BottomNavPill
+          activeView={activeView}
+          onViewChange={setActiveView}
+          showReservation={showReservation}
+          accentColor={design.accentColor}
+        />
+      )}
     </div>
   );
 }
