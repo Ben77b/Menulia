@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { DEFAULT_DESIGN, type RestaurantDesign } from "@/lib/restaurant-design";
+import { useRestaurant } from "./restaurant-context";
 
 interface DesignContextType {
   design: RestaurantDesign;
@@ -15,6 +16,7 @@ const STORAGE_KEY = "menulia_current_design";
 
 export function DesignProvider({ children }: { children: ReactNode }) {
   const [design, setDesignState] = useState<RestaurantDesign>(DEFAULT_DESIGN);
+  const { currentRestaurant } = useRestaurant();
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -28,6 +30,28 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       }
     }
   }, []);
+
+  // Load font_pack_id from restaurant data
+  useEffect(() => {
+    if (currentRestaurant?.font_pack_id) {
+      const fontMap: Record<string, string> = {
+        "Inter": "Inter",
+        "Montserrat": "Montserrat",
+        "Playfair Display": "Playfair Display",
+        "Poppins": "Poppins",
+        "Roboto": "Roboto",
+        "Open Sans": "Open Sans",
+        "Lato": "Lato",
+        "Merriweather": "Merriweather",
+        "Oswald": "Oswald",
+        "Raleway": "Raleway",
+        "Source Sans Pro": "Source Sans Pro",
+        "Ubuntu": "Ubuntu",
+      };
+      const font = fontMap[currentRestaurant.font_pack_id] || "Inter";
+      updateDesign({ titleFont: font, textFont: font });
+    }
+  }, [currentRestaurant?.font_pack_id]);
 
   // Listen for storage changes (cross-tab sync)
   useEffect(() => {

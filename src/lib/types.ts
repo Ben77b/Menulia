@@ -26,6 +26,7 @@ export interface Restaurant {
   footer_slogan: string | null;
   custom_links: CustomLink[];
   operating_hours: OperatingHourData[];
+  font_pack_id: string;
   created_at: string;
   updated_at: string;
 }

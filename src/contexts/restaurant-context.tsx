@@ -6,6 +6,7 @@ export interface Restaurant {
   id: string;
   name: string;
   slug: string;
+  font_pack_id?: string;
 }
 
 interface RestaurantContextType {

@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS restaurants (
   facebook_url TEXT,
   website_url TEXT,
   is_premium BOOLEAN DEFAULT false,
-  accepts_reservations BOOLEAN DEFAULT true,
   theme_colors JSONB DEFAULT '{"color1":"#FFFFFF","color2":"#F3F4F6","color3":"#FFFFFF","matchMainBackground":false}'::jsonb,
   typography JSONB DEFAULT '{"selectedPreset":"minimalist-cafe","customHeadingFont":"","customBodyFont":""}'::jsonb,
   external_links JSONB DEFAULT '{"instagram":"","facebook":"","website":""}'::jsonb,
@@ -25,7 +24,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
     {"day":"Saturday","isOpen":true,"startTime":"10:00","endTime":"23:00"},
     {"day":"Sunday","isOpen":true,"startTime":"10:00","endTime":"21:00"}
   ]'::jsonb,
-  max_capacity INTEGER DEFAULT 20,
+  font_pack_id TEXT DEFAULT 'Inter',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -34,7 +33,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
+    SELECT 1 FROM information_schema.columns
     WHERE table_name = 'restaurants' AND column_name = 'slug'
   ) THEN
     ALTER TABLE restaurants ADD COLUMN slug TEXT UNIQUE;
@@ -43,6 +42,17 @@ BEGIN
     UPDATE restaurants SET slug = REGEXP_REPLACE(slug, '\s+', '-', 'g');
     UPDATE restaurants SET slug = REGEXP_REPLACE(slug, '-+', '-', 'g');
     UPDATE restaurants SET slug = TRIM(slug, '-');
+  END IF;
+END $$;
+
+-- Migration: Add font_pack_id column if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'restaurants' AND column_name = 'font_pack_id'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN font_pack_id TEXT DEFAULT 'Inter';
   END IF;
 END $$;
 

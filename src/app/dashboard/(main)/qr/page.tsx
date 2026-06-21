@@ -1,69 +1,101 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { Button } from "@/components/ui/button";
 import { QrCode, Download } from "lucide-react";
+import QRCode from "react-qr-code";
 
 export default function QrCodePage() {
   const { currentRestaurant } = useRestaurant();
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [qrColor, setQrColor] = useState("#000000");
   const [loading, setLoading] = useState(true);
+  const qrRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (currentRestaurant) {
-      generateQrCode();
       setLoading(false);
     }
   }, [currentRestaurant]);
 
-  function generateQrCode() {
-    if (!currentRestaurant) return;
-    const baseUrl = window.location.origin;
-    const restaurantUrl = `${baseUrl}/${currentRestaurant.slug}?table=true`;
-    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(restaurantUrl)}`);
-  }
-
   function downloadQrCode() {
-    const link = document.createElement('a');
-    link.href = qrCodeUrl;
-    link.download = `qr-code-${currentRestaurant?.slug || 'restaurant'}.png`;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (!qrRef.current) return;
+
+    const svgElement = qrRef.current.querySelector('svg');
+    if (!svgElement) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = 300;
+      canvas.height = 300;
+      ctx.drawImage(img, 0, 0);
+
+      const pngUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = pngUrl;
+      link.download = `qr-code-${currentRestaurant?.slug || 'restaurant'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   }
 
   if (loading) return <div>Loading...</div>;
   if (!currentRestaurant) return <div>Loading...</div>;
 
-  const restaurantUrl = `${window.location.origin}/${currentRestaurant.slug}?table=true`;
+  const restaurantUrl = `https://menulia.net/${currentRestaurant.slug}`;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">QR Code Generator</h1>
-        <p className="mt-1 text-sm text-gray-600">Generate a QR code for your in-house menu</p>
+        <p className="mt-1 text-sm text-gray-600">Generate a QR code for your restaurant menu</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-4">
           <QrCode className="h-5 w-5 text-gray-600" />
-          <h2 className="text-lg font-semibold text-gray-900">In-House Menu QR Code</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Menu QR Code</h2>
         </div>
         <p className="text-sm text-gray-600 mb-6">
-          This QR code links to your restaurant's menu with the in-house layout view. 
-          The <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">?table=true</code> parameter 
-          hides reservation features for patrons who are already seated at a table.
+          This QR code links to your restaurant's public menu page.
+          Print it and place it on your tables, menus, or marketing materials.
         </p>
-        
+
         <div className="flex items-start gap-8">
           <div className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-            {qrCodeUrl && (
-              <img src={qrCodeUrl} alt="QR Code" className="w-64 h-64" />
-            )}
+            <div ref={qrRef}>
+              <QRCode
+                value={restaurantUrl}
+                size={256}
+                fgColor={qrColor}
+                bgColor="transparent"
+                level="H"
+              />
+            </div>
           </div>
           <div className="flex-1 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                QR Code Color
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={qrColor}
+                  onChange={(e) => setQrColor(e.target.value)}
+                  className="h-10 w-16 rounded border border-gray-200 cursor-pointer"
+                />
+                <span className="text-sm text-gray-600">{qrColor}</span>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Menu URL
@@ -72,17 +104,17 @@ export default function QrCodePage() {
                 <code className="text-sm text-gray-700 break-all">{restaurantUrl}</code>
               </div>
             </div>
-            
+
             <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
               <h3 className="text-sm font-medium text-indigo-900 mb-2">How to use</h3>
               <ul className="text-xs text-indigo-700 space-y-1">
                 <li>• Print this QR code and place it on your tables</li>
                 <li>• Customers scan to view your menu on their phones</li>
-                <li>• The in-house view hides reservation buttons</li>
-                <li>• Perfect for dine-in customers</li>
+                <li>• The QR code has a transparent background</li>
+                <li>• Customize the color to match your brand</li>
               </ul>
             </div>
-            
+
             <Button onClick={downloadQrCode} className="gap-2">
               <Download className="h-4 w-4" />
               Download QR Code

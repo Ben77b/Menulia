@@ -2,30 +2,34 @@
 
 import { useRef, useState } from "react";
 import { useDesign } from "@/contexts/design-context";
+import { useRestaurant } from "@/contexts/restaurant-context";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Upload, Image as ImageIcon, X, Type, Search, FileUp } from "lucide-react";
 
 const GOOGLE_FONTS = [
-  { label: "Inter", value: "Inter" },
-  { label: "Montserrat", value: "Montserrat" },
-  { label: "Playfair Display", value: "Playfair Display" },
-  { label: "Poppins", value: "Poppins" },
-  { label: "Roboto", value: "Roboto" },
-  { label: "Open Sans", value: "Open Sans" },
-  { label: "Lato", value: "Lato" },
-  { label: "Merriweather", value: "Merriweather" },
-  { label: "Oswald", value: "Oswald" },
-  { label: "Raleway", value: "Raleway" },
-  { label: "Source Sans Pro", value: "Source Sans Pro" },
-  { label: "Ubuntu", value: "Ubuntu" },
+  { label: "Inter", value: "Inter", className: "font-[var(--font-inter)]" },
+  { label: "Montserrat", value: "Montserrat", className: "font-[var(--font-montserrat)]" },
+  { label: "Playfair Display", value: "Playfair Display", className: "font-[var(--font-playfair-display)]" },
+  { label: "Poppins", value: "Poppins", className: "font-[var(--font-poppins)]" },
+  { label: "Roboto", value: "Roboto", className: "font-[var(--font-roboto)]" },
+  { label: "Open Sans", value: "Open Sans", className: "font-[var(--font-open-sans)]" },
+  { label: "Lato", value: "Lato", className: "font-[var(--font-lato)]" },
+  { label: "Merriweather", value: "Merriweather", className: "font-[var(--font-merriweather)]" },
+  { label: "Oswald", value: "Oswald", className: "font-[var(--font-oswald)]" },
+  { label: "Raleway", value: "Raleway", className: "font-[var(--font-raleway)]" },
+  { label: "Source Sans Pro", value: "Source Sans Pro", className: "font-[var(--font-source-sans)]" },
+  { label: "Ubuntu", value: "Ubuntu", className: "font-[var(--font-ubuntu)]" },
 ];
 
 export function BrandingDashboard() {
   const { design, updateDesign } = useDesign();
+  const { currentRestaurant } = useRestaurant();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const fontInputRef = useRef<HTMLInputElement>(null);
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [fontSearch, setFontSearch] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,6 +67,22 @@ export function BrandingDashboard() {
 
   const handleRemoveCustomFont = () => {
     updateDesign({ customFont: "" });
+  };
+
+  const handleSaveFontPack = async (fontPackId: string) => {
+    if (!currentRestaurant) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ font_pack_id: fontPackId, updated_at: new Date().toISOString() })
+        .eq('id', currentRestaurant.id);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error saving font pack:', error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const selectedFont = GOOGLE_FONTS.find((f) => f.value === design.titleFont) || GOOGLE_FONTS[0];
@@ -320,10 +340,11 @@ export function BrandingDashboard() {
                           type="button"
                           onClick={() => {
                             updateDesign({ titleFont: font.value, textFont: font.value });
+                            handleSaveFontPack(font.value);
                             setShowFontDropdown(false);
                             setFontSearch("");
                           }}
-                          className="flex w-full items-center rounded-lg px-4 py-3 text-left text-sm hover:bg-gray-50"
+                          className={`flex w-full items-center rounded-lg px-4 py-3 text-left text-sm hover:bg-gray-50 ${font.className}`}
                         >
                           <span>{font.label}</span>
                         </button>
@@ -381,17 +402,16 @@ export function BrandingDashboard() {
           {/* Right Column: Preview Card */}
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">Preview</label>
-            <div 
-              className="p-6 rounded-lg border border-gray-200"
-              style={{ 
-                fontFamily: design.customFont ? 'custom' : design.titleFont,
+            <div
+              className={`p-6 rounded-lg border border-gray-200 ${selectedFont.className}`}
+              style={{
                 backgroundColor: design.mainContentBackgroundColor
               }}
             >
               {/* Header Preview */}
-              <div 
+              <div
                 className="p-4 rounded-lg mb-4"
-                style={{ 
+                style={{
                   backgroundColor: design.headerFooterBackgroundColor,
                   color: design.headerFooterFontColor
                 }}
@@ -400,9 +420,9 @@ export function BrandingDashboard() {
               </div>
 
               {/* Category Preview */}
-              <div 
+              <div
                 className="p-3 rounded-lg mb-4"
-                style={{ 
+                style={{
                   backgroundColor: design.categoryBackgroundColor,
                   color: design.categoryFontColor
                 }}
