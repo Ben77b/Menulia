@@ -93,3 +93,17 @@ ALTER TABLE dishes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable all access for restaurants" ON restaurants FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for categories" ON categories FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for dishes" ON dishes FOR ALL USING (true) WITH CHECK (true);
+
+-- Migration: Rename 'image' column to 'image_url' if it exists and is named 'image'
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'dishes' AND column_name = 'image'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'dishes' AND column_name = 'image_url'
+  ) THEN
+    ALTER TABLE dishes RENAME COLUMN image TO image_url;
+  END IF;
+END $$;

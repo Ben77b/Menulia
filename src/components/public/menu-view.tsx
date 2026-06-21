@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { RestaurantFull, LanguageCode } from "@/lib/types";
 import type { RestaurantDesign } from "@/lib/restaurant-design";
@@ -23,6 +23,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
     restaurant.categories[0]?.id ?? ""
   );
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+  const categoryRefs = useRef<Record<string, HTMLElement>>({});
 
   // Load menu categories from localStorage
   useEffect(() => {
@@ -60,18 +61,38 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
     return () => window.removeEventListener("storage", onStorage);
   }, [restaurant.id]);
 
-  const activeCat = categories.find((c) => c.id === activeCategory);
+  // Intersection observer for active category highlighting
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const categoryId = entry.target.id.replace("category-", "");
+            setActiveCategory(categoryId);
+          }
+        });
+      },
+      { threshold: 0.5, rootMargin: "-20% 0px -70% 0px" }
+    );
 
-  const filteredItems = useMemo(() => {
-    if (!activeCat) return [];
-    return activeCat.items
-      .filter((item: any) => {
-        if (!item.is_available) return false;
-        if (activeFilters.size === 0) return true;
-        return [...activeFilters].every((f) => item.tags.includes(f));
-      })
-      .map((item: any) => {
-        return {
+    categories.forEach((cat) => {
+      const element = categoryRefs.current[cat.id];
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [categories]);
+
+  const filteredCategories = useMemo(() => {
+    return categories.map((cat) => ({
+      ...cat,
+      items: cat.items
+        .filter((item: any) => {
+          if (!item.is_available) return false;
+          if (activeFilters.size === 0) return true;
+          return [...activeFilters].every((f) => item.tags.includes(f));
+        })
+        .map((item: any) => ({
           id: item.id,
           name: item.name,
           description: item.description,
@@ -79,9 +100,24 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
           image_url: item.image_url,
           allergens: item.allergens,
           tags: item.tags,
-        };
+        })),
+    }));
+  }, [categories, activeFilters]);
+
+  function scrollToCategory(categoryId: string) {
+    const element = categoryRefs.current[categoryId];
+    if (element) {
+      const offset = 80; // Account for sticky header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
       });
-  }, [activeCat, activeFilters]);
+      setActiveCategory(categoryId);
+    }
+  }
 
   function toggleFilter(tag: string) {
     setActiveFilters((prev) => {
@@ -93,7 +129,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
   }
 
   return (
-    <div className={`flex flex-1 flex-col pt-20 ${fontClasses?.body || ''}`} style={{ backgroundColor: design.mainContentBackgroundColor }}>
+    <div className={`flex flex-1 flex-col ${fontClasses?.body || ''}`} style={{ backgroundColor: design.mainContentBackgroundColor }}>
       {/* Header with title, slogan */}
       <div className="shrink-0 px-4 py-6 text-center" style={{ backgroundColor: design.headerFooterBackgroundColor }}>
         {design.restaurantName && (
@@ -108,101 +144,118 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
         )}
       </div>
 
-      {/* Category bar - centered, wraps naturally */}
-      <div className="flex shrink-0 justify-center gap-2 flex-wrap px-4 py-3" style={{ backgroundColor: design.categoryBackgroundColor }}>
-        {categories.map((cat: any) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-sm hover:shadow-md",
-              activeCategory === cat.id ? "" : "bg-white"
-            )}
-            style={
-              activeCategory === cat.id
-                ? { backgroundColor: design.buttonColor, color: "#ffffff" }
-                : { color: design.categoryFontColor }
-            }
-          >
-            {cat.name}
-          </button>
-        ))}
+      {/* Sticky category navigation bar */}
+      <div className="sticky top-0 z-10 shrink-0 border-b border-border/20" style={{ backgroundColor: design.categoryBackgroundColor }}>
+        <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
+          {categories.map((cat: any) => (
+            <button
+              key={cat.id}
+              onClick={() => scrollToCategory(cat.id)}
+              className={cn(
+                "whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all shadow-sm hover:shadow-md",
+                activeCategory === cat.id ? "" : "bg-white"
+              )}
+              style={
+                activeCategory === cat.id
+                  ? { backgroundColor: design.buttonColor, color: "#ffffff" }
+                  : { color: design.categoryFontColor }
+              }
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Menu content - carousel or stacked based on category layout_type */}
-      {activeCat?.layout_type === 'carousel' ? (
-        <div className="py-7">
-          <MenuCarousel items={filteredItems} design={design} />
-        </div>
-      ) : (
-        <div className="flex-1 px-4 py-4 space-y-4">
-          {filteredItems.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-2xl border border-border bg-white p-4 shadow-sm"
-            >
-              <div className="flex gap-4">
-                {item.image_url && (
-                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
-                    <Image
-                      src={item.image_url}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      sizes="96px"
-                    />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <h3 className={`font-semibold ${fontClasses?.heading || ''}`} style={{ color: design.mainContentFontColor }}>{item.name}</h3>
-                  <p className={`mt-1 text-sm line-clamp-2 ${fontClasses?.body || ''}`} style={{ color: design.mainContentFontColor }}>
-                    {item.description}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span
-                      className={`font-bold ${fontClasses?.body || ''}`}
-                      style={{ color: design.buttonColor }}
-                    >
-                      {formatPrice(item.price)}
-                    </span>
-                    {item.tags.length > 0 && (
-                      <div className="flex gap-1">
-                        {item.tags.map((tag: string) => {
-                          const filter = DIETARY_FILTERS.find((f) => f.tag === tag);
-                          if (!filter) return null;
-                          return (
-                            <span
-                              key={tag}
-                              className={`flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium ${fontClasses?.body || ''}`}
-                            >
-                              <span className="text-xs">{filter.icon}</span>
-                              {filter.label}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                  {item.allergens.length > 0 && (
-                    <div className="mt-2 flex gap-1">
-                      {item.allergens.map((a: string) => (
-                        <span key={a} className="text-xs" title={a}>
-                          {ALLERGEN_ICONS[a] ?? "⚠️"}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+      {/* Menu content - scrollable layout with all categories */}
+      <div className="flex-1 px-4 py-4 space-y-8">
+        {filteredCategories.map((cat) => (
+          <div
+            key={cat.id}
+            id={`category-${cat.id}`}
+            ref={(el) => { if (el) categoryRefs.current[cat.id] = el; }}
+            className="scroll-mt-24"
+          >
+            <h2 className={`mb-4 text-xl font-bold ${fontClasses?.heading || ''}`} style={{ color: design.mainContentFontColor }}>
+              {cat.name}
+            </h2>
+
+            {cat.layout_type === 'carousel' ? (
+              <div className="py-4">
+                <MenuCarousel items={cat.items} design={design} />
               </div>
-            </div>
-          ))}
-          {filteredItems.length === 0 && (
-            <p className={`text-center text-sm ${fontClasses?.body || ''}`} style={{ color: design.mainContentFontColor }}>
-              No dishes match your filters.
-            </p>
-          )}
-        </div>
-      )}
+            ) : (
+              <div className="space-y-4">
+                {cat.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-border bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex gap-4">
+                      {item.image_url && (
+                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
+                          <Image
+                            src={item.image_url}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                            sizes="96px"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h3 className={`font-semibold ${fontClasses?.heading || ''}`} style={{ color: design.mainContentFontColor }}>{item.name}</h3>
+                        <p className={`mt-1 text-sm line-clamp-2 ${fontClasses?.body || ''}`} style={{ color: design.mainContentFontColor }}>
+                          {item.description}
+                        </p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span
+                            className={`font-bold ${fontClasses?.body || ''}`}
+                            style={{ color: design.buttonColor }}
+                          >
+                            {formatPrice(item.price)}
+                          </span>
+                          {item.tags.length > 0 && (
+                            <div className="flex gap-1">
+                              {item.tags.map((tag: string) => {
+                                const filter = DIETARY_FILTERS.find((f) => f.tag === tag);
+                                if (!filter) return null;
+                                return (
+                                  <span
+                                    key={tag}
+                                    className={`flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium ${fontClasses?.body || ''}`}
+                                  >
+                                    <span className="text-xs">{filter.icon}</span>
+                                    {filter.label}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        {item.allergens.length > 0 && (
+                          <div className="mt-2 flex gap-1">
+                            {item.allergens.map((a: string) => (
+                              <span key={a} className="text-xs" title={a}>
+                                {ALLERGEN_ICONS[a] ?? "⚠️"}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {cat.items.length === 0 && (
+                  <p className={`text-center text-sm ${fontClasses?.body || ''}`} style={{ color: design.mainContentFontColor }}>
+                    No dishes in this category.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
       {/* Dietary filter icons — bottom, compact */}
       <div className="flex shrink-0 items-center justify-center gap-2 border-t border-border/50 px-4 py-4" style={{ backgroundColor: design.headerFooterBackgroundColor }}>

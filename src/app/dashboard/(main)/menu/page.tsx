@@ -56,7 +56,71 @@ export default function MenuPage() {
     tags: [] as string[],
     customTag: "",
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(file: File): Promise<string | null> {
+    if (!currentRestaurant) return null;
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload a PNG, JPEG, or WebP image');
+      return null;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert('Please upload an image smaller than 5MB');
+      return null;
+    }
+
+    try {
+      setUploadingImage(true);
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentRestaurant.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('menu-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        alert('Failed to upload image. Please try again.');
+        return null;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('menu-images')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const imageUrl = await handleImageUpload(file);
+    if (imageUrl) {
+      setDishForm({ ...dishForm, image: imageUrl });
+    }
+  }
 
   useEffect(() => {
     if (currentRestaurant) {
@@ -96,7 +160,7 @@ export default function MenuPage() {
               name: dish.name,
               description: dish.description || "",
               price: parseFloat(dish.price) || 0,
-              image_url: dish.image,
+              image_url: dish.image_url,
               image_alt: "",
               allergens: [],
               tags: dish.tags || [],
@@ -211,7 +275,7 @@ export default function MenuPage() {
                 name: item.name,
                 description: item.description,
                 price: item.price.toString(),
-                image: item.image_url,
+                image_url: item.image_url,
                 tags: item.tags,
                 updated_at: new Date().toISOString(),
               })
@@ -226,7 +290,7 @@ export default function MenuPage() {
                 name: item.name,
                 description: item.description,
                 price: item.price.toString(),
-                image: item.image_url,
+                image_url: item.image_url,
                 tags: item.tags,
               });
           }
@@ -345,17 +409,6 @@ export default function MenuPage() {
     );
   }
 
-
-  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setDishForm((prev) => ({ ...prev, image: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  }
 
   function handleImageUploadClick() {
     imageInputRef.current?.click();
@@ -747,16 +800,26 @@ export default function MenuPage() {
                       size="sm"
                       variant="outline"
                       onClick={handleImageUploadClick}
+                      disabled={uploadingImage}
                       className="gap-2 w-full"
                     >
-                      <Upload className="h-4 w-4" />
-                      Upload Image from Files or Photo Library
+                      {uploadingImage ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          Upload Image from Files or Photo Library
+                        </>
+                      )}
                     </Button>
                     <input
                       ref={imageInputRef}
                       type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleImageChange}
                       className="hidden"
                     />
                   </div>

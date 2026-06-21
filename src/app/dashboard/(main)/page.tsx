@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { UtensilsCrossed, LayoutTemplate, Palette, QrCode, ArrowRight, CheckCircle2 } from "lucide-react";
+import { UtensilsCrossed, LayoutTemplate, Palette, QrCode, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -14,7 +14,7 @@ export default function DashboardPage() {
     totalDishes: 0,
     totalLinks: 0,
   });
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   useEffect(() => {
     if (currentRestaurant) {
@@ -102,11 +102,22 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Managing <span className="font-medium text-gray-900">{currentRestaurant.name}</span>
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Managing <span className="font-medium text-gray-900">{currentRestaurant.name}</span>
+          </p>
+        </div>
+        {currentRestaurant.slug && (
+          <Button
+            onClick={() => window.open(`https://menulia.net/${currentRestaurant.slug}`, '_blank')}
+            className="gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View Live Site
+          </Button>
+        )}
       </div>
 
       {/* Quick Stats */}
