@@ -142,11 +142,14 @@ export async function fetchExpenses(restaurantId: string) {
   return [];
 }
 
-export async function fetchAllRestaurants() {
+export async function fetchAllRestaurants(userId?: string) {
   try {
+    if (!userId) return [];
+    
     const { data, error } = await supabase
       .from('restaurants')
-      .select('*');
+      .select('*')
+      .eq('user_id', userId);
 
     if (error) throw error;
     return data || [];

@@ -1,43 +1,79 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export interface Restaurant {
   id: string;
   name: string;
   slug: string;
   font_pack_id?: string;
+  user_id?: string;
 }
 
 interface RestaurantContextType {
   currentRestaurant: Restaurant | null;
   setCurrentRestaurant: (restaurant: Restaurant) => void;
   restaurants: Restaurant[];
+  loading: boolean;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
 
-const DEFAULT_RESTAURANTS: Restaurant[] = [
-  { id: "1", name: "La Calle Tacos", slug: "la-calle-tacos" },
-  { id: "2", name: "Sakura Omakase", slug: "sakura-omakase" },
-  { id: "3", name: "Nonna Rosa Trattoria", slug: "nonna-rosa-trattoria" },
-];
-
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
-  const [restaurants] = useState<Restaurant[]>(DEFAULT_RESTAURANTS);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadRestaurants();
+  }, []);
 
   useEffect(() => {
     // Load saved restaurant from localStorage
     const saved = localStorage.getItem("menulia_current_restaurant");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setCurrentRestaurant(parsed);
+    if (saved && restaurants.length > 0) {
+      try {
+        const parsed = JSON.parse(saved);
+        const exists = restaurants.find(r => r.id === parsed.id);
+        if (exists) {
+          setCurrentRestaurant(parsed);
+        } else if (restaurants.length > 0) {
+          setCurrentRestaurant(restaurants[0]);
+        }
+      } catch (e) {
+        if (restaurants.length > 0) {
+          setCurrentRestaurant(restaurants[0]);
+        }
+      }
     } else if (restaurants.length > 0) {
-      // Default to first restaurant
       setCurrentRestaurant(restaurants[0]);
     }
-  }, []);
+  }, [restaurants]);
+
+  async function loadRestaurants() {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('id, name, slug, font_pack_id, user_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setRestaurants(data || []);
+    } catch (error) {
+      console.error('Error loading restaurants:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleSetRestaurant = (restaurant: Restaurant) => {
     setCurrentRestaurant(restaurant);
@@ -52,6 +88,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         currentRestaurant,
         setCurrentRestaurant: handleSetRestaurant,
         restaurants,
+        loading,
       }}
     >
       {children}

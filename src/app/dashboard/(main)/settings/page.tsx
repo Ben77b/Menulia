@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Link2, Trash2, Plus } from "lucide-react";
+import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe } from "lucide-react";
 
 interface OperatingHour {
   day: string;
@@ -32,7 +32,13 @@ export default function SettingsPage() {
   ]);
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
+  const [restaurantName, setRestaurantName] = useState("");
+  const [restaurantEmail, setRestaurantEmail] = useState("");
+  const [restaurantSlug, setRestaurantSlug] = useState("");
+  const [slugError, setSlugError] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
 
   useEffect(() => {
     if (currentRestaurant) {
@@ -46,7 +52,7 @@ export default function SettingsPage() {
     try {
       const { data, error } = await supabase
         .from('restaurants')
-        .select('operating_hours, custom_links, footer_slogan')
+        .select('operating_hours, custom_links, footer_slogan, name, email, slug')
         .eq('id', currentRestaurant.id)
         .single();
 
@@ -61,6 +67,15 @@ export default function SettingsPage() {
         }
         if (data.footer_slogan) {
           setFooterSlogan(data.footer_slogan || "");
+        }
+        if (data.name) {
+          setRestaurantName(data.name);
+        }
+        if (data.email) {
+          setRestaurantEmail(data.email || "");
+        }
+        if (data.slug) {
+          setRestaurantSlug(data.slug);
         }
       }
     } catch (error) {
@@ -108,6 +123,28 @@ export default function SettingsPage() {
     }
   }
 
+  async function saveRestaurantProfile() {
+    if (!currentRestaurant) return;
+
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({
+          name: restaurantName,
+          email: restaurantEmail,
+          slug: restaurantSlug,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentRestaurant.id);
+
+      if (error) throw error;
+      alert("Restaurant profile saved!");
+    } catch (error) {
+      console.error('Error saving restaurant profile:', error);
+      alert("Failed to save restaurant profile");
+    }
+  }
+
   function handleOperatingHourChange(index: number, field: keyof OperatingHour, value: any) {
     const newHours = [...operatingHours];
     newHours[index] = { ...newHours[index], [field]: value };
@@ -133,6 +170,17 @@ export default function SettingsPage() {
     ));
   }
 
+  function handleSlugChange(value: string) {
+    const formatted = value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-');
+    setRestaurantSlug(formatted);
+    
+    if (formatted && !slugRegex.test(formatted)) {
+      setSlugError("Slug must contain only lowercase letters, numbers, and hyphens");
+    } else {
+      setSlugError("");
+    }
+  }
+
   if (loading) return <div>Loading...</div>;
   if (!currentRestaurant) return <div>Loading...</div>;
 
@@ -144,6 +192,61 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Restaurant Profile */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Building2 className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Restaurant Profile</h2>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">Update your restaurant's basic information</p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Name</label>
+              <input
+                type="text"
+                value={restaurantName}
+                onChange={(e) => setRestaurantName(e.target.value)}
+                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                placeholder="Your Restaurant Name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+              <input
+                type="email"
+                value={restaurantEmail}
+                onChange={(e) => setRestaurantEmail(e.target.value)}
+                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                placeholder="contact@restaurant.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">URL Slug</label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">menulia.net/</span>
+                <input
+                  type="text"
+                  value={restaurantSlug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  placeholder="your-restaurant-slug"
+                />
+              </div>
+              {slugError && (
+                <p className="mt-1 text-xs text-red-600">{slugError}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Use only lowercase letters, numbers, and hyphens. No spaces.
+              </p>
+            </div>
+          </div>
+          
+          <Button className="mt-4" onClick={saveRestaurantProfile}>Save Profile</Button>
+        </div>
+
         {/* Operating Hours */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">

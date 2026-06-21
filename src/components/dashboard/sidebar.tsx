@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, LayoutTemplate, Palette, Settings, User, ChevronDown, Building2, X, QrCode } from "lucide-react";
+import { Home, LayoutTemplate, Palette, Settings, User, ChevronDown, Building2, X, QrCode, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
 
@@ -84,6 +84,19 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 </div>
               )}
             </div>
+
+            {/* View Live Menu Button */}
+            {currentRestaurant?.slug && (
+              <a
+                href={`https://menulia.net/${currentRestaurant.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-sm font-medium"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View Live Menu
+              </a>
+            )}
           </div>
 
           {/* Navigation Menu */}
