@@ -25,6 +25,18 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Safety timeout to force loading to false after 3 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Forcing restaurant loading to false due to timeout');
+        setLoading(false);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   useEffect(() => {
     loadRestaurants();
   }, []);
@@ -70,6 +82,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       setRestaurants(data || []);
     } catch (error) {
       console.error('Error loading restaurants:', error);
+      setRestaurants([]);
     } finally {
       setLoading(false);
     }

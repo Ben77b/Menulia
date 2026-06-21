@@ -16,6 +16,18 @@ export default function DashboardPage() {
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // Safety timeout to force loading states to false after 3 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading || statsLoading) {
+        console.warn('Forcing loading states to false due to timeout');
+        setStatsLoading(false);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [loading, statsLoading]);
+
   useEffect(() => {
     if (currentRestaurant) {
       loadStats();
