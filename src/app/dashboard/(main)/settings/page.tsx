@@ -40,6 +40,18 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const qrCodeRef = useRef<HTMLDivElement>(null);
 
+  // Safety timeout to force loading to false after 3 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Forcing settings loading to false due to timeout');
+        setLoading(false);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
 
   useEffect(() => {

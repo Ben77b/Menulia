@@ -33,6 +33,7 @@ interface MenuItem {
 export default function MenuPage() {
   const { currentRestaurant } = useRestaurant();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryLayoutType, setNewCategoryLayoutType] = useState<'stacked' | 'carousel'>('stacked');
@@ -43,6 +44,18 @@ export default function MenuPage() {
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [showTagManager, setShowTagManager] = useState(false);
   const [newGlobalTag, setNewGlobalTag] = useState("");
+
+  // Safety timeout to force loading to false after 3 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Forcing menu page loading to false due to timeout');
+        setLoading(false);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
   
   // Dish form state
   const [showDishForm, setShowDishForm] = useState(false);
@@ -132,6 +145,7 @@ export default function MenuPage() {
     if (!currentRestaurant) return;
 
     try {
+      setLoading(true);
       // Load categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
@@ -191,6 +205,7 @@ export default function MenuPage() {
       }
     } catch (error) {
       console.error('Error loading menu data:', error);
+      setCategories([]);
       // Fallback to localStorage
       const saved = localStorage.getItem(`menu-categories-${currentRestaurant.id}`);
       if (saved) {
@@ -205,6 +220,8 @@ export default function MenuPage() {
       } else {
         setCustomTags([]);
       }
+    } finally {
+      setLoading(false);
     }
   }
 

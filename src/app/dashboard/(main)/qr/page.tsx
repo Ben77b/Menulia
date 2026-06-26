@@ -12,6 +12,18 @@ export default function QrCodePage() {
   const [loading, setLoading] = useState(true);
   const qrRef = useRef<HTMLDivElement>(null);
 
+  // Safety timeout to force loading to false after 3 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Forcing QR page loading to false due to timeout');
+        setLoading(false);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
   useEffect(() => {
     if (currentRestaurant) {
       setLoading(false);
