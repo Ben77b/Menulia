@@ -16,18 +16,6 @@ export default function DashboardPage() {
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
-  // Safety timeout to force loading states to false after 3 seconds
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading || statsLoading) {
-        console.warn('Forcing loading states to false due to timeout');
-        setStatsLoading(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [loading, statsLoading]);
-
   useEffect(() => {
     if (currentRestaurant) {
       loadStats();
@@ -89,20 +77,12 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading || statsLoading) {
-    return <div>Loading...</div>;
-  }
+  // Don't block page render - let layout render immediately
+  // Stats will load in background
 
-  if (!currentRestaurant) {
-    return (
-      <div>
-        <h1 className="text-2xl font-bold">Welcome back</h1>
-        <p className="mt-1 text-text-secondary">
-          Please select a restaurant to manage.
-        </p>
-      </div>
-    );
-  }
+  // Always render the layout, show different content based on state
+  const displayName = currentRestaurant?.name || (loading ? 'Loading...' : 'No restaurant selected');
+  const showViewLiveSite = currentRestaurant?.slug && !loading;
 
   const quickSteps = [
     {
@@ -134,10 +114,10 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Managing <span className="font-medium text-gray-900">{currentRestaurant.name}</span>
+            Managing <span className="font-medium text-gray-900">{displayName}</span>
           </p>
         </div>
-        {currentRestaurant.slug && (
+        {showViewLiveSite && currentRestaurant && (
           <Button
             onClick={() => window.open(`https://menulia.net/${currentRestaurant.slug}`, '_blank')}
             className="gap-2"
