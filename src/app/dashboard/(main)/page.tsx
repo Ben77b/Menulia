@@ -39,25 +39,35 @@ export default function DashboardPage() {
 
     try {
       setStatsLoading(true);
-      
+
       // Fetch categories count
-      const { data: categoriesData } = await supabase
+      const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('id')
         .eq('restaurant_id', currentRestaurant.id);
 
-      // Fetch dishes count
-      const { data: dishesData } = await supabase
-        .from('dishes')
-        .select('id')
-        .in('category_id', (categoriesData || []).map(c => c.id));
+      if (categoriesError) throw categoriesError;
+
+      // Fetch dishes count - only if we have categories
+      let dishesData = [];
+      if (categoriesData && categoriesData.length > 0) {
+        const { data: dishesResult, error: dishesError } = await supabase
+          .from('dishes')
+          .select('id')
+          .in('category_id', categoriesData.map(c => c.id));
+
+        if (dishesError) throw dishesError;
+        dishesData = dishesResult || [];
+      }
 
       // Fetch custom links count
-      const { data: restaurantData } = await supabase
+      const { data: restaurantData, error: restaurantError } = await supabase
         .from('restaurants')
         .select('custom_links')
         .eq('id', currentRestaurant.id)
         .single();
+
+      if (restaurantError) throw restaurantError;
 
       const customLinks = restaurantData?.custom_links || [];
 
@@ -68,6 +78,12 @@ export default function DashboardPage() {
       });
     } catch (error) {
       console.error('Error loading stats:', error);
+      // Set safe fallback values on error
+      setStats({
+        totalCategories: 0,
+        totalDishes: 0,
+        totalLinks: 0,
+      });
     } finally {
       setStatsLoading(false);
     }
@@ -94,7 +110,7 @@ export default function DashboardPage() {
       title: "Build your categories",
       description: "Create menu categories to organize your dishes",
       href: "/dashboard/menu",
-      completed: stats.totalCategories > 0,
+      completed: (stats?.totalCategories || 0) > 0,
     },
     {
       icon: Palette,
@@ -136,17 +152,17 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <UtensilsCrossed className="h-5 w-5 text-indigo-600" />
-          <p className="mt-3 text-2xl font-bold text-gray-900">{stats.totalCategories}</p>
+          <p className="mt-3 text-2xl font-bold text-gray-900">{stats?.totalCategories ?? 0}</p>
           <p className="text-sm text-gray-600">Total Menu Categories</p>
         </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <LayoutTemplate className="h-5 w-5 text-indigo-600" />
-          <p className="mt-3 text-2xl font-bold text-gray-900">{stats.totalDishes}</p>
+          <p className="mt-3 text-2xl font-bold text-gray-900">{stats?.totalDishes ?? 0}</p>
           <p className="text-sm text-gray-600">Total Active Dishes</p>
         </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5">
           <QrCode className="h-5 w-5 text-indigo-600" />
-          <p className="mt-3 text-2xl font-bold text-gray-900">{stats.totalLinks}</p>
+          <p className="mt-3 text-2xl font-bold text-gray-900">{stats?.totalLinks ?? 0}</p>
           <p className="text-sm text-gray-600">Dynamic Link Count</p>
         </div>
       </div>
