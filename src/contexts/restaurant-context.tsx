@@ -66,24 +66,46 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   async function loadRestaurants() {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Loading restaurants...');
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Supabase Context Auth Error:', authError);
+        throw authError;
+      }
       if (!user) {
-        setLoading(false);
+        console.log('No user found, setting loading to false');
+        setRestaurants([]);
+        setCurrentRestaurant(null);
         return;
       }
 
+      console.log('User found:', user.id);
       const { data, error } = await supabase
         .from('restaurants')
         .select('id, name, slug, font_pack_id, user_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase Context Query Error:', error);
+        throw error;
+      }
+
+      console.log('Restaurants loaded:', data?.length || 0);
       setRestaurants(data || []);
+
+      // Safety clause: if no restaurants found, ensure loading is set to false
+      if (!data || data.length === 0) {
+        console.log('No restaurants found for user');
+        setCurrentRestaurant(null);
+      }
     } catch (error) {
-      console.error('Error loading restaurants:', error);
+      console.error('Supabase Context Error:', error);
       setRestaurants([]);
+      setCurrentRestaurant(null);
     } finally {
+      console.log('Setting loading to false in finally block');
       setLoading(false);
     }
   }
