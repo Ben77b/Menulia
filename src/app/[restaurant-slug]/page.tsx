@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { fetchRestaurantBySlug, fetchAllRestaurantSlugs } from "@/lib/data";
-import { DinerApp } from "@/components/public/diner-app";
+import { PublicMenuTemplate } from "@/components/public/public-menu-template";
 
 interface PageProps {
   params: Promise<{ "restaurant-slug": string }>;
@@ -27,5 +27,5 @@ export default async function RestaurantPage({ params }: PageProps) {
 
   if (!restaurant) notFound();
 
-  return <DinerApp restaurant={restaurant} />;
+  return <PublicMenuTemplate restaurant={restaurant} />;
 }
