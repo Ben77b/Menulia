@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock } from "lucide-react";
+import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock, Download, AlertTriangle, CreditCard } from "lucide-react";
 
 interface OperatingHour {
   day: string;
@@ -203,9 +203,10 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await supabase.auth.updateUser({
-          data: { full_name: userFullName }
+          data: { full_name: userFullName },
+          email: userEmail
         });
-        alert("Account details saved!");
+        alert("Account details saved! If you changed your email, you will need to verify the new address before the change takes effect.");
       }
     } catch (error) {
       console.error('Error saving account details:', error);
@@ -220,6 +221,23 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error logging out:', error);
       alert("Failed to log out");
+    }
+  }
+
+  async function handleDownloadData() {
+    alert("Preparing data export... This feature will be available soon.");
+  }
+
+  async function handleDeleteAccount() {
+    const confirmed = confirm("Are you sure? This will permanently delete your restaurant, menu, and account data. This cannot be undone.");
+    if (confirmed) {
+      try {
+        await supabase.auth.signOut();
+        router.push('/');
+      } catch (error) {
+        console.error('Error deleting account:', error);
+        alert("Failed to delete account");
+      }
     }
   }
 
@@ -441,13 +459,22 @@ export default function SettingsPage() {
                 <input
                   type="email"
                   value={userEmail}
-                  disabled
-                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   placeholder="your@email.com"
                 />
-                <p className="mt-1 text-xs text-gray-500">Email cannot be changed. Contact support if needed.</p>
+                <p className="mt-1 text-xs text-gray-500">If you change your email, you will need to verify the new address before the change takes effect.</p>
               </div>
               <Button onClick={saveAccountDetails}>Save Account Details</Button>
+            </div>
+
+            {/* Subscription */}
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Subscription</h3>
+              <Button variant="outline" className="gap-2">
+                <CreditCard className="h-4 w-4" />
+                Manage Billing
+              </Button>
             </div>
 
             <div className="border-t border-gray-200 pt-6">
@@ -462,6 +489,39 @@ export default function SettingsPage() {
                   Log Out
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="bg-white rounded-xl border-2 border-red-200 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">Irreversible and destructive actions for your account and data</p>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900">Download My Data</h3>
+                <p className="text-xs text-gray-600">Export all your restaurant and account data (GDPR/CCPA compliance)</p>
+              </div>
+              <Button variant="outline" className="gap-2" onClick={handleDownloadData}>
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100">
+              <div>
+                <h3 className="text-sm font-medium text-red-900">Delete Account</h3>
+                <p className="text-xs text-gray-600">Permanently delete your restaurant, menu, and account data</p>
+              </div>
+              <Button variant="danger" className="gap-2" onClick={handleDeleteAccount}>
+                <Trash2 className="h-4 w-4" />
+                Delete Account
+              </Button>
             </div>
           </div>
         </div>
