@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe } from "lucide-react";
+import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock } from "lucide-react";
 
 interface OperatingHour {
   day: string;
@@ -20,6 +21,7 @@ interface CustomLink {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { currentRestaurant } = useRestaurant();
   const [operatingHours, setOperatingHours] = useState<OperatingHour[]>([
     { day: "Monday", isOpen: true, startTime: "09:00", endTime: "22:00" },
@@ -36,6 +38,8 @@ export default function SettingsPage() {
   const [restaurantEmail, setRestaurantEmail] = useState("");
   const [restaurantSlug, setRestaurantSlug] = useState("");
   const [slugError, setSlugError] = useState("");
+  const [userFullName, setUserFullName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
 
@@ -44,6 +48,22 @@ export default function SettingsPage() {
       loadRestaurantData();
     }
   }, [currentRestaurant]);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  async function loadUserData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || "");
+        setUserFullName(user.user_metadata?.full_name || "");
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    }
+  }
 
   async function loadRestaurantData() {
     if (!currentRestaurant) return;
@@ -175,6 +195,31 @@ export default function SettingsPage() {
       setSlugError("Slug must contain only lowercase letters, numbers, and hyphens");
     } else {
       setSlugError("");
+    }
+  }
+
+  async function saveAccountDetails() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.auth.updateUser({
+          data: { full_name: userFullName }
+        });
+        alert("Account details saved!");
+      }
+    } catch (error) {
+      console.error('Error saving account details:', error);
+      alert("Failed to save account details");
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      alert("Failed to log out");
     }
   }
 
@@ -367,6 +412,58 @@ export default function SettingsPage() {
           </div>
           
           <Button className="mt-4" onClick={saveFooterSettings}>Save Footer Settings</Button>
+        </div>
+
+        {/* Account Management */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <User className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Account Management</h2>
+          </div>
+          <p className="text-sm text-gray-600 mb-4">Manage your personal SaaS account details and security settings</p>
+
+          <div className="space-y-6">
+            {/* Personal Details */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-gray-700">Personal Details</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <input
+                  type="text"
+                  value={userFullName}
+                  onChange={(e) => setUserFullName(e.target.value)}
+                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  placeholder="Your full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Account Email</label>
+                <input
+                  type="email"
+                  value={userEmail}
+                  disabled
+                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                  placeholder="your@email.com"
+                />
+                <p className="mt-1 text-xs text-gray-500">Email cannot be changed. Contact support if needed.</p>
+              </div>
+              <Button onClick={saveAccountDetails}>Save Account Details</Button>
+            </div>
+
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Session & Security</h3>
+              <div className="flex gap-3">
+                <Button variant="outline" className="gap-2">
+                  <Lock className="h-4 w-4" />
+                  Change Password
+                </Button>
+                <Button variant="danger" className="gap-2" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                  Log Out
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
