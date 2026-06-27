@@ -4,11 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
-import {
-  buildRestaurantUpdateWithSlug,
-  resolveRestaurantSlugFromRow,
-  resolveRestaurantTableSchema,
-} from "@/lib/restaurant-schema";
+import { resolveRestaurantSlugFromRow } from "@/lib/restaurant-schema";
 import { Button } from "@/components/ui/button";
 import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock, Download, AlertTriangle, CreditCard } from "lucide-react";
 
@@ -147,16 +143,14 @@ export default function SettingsPage() {
     if (!currentRestaurant) return;
 
     try {
-      const slugColumn = await resolveRestaurantTableSchema(supabase);
-      const updatePayload = buildRestaurantUpdateWithSlug(slugColumn, restaurantSlug, {
-        name: restaurantName,
-        email: restaurantEmail,
-        updated_at: new Date().toISOString(),
-      });
-
       const { error } = await supabase
         .from("restaurants")
-        .update(updatePayload)
+        .update({
+          name: restaurantName,
+          email: restaurantEmail,
+          slug: restaurantSlug,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", currentRestaurant.id);
 
       if (error) throw error;

@@ -14,7 +14,8 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { buildUserProfile, syncUserProfileRecord, type UserProfile } from "@/lib/auth/profile";
 import { logAuthDiagnostic } from "@/lib/auth/messages";
-import { resolveRestaurantSlugFromRow, queryRestaurantsForOwner } from "@/lib/restaurant-schema";
+import { resolveRestaurantSlugFromRow } from "@/lib/restaurant-schema";
+import { ensureRestaurantsSchemaReady } from "@/lib/db/ensure-restaurants-schema";
 
 export interface RestaurantSummary {
   id: string;
@@ -89,17 +90,22 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const loadRestaurantsForUser = useCallback(async (userId: string) => {
     const supabase = getSupabaseBrowserClient();
 
-    try {
-      const { data, schema } = await queryRestaurantsForOwner(supabase, userId);
-      const summaries = data.map((row) => toSummary(row));
-      setRestaurants(summaries);
-      return summaries;
-    } catch (error) {
+    const { data, error } = await supabase
+      .from("restaurants")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
       logAuthDiagnostic("restaurants.load", error);
       console.dir(error, { depth: null });
       setRestaurants([]);
       return [];
     }
+
+    const summaries = (data || []).map((row) => toSummary(row as Record<string, unknown>));
+    setRestaurants(summaries);
+    return summaries;
   }, []);
 
   const refreshRestaurants = useCallback(async () => {
@@ -164,6 +170,12 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         const sessionUser = session?.user ?? null;
 
         if (sessionUser) {
+          try {
+            await ensureRestaurantsSchemaReady();
+          } catch (schemaError) {
+            logAuthDiagnostic("schema.ensure", schemaError);
+          }
+
           await hydrateAuthenticatedUser(sessionUser);
           await loadRestaurantsForUser(sessionUser.id);
         } else {

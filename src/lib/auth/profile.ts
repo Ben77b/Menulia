@@ -1,7 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import { queryRestaurantsForOwner } from "@/lib/restaurant-schema";
 import { ensureAuthSessionCommitted } from "./session";
 import { logAuthDiagnostic } from "./messages";
 
@@ -101,14 +100,19 @@ export async function fetchRestaurantsForLogin(
   supabase: SupabaseClient,
   userId: string
 ): Promise<Array<{ id: string }>> {
-  try {
-    const { data } = await queryRestaurantsForOwner(supabase, userId);
-    return data.map((row) => ({ id: String(row.id) }));
-  } catch (error) {
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
     logAuthDiagnostic("restaurants.loginFetch", error);
     console.dir(error, { depth: null });
     return [];
   }
+
+  return data ?? [];
 }
 
 export async function resolveLoginDestination(

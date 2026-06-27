@@ -1,21 +1,15 @@
 import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
 import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
-import type { PostgrestError } from "@supabase/supabase-js";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { RestaurantCreationError, logSupabaseFailure } from "./auth/errors";
-import {
-  ensureUserProfileReady,
-  waitForAuthenticatedSession,
-} from "./auth/session";
+import { ensureUserProfileReady } from "./auth/session";
+import { ensureRestaurantsSchemaReady } from "./db/ensure-restaurants-schema";
 import {
   buildRestaurantInsertPayload,
-  invalidateRestaurantTableSchema,
-  isSchemaColumnMissing,
-  queryRestaurantsForOwner,
+  normalizeRestaurantSlug,
   resolveRestaurantOwnerFromRow,
   resolveRestaurantSlugFromRow,
-  resolveRestaurantTableSchema,
-  type RestaurantTableSchema,
+  RESTAURANT_SLUG_COLUMN,
 } from "./restaurant-schema";
 
 function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
@@ -34,14 +28,11 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
   };
 }
 
-function normalizeRestaurantRow(
-  row: Record<string, unknown>,
-  schema: RestaurantTableSchema
-): Restaurant {
+function normalizeRestaurantRow(row: Record<string, unknown>): Restaurant {
   return {
     ...(row as Restaurant),
-    user_id: resolveRestaurantOwnerFromRow(row, schema) || (row.user_id as string),
-    slug: resolveRestaurantSlugFromRow(row, schema),
+    user_id: resolveRestaurantOwnerFromRow(row),
+    slug: resolveRestaurantSlugFromRow(row),
     logo: (row.logo as string | null) ?? (row.logo_url as string | null) ?? null,
   };
 }
@@ -82,44 +73,41 @@ async function fetchCategoriesWithDishes(restaurantId: string) {
 export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFull | null> {
   try {
     const supabase = createAnonClient();
-    const schema = await resolveRestaurantTableSchema(supabase);
-    let restaurant: Record<string, unknown> | null = null;
 
-    if (schema.slugColumn) {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq(schema.slugColumn, slug)
-        .maybeSingle();
+    const { data: restaurant, error } = await supabase
+      .from("restaurants")
+      .select("*")
+      .eq(RESTAURANT_SLUG_COLUMN, slug)
+      .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
-        logSupabaseFailure("fetchRestaurantBySlug", error);
-      } else if (data) {
-        restaurant = data;
-      }
+    if (error && error.code !== "PGRST116") {
+      logSupabaseFailure("fetchRestaurantBySlug", error);
+      return null;
     }
 
-    if (!restaurant) {
-      const { data, error } = await supabase
+    let resolvedRestaurant = restaurant;
+
+    if (!resolvedRestaurant) {
+      const { data: restaurantById, error: idError } = await supabase
         .from("restaurants")
         .select("*")
         .eq("id", slug)
         .maybeSingle();
 
-      if (error && error.code !== "PGRST116") {
-        logSupabaseFailure("fetchRestaurantBySlug.idFallback", error);
+      if (idError && idError.code !== "PGRST116") {
+        logSupabaseFailure("fetchRestaurantBySlug.idFallback", idError);
         return null;
       }
 
-      restaurant = data;
+      resolvedRestaurant = restaurantById;
     }
 
-    if (!restaurant) return null;
+    if (!resolvedRestaurant) return null;
 
-    const categories = await fetchCategoriesWithDishes(String(restaurant.id));
+    const categories = await fetchCategoriesWithDishes(String(resolvedRestaurant.id));
 
     return {
-      ...normalizeRestaurantRow(restaurant, schema),
+      ...normalizeRestaurantRow(resolvedRestaurant),
       categories,
     } as RestaurantFull;
   } catch (error) {
@@ -131,16 +119,14 @@ export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFul
 export async function fetchAllRestaurantSlugs(): Promise<string[]> {
   try {
     const supabase = createAnonClient();
-    const schema = await resolveRestaurantTableSchema(supabase);
-
-    const { data, error } = await supabase.from("restaurants").select("*");
+    const { data, error } = await supabase.from("restaurants").select("id, slug");
 
     if (error) {
       logSupabaseFailure("fetchAllRestaurantSlugs", error);
       return [];
     }
 
-    return (data || []).map((row) => resolveRestaurantSlugFromRow(row, schema));
+    return (data || []).map((row) => resolveRestaurantSlugFromRow(row));
   } catch (error) {
     console.error("Error fetching restaurant slugs:", error);
     return [];
@@ -149,15 +135,32 @@ export async function fetchAllRestaurantSlugs(): Promise<string[]> {
 
 export async function fetchAllRestaurants(userId: string): Promise<Restaurant[]> {
   const supabase = getSupabaseBrowserClient();
-  const { data, schema } = await queryRestaurantsForOwner(supabase, userId);
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
 
-  return data.map((row) => normalizeRestaurantRow(row, schema));
+  if (error) {
+    logSupabaseFailure("fetchAllRestaurants", error);
+    throw error;
+  }
+
+  return (data || []).map((row) => normalizeRestaurantRow(row));
 }
 
 export async function fetchRestaurantsForAuthenticatedUser(): Promise<Restaurant[]> {
   const supabase = getSupabaseBrowserClient();
-  const session = await waitForAuthenticatedSession(supabase);
-  return fetchAllRestaurants(session.user.id);
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    throw new Error("You must be signed in to load restaurants.");
+  }
+
+  return fetchAllRestaurants(user.id);
 }
 
 export interface CreateRestaurantInput {
@@ -172,35 +175,14 @@ export interface CreateRestaurantResult {
   slugWasAdjusted: boolean;
 }
 
-async function requireAuthenticatedUser(supabase: SupabaseClient): Promise<User> {
-  const session = await waitForAuthenticatedSession(supabase);
-  await ensureUserProfileReady(supabase, session.user);
-  return session.user;
-}
-
-async function isSlugTaken(
-  supabase: SupabaseClient,
-  slug: string,
-  schema: RestaurantTableSchema
-): Promise<boolean> {
-  if (!schema.slugColumn) {
-    return false;
-  }
-
+async function isSlugTaken(supabase: SupabaseClient, slug: string): Promise<boolean> {
   const { data, error } = await supabase
     .from("restaurants")
     .select("id")
-    .eq(schema.slugColumn, slug)
+    .eq(RESTAURANT_SLUG_COLUMN, slug)
     .maybeSingle();
 
   if (error) {
-    if (isSchemaColumnMissing(error.code)) {
-      console.warn(
-        `[restaurants.slugCheck] Column "${schema.slugColumn}" is unavailable; skipping uniqueness check.`
-      );
-      return false;
-    }
-
     logSupabaseFailure("restaurants.slugCheck", error);
     throw new RestaurantCreationError(error, "slugCheck");
   }
@@ -216,26 +198,15 @@ export async function resolveUniqueRestaurantSlug(
   supabase: SupabaseClient,
   requestedSlug: string
 ): Promise<{ slug: string; adjusted: boolean }> {
-  const normalized = requestedSlug
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+  const normalized = normalizeRestaurantSlug(requestedSlug);
 
-  if (!normalized) {
-    throw new Error("URL slug is required.");
-  }
-
-  const schema = await resolveRestaurantTableSchema(supabase);
-
-  if (!(await isSlugTaken(supabase, normalized, schema))) {
+  if (!(await isSlugTaken(supabase, normalized))) {
     return { slug: normalized, adjusted: false };
   }
 
   for (let attempt = 0; attempt < 12; attempt++) {
     const candidate = `${normalized}-${randomSlugSuffix()}`;
-    if (!(await isSlugTaken(supabase, candidate, schema))) {
+    if (!(await isSlugTaken(supabase, candidate))) {
       return { slug: candidate, adjusted: true };
     }
   }
@@ -246,109 +217,80 @@ export async function resolveUniqueRestaurantSlug(
   };
 }
 
-async function insertRestaurantRecord(
-  supabase: SupabaseClient,
-  userId: string,
-  name: string,
-  slug: string,
-  logo?: string | null
-): Promise<{ restaurant: Restaurant; schema: RestaurantTableSchema }> {
-  let schema = await resolveRestaurantTableSchema(supabase);
-  let payload = buildRestaurantInsertPayload({
-    schema,
-    userId,
-    name,
-    slug,
-    logo,
+export async function createRestaurant(input: CreateRestaurantInput): Promise<CreateRestaurantResult> {
+  await ensureRestaurantsSchemaReady();
+
+  const supabase = getSupabaseBrowserClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    logSupabaseFailure("createRestaurant.getUser", userError);
+    throw new RestaurantCreationError(userError, "auth");
+  }
+
+  if (!user?.id) {
+    throw new Error("You must be signed in to create a restaurant.");
+  }
+
+  await ensureUserProfileReady(supabase, user);
+
+  const { slug: finalSlug, adjusted: slugWasAdjusted } = await resolveUniqueRestaurantSlug(
+    supabase,
+    input.slug
+  );
+
+  const payload = buildRestaurantInsertPayload({
+    name: input.name,
+    slug: finalSlug,
+    userId: user.id,
   });
 
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("restaurants")
     .insert(payload)
     .select("*")
     .single();
-
-  if (error && isSchemaColumnMissing(error.code)) {
-    logSupabaseFailure("restaurants.insert.schemaMismatch", error);
-    invalidateRestaurantTableSchema();
-    schema = await resolveRestaurantTableSchema(supabase, true);
-    payload = buildRestaurantInsertPayload({
-      schema,
-      userId,
-      name,
-      slug,
-      logo,
-    });
-
-    ({ data, error } = await supabase
-      .from("restaurants")
-      .insert(payload)
-      .select("*")
-      .single());
-  }
 
   if (error || !data) {
     throw new RestaurantCreationError(
       error ?? {
         message: "Restaurant insert failed without a database response.",
         details: "Supabase did not return the inserted restaurant row.",
-        hint: "Confirm public.restaurants has user_id, name, and slug columns.",
+        hint: "Verify user_id, slug, and name columns exist on public.restaurants.",
         code: "insert_failed",
       },
       "insert"
     );
   }
 
-  return {
-    restaurant: normalizeRestaurantRow(data, schema),
-    schema,
-  };
-}
+  if (input.logo) {
+    const { error: logoError } = await supabase
+      .from("restaurants")
+      .update({ logo_url: input.logo })
+      .eq("id", data.id);
 
-export async function createRestaurant(input: CreateRestaurantInput): Promise<CreateRestaurantResult> {
-  const supabase = getSupabaseBrowserClient();
-
-  try {
-    const user = await requireAuthenticatedUser(supabase);
-    const { slug: finalSlug, adjusted: slugWasAdjusted } = await resolveUniqueRestaurantSlug(
-      supabase,
-      input.slug
-    );
-
-    const { restaurant, schema } = await insertRestaurantRecord(
-      supabase,
-      user.id,
-      input.name,
-      finalSlug,
-      input.logo
-    );
-
-    const resolvedSlug = resolveRestaurantSlugFromRow(
-      restaurant as unknown as Record<string, unknown>,
-      schema
-    );
-
-    return {
-      restaurant: {
-        ...restaurant,
-        user_id: user.id,
-        slug: resolvedSlug || finalSlug || restaurant.id,
-      },
-      finalSlug: resolvedSlug || finalSlug || restaurant.id,
-      slugWasAdjusted,
-    };
-  } catch (error) {
-    if (error instanceof RestaurantCreationError) {
-      throw error;
+    if (logoError) {
+      logSupabaseFailure("restaurants.logoUpdate", logoError);
+    } else {
+      data.logo_url = input.logo;
     }
-
-    if (error instanceof Error) {
-      throw error;
-    }
-
-    logSupabaseFailure("createRestaurant", error);
-    throw new Error("Failed to create restaurant.");
   }
+
+  const restaurant = normalizeRestaurantRow(data);
+
+  return {
+    restaurant: {
+      ...restaurant,
+      user_id: user.id,
+      slug: finalSlug,
+    },
+    finalSlug,
+    slugWasAdjusted,
+  };
 }
 
 export async function waitForRestaurantInList(
