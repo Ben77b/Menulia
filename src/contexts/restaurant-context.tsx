@@ -31,7 +31,7 @@ interface RestaurantContextType {
   user: User | null;
   refreshRestaurants: () => Promise<RestaurantSummary[]>;
   switchRestaurant: (restaurantId: string) => void;
-  activateRestaurant: (restaurantId: string) => void;
+  activateRestaurant: (restaurantId: string, summary?: RestaurantSummary) => void;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
@@ -41,6 +41,7 @@ function toSummary(restaurant: {
   name: string;
   slug: string;
   logo?: string | null;
+  logo_url?: string | null;
   font_pack_id?: string;
   user_id?: string;
 }): RestaurantSummary {
@@ -48,7 +49,7 @@ function toSummary(restaurant: {
     id: restaurant.id,
     name: restaurant.name,
     slug: restaurant.slug,
-    logo: restaurant.logo ?? null,
+    logo: restaurant.logo ?? restaurant.logo_url ?? null,
     font_pack_id: restaurant.font_pack_id,
     user_id: restaurant.user_id,
   };
@@ -73,7 +74,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from("restaurants")
-      .select("id, name, slug, logo, font_pack_id, user_id")
+      .select("id, name, slug, logo, logo_url, font_pack_id, user_id")
       .eq("user_id", userId)
       .order("created_at", { ascending: true });
 
@@ -102,16 +103,25 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     }
   }, [loadRestaurantsForUser]);
 
-  const activateRestaurant = useCallback(
-    (id: string) => {
-      const restaurant = restaurants.find((entry) => entry.id === id);
-      if (!restaurant) return;
+  const activateRestaurant = useCallback((id: string, summary?: RestaurantSummary) => {
+    if (summary) {
+      setRestaurants((previous) => {
+        if (previous.some((entry) => entry.id === id)) {
+          return previous;
+        }
+        return [...previous, summary];
+      });
+      setCurrentRestaurant(summary);
+      localStorage.setItem("menulia_current_restaurant", JSON.stringify(summary));
+      return;
+    }
 
-      setCurrentRestaurant(restaurant);
-      localStorage.setItem("menulia_current_restaurant", JSON.stringify(restaurant));
-    },
-    [restaurants]
-  );
+    const restaurant = restaurants.find((entry) => entry.id === id);
+    if (!restaurant) return;
+
+    setCurrentRestaurant(restaurant);
+    localStorage.setItem("menulia_current_restaurant", JSON.stringify(restaurant));
+  }, [restaurants]);
 
   const switchRestaurant = useCallback(
     (id: string) => {

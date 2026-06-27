@@ -1,5 +1,7 @@
 import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
 import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
+import type { PostgrestError } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
   const price = dish.price;
@@ -14,6 +16,28 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
     is_available: dish.is_available !== false,
     tags: (dish.tags as string[]) || [],
     translations: [],
+  };
+}
+
+function logSupabaseError(scope: string, error: PostgrestError | Error | unknown) {
+  if (error && typeof error === "object") {
+    const supabaseError = error as PostgrestError;
+    console.error(`[createRestaurant:${scope}]`, {
+      message: supabaseError.message,
+      details: supabaseError.details,
+      hint: supabaseError.hint,
+      code: supabaseError.code,
+    });
+    return;
+  }
+
+  console.error(`[createRestaurant:${scope}]`, error);
+}
+
+function normalizeRestaurantRow(row: Record<string, unknown>): Restaurant {
+  return {
+    ...(row as Restaurant),
+    logo: (row.logo as string | null) ?? (row.logo_url as string | null) ?? null,
   };
 }
 
@@ -74,8 +98,7 @@ export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFul
         const categories = await fetchCategoriesWithDishes(restaurantById.id);
 
         return {
-          ...restaurantById,
-          slug: restaurantById.id,
+          ...normalizeRestaurantRow(restaurantById),
           categories,
         } as RestaurantFull;
       }
@@ -88,7 +111,7 @@ export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFul
     const categories = await fetchCategoriesWithDishes(restaurant.id);
 
     return {
-      ...restaurant,
+      ...normalizeRestaurantRow(restaurant),
       categories,
     } as RestaurantFull;
   } catch (error) {
@@ -129,7 +152,7 @@ export async function fetchAllRestaurants(userId: string): Promise<Restaurant[]>
       .order("created_at", { ascending: true });
 
     if (error) throw error;
-    return (data || []) as Restaurant[];
+    return (data || []).map((row) => normalizeRestaurantRow(row));
   } catch (error) {
     console.error("Error fetching all restaurants:", error);
     return [];
@@ -155,38 +178,212 @@ export interface CreateRestaurantInput {
   logo?: string | null;
 }
 
-export async function createRestaurant(input: CreateRestaurantInput): Promise<Restaurant> {
-  const supabase = getSupabaseBrowserClient();
+export interface CreateRestaurantResult {
+  restaurant: Restaurant;
+  finalSlug: string;
+  slugWasAdjusted: boolean;
+}
+
+async function getAuthenticatedUser(supabase: SupabaseClient) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    logSupabaseError("auth.getUser", userError);
+    throw new Error(userError.message || "Authentication failed. Please log in again.");
+  }
+
+  if (!user?.id) {
+    throw new Error("You must be signed in to create a restaurant.");
+  }
+
   const {
     data: { session },
-    error: authError,
+    error: sessionError,
   } = await supabase.auth.getSession();
 
-  if (authError) throw authError;
-  if (!session?.user) throw new Error("You must be signed in to create a restaurant.");
+  if (sessionError) {
+    logSupabaseError("auth.getSession", sessionError);
+    throw new Error(sessionError.message || "Unable to verify your session.");
+  }
 
-  const { data: existing, error: slugError } = await supabase
-    .from("restaurants")
-    .select("id")
-    .eq("slug", input.slug)
-    .maybeSingle();
+  if (!session?.access_token) {
+    throw new Error("Your session expired. Please log in again.");
+  }
 
-  if (slugError) throw slugError;
-  if (existing) throw new Error("This URL slug is already taken. Please choose another.");
+  return user;
+}
 
+async function ensureUserProfile(
+  supabase: SupabaseClient,
+  user: { id: string; email?: string | null }
+) {
+  const { error } = await supabase.from("profiles").upsert(
+    {
+      id: user.id,
+      email: user.email ?? "",
+    },
+    { onConflict: "id", ignoreDuplicates: true }
+  );
+
+  if (!error) return;
+
+  if (error.code === "42P01" || error.code === "42703") {
+    return;
+  }
+
+  logSupabaseError("profiles.upsert", error);
+}
+
+async function isSlugTaken(supabase: SupabaseClient, slug: string): Promise<boolean> {
   const { data, error } = await supabase
     .from("restaurants")
-    .insert({
-      user_id: session.user.id,
-      name: input.name.trim(),
-      slug: input.slug.trim(),
-      logo: input.logo ?? null,
-    })
-    .select("*")
-    .single();
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
 
-  if (error) throw error;
-  return data as Restaurant;
+  if (error) {
+    logSupabaseError("slugCheck", error);
+    throw new Error(error.message || "Unable to verify slug availability.");
+  }
+
+  return Boolean(data);
+}
+
+function randomSlugSuffix(): string {
+  return String(Math.floor(100 + Math.random() * 900));
+}
+
+async function resolveUniqueSlug(
+  supabase: SupabaseClient,
+  requestedSlug: string
+): Promise<{ slug: string; adjusted: boolean }> {
+  const normalized = requestedSlug.trim().toLowerCase().replace(/-+/g, "-").replace(/^-|-$/g, "");
+
+  if (!normalized) {
+    throw new Error("URL slug is required.");
+  }
+
+  if (!(await isSlugTaken(supabase, normalized))) {
+    return { slug: normalized, adjusted: false };
+  }
+
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const candidate = `${normalized}-${randomSlugSuffix()}`;
+    if (!(await isSlugTaken(supabase, candidate))) {
+      return { slug: candidate, adjusted: true };
+    }
+  }
+
+  const fallback = `${normalized}-${Date.now().toString().slice(-6)}`;
+  return { slug: fallback, adjusted: true };
+}
+
+async function insertRestaurantRecord(
+  supabase: SupabaseClient,
+  userId: string,
+  name: string,
+  slug: string,
+  logo?: string | null
+): Promise<Restaurant> {
+  const basePayload = {
+    user_id: userId,
+    name,
+    slug,
+  };
+
+  const payloadAttempts: Record<string, unknown>[] = [];
+
+  if (logo) {
+    payloadAttempts.push({ ...basePayload, logo });
+    payloadAttempts.push({ ...basePayload, logo_url: logo });
+  }
+
+  payloadAttempts.push(basePayload);
+
+  let lastError: PostgrestError | null = null;
+
+  for (const payload of payloadAttempts) {
+    const { data, error } = await supabase
+      .from("restaurants")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (!error && data) {
+      return normalizeRestaurantRow(data);
+    }
+
+    lastError = error;
+    logSupabaseError("insert", error);
+
+    if (error?.code !== "42703") {
+      break;
+    }
+  }
+
+  throw new Error(
+    lastError?.message ||
+      lastError?.details ||
+      "Failed to create restaurant. Please try again."
+  );
+}
+
+export async function createRestaurant(input: CreateRestaurantInput): Promise<CreateRestaurantResult> {
+  const supabase = getSupabaseBrowserClient();
+
+  try {
+    const user = await getAuthenticatedUser(supabase);
+    await ensureUserProfile(supabase, user);
+
+    const { slug: finalSlug, adjusted: slugWasAdjusted } = await resolveUniqueSlug(
+      supabase,
+      input.slug
+    );
+
+    const restaurant = await insertRestaurantRecord(
+      supabase,
+      user.id,
+      input.name.trim(),
+      finalSlug,
+      input.logo
+    );
+
+    return {
+      restaurant,
+      finalSlug,
+      slugWasAdjusted,
+    };
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      logSupabaseError("unknown", error);
+      throw new Error("Failed to create restaurant.");
+    }
+
+    throw error;
+  }
+}
+
+export async function waitForRestaurantInList(
+  refreshRestaurants: () => Promise<Array<{ id: string }>>,
+  restaurantId: string,
+  maxAttempts = 8,
+  delayMs = 200
+): Promise<Array<{ id: string }>> {
+  let restaurants = await refreshRestaurants();
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (restaurants.some((restaurant) => restaurant.id === restaurantId)) {
+      return restaurants;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    restaurants = await refreshRestaurants();
+  }
+
+  return restaurants;
 }
 
 export async function uploadRestaurantLogo(file: File, userId: string): Promise<string> {
@@ -209,7 +406,10 @@ export async function uploadRestaurantLogo(file: File, userId: string): Promise<
     upsert: false,
   });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    logSupabaseError("logoUpload", uploadError);
+    throw uploadError;
+  }
 
   const {
     data: { publicUrl },

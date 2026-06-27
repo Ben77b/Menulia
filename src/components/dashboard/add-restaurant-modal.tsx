@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createRestaurant, uploadRestaurantLogo } from "@/lib/data";
+import { createRestaurant, uploadRestaurantLogo, waitForRestaurantInList } from "@/lib/data";
 import { slugify } from "@/lib/utils";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useRestaurant } from "@/contexts/restaurant-context";
@@ -17,7 +17,7 @@ interface AddRestaurantModalProps {
 
 export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRestaurantModalProps) {
   const router = useRouter();
-  const { refreshRestaurants, switchRestaurant } = useRestaurant();
+  const { refreshRestaurants, activateRestaurant } = useRestaurant();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
@@ -27,6 +27,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   if (!open) return null;
 
@@ -62,6 +63,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
     setLogoFile(null);
     setLogoPreview(null);
     setError("");
+    setNotice("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -75,6 +77,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    setNotice("");
 
     const trimmedName = name.trim();
     const trimmedSlug = slug.trim();
@@ -107,17 +110,34 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
         logoUrl = await uploadRestaurantLogo(logoFile, session.user.id);
       }
 
-      const restaurant = await createRestaurant({
+      const { restaurant, finalSlug, slugWasAdjusted } = await createRestaurant({
         name: trimmedName,
         slug: trimmedSlug,
         logo: logoUrl,
       });
 
-      await refreshRestaurants();
-      switchRestaurant(restaurant.id);
+      if (slugWasAdjusted) {
+        setSlug(finalSlug);
+        setNotice(
+          `That URL was already taken. Your menu will live at menulia.net/${finalSlug}.`
+        );
+      }
+
+      await waitForRestaurantInList(refreshRestaurants, restaurant.id);
+
+      activateRestaurant(restaurant.id, {
+        id: restaurant.id,
+        name: restaurant.name,
+        slug: finalSlug,
+        logo: restaurant.logo ?? null,
+        user_id: restaurant.user_id,
+        font_pack_id: restaurant.font_pack_id,
+      });
+
       handleClose();
       router.push(`/dashboard/${restaurant.id}`);
     } catch (submitError) {
+      console.error("[AddRestaurantModal] submission failed:", submitError);
       const message =
         submitError instanceof Error ? submitError.message : "Failed to create restaurant.";
       setError(message);
@@ -212,6 +232,10 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
               </div>
             </div>
           </div>
+
+          {notice && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{notice}</p>
+          )}
 
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>

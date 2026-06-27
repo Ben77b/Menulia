@@ -3,18 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { createRestaurant } from "@/lib/data";
+import { createRestaurant, waitForRestaurantInList } from "@/lib/data";
 import { slugify } from "@/lib/utils";
 import { useRestaurant } from "@/contexts/restaurant-context";
 
 export function CreateFirstRestaurantForm() {
   const router = useRouter();
-  const { refreshRestaurants } = useRestaurant();
+  const { refreshRestaurants, activateRestaurant } = useRestaurant();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugTouched, setSlugTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   function handleNameChange(value: string) {
     setName(value);
@@ -36,6 +37,7 @@ export function CreateFirstRestaurantForm() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    setNotice("");
 
     const trimmedName = name.trim();
     const trimmedSlug = slug.trim();
@@ -53,14 +55,32 @@ export function CreateFirstRestaurantForm() {
     try {
       setSubmitting(true);
 
-      const restaurant = await createRestaurant({
+      const { restaurant, finalSlug, slugWasAdjusted } = await createRestaurant({
         name: trimmedName,
         slug: trimmedSlug,
       });
 
-      await refreshRestaurants();
+      if (slugWasAdjusted) {
+        setSlug(finalSlug);
+        setNotice(
+          `That URL was already taken. Your menu will live at menulia.net/${finalSlug}.`
+        );
+      }
+
+      await waitForRestaurantInList(refreshRestaurants, restaurant.id);
+
+      activateRestaurant(restaurant.id, {
+        id: restaurant.id,
+        name: restaurant.name,
+        slug: finalSlug,
+        logo: restaurant.logo ?? null,
+        user_id: restaurant.user_id,
+        font_pack_id: restaurant.font_pack_id,
+      });
+
       router.replace(`/dashboard/${restaurant.id}`);
     } catch (submitError) {
+      console.error("[CreateFirstRestaurantForm] submission failed:", submitError);
       const message =
         submitError instanceof Error ? submitError.message : "Failed to create restaurant.";
       setError(message);
@@ -101,6 +121,10 @@ export function CreateFirstRestaurantForm() {
           />
         </div>
       </div>
+
+      {notice && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{notice}</p>
+      )}
 
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
