@@ -1,16 +1,17 @@
 import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
 import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { RestaurantCreationError, logSupabaseFailure } from "./auth/errors";
 import { ensureUserProfileReady } from "./auth/session";
-import { ensureRestaurantsSchemaReady } from "./db/ensure-restaurants-schema";
 import {
-  buildRestaurantInsertPayload,
   normalizeRestaurantSlug,
   resolveRestaurantOwnerFromRow,
   resolveRestaurantSlugFromRow,
-  RESTAURANT_SLUG_COLUMN,
 } from "./restaurant-schema";
+
+function isMissingColumnError(code: string | undefined): boolean {
+  return code === "42703" || code === "PGRST204";
+}
 
 function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
   const price = dish.price;
@@ -77,7 +78,7 @@ export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFul
     const { data: restaurant, error } = await supabase
       .from("restaurants")
       .select("*")
-      .eq(RESTAURANT_SLUG_COLUMN, slug)
+      .eq("slug", slug)
       .maybeSingle();
 
     if (error && error.code !== "PGRST116") {
@@ -122,6 +123,11 @@ export async function fetchAllRestaurantSlugs(): Promise<string[]> {
     const { data, error } = await supabase.from("restaurants").select("id, slug");
 
     if (error) {
+      if (isMissingColumnError(error.code)) {
+        const { data: idRows, error: idError } = await supabase.from("restaurants").select("id");
+        if (idError) throw idError;
+        return (idRows || []).map((row) => String(row.id));
+      }
       logSupabaseFailure("fetchAllRestaurantSlugs", error);
       return [];
     }
@@ -179,10 +185,14 @@ async function isSlugTaken(supabase: SupabaseClient, slug: string): Promise<bool
   const { data, error } = await supabase
     .from("restaurants")
     .select("id")
-    .eq(RESTAURANT_SLUG_COLUMN, slug)
+    .eq("slug", slug)
     .maybeSingle();
 
   if (error) {
+    if (isMissingColumnError(error.code)) {
+      return false;
+    }
+
     logSupabaseFailure("restaurants.slugCheck", error);
     throw new RestaurantCreationError(error, "slugCheck");
   }
@@ -217,80 +227,142 @@ export async function resolveUniqueRestaurantSlug(
   };
 }
 
-export async function createRestaurant(input: CreateRestaurantInput): Promise<CreateRestaurantResult> {
-  await ensureRestaurantsSchemaReady();
-
-  const supabase = getSupabaseBrowserClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError) {
-    logSupabaseFailure("createRestaurant.getUser", userError);
-    throw new RestaurantCreationError(userError, "auth");
-  }
-
-  if (!user?.id) {
-    throw new Error("You must be signed in to create a restaurant.");
-  }
-
-  await ensureUserProfileReady(supabase, user);
-
-  const { slug: finalSlug, adjusted: slugWasAdjusted } = await resolveUniqueRestaurantSlug(
-    supabase,
-    input.slug
-  );
-
-  const payload = buildRestaurantInsertPayload({
-    name: input.name,
-    slug: finalSlug,
-    userId: user.id,
-  });
-
+async function insertRestaurantRow(
+  supabase: SupabaseClient,
+  payload: Record<string, unknown>
+): Promise<Record<string, unknown>> {
   const { data, error } = await supabase
     .from("restaurants")
     .insert(payload)
     .select("*")
     .single();
 
-  if (error || !data) {
-    throw new RestaurantCreationError(
-      error ?? {
-        message: "Restaurant insert failed without a database response.",
-        details: "Supabase did not return the inserted restaurant row.",
-        hint: "Verify user_id, slug, and name columns exist on public.restaurants.",
-        code: "insert_failed",
-      },
-      "insert"
-    );
+  if (error) {
+    throw error;
   }
 
-  if (input.logo) {
-    const { error: logoError } = await supabase
-      .from("restaurants")
-      .update({ logo_url: input.logo })
-      .eq("id", data.id);
+  if (!data) {
+    throw new Error("Restaurant insert succeeded but no row was returned.");
+  }
 
-    if (logoError) {
-      logSupabaseFailure("restaurants.logoUpdate", logoError);
-    } else {
-      data.logo_url = input.logo;
+  return data;
+}
+
+export async function createRestaurant(input: CreateRestaurantInput): Promise<CreateRestaurantResult> {
+  const supabase = getSupabaseBrowserClient();
+
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.dir(userError, { depth: null });
+      throw new RestaurantCreationError(userError, "auth");
     }
-  }
 
-  const restaurant = normalizeRestaurantRow(data);
+    if (!user?.id) {
+      throw new Error("You must be signed in to create a restaurant.");
+    }
 
-  return {
-    restaurant: {
-      ...restaurant,
-      user_id: user.id,
+    await ensureUserProfileReady(supabase, user);
+
+    const { slug: finalSlug, adjusted: slugWasAdjusted } = await resolveUniqueRestaurantSlug(
+      supabase,
+      input.slug
+    );
+
+    const standardPayload = {
+      name: input.name.trim(),
       slug: finalSlug,
-    },
-    finalSlug,
-    slugWasAdjusted,
-  };
+      user_id: user.id,
+    };
+
+    let insertedRow: Record<string, unknown>;
+
+    try {
+      insertedRow = await insertRestaurantRow(supabase, standardPayload);
+    } catch (primaryError) {
+      console.dir(primaryError, { depth: null });
+
+      const postgrestError = primaryError as PostgrestError;
+
+      if (!isMissingColumnError(postgrestError.code)) {
+        throw new RestaurantCreationError(postgrestError, "insert");
+      }
+
+      const fallbackPayloads: Record<string, unknown>[] = [
+        { name: standardPayload.name, user_id: user.id },
+        { name: standardPayload.name, slug: finalSlug },
+        { name: standardPayload.name },
+      ];
+
+      let fallbackRow: Record<string, unknown> | null = null;
+      let lastFallbackError: PostgrestError | Error | null = postgrestError;
+
+      for (const fallbackPayload of fallbackPayloads) {
+        try {
+          fallbackRow = await insertRestaurantRow(supabase, fallbackPayload);
+          break;
+        } catch (fallbackError) {
+          console.dir(fallbackError, { depth: null });
+          lastFallbackError = fallbackError as PostgrestError;
+        }
+      }
+
+      if (!fallbackRow) {
+        throw new RestaurantCreationError(
+          (lastFallbackError as PostgrestError) ?? {
+            message: "Restaurant insert failed for all fallback payloads.",
+            details: "The live restaurants table is missing expected columns.",
+            hint: "Add user_id and slug columns to public.restaurants in Supabase.",
+            code: "insert_failed",
+          },
+          "insert"
+        );
+      }
+
+      insertedRow = fallbackRow;
+    }
+
+    if (input.logo) {
+      const { error: logoError } = await supabase
+        .from("restaurants")
+        .update({ logo_url: input.logo })
+        .eq("id", insertedRow.id);
+
+      if (logoError) {
+        console.dir(logoError, { depth: null });
+      } else {
+        insertedRow.logo_url = input.logo;
+      }
+    }
+
+    const restaurant = normalizeRestaurantRow(insertedRow);
+
+    return {
+      restaurant: {
+        ...restaurant,
+        user_id: user.id,
+        slug: restaurant.slug || finalSlug || restaurant.id,
+      },
+      finalSlug: restaurant.slug || finalSlug || restaurant.id,
+      slugWasAdjusted,
+    };
+  } catch (error) {
+    console.dir(error, { depth: null });
+
+    if (error instanceof RestaurantCreationError) {
+      throw error;
+    }
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error("Failed to create restaurant.");
+  }
 }
 
 export async function waitForRestaurantInList(

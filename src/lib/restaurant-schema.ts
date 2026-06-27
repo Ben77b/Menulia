@@ -36,21 +36,3 @@ export function resolveRestaurantOwnerFromRow(row: Record<string, unknown>): str
 
   return "";
 }
-
-export interface RestaurantInsertPayload {
-  name: string;
-  slug: string;
-  user_id: string;
-}
-
-export function buildRestaurantInsertPayload(options: {
-  name: string;
-  slug: string;
-  userId: string;
-}): RestaurantInsertPayload {
-  return {
-    name: options.name.trim(),
-    slug: normalizeRestaurantSlug(options.slug),
-    user_id: options.userId,
-  };
-}

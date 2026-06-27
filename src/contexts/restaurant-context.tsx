@@ -15,7 +15,6 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { buildUserProfile, syncUserProfileRecord, type UserProfile } from "@/lib/auth/profile";
 import { logAuthDiagnostic } from "@/lib/auth/messages";
 import { resolveRestaurantSlugFromRow } from "@/lib/restaurant-schema";
-import { ensureRestaurantsSchemaReady } from "@/lib/db/ensure-restaurants-schema";
 
 export interface RestaurantSummary {
   id: string;
@@ -170,12 +169,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         const sessionUser = session?.user ?? null;
 
         if (sessionUser) {
-          try {
-            await ensureRestaurantsSchemaReady();
-          } catch (schemaError) {
-            logAuthDiagnostic("schema.ensure", schemaError);
-          }
-
           await hydrateAuthenticatedUser(sessionUser);
           await loadRestaurantsForUser(sessionUser.id);
         } else {
