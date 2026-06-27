@@ -9,7 +9,7 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -25,11 +25,13 @@ export interface RestaurantSummary {
 interface RestaurantContextType {
   currentRestaurant: RestaurantSummary | null;
   restaurants: RestaurantSummary[];
+  hasRestaurants: boolean;
   loading: boolean;
   authReady: boolean;
   user: User | null;
   refreshRestaurants: () => Promise<RestaurantSummary[]>;
   switchRestaurant: (restaurantId: string) => void;
+  activateRestaurant: (restaurantId: string) => void;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
@@ -54,6 +56,7 @@ function toSummary(restaurant: {
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
   const restaurantId = params.restaurantId as string | undefined;
   const [currentRestaurant, setCurrentRestaurant] = useState<RestaurantSummary | null>(null);
@@ -62,6 +65,8 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const userIdRef = useRef<string | null>(null);
+
+  const hasRestaurants = restaurants.length > 0;
 
   const loadRestaurantsForUser = useCallback(async (userId: string) => {
     const supabase = getSupabaseBrowserClient();
@@ -96,6 +101,24 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, [loadRestaurantsForUser]);
+
+  const activateRestaurant = useCallback(
+    (id: string) => {
+      const restaurant = restaurants.find((entry) => entry.id === id);
+      if (!restaurant) return;
+
+      setCurrentRestaurant(restaurant);
+      localStorage.setItem("menulia_current_restaurant", JSON.stringify(restaurant));
+    },
+    [restaurants]
+  );
+
+  const switchRestaurant = useCallback(
+    (id: string) => {
+      activateRestaurant(id);
+    },
+    [activateRestaurant]
+  );
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -203,38 +226,38 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     setCurrentRestaurant(restaurants[0]);
   }, [restaurantId, restaurants]);
 
-  const switchRestaurant = useCallback(
-    (id: string) => {
-      const restaurant = restaurants.find((entry) => entry.id === id);
-      if (!restaurant) return;
-
-      setCurrentRestaurant(restaurant);
-      localStorage.setItem("menulia_current_restaurant", JSON.stringify(restaurant));
-    },
-    [restaurants]
-  );
-
   useEffect(() => {
-    if (!authReady || loading || restaurants.length === 0) return;
+    if (!authReady || loading || !user) return;
 
-    const onDashboardRoot =
-      typeof window !== "undefined" && window.location.pathname === "/dashboard";
-
-    if (onDashboardRoot) {
+    if (pathname === "/dashboard" && restaurants.length > 0) {
       router.replace(`/dashboard/${restaurants[0].id}`);
     }
-  }, [authReady, loading, restaurants, router]);
+  }, [authReady, loading, user, pathname, restaurants, router]);
+
+  useEffect(() => {
+    if (!authReady || loading || !user) return;
+
+    if (
+      restaurantId &&
+      restaurants.length > 0 &&
+      !restaurants.some((entry) => entry.id === restaurantId)
+    ) {
+      router.replace(`/dashboard/${restaurants[0].id}`);
+    }
+  }, [authReady, loading, user, restaurantId, restaurants, router]);
 
   return (
     <RestaurantContext.Provider
       value={{
         currentRestaurant,
         restaurants,
+        hasRestaurants,
         loading,
         authReady,
         user,
         refreshRestaurants,
         switchRestaurant,
+        activateRestaurant,
       }}
     >
       {children}

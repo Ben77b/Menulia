@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
-import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
-import { Button } from "@/components/ui/button";
+import { CreateFirstRestaurantForm } from "@/components/dashboard/create-first-restaurant-form";
 
-export default function DashboardRedirectPage() {
+export default function DashboardIndexPage() {
   const router = useRouter();
   const { restaurants, loading, authReady, user } = useRestaurant();
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     if (!authReady || loading) return;
@@ -22,10 +20,7 @@ export default function DashboardRedirectPage() {
 
     if (restaurants.length > 0) {
       router.replace(`/dashboard/${restaurants[0].id}`);
-      return;
     }
-
-    setShowCreateModal(true);
   }, [authReady, loading, restaurants, router, user]);
 
   if (!authReady || loading) {
@@ -36,40 +31,27 @@ export default function DashboardRedirectPage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
-  if (restaurants.length > 0) {
+  if (!user || restaurants.length > 0) {
     return null;
   }
 
   return (
-    <>
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        <div className="max-w-md rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome to Menulia</h1>
-          <p className="mt-3 text-sm text-gray-600">
-            Your account is ready. Create your first restaurant to unlock the menu builder,
-            branding tools, and public menu page.
-          </p>
-          <Button className="mt-6 w-full" size="lg" onClick={() => setShowCreateModal(true)}>
-            Create your first restaurant
-          </Button>
-          <p className="mt-4 text-xs text-gray-500">
-            You can add more restaurants later from the sidebar.
-          </p>
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6">
+      <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-900">
+          Create your first restaurant to unlock your dashboard
+        </h1>
+        <p className="mt-3 text-sm text-gray-600">
+          Add a name and URL slug below. Once saved, your menu builder, QR code, hours, and
+          branding tools will appear in the sidebar.
+        </p>
+        <div className="mt-8 flex justify-center">
+          <CreateFirstRestaurantForm />
         </div>
-        <Link href="/logout" className="text-sm text-gray-500 hover:text-gray-700">
-          Sign out
-        </Link>
       </div>
-
-      <AddRestaurantModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        mode="first"
-      />
-    </>
+      <Link href="/logout" className="mt-6 text-sm text-gray-500 hover:text-gray-700">
+        Sign out
+      </Link>
+    </div>
   );
 }

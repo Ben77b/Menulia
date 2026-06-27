@@ -26,15 +26,19 @@ export function LoginForm() {
       setSubmitting(true);
       const supabase = getSupabaseBrowserClient();
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
       if (signInError) throw signInError;
 
-      router.push("/dashboard");
-      router.refresh();
+      if (!data.session) {
+        setError("Unable to start your session. Please try again.");
+        return;
+      }
+
+      router.replace("/dashboard");
     } catch (submitError) {
       const message =
         submitError instanceof Error ? submitError.message : "Unable to log in.";

@@ -36,7 +36,7 @@ export function SignupForm() {
       setSubmitting(true);
       const supabase = getSupabaseBrowserClient();
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: trimmedEmail,
         password,
         options: {
@@ -47,8 +47,30 @@ export function SignupForm() {
 
       if (signUpError) throw signUpError;
 
-      router.push("/dashboard");
-      router.refresh();
+      let session = signUpData.session;
+
+      if (!session) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password,
+        });
+
+        if (signInError) {
+          setError(
+            "Account created. Please check your email to confirm your address, then log in."
+          );
+          return;
+        }
+
+        session = signInData.session;
+      }
+
+      if (!session) {
+        setError("Account created, but we could not start your session. Please log in.");
+        return;
+      }
+
+      router.replace("/dashboard");
     } catch (submitError) {
       const message =
         submitError instanceof Error ? submitError.message : "Unable to create your account.";
