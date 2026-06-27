@@ -8,6 +8,7 @@ import { createRestaurant, uploadRestaurantLogo, waitForRestaurantInList } from 
 import { slugify } from "@/lib/utils";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useRestaurant } from "@/contexts/restaurant-context";
+import { RestaurantCreationError } from "@/lib/auth/errors";
 
 interface AddRestaurantModalProps {
   open: boolean;
@@ -138,6 +139,10 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
       router.push(`/dashboard/${restaurant.id}`);
     } catch (submitError) {
       console.error("[AddRestaurantModal] submission failed:", submitError);
+      if (submitError instanceof RestaurantCreationError) {
+        setError(submitError.toDisplayMessage());
+        return;
+      }
       const message =
         submitError instanceof Error ? submitError.message : "Failed to create restaurant.";
       setError(message);

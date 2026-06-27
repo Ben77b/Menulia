@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { getSiteUrl } from "@/lib/site-url";
+import {
+  ensureUserProfileReady,
+  waitForAuthenticatedSession,
+} from "@/lib/auth/session";
 
 export function SignupForm() {
   const router = useRouter();
@@ -20,7 +24,7 @@ export function SignupForm() {
     setError("");
 
     const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
 
     if (!trimmedName || !trimmedEmail || !password) {
       setError("Please fill in your name, email, and password.");
@@ -40,35 +44,38 @@ export function SignupForm() {
         email: trimmedEmail,
         password,
         options: {
-          data: { full_name: trimmedName },
+          data: {
+            full_name: trimmedName,
+          },
           emailRedirectTo: `${getSiteUrl()}/dashboard`,
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error("[SignupForm] signUp failed:", {
+          message: signUpError.message,
+          code: signUpError.code,
+          status: signUpError.status,
+        });
+        throw signUpError;
+      }
 
-      let session = signUpData.session;
-
-      if (!session) {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      if (!signUpData.session) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
           password,
         });
 
         if (signInError) {
           setError(
-            "Account created. Please check your email to confirm your address, then log in."
+            "Account created. Please confirm your email address, then log in to continue."
           );
           return;
         }
-
-        session = signInData.session;
       }
 
-      if (!session) {
-        setError("Account created, but we could not start your session. Please log in.");
-        return;
-      }
+      const session = await waitForAuthenticatedSession(supabase);
+      await ensureUserProfileReady(supabase, session.user);
 
       router.replace("/dashboard");
     } catch (submitError) {

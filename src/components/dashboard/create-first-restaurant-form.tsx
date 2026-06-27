@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { createRestaurant, waitForRestaurantInList } from "@/lib/data";
 import { slugify } from "@/lib/utils";
 import { useRestaurant } from "@/contexts/restaurant-context";
+import { RestaurantCreationError } from "@/lib/auth/errors";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function CreateFirstRestaurantForm() {
   const router = useRouter();
@@ -62,9 +64,7 @@ export function CreateFirstRestaurantForm() {
 
       if (slugWasAdjusted) {
         setSlug(finalSlug);
-        setNotice(
-          `That URL was already taken. Your menu will live at menulia.net/${finalSlug}.`
-        );
+        setNotice(`That URL was taken. Your public menu URL is menulia.net/${finalSlug}.`);
       }
 
       await waitForRestaurantInList(refreshRestaurants, restaurant.id);
@@ -81,12 +81,22 @@ export function CreateFirstRestaurantForm() {
       router.replace(`/dashboard/${restaurant.id}`);
     } catch (submitError) {
       console.error("[CreateFirstRestaurantForm] submission failed:", submitError);
+
+      if (submitError instanceof RestaurantCreationError) {
+        setError(submitError.toDisplayMessage());
+        return;
+      }
+
       const message =
         submitError instanceof Error ? submitError.message : "Failed to create restaurant.";
       setError(message);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (submitting) {
+    return <LoadingSpinner label="Creating your restaurant..." className="min-h-[280px]" />;
   }
 
   return (
@@ -131,7 +141,7 @@ export function CreateFirstRestaurantForm() {
       )}
 
       <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-        {submitting ? "Creating..." : "Create Restaurant"}
+        Create Restaurant
       </Button>
     </form>
   );

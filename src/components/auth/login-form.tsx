@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { resolvePostAuthDashboardRoute } from "@/lib/auth/session";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -17,7 +19,9 @@ export function LoginForm() {
     event.preventDefault();
     setError("");
 
-    if (!email.trim() || !password) {
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedEmail || !password) {
       setError("Please enter your email and password.");
       return;
     }
@@ -26,19 +30,26 @@ export function LoginForm() {
       setSubmitting(true);
       const supabase = getSupabaseBrowserClient();
 
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
         password,
       });
 
-      if (signInError) throw signInError;
-
-      if (!data.session) {
-        setError("Unable to start your session. Please try again.");
-        return;
+      if (signInError) {
+        console.error("[LoginForm] signIn failed:", {
+          message: signInError.message,
+          code: signInError.code,
+          status: signInError.status,
+        });
+        throw signInError;
       }
 
-      router.replace("/dashboard");
+      const destination =
+        searchParams.get("next") && searchParams.get("next")!.startsWith("/dashboard")
+          ? searchParams.get("next")!
+          : await resolvePostAuthDashboardRoute(supabase);
+
+      router.replace(destination);
     } catch (submitError) {
       const message =
         submitError instanceof Error ? submitError.message : "Unable to log in.";

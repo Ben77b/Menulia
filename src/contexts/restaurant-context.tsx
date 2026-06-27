@@ -27,7 +27,7 @@ interface RestaurantContextType {
   restaurants: RestaurantSummary[];
   hasRestaurants: boolean;
   loading: boolean;
-  authReady: boolean;
+  bootstrapped: boolean;
   user: User | null;
   refreshRestaurants: () => Promise<RestaurantSummary[]>;
   switchRestaurant: (restaurantId: string) => void;
@@ -63,7 +63,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [currentRestaurant, setCurrentRestaurant] = useState<RestaurantSummary | null>(null);
   const [restaurants, setRestaurants] = useState<RestaurantSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [authReady, setAuthReady] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const userIdRef = useRef<string | null>(null);
 
@@ -91,11 +91,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       return [];
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
       return await loadRestaurantsForUser(userIdRef.current);
     } catch (error) {
-      console.error("Failed to load restaurants:", error);
+      console.error("Failed to refresh restaurants:", error);
       setRestaurants([]);
       return [];
     } finally {
@@ -134,36 +134,41 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseBrowserClient();
     let mounted = true;
 
-    async function bootstrapSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    async function bootstrap() {
+      setLoading(true);
 
-      if (!mounted) return;
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      const sessionUser = session?.user ?? null;
-      setUser(sessionUser);
-      userIdRef.current = sessionUser?.id ?? null;
-      setAuthReady(true);
+        if (!mounted) return;
 
-      if (sessionUser) {
-        try {
-          setLoading(true);
+        const sessionUser = session?.user ?? null;
+        setUser(sessionUser);
+        userIdRef.current = sessionUser?.id ?? null;
+
+        if (sessionUser) {
           await loadRestaurantsForUser(sessionUser.id);
-        } catch (error) {
-          console.error("Failed to load restaurants during bootstrap:", error);
+        } else {
           setRestaurants([]);
-        } finally {
-          if (mounted) setLoading(false);
+          setCurrentRestaurant(null);
         }
-      } else {
-        setRestaurants([]);
-        setCurrentRestaurant(null);
-        setLoading(false);
+      } catch (error) {
+        console.error("Restaurant bootstrap failed:", error);
+        if (mounted) {
+          setRestaurants([]);
+          setCurrentRestaurant(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setBootstrapped(true);
+        }
       }
     }
 
-    bootstrapSession();
+    bootstrap();
 
     const {
       data: { subscription },
@@ -173,12 +178,12 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       const sessionUser = session?.user ?? null;
       setUser(sessionUser);
       userIdRef.current = sessionUser?.id ?? null;
-      setAuthReady(true);
 
       if (event === "SIGNED_OUT") {
         setRestaurants([]);
         setCurrentRestaurant(null);
         setLoading(false);
+        setBootstrapped(true);
         return;
       }
 
@@ -189,14 +194,17 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           event === "TOKEN_REFRESHED" ||
           event === "USER_UPDATED")
       ) {
+        setLoading(true);
         try {
-          setLoading(true);
           await loadRestaurantsForUser(sessionUser.id);
         } catch (error) {
-          console.error("Failed to load restaurants after auth change:", error);
+          console.error("Failed to load restaurants after auth event:", error);
           setRestaurants([]);
         } finally {
-          if (mounted) setLoading(false);
+          if (mounted) {
+            setLoading(false);
+            setBootstrapped(true);
+          }
         }
       }
     });
@@ -208,8 +216,10 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   }, [loadRestaurantsForUser]);
 
   useEffect(() => {
-    if (restaurants.length === 0) {
-      setCurrentRestaurant(null);
+    if (!bootstrapped || restaurants.length === 0) {
+      if (restaurants.length === 0) {
+        setCurrentRestaurant(null);
+      }
       return;
     }
 
@@ -234,18 +244,18 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     }
 
     setCurrentRestaurant(restaurants[0]);
-  }, [restaurantId, restaurants]);
+  }, [bootstrapped, restaurantId, restaurants]);
 
   useEffect(() => {
-    if (!authReady || loading || !user) return;
+    if (!bootstrapped || loading || !user) return;
 
     if (pathname === "/dashboard" && restaurants.length > 0) {
       router.replace(`/dashboard/${restaurants[0].id}`);
     }
-  }, [authReady, loading, user, pathname, restaurants, router]);
+  }, [bootstrapped, loading, user, pathname, restaurants, router]);
 
   useEffect(() => {
-    if (!authReady || loading || !user) return;
+    if (!bootstrapped || loading || !user) return;
 
     if (
       restaurantId &&
@@ -254,7 +264,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     ) {
       router.replace(`/dashboard/${restaurants[0].id}`);
     }
-  }, [authReady, loading, user, restaurantId, restaurants, router]);
+  }, [bootstrapped, loading, user, restaurantId, restaurants, router]);
 
   return (
     <RestaurantContext.Provider
@@ -263,7 +273,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         restaurants,
         hasRestaurants,
         loading,
-        authReady,
+        bootstrapped,
         user,
         refreshRestaurants,
         switchRestaurant,

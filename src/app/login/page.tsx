@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export const metadata = { title: "Log in" };
 
@@ -13,7 +15,9 @@ export default function LoginPage() {
             Log in to manage your restaurants and menus.
           </p>
         </div>
-        <LoginForm />
+        <Suspense fallback={<LoadingSpinner label="Preparing login..." />}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );

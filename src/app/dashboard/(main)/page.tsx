@@ -5,33 +5,25 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { CreateFirstRestaurantForm } from "@/components/dashboard/create-first-restaurant-form";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function DashboardIndexPage() {
   const router = useRouter();
-  const { restaurants, loading, authReady, user } = useRestaurant();
+  const { restaurants, loading, bootstrapped, user, hasRestaurants } = useRestaurant();
 
   useEffect(() => {
-    if (!authReady || loading) return;
+    if (!bootstrapped || loading || !user) return;
 
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-
-    if (restaurants.length > 0) {
+    if (hasRestaurants) {
       router.replace(`/dashboard/${restaurants[0].id}`);
     }
-  }, [authReady, loading, restaurants, router, user]);
+  }, [bootstrapped, loading, hasRestaurants, restaurants, router, user]);
 
-  if (!authReady || loading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm text-gray-500">Loading your account...</p>
-      </div>
-    );
+  if (!bootstrapped || loading) {
+    return <LoadingSpinner label="Preparing your workspace..." />;
   }
 
-  if (!user || restaurants.length > 0) {
+  if (!user || hasRestaurants) {
     return null;
   }
 
@@ -42,8 +34,8 @@ export default function DashboardIndexPage() {
           Create your first restaurant to unlock your dashboard
         </h1>
         <p className="mt-3 text-sm text-gray-600">
-          Add a name and URL slug below. Once saved, your menu builder, QR code, hours, and
-          branding tools will appear in the sidebar.
+          Enter your restaurant name and public URL slug. Once saved, your full dashboard
+          will unlock instantly.
         </p>
         <div className="mt-8 flex justify-center">
           <CreateFirstRestaurantForm />

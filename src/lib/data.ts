@@ -1,7 +1,12 @@
 import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
 import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
 import type { PostgrestError } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { RestaurantCreationError, logSupabaseFailure } from "./auth/errors";
+import {
+  ensureUserProfileReady,
+  waitForAuthenticatedSession,
+} from "./auth/session";
 
 function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
   const price = dish.price;
@@ -17,21 +22,6 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
     tags: (dish.tags as string[]) || [],
     translations: [],
   };
-}
-
-function logSupabaseError(scope: string, error: PostgrestError | Error | unknown) {
-  if (error && typeof error === "object") {
-    const supabaseError = error as PostgrestError;
-    console.error(`[createRestaurant:${scope}]`, {
-      message: supabaseError.message,
-      details: supabaseError.details,
-      hint: supabaseError.hint,
-      code: supabaseError.code,
-    });
-    return;
-  }
-
-  console.error(`[createRestaurant:${scope}]`, error);
 }
 
 function normalizeRestaurantRow(row: Record<string, unknown>): Restaurant {
@@ -143,32 +133,24 @@ export async function fetchAllRestaurantSlugs(): Promise<string[]> {
 }
 
 export async function fetchAllRestaurants(userId: string): Promise<Restaurant[]> {
-  try {
-    const supabase = getSupabaseBrowserClient();
-    const { data, error } = await supabase
-      .from("restaurants")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true });
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("restaurants")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
 
-    if (error) throw error;
-    return (data || []).map((row) => normalizeRestaurantRow(row));
-  } catch (error) {
-    console.error("Error fetching all restaurants:", error);
-    return [];
+  if (error) {
+    logSupabaseFailure("fetchAllRestaurants", error);
+    throw error;
   }
+
+  return (data || []).map((row) => normalizeRestaurantRow(row));
 }
 
 export async function fetchRestaurantsForAuthenticatedUser(): Promise<Restaurant[]> {
   const supabase = getSupabaseBrowserClient();
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error) throw error;
-  if (!session?.user) return [];
-
+  const session = await waitForAuthenticatedSession(supabase);
   return fetchAllRestaurants(session.user.id);
 }
 
@@ -184,57 +166,10 @@ export interface CreateRestaurantResult {
   slugWasAdjusted: boolean;
 }
 
-async function getAuthenticatedUser(supabase: SupabaseClient) {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError) {
-    logSupabaseError("auth.getUser", userError);
-    throw new Error(userError.message || "Authentication failed. Please log in again.");
-  }
-
-  if (!user?.id) {
-    throw new Error("You must be signed in to create a restaurant.");
-  }
-
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-
-  if (sessionError) {
-    logSupabaseError("auth.getSession", sessionError);
-    throw new Error(sessionError.message || "Unable to verify your session.");
-  }
-
-  if (!session?.access_token) {
-    throw new Error("Your session expired. Please log in again.");
-  }
-
-  return user;
-}
-
-async function ensureUserProfile(
-  supabase: SupabaseClient,
-  user: { id: string; email?: string | null }
-) {
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      id: user.id,
-      email: user.email ?? "",
-    },
-    { onConflict: "id", ignoreDuplicates: true }
-  );
-
-  if (!error) return;
-
-  if (error.code === "42P01" || error.code === "42703") {
-    return;
-  }
-
-  logSupabaseError("profiles.upsert", error);
+async function requireAuthenticatedUser(supabase: SupabaseClient): Promise<User> {
+  const session = await waitForAuthenticatedSession(supabase);
+  await ensureUserProfileReady(supabase, session.user);
+  return session.user;
 }
 
 async function isSlugTaken(supabase: SupabaseClient, slug: string): Promise<boolean> {
@@ -245,8 +180,8 @@ async function isSlugTaken(supabase: SupabaseClient, slug: string): Promise<bool
     .maybeSingle();
 
   if (error) {
-    logSupabaseError("slugCheck", error);
-    throw new Error(error.message || "Unable to verify slug availability.");
+    logSupabaseFailure("restaurants.slugCheck", error);
+    throw new RestaurantCreationError(error, "slugCheck");
   }
 
   return Boolean(data);
@@ -256,11 +191,16 @@ function randomSlugSuffix(): string {
   return String(Math.floor(100 + Math.random() * 900));
 }
 
-async function resolveUniqueSlug(
+export async function resolveUniqueRestaurantSlug(
   supabase: SupabaseClient,
   requestedSlug: string
 ): Promise<{ slug: string; adjusted: boolean }> {
-  const normalized = requestedSlug.trim().toLowerCase().replace(/-+/g, "-").replace(/^-|-$/g, "");
+  const normalized = requestedSlug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 
   if (!normalized) {
     throw new Error("URL slug is required.");
@@ -277,8 +217,10 @@ async function resolveUniqueSlug(
     }
   }
 
-  const fallback = `${normalized}-${Date.now().toString().slice(-6)}`;
-  return { slug: fallback, adjusted: true };
+  return {
+    slug: `${normalized}-${Date.now().toString().slice(-6)}`,
+    adjusted: true,
+  };
 }
 
 async function insertRestaurantRecord(
@@ -290,44 +232,58 @@ async function insertRestaurantRecord(
 ): Promise<Restaurant> {
   const basePayload = {
     user_id: userId,
-    name,
+    name: name.trim(),
     slug,
   };
 
-  const payloadAttempts: Record<string, unknown>[] = [];
+  const attempts: Record<string, unknown>[] = [basePayload];
 
   if (logo) {
-    payloadAttempts.push({ ...basePayload, logo });
-    payloadAttempts.push({ ...basePayload, logo_url: logo });
+    attempts.unshift({ ...basePayload, logo });
+    attempts.unshift({ ...basePayload, logo_url: logo });
   }
-
-  payloadAttempts.push(basePayload);
 
   let lastError: PostgrestError | null = null;
 
-  for (const payload of payloadAttempts) {
-    const { data, error } = await supabase
-      .from("restaurants")
-      .insert(payload)
-      .select("*")
-      .single();
+  for (const payload of attempts) {
+    try {
+      const { data, error } = await supabase
+        .from("restaurants")
+        .insert(payload)
+        .select("*")
+        .single();
 
-    if (!error && data) {
-      return normalizeRestaurantRow(data);
-    }
+      if (!error && data) {
+        return normalizeRestaurantRow(data);
+      }
 
-    lastError = error;
-    logSupabaseError("insert", error);
+      lastError = error;
+      logSupabaseFailure("restaurants.insert", error);
 
-    if (error?.code !== "42703") {
-      break;
+      if (error?.code !== "42703") {
+        throw new RestaurantCreationError(error!, "insert");
+      }
+    } catch (error) {
+      if (error instanceof RestaurantCreationError) {
+        throw error;
+      }
+
+      if (error && typeof error === "object" && "code" in error) {
+        throw new RestaurantCreationError(error as PostgrestError, "insert");
+      }
+
+      throw error;
     }
   }
 
-  throw new Error(
-    lastError?.message ||
-      lastError?.details ||
-      "Failed to create restaurant. Please try again."
+  throw new RestaurantCreationError(
+    lastError ?? {
+      message: "Restaurant insert failed without a database response.",
+      details: "No row returned from Supabase.",
+      hint: "",
+      code: "insert_failed",
+    },
+    "insert"
   );
 }
 
@@ -335,10 +291,8 @@ export async function createRestaurant(input: CreateRestaurantInput): Promise<Cr
   const supabase = getSupabaseBrowserClient();
 
   try {
-    const user = await getAuthenticatedUser(supabase);
-    await ensureUserProfile(supabase, user);
-
-    const { slug: finalSlug, adjusted: slugWasAdjusted } = await resolveUniqueSlug(
+    const user = await requireAuthenticatedUser(supabase);
+    const { slug: finalSlug, adjusted: slugWasAdjusted } = await resolveUniqueRestaurantSlug(
       supabase,
       input.slug
     );
@@ -346,7 +300,7 @@ export async function createRestaurant(input: CreateRestaurantInput): Promise<Cr
     const restaurant = await insertRestaurantRecord(
       supabase,
       user.id,
-      input.name.trim(),
+      input.name,
       finalSlug,
       input.logo
     );
@@ -357,20 +311,24 @@ export async function createRestaurant(input: CreateRestaurantInput): Promise<Cr
       slugWasAdjusted,
     };
   } catch (error) {
-    if (!(error instanceof Error)) {
-      logSupabaseError("unknown", error);
-      throw new Error("Failed to create restaurant.");
+    if (error instanceof RestaurantCreationError) {
+      throw error;
     }
 
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    logSupabaseFailure("createRestaurant", error);
+    throw new Error("Failed to create restaurant.");
   }
 }
 
 export async function waitForRestaurantInList(
   refreshRestaurants: () => Promise<Array<{ id: string }>>,
   restaurantId: string,
-  maxAttempts = 8,
-  delayMs = 200
+  maxAttempts = 10,
+  delayMs = 250
 ): Promise<Array<{ id: string }>> {
   let restaurants = await refreshRestaurants();
 
@@ -389,6 +347,7 @@ export async function waitForRestaurantInList(
 export async function uploadRestaurantLogo(file: File, userId: string): Promise<string> {
   const supabase = getSupabaseBrowserClient();
   const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+
   if (!allowedTypes.includes(file.type)) {
     throw new Error("Please upload a PNG, JPEG, or WebP image.");
   }
@@ -407,7 +366,7 @@ export async function uploadRestaurantLogo(file: File, userId: string): Promise<
   });
 
   if (uploadError) {
-    logSupabaseError("logoUpload", uploadError);
+    logSupabaseFailure("logoUpload", uploadError);
     throw uploadError;
   }
 
