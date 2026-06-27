@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { completeAuthenticatedLogin } from "@/lib/auth/profile";
 import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,8 +26,9 @@ export function LoginForm() {
       return;
     }
 
+    setSubmitting(true);
+
     try {
-      setSubmitting(true);
       const supabase = getSupabaseBrowserClient();
 
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -37,25 +37,50 @@ export function LoginForm() {
       });
 
       if (signInError) {
+        console.error("[auth:login.signInWithPassword]");
+        console.dir(signInError, { depth: null });
         logAuthDiagnostic("login.signInWithPassword", signInError);
         setError(toFriendlyAuthError(signInError));
         return;
       }
 
-      if (!data.session?.user) {
-        setError("Your session could not be started. Please try again.");
+      if (!data.session?.user?.id || !data.session.access_token) {
+        const {
+          data: { session: fallbackSession },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error("[auth:login.getSession]");
+          console.dir(sessionError, { depth: null });
+          logAuthDiagnostic("login.getSession", sessionError);
+          setError(toFriendlyAuthError(sessionError));
+          return;
+        }
+
+        if (!fallbackSession?.user?.id || !fallbackSession.access_token) {
+          setError("Your session could not be started. Please try again.");
+          return;
+        }
+
+        const { destination } = await completeAuthenticatedLogin(supabase, fallbackSession.user);
+        const nextParam = searchParams.get("next");
+        const finalDestination =
+          nextParam && nextParam.startsWith("/dashboard") ? nextParam : destination;
+        window.location.assign(finalDestination);
         return;
       }
 
-      const { destination } = await completeAuthenticatedLogin(supabase);
+      const { destination } = await completeAuthenticatedLogin(supabase, data.session.user);
 
       const nextParam = searchParams.get("next");
       const finalDestination =
         nextParam && nextParam.startsWith("/dashboard") ? nextParam : destination;
 
-      router.replace(finalDestination);
-      router.refresh();
+      window.location.assign(finalDestination);
     } catch (submitError) {
+      console.error("[auth:login.submit]");
+      console.dir(submitError, { depth: null });
       logAuthDiagnostic("login.submit", submitError);
       setError(
         submitError instanceof Error

@@ -2,16 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { getSiteUrl } from "@/lib/site-url";
 import { buildUserProfile, syncUserProfileRecord } from "@/lib/auth/profile";
-import { waitForAuthenticatedSession } from "@/lib/auth/session";
+import { ensureAuthSessionCommitted } from "@/lib/auth/session";
 import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
 
 export function SignupForm() {
-  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,6 +49,8 @@ export function SignupForm() {
       });
 
       if (signUpError) {
+        console.error("[auth:signup.signUp]");
+        console.dir(signUpError, { depth: null });
         logAuthDiagnostic("signup.signUp", signUpError);
         setError(toFriendlyAuthError(signUpError));
         return;
@@ -63,18 +63,24 @@ export function SignupForm() {
         });
 
         if (signInError) {
+          console.error("[auth:signup.signInAfterSignUp]");
+          console.dir(signInError, { depth: null });
           setError("Account created. Please confirm your email address, then log in.");
           return;
         }
       }
 
-      const session = await waitForAuthenticatedSession(supabase);
+      const session = await ensureAuthSessionCommitted(
+        supabase,
+        signUpData.user ?? undefined
+      );
       const profile = buildUserProfile(session.user);
       await syncUserProfileRecord(supabase, profile);
 
-      router.replace("/dashboard");
-      router.refresh();
+      window.location.assign("/dashboard");
     } catch (submitError) {
+      console.error("[auth:signup.submit]");
+      console.dir(submitError, { depth: null });
       logAuthDiagnostic("signup.submit", submitError);
       setError(
         submitError instanceof Error

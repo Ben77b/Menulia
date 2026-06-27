@@ -104,7 +104,24 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       logAuthDiagnostic("restaurants.load", error);
-      throw error;
+      console.dir(error, { depth: null });
+
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("restaurants")
+        .select("id, name, slug, user_id")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (fallbackError) {
+        logAuthDiagnostic("restaurants.loadFallback", fallbackError);
+        console.dir(fallbackError, { depth: null });
+        setRestaurants([]);
+        return [];
+      }
+
+      const fallbackSummaries = (fallbackData || []).map(toSummary);
+      setRestaurants(fallbackSummaries);
+      return fallbackSummaries;
     }
 
     const summaries = (data || []).map(toSummary);
