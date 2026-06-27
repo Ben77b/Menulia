@@ -6,15 +6,16 @@ import { X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createRestaurant, uploadRestaurantLogo } from "@/lib/data";
 import { slugify } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useRestaurant } from "@/contexts/restaurant-context";
 
 interface AddRestaurantModalProps {
   open: boolean;
   onClose: () => void;
+  mode?: "first" | "additional";
 }
 
-export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
+export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRestaurantModalProps) {
   const router = useRouter();
   const { refreshRestaurants, switchRestaurant } = useRestaurant();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,18 +92,19 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
     try {
       setSubmitting(true);
 
+      const supabase = getSupabaseBrowserClient();
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (!user) {
+      if (!session?.user) {
         setError("You must be signed in to create a restaurant.");
         return;
       }
 
       let logoUrl: string | null = null;
       if (logoFile) {
-        logoUrl = await uploadRestaurantLogo(logoFile, user.id);
+        logoUrl = await uploadRestaurantLogo(logoFile, session.user.id);
       }
 
       const restaurant = await createRestaurant({
@@ -130,8 +132,14 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
       <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Add New Restaurant</h2>
-            <p className="mt-1 text-sm text-gray-500">Create another location under your account.</p>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {mode === "first" ? "Create your first restaurant" : "Add New Restaurant"}
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {mode === "first"
+                ? "Set up your restaurant profile to start building your menu."
+                : "Create another location under your account."}
+            </p>
           </div>
           <button
             type="button"
@@ -214,7 +222,11 @@ export function AddRestaurantModal({ open, onClose }: AddRestaurantModalProps) {
               Cancel
             </Button>
             <Button type="submit" className="flex-1" disabled={submitting}>
-              {submitting ? "Creating..." : "Create Restaurant"}
+              {submitting
+                ? "Creating..."
+                : mode === "first"
+                  ? "Create Restaurant"
+                  : "Create Restaurant"}
             </Button>
           </div>
         </form>

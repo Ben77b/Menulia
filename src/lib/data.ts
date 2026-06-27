@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
 import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
 
 function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
@@ -18,6 +18,8 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
 }
 
 async function fetchCategoriesWithDishes(restaurantId: string) {
+  const supabase = createAnonClient();
+
   const { data: categories, error: categoriesError } = await supabase
     .from("categories")
     .select("*")
@@ -50,6 +52,8 @@ async function fetchCategoriesWithDishes(restaurantId: string) {
 
 export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFull | null> {
   try {
+    const supabase = createAnonClient();
+
     const { data: restaurant, error } = await supabase
       .from("restaurants")
       .select("*")
@@ -95,6 +99,7 @@ export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFul
 
 export async function fetchAllRestaurantSlugs(): Promise<string[]> {
   try {
+    const supabase = createAnonClient();
     const { data, error } = await supabase.from("restaurants").select("id, slug");
 
     if (error) {
@@ -116,6 +121,7 @@ export async function fetchAllRestaurantSlugs(): Promise<string[]> {
 
 export async function fetchAllRestaurants(userId: string): Promise<Restaurant[]> {
   try {
+    const supabase = getSupabaseBrowserClient();
     const { data, error } = await supabase
       .from("restaurants")
       .select("*")
@@ -131,15 +137,16 @@ export async function fetchAllRestaurants(userId: string): Promise<Restaurant[]>
 }
 
 export async function fetchRestaurantsForAuthenticatedUser(): Promise<Restaurant[]> {
+  const supabase = getSupabaseBrowserClient();
   const {
-    data: { user },
+    data: { session },
     error,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
 
   if (error) throw error;
-  if (!user) return [];
+  if (!session?.user) return [];
 
-  return fetchAllRestaurants(user.id);
+  return fetchAllRestaurants(session.user.id);
 }
 
 export interface CreateRestaurantInput {
@@ -149,13 +156,14 @@ export interface CreateRestaurantInput {
 }
 
 export async function createRestaurant(input: CreateRestaurantInput): Promise<Restaurant> {
+  const supabase = getSupabaseBrowserClient();
   const {
-    data: { user },
+    data: { session },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
 
   if (authError) throw authError;
-  if (!user) throw new Error("You must be signed in to create a restaurant.");
+  if (!session?.user) throw new Error("You must be signed in to create a restaurant.");
 
   const { data: existing, error: slugError } = await supabase
     .from("restaurants")
@@ -169,7 +177,7 @@ export async function createRestaurant(input: CreateRestaurantInput): Promise<Re
   const { data, error } = await supabase
     .from("restaurants")
     .insert({
-      user_id: user.id,
+      user_id: session.user.id,
       name: input.name.trim(),
       slug: input.slug.trim(),
       logo: input.logo ?? null,
@@ -182,6 +190,7 @@ export async function createRestaurant(input: CreateRestaurantInput): Promise<Re
 }
 
 export async function uploadRestaurantLogo(file: File, userId: string): Promise<string> {
+  const supabase = getSupabaseBrowserClient();
   const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
   if (!allowedTypes.includes(file.type)) {
     throw new Error("Please upload a PNG, JPEG, or WebP image.");

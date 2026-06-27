@@ -6,6 +6,7 @@ import { Home, LayoutTemplate, Palette, Settings, User, ChevronDown, Building2, 
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
+import { getPublicMenuUrl } from "@/lib/site-url";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -20,11 +21,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const [restaurantOpen, setRestaurantOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const { currentRestaurant, restaurants, switchRestaurant } = useRestaurant();
+  const { currentRestaurant, restaurants, switchRestaurant, loading, authReady, user } = useRestaurant();
 
-  const activeRestaurantId = restaurantId || currentRestaurant?.id;
+  const activeRestaurantId =
+    restaurantId ?? currentRestaurant?.id ?? restaurants[0]?.id;
 
-  const navItems = activeRestaurantId
+  const navItems = user && activeRestaurantId
     ? [
         { icon: Home, label: "Home", href: `/dashboard/${activeRestaurantId}` },
         { icon: LayoutTemplate, label: "Menu Builder", href: `/dashboard/${activeRestaurantId}/menu` },
@@ -96,7 +98,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     {currentRestaurant?.name || "Select Restaurant"}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {restaurants.length} restaurant{restaurants.length === 1 ? "" : "s"}
+                    {loading ? "Loading..." : `${restaurants.length} restaurant${restaurants.length === 1 ? "" : "s"}`}
                   </p>
                 </div>
                 <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${restaurantOpen ? "rotate-180" : ""}`} />
@@ -146,7 +148,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
             {currentRestaurant?.slug && (
               <a
-                href={`/${currentRestaurant.slug}`}
+                href={getPublicMenuUrl(currentRestaurant.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors text-sm font-medium"

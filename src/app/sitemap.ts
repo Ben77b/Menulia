@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { fetchAllRestaurantSlugs } from "@/lib/data";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.io";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net";
   const slugs = await fetchAllRestaurantSlugs();
 
   const staticPages = ["", "/about", "/pricing", "/services", "/contact", "/blog", "/onboarding"].map(

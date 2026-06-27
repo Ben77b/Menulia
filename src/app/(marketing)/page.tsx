@@ -42,7 +42,7 @@ export default function HomePage() {
               built for restaurant owners who care about every detail.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/onboarding">
+              <Link href="/signup">
                 <Button size="lg" className="group transition hover:scale-105">
                   Start free
                   <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
@@ -263,7 +263,7 @@ export default function HomePage() {
             Join hundreds of restaurants already using menulia.io.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link href="/onboarding">
+            <Link href="/signup">
               <Button size="lg" className="bg-coral-cta hover:bg-coral-cta-dark">
                 Start free today
               </Button>
