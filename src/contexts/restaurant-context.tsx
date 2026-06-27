@@ -14,6 +14,7 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { buildUserProfile, syncUserProfileRecord, type UserProfile } from "@/lib/auth/profile";
 import { logAuthDiagnostic } from "@/lib/auth/messages";
+import { resolveRestaurantSlugFromRow } from "@/lib/restaurant-schema";
 
 export interface RestaurantSummary {
   id: string;
@@ -39,22 +40,14 @@ interface RestaurantContextType {
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
 
-function toSummary(restaurant: {
-  id: string;
-  name: string;
-  slug: string;
-  logo?: string | null;
-  logo_url?: string | null;
-  font_pack_id?: string;
-  user_id?: string;
-}): RestaurantSummary {
+function toSummary(restaurant: Record<string, unknown>): RestaurantSummary {
   return {
-    id: restaurant.id,
-    name: restaurant.name,
-    slug: restaurant.slug,
-    logo: restaurant.logo ?? restaurant.logo_url ?? null,
-    font_pack_id: restaurant.font_pack_id,
-    user_id: restaurant.user_id,
+    id: String(restaurant.id),
+    name: String(restaurant.name ?? ""),
+    slug: resolveRestaurantSlugFromRow(restaurant),
+    logo: (restaurant.logo as string | null) ?? (restaurant.logo_url as string | null) ?? null,
+    font_pack_id: restaurant.font_pack_id as string | undefined,
+    user_id: restaurant.user_id as string | undefined,
   };
 }
 
@@ -98,33 +91,18 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from("restaurants")
-      .select("id, name, slug, logo, logo_url, font_pack_id, user_id")
+      .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: true });
 
     if (error) {
       logAuthDiagnostic("restaurants.load", error);
       console.dir(error, { depth: null });
-
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from("restaurants")
-        .select("id, name, slug, user_id")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true });
-
-      if (fallbackError) {
-        logAuthDiagnostic("restaurants.loadFallback", fallbackError);
-        console.dir(fallbackError, { depth: null });
-        setRestaurants([]);
-        return [];
-      }
-
-      const fallbackSummaries = (fallbackData || []).map(toSummary);
-      setRestaurants(fallbackSummaries);
-      return fallbackSummaries;
+      setRestaurants([]);
+      return [];
     }
 
-    const summaries = (data || []).map(toSummary);
+    const summaries = (data || []).map((row) => toSummary(row as Record<string, unknown>));
     setRestaurants(summaries);
     return summaries;
   }, []);

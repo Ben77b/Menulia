@@ -4,6 +4,11 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
+import {
+  buildRestaurantUpdateWithSlug,
+  detectRestaurantSlugColumn,
+  resolveRestaurantSlugFromRow,
+} from "@/lib/restaurant-schema";
 import { Button } from "@/components/ui/button";
 import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock, Download, AlertTriangle, CreditCard } from "lucide-react";
 
@@ -70,9 +75,9 @@ export default function SettingsPage() {
 
     try {
       const { data, error } = await supabase
-        .from('restaurants')
-        .select('operating_hours, custom_links, footer_slogan, name, email, slug')
-        .eq('id', currentRestaurant.id)
+        .from("restaurants")
+        .select("*")
+        .eq("id", currentRestaurant.id)
         .single();
 
       if (error) throw error;
@@ -93,9 +98,7 @@ export default function SettingsPage() {
         if (data.email) {
           setRestaurantEmail(data.email || "");
         }
-        if (data.slug) {
-          setRestaurantSlug(data.slug);
-        }
+        setRestaurantSlug(resolveRestaurantSlugFromRow(data));
       }
     } catch (error) {
       console.error('Error loading restaurant data:', error);
@@ -144,15 +147,17 @@ export default function SettingsPage() {
     if (!currentRestaurant) return;
 
     try {
+      const slugColumn = await detectRestaurantSlugColumn(supabase);
+      const updatePayload = buildRestaurantUpdateWithSlug(slugColumn, restaurantSlug, {
+        name: restaurantName,
+        email: restaurantEmail,
+        updated_at: new Date().toISOString(),
+      });
+
       const { error } = await supabase
-        .from('restaurants')
-        .update({
-          name: restaurantName,
-          email: restaurantEmail,
-          slug: restaurantSlug,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', currentRestaurant.id);
+        .from("restaurants")
+        .update(updatePayload)
+        .eq("id", currentRestaurant.id);
 
       if (error) throw error;
       alert("Restaurant profile saved!");
