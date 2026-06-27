@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, QrCode, Download } from "lucide-react";
-import QRCode from "react-qr-code";
+import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe } from "lucide-react";
 
 interface OperatingHour {
   day: string;
@@ -37,7 +36,6 @@ export default function SettingsPage() {
   const [restaurantEmail, setRestaurantEmail] = useState("");
   const [restaurantSlug, setRestaurantSlug] = useState("");
   const [slugError, setSlugError] = useState("");
-  const qrCodeRef = useRef<HTMLDivElement>(null);
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
 
@@ -180,42 +178,6 @@ export default function SettingsPage() {
     }
   }
 
-  function downloadQRCode() {
-    if (!restaurantSlug || !qrCodeRef.current) return;
-
-    const svg = qrCodeRef.current.querySelector('svg');
-    if (!svg) return;
-
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const img = new Image();
-    img.onload = () => {
-      // Set canvas size for high resolution (512x512)
-      canvas.width = 512;
-      canvas.height = 512;
-      
-      // Draw white background
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw QR code scaled to canvas size
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      // Convert to PNG and download
-      const pngUrl = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      downloadLink.href = pngUrl;
-      downloadLink.download = `${restaurantSlug}-menu-qr.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-    };
-    
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
-  }
 
   return (
     <div className="space-y-6">
@@ -280,46 +242,6 @@ export default function SettingsPage() {
           <Button className="mt-4" onClick={saveRestaurantProfile}>Save Profile</Button>
         </div>
 
-        {/* Table QR Code */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <QrCode className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Table QR Code</h2>
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Generate a QR code for customers to scan and view your menu on their phones.
-          </p>
-          
-          {!restaurantSlug ? (
-            <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-              <p className="text-sm text-gray-600 text-center">
-                Please set a URL slug in settings to generate your QR code.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4">
-              <div 
-                ref={qrCodeRef}
-                className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm"
-              >
-                <QRCode
-                  value={`https://menulia.net/${restaurantSlug}`}
-                  size={200}
-                  level="H"
-                />
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">
-                  Scan to view menu at menulia.net/{restaurantSlug}
-                </p>
-                <Button onClick={downloadQRCode} className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Download QR Code
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Operating Hours */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
