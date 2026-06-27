@@ -18,23 +18,23 @@ const ubuntu = Ubuntu({ subsets: ["latin"], weight: ["400", "500", "700"], varia
 
 export const metadata: Metadata = {
   title: {
-    default: "menulia.io — Digital Menus & Reservations for Restaurants",
-    template: "%s | menulia.io",
+    default: "menulia.net — Digital Menus & Reservations for Restaurants",
+    template: "%s | menulia.net",
   },
   description:
     "Premium SaaS platform for restaurant owners to digitize menus, manage reservations, and delight diners with 28+ language interactive displays.",
   manifest: "/manifest.json",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.io"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "menulia.io",
-    title: "menulia.io — Digital Menus for Restaurants",
+    siteName: "menulia.net",
+    title: "menulia.net — Digital Menus for Restaurants",
     description: "Stunning multi-language digital menus, reservations, and analytics for modern restaurants.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "menulia.io",
+    title: "menulia.net",
     description: "Digital menus and reservations for modern restaurants.",
   },
   robots: { index: true, follow: true },

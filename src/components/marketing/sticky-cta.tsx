@@ -22,7 +22,7 @@ export function StickyCta() {
       <p className="flex-1 text-sm font-medium">
         Ready to digitize your menu? <span className="text-emerald-brand">Start free.</span>
       </p>
-      <Link href="/onboarding">
+      <Link href="/signup">
         <Button size="sm">Get started</Button>
       </Link>
       <button

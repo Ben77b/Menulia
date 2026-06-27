@@ -61,7 +61,7 @@ export function MarketingHeader() {
               Sign in
             </Button>
           </Link>
-          <Link href="/onboarding">
+          <Link href="/signup">
             <Button size="sm" className="transition hover:scale-105">
               Start free
             </Button>
@@ -85,7 +85,7 @@ export function MarketingHeader() {
               {item.label}
             </Link>
           ))}
-          <Link href="/onboarding" className="mt-2">
+          <Link href="/signup" className="mt-2">
             <Button className="w-full">Start free</Button>
           </Link>
         </nav>

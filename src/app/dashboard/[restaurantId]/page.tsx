@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { UtensilsCrossed, LayoutTemplate, Palette, QrCode, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { getPublicMenuUrl } from "@/lib/site-url";
 
 export default function DashboardPage() {
   const { currentRestaurant, loading } = useRestaurant();
@@ -123,7 +124,7 @@ export default function DashboardPage() {
         </div>
         {showViewLiveSite && currentRestaurant && (
           <Button
-            onClick={() => window.open(`/${currentRestaurant.slug}`, "_blank")}
+            onClick={() => window.open(getPublicMenuUrl(currentRestaurant.slug), "_blank")}
             className="gap-2"
           >
             <ExternalLink className="h-4 w-4" />
