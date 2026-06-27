@@ -1,129 +1,103 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { fetchRestaurantsForAuthenticatedUser } from "@/lib/data";
 
-export interface Restaurant {
+export interface RestaurantSummary {
   id: string;
   name: string;
   slug: string;
+  logo?: string | null;
   font_pack_id?: string;
   user_id?: string;
 }
 
 interface RestaurantContextType {
-  currentRestaurant: Restaurant | null;
-  setCurrentRestaurant: (restaurant: Restaurant) => void;
-  restaurants: Restaurant[];
+  currentRestaurant: RestaurantSummary | null;
+  restaurants: RestaurantSummary[];
   loading: boolean;
+  refreshRestaurants: () => Promise<RestaurantSummary[]>;
+  switchRestaurant: (restaurantId: string) => void;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
 
+function toSummary(restaurant: {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string | null;
+  font_pack_id?: string;
+  user_id?: string;
+}): RestaurantSummary {
+  return {
+    id: restaurant.id,
+    name: restaurant.name,
+    slug: restaurant.slug,
+    logo: restaurant.logo ?? null,
+    font_pack_id: restaurant.font_pack_id,
+    user_id: restaurant.user_id,
+  };
+}
+
 export function RestaurantProvider({ children }: { children: ReactNode }) {
-  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const params = useParams();
+  const restaurantId = params.restaurantId as string | undefined;
+  const [currentRestaurant, setCurrentRestaurant] = useState<RestaurantSummary | null>(null);
+  const [restaurants, setRestaurants] = useState<RestaurantSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Safety timeout to force loading to false after 3 seconds
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Forcing restaurant loading to false due to timeout');
-        setLoading(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
-
-  useEffect(() => {
-    loadRestaurants();
+  const loadRestaurants = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchRestaurantsForAuthenticatedUser();
+      const summaries = data.map(toSummary);
+      setRestaurants(summaries);
+      return summaries;
+    } catch (error) {
+      console.error("Failed to load restaurants:", error);
+      setRestaurants([]);
+      return [];
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    // Load saved restaurant from localStorage
-    const saved = localStorage.getItem("menulia_current_restaurant");
-    if (saved && restaurants.length > 0) {
-      try {
-        const parsed = JSON.parse(saved);
-        const exists = restaurants.find(r => r.id === parsed.id);
-        if (exists) {
-          setCurrentRestaurant(parsed);
-        } else if (restaurants.length > 0) {
-          setCurrentRestaurant(restaurants[0]);
-        }
-      } catch (e) {
-        if (restaurants.length > 0) {
-          setCurrentRestaurant(restaurants[0]);
-        }
-      }
-    } else if (restaurants.length > 0) {
-      setCurrentRestaurant(restaurants[0]);
-    }
-  }, [restaurants]);
+    loadRestaurants();
+  }, [loadRestaurants]);
 
-  async function loadRestaurants() {
-    try {
-      setLoading(true);
-      console.log('Loading restaurants...');
-
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) {
-        console.error('Supabase Context Auth Error:', authError);
-        throw authError;
-      }
-      if (!user) {
-        console.log('No user found, setting loading to false');
-        setRestaurants([]);
-        setCurrentRestaurant(null);
-        return;
-      }
-
-      console.log('User found:', user.id);
-      const { data, error } = await supabase
-        .from('restaurants')
-        .select('id, name, slug, font_pack_id, user_id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Supabase Context Query Error:', error);
-        throw error;
-      }
-
-      console.log('Restaurants loaded:', data?.length || 0);
-      setRestaurants(data || []);
-
-      // Safety clause: if no restaurants found, ensure loading is set to false
-      if (!data || data.length === 0) {
-        console.log('No restaurants found for user');
+  useEffect(() => {
+    if (!restaurantId || restaurants.length === 0) {
+      if (!restaurantId) {
         setCurrentRestaurant(null);
       }
-    } catch (error) {
-      console.error('Supabase Context Error:', error);
-      setRestaurants([]);
-      setCurrentRestaurant(null);
-    } finally {
-      console.log('Setting loading to false in finally block');
-      setLoading(false);
+      return;
     }
-  }
 
-  const handleSetRestaurant = (restaurant: Restaurant) => {
-    setCurrentRestaurant(restaurant);
-    localStorage.setItem("menulia_current_restaurant", JSON.stringify(restaurant));
-    // Trigger data refresh by emitting a custom event
-    window.dispatchEvent(new CustomEvent("restaurantChanged", { detail: restaurant }));
-  };
+    const restaurant = restaurants.find((entry) => entry.id === restaurantId);
+    setCurrentRestaurant(restaurant ?? null);
+  }, [restaurantId, restaurants]);
+
+  const switchRestaurant = useCallback(
+    (id: string) => {
+      const restaurant = restaurants.find((entry) => entry.id === id);
+      if (restaurant) {
+        setCurrentRestaurant(restaurant);
+      }
+    },
+    [restaurants]
+  );
 
   return (
     <RestaurantContext.Provider
       value={{
         currentRestaurant,
-        setCurrentRestaurant: handleSetRestaurant,
         restaurants,
         loading,
+        refreshRestaurants: loadRestaurants,
+        switchRestaurant,
       }}
     >
       {children}
