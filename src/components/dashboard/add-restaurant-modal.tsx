@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createRestaurant, uploadRestaurantLogo, waitForRestaurantInList } from "@/lib/data";
@@ -17,7 +16,6 @@ interface AddRestaurantModalProps {
 }
 
 export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRestaurantModalProps) {
-  const router = useRouter();
   const { refreshRestaurants, activateRestaurant } = useRestaurant();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,7 +134,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
       });
 
       handleClose();
-      router.push(`/dashboard/${restaurant.id}`);
+      window.location.assign(`/dashboard/${restaurant.id}`);
     } catch (submitError) {
       console.error("[AddRestaurantModal] submission failed:", submitError);
       if (submitError instanceof RestaurantCreationError) {

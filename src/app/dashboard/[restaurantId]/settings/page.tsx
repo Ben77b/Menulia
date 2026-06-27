@@ -6,8 +6,8 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import {
   buildRestaurantUpdateWithSlug,
-  detectRestaurantSlugColumn,
   resolveRestaurantSlugFromRow,
+  resolveRestaurantTableSchema,
 } from "@/lib/restaurant-schema";
 import { Button } from "@/components/ui/button";
 import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock, Download, AlertTriangle, CreditCard } from "lucide-react";
@@ -147,7 +147,7 @@ export default function SettingsPage() {
     if (!currentRestaurant) return;
 
     try {
-      const slugColumn = await detectRestaurantSlugColumn(supabase);
+      const slugColumn = await resolveRestaurantTableSchema(supabase);
       const updatePayload = buildRestaurantUpdateWithSlug(slugColumn, restaurantSlug, {
         name: restaurantName,
         email: restaurantEmail,

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createRestaurant, waitForRestaurantInList } from "@/lib/data";
 import { slugify } from "@/lib/utils";
@@ -10,7 +9,6 @@ import { RestaurantCreationError } from "@/lib/auth/errors";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function CreateFirstRestaurantForm() {
-  const router = useRouter();
   const { refreshRestaurants, activateRestaurant } = useRestaurant();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -78,7 +76,7 @@ export function CreateFirstRestaurantForm() {
         font_pack_id: restaurant.font_pack_id,
       });
 
-      router.replace(`/dashboard/${restaurant.id}`);
+      window.location.assign(`/dashboard/${restaurant.id}`);
     } catch (submitError) {
       console.error("[CreateFirstRestaurantForm] submission failed:", submitError);
 
