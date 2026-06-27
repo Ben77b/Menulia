@@ -8,20 +8,7 @@ import QRCode from "react-qr-code";
 
 export default function SharePage() {
   const [restaurant, setRestaurant] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-
-  // Safety timeout to force loading to false after 3 seconds
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Forcing share page loading to false due to timeout');
-        setLoading(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
 
   useEffect(() => {
     async function loadData() {
@@ -30,8 +17,6 @@ export default function SharePage() {
         setRestaurant(r);
       } catch (error) {
         console.error('Error loading restaurant for share page:', error);
-      } finally {
-        setLoading(false);
       }
     }
     loadData();

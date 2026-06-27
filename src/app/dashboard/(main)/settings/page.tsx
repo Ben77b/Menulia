@@ -37,20 +37,7 @@ export default function SettingsPage() {
   const [restaurantEmail, setRestaurantEmail] = useState("");
   const [restaurantSlug, setRestaurantSlug] = useState("");
   const [slugError, setSlugError] = useState("");
-  const [loading, setLoading] = useState(true);
   const qrCodeRef = useRef<HTMLDivElement>(null);
-
-  // Safety timeout to force loading to false after 3 seconds
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Forcing settings loading to false due to timeout');
-        setLoading(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
 
@@ -94,8 +81,6 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error('Error loading restaurant data:', error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -232,7 +217,6 @@ export default function SettingsPage() {
     img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   }
 
-  if (loading) return <div>Loading...</div>;
   if (!currentRestaurant) return <div>Loading...</div>;
 
   return (

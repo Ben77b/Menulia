@@ -31,7 +31,6 @@ export default function BrandingPage() {
   const [color2, setColor2] = useState("#F3F4F6");
   const [color3, setColor3] = useState("#FFFFFF");
   const [matchMainBackground, setMatchMainBackground] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   // Font selection state
   const [selectedPreset, setSelectedPreset] = useState("minimalist-cafe");
@@ -39,18 +38,6 @@ export default function BrandingPage() {
   const [customBodyFont, setCustomBodyFont] = useState("");
   const headingFontInputRef = useRef<HTMLInputElement>(null);
   const bodyFontInputRef = useRef<HTMLInputElement>(null);
-
-  // Safety timeout to force loading to false after 3 seconds
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Forcing branding page loading to false due to timeout');
-        setLoading(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
 
 
   // Font presets
@@ -104,7 +91,6 @@ export default function BrandingPage() {
     if (!currentRestaurant) return;
 
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('restaurants')
         .select('theme_colors, typography')
@@ -146,8 +132,6 @@ export default function BrandingPage() {
         setCustomHeadingFont(fonts.customHeadingFont || "");
         setCustomBodyFont(fonts.customBodyFont || "");
       }
-    } finally {
-      setLoading(false);
     }
   }
 

@@ -9,26 +9,7 @@ import QRCode from "react-qr-code";
 export default function QrCodePage() {
   const { currentRestaurant } = useRestaurant();
   const [qrColor, setQrColor] = useState("#000000");
-  const [loading, setLoading] = useState(true);
   const qrRef = useRef<HTMLDivElement>(null);
-
-  // Safety timeout to force loading to false after 3 seconds
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Forcing QR page loading to false due to timeout');
-        setLoading(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [loading]);
-
-  useEffect(() => {
-    if (currentRestaurant) {
-      setLoading(false);
-    }
-  }, [currentRestaurant]);
 
   function downloadQrCode() {
     if (!qrRef.current) return;
@@ -58,7 +39,6 @@ export default function QrCodePage() {
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   }
 
-  if (loading) return <div>Loading...</div>;
   if (!currentRestaurant) return <div>Loading...</div>;
 
   const restaurantUrl = `https://menulia.net/${currentRestaurant.slug}`;
