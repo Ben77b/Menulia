@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
-import { resolvePostAuthDashboardRoute } from "@/lib/auth/session";
+import { completeAuthenticatedLogin } from "@/lib/auth/profile";
+import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
 
 export function LoginForm() {
   const router = useRouter();
@@ -30,30 +31,37 @@ export function LoginForm() {
       setSubmitting(true);
       const supabase = getSupabaseBrowserClient();
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password,
       });
 
       if (signInError) {
-        console.error("[LoginForm] signIn failed:", {
-          message: signInError.message,
-          code: signInError.code,
-          status: signInError.status,
-        });
-        throw signInError;
+        logAuthDiagnostic("login.signInWithPassword", signInError);
+        setError(toFriendlyAuthError(signInError));
+        return;
       }
 
-      const destination =
-        searchParams.get("next") && searchParams.get("next")!.startsWith("/dashboard")
-          ? searchParams.get("next")!
-          : await resolvePostAuthDashboardRoute(supabase);
+      if (!data.session?.user) {
+        setError("Your session could not be started. Please try again.");
+        return;
+      }
 
-      router.replace(destination);
+      const { destination } = await completeAuthenticatedLogin(supabase);
+
+      const nextParam = searchParams.get("next");
+      const finalDestination =
+        nextParam && nextParam.startsWith("/dashboard") ? nextParam : destination;
+
+      router.replace(finalDestination);
+      router.refresh();
     } catch (submitError) {
-      const message =
-        submitError instanceof Error ? submitError.message : "Unable to log in.";
-      setError(message);
+      logAuthDiagnostic("login.submit", submitError);
+      setError(
+        submitError instanceof Error
+          ? toFriendlyAuthError(submitError)
+          : "We could not sign you in. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }

@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { getSiteUrl } from "@/lib/site-url";
-import {
-  ensureUserProfileReady,
-  waitForAuthenticatedSession,
-} from "@/lib/auth/session";
+import { buildUserProfile, syncUserProfileRecord } from "@/lib/auth/profile";
+import { waitForAuthenticatedSession } from "@/lib/auth/session";
+import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
 
 export function SignupForm() {
   const router = useRouter();
@@ -52,12 +51,9 @@ export function SignupForm() {
       });
 
       if (signUpError) {
-        console.error("[SignupForm] signUp failed:", {
-          message: signUpError.message,
-          code: signUpError.code,
-          status: signUpError.status,
-        });
-        throw signUpError;
+        logAuthDiagnostic("signup.signUp", signUpError);
+        setError(toFriendlyAuthError(signUpError));
+        return;
       }
 
       if (!signUpData.session) {
@@ -67,21 +63,24 @@ export function SignupForm() {
         });
 
         if (signInError) {
-          setError(
-            "Account created. Please confirm your email address, then log in to continue."
-          );
+          setError("Account created. Please confirm your email address, then log in.");
           return;
         }
       }
 
       const session = await waitForAuthenticatedSession(supabase);
-      await ensureUserProfileReady(supabase, session.user);
+      const profile = buildUserProfile(session.user);
+      await syncUserProfileRecord(supabase, profile);
 
       router.replace("/dashboard");
+      router.refresh();
     } catch (submitError) {
-      const message =
-        submitError instanceof Error ? submitError.message : "Unable to create your account.";
-      setError(message);
+      logAuthDiagnostic("signup.submit", submitError);
+      setError(
+        submitError instanceof Error
+          ? toFriendlyAuthError(submitError)
+          : "Unable to create your account. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }

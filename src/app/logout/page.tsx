@@ -10,9 +10,10 @@ export default function LogoutPage() {
   useEffect(() => {
     async function signOut() {
       const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       localStorage.removeItem("menulia_current_restaurant");
       router.replace("/login");
+      router.refresh();
     }
 
     signOut();
