@@ -529,10 +529,6 @@ export default function MenuPage() {
     setDraggedDishIndex(null);
   }
 
-  if (!currentRestaurant) {
-    return <div>Loading...</div>;
-  }
-
   return (
     <div className="space-y-6">
       <div>

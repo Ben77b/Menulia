@@ -217,8 +217,6 @@ export default function SettingsPage() {
     img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
   }
 
-  if (!currentRestaurant) return <div>Loading...</div>;
-
   return (
     <div className="space-y-6">
       <div>
