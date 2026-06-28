@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
+import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
@@ -80,7 +81,9 @@ export default async function PublicMenuPage({ params }: PageProps) {
   );
 
   return (
-    <PublicMenuLayout
+    <>
+      <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
+      <PublicMenuLayout
       restaurantName={restaurant.name}
       logo={(restaurant.logo as string | null) ?? null}
       location={(restaurant.location as string | null) ?? ""}
@@ -95,5 +98,6 @@ export default async function PublicMenuPage({ params }: PageProps) {
       hasNestedStructure={hasNestedStructure}
       links={links}
     />
+    </>
   );
 }
