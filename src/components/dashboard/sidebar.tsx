@@ -18,7 +18,6 @@ import {
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
-import { getPublicMenuUrl } from "@/lib/site-url";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -168,18 +167,6 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   </div>
                 )}
               </div>
-
-              {currentRestaurant?.slug && (
-                <a
-                  href={getPublicMenuUrl(currentRestaurant.slug)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 flex items-center gap-2 rounded-lg bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View Live Menu
-                </a>
-              )}
             </div>
           ) : (
             <div className="mb-6 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
@@ -206,6 +193,18 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 </Link>
               );
             })}
+
+            {currentRestaurant?.slug && (
+              <a
+                href={`https://menulia.net/${currentRestaurant.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
+              >
+                <ExternalLink className="h-5 w-5" />
+                <span>🌐 View Live Menu</span>
+              </a>
+            )}
           </nav>
 
           <div className="border-t border-gray-100 pt-6">

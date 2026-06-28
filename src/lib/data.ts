@@ -1,16 +1,24 @@
 import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
 import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
-import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { RestaurantCreationError, logSupabaseFailure } from "./auth/errors";
 import { ensureUserProfileReady } from "./auth/session";
-import {
-  normalizeRestaurantSlug,
-  resolveRestaurantOwnerFromRow,
-  resolveRestaurantSlugFromRow,
-} from "./restaurant-schema";
 
-function isMissingColumnError(code: string | undefined): boolean {
-  return code === "42703" || code === "PGRST204";
+const SLUG_PATTERN = /^[a-z0-9-]+$/;
+
+function normalizeRestaurantSlug(rawSlug: string): string {
+  const normalized = rawSlug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  if (!normalized || !SLUG_PATTERN.test(normalized)) {
+    throw new Error("URL slug must contain only lowercase letters, numbers, and hyphens.");
+  }
+
+  return normalized;
 }
 
 function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
@@ -32,8 +40,6 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
 function normalizeRestaurantRow(row: Record<string, unknown>): Restaurant {
   return {
     ...(row as Restaurant),
-    user_id: resolveRestaurantOwnerFromRow(row),
-    slug: resolveRestaurantSlugFromRow(row),
     logo: (row.logo as string | null) ?? (row.logo_url as string | null) ?? null,
   };
 }
@@ -79,36 +85,20 @@ export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFul
       .from("restaurants")
       .select("*")
       .eq("slug", slug)
-      .maybeSingle();
+      .single();
 
-    if (error && error.code !== "PGRST116") {
+    if (error) {
+      if (error.code === "PGRST116") return null;
       logSupabaseFailure("fetchRestaurantBySlug", error);
       return null;
     }
 
-    let resolvedRestaurant = restaurant;
+    if (!restaurant) return null;
 
-    if (!resolvedRestaurant) {
-      const { data: restaurantById, error: idError } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq("id", slug)
-        .maybeSingle();
-
-      if (idError && idError.code !== "PGRST116") {
-        logSupabaseFailure("fetchRestaurantBySlug.idFallback", idError);
-        return null;
-      }
-
-      resolvedRestaurant = restaurantById;
-    }
-
-    if (!resolvedRestaurant) return null;
-
-    const categories = await fetchCategoriesWithDishes(String(resolvedRestaurant.id));
+    const categories = await fetchCategoriesWithDishes(restaurant.id);
 
     return {
-      ...normalizeRestaurantRow(resolvedRestaurant),
+      ...normalizeRestaurantRow(restaurant),
       categories,
     } as RestaurantFull;
   } catch (error) {
@@ -120,19 +110,16 @@ export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFul
 export async function fetchAllRestaurantSlugs(): Promise<string[]> {
   try {
     const supabase = createAnonClient();
-    const { data, error } = await supabase.from("restaurants").select("id, slug");
+    const { data, error } = await supabase.from("restaurants").select("slug");
 
     if (error) {
-      if (isMissingColumnError(error.code)) {
-        const { data: idRows, error: idError } = await supabase.from("restaurants").select("id");
-        if (idError) throw idError;
-        return (idRows || []).map((row) => String(row.id));
-      }
       logSupabaseFailure("fetchAllRestaurantSlugs", error);
       return [];
     }
 
-    return (data || []).map((row) => resolveRestaurantSlugFromRow(row));
+    return (data || [])
+      .map((row) => row.slug)
+      .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
   } catch (error) {
     console.error("Error fetching restaurant slugs:", error);
     return [];
@@ -189,10 +176,6 @@ async function isSlugTaken(supabase: SupabaseClient, slug: string): Promise<bool
     .maybeSingle();
 
   if (error) {
-    if (isMissingColumnError(error.code)) {
-      return false;
-    }
-
     logSupabaseFailure("restaurants.slugCheck", error);
     throw new RestaurantCreationError(error, "slugCheck");
   }
@@ -227,27 +210,6 @@ export async function resolveUniqueRestaurantSlug(
   };
 }
 
-async function insertRestaurantRow(
-  supabase: SupabaseClient,
-  payload: Record<string, unknown>
-): Promise<Record<string, unknown>> {
-  const { data, error } = await supabase
-    .from("restaurants")
-    .insert(payload)
-    .select("*")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Restaurant insert succeeded but no row was returned.");
-  }
-
-  return data;
-}
-
 export async function createRestaurant(input: CreateRestaurantInput): Promise<CreateRestaurantResult> {
   const supabase = getSupabaseBrowserClient();
 
@@ -273,81 +235,45 @@ export async function createRestaurant(input: CreateRestaurantInput): Promise<Cr
       input.slug
     );
 
-    const standardPayload = {
-      name: input.name.trim(),
-      slug: finalSlug,
-      user_id: user.id,
-    };
+    const { data, error } = await supabase
+      .from("restaurants")
+      .insert({
+        name: input.name.trim(),
+        slug: finalSlug,
+        user_id: user.id,
+      })
+      .select("*")
+      .single();
 
-    let insertedRow: Record<string, unknown>;
+    if (error) {
+      console.dir(error, { depth: null });
+      throw new RestaurantCreationError(error, "insert");
+    }
 
-    try {
-      insertedRow = await insertRestaurantRow(supabase, standardPayload);
-    } catch (primaryError) {
-      console.dir(primaryError, { depth: null });
-
-      const postgrestError = primaryError as PostgrestError;
-
-      if (!isMissingColumnError(postgrestError.code)) {
-        throw new RestaurantCreationError(postgrestError, "insert");
-      }
-
-      const fallbackPayloads: Record<string, unknown>[] = [
-        { name: standardPayload.name, user_id: user.id },
-        { name: standardPayload.name, slug: finalSlug },
-        { name: standardPayload.name },
-      ];
-
-      let fallbackRow: Record<string, unknown> | null = null;
-      let lastFallbackError: PostgrestError | Error | null = postgrestError;
-
-      for (const fallbackPayload of fallbackPayloads) {
-        try {
-          fallbackRow = await insertRestaurantRow(supabase, fallbackPayload);
-          break;
-        } catch (fallbackError) {
-          console.dir(fallbackError, { depth: null });
-          lastFallbackError = fallbackError as PostgrestError;
-        }
-      }
-
-      if (!fallbackRow) {
-        throw new RestaurantCreationError(
-          (lastFallbackError as PostgrestError) ?? {
-            message: "Restaurant insert failed for all fallback payloads.",
-            details: "The live restaurants table is missing expected columns.",
-            hint: "Add user_id and slug columns to public.restaurants in Supabase.",
-            code: "insert_failed",
-          },
-          "insert"
-        );
-      }
-
-      insertedRow = fallbackRow;
+    if (!data) {
+      throw new Error("Restaurant insert succeeded but no row was returned.");
     }
 
     if (input.logo) {
       const { error: logoError } = await supabase
         .from("restaurants")
         .update({ logo_url: input.logo })
-        .eq("id", insertedRow.id);
+        .eq("id", data.id);
 
       if (logoError) {
         console.dir(logoError, { depth: null });
-      } else {
-        insertedRow.logo_url = input.logo;
       }
     }
 
-    const restaurant = normalizeRestaurantRow(insertedRow);
+    const restaurant = normalizeRestaurantRow(data);
 
     return {
       restaurant: {
         ...restaurant,
         user_id: user.id,
-        slug: restaurant.slug || finalSlug || restaurant.id,
+        slug: finalSlug,
       },
-      finalSlug: restaurant.slug || finalSlug || restaurant.id,
+      finalSlug,
       slugWasAdjusted,
     };
   } catch (error) {

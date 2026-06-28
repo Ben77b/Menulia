@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
-import { resolveRestaurantSlugFromRow } from "@/lib/restaurant-schema";
 import { Button } from "@/components/ui/button";
 import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock, Download, AlertTriangle, CreditCard } from "lucide-react";
 
@@ -94,7 +93,7 @@ export default function SettingsPage() {
         if (data.email) {
           setRestaurantEmail(data.email || "");
         }
-        setRestaurantSlug(resolveRestaurantSlugFromRow(data));
+        setRestaurantSlug(typeof data.slug === "string" ? data.slug : "");
       }
     } catch (error) {
       console.error('Error loading restaurant data:', error);

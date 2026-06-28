@@ -14,7 +14,6 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { buildUserProfile, syncUserProfileRecord, type UserProfile } from "@/lib/auth/profile";
 import { logAuthDiagnostic } from "@/lib/auth/messages";
-import { resolveRestaurantSlugFromRow } from "@/lib/restaurant-schema";
 
 export interface RestaurantSummary {
   id: string;
@@ -44,7 +43,7 @@ function toSummary(restaurant: Record<string, unknown>): RestaurantSummary {
   return {
     id: String(restaurant.id),
     name: String(restaurant.name ?? ""),
-    slug: resolveRestaurantSlugFromRow(restaurant),
+    slug: typeof restaurant.slug === "string" ? restaurant.slug : String(restaurant.id ?? ""),
     logo: (restaurant.logo as string | null) ?? (restaurant.logo_url as string | null) ?? null,
     font_pack_id: restaurant.font_pack_id as string | undefined,
     user_id: restaurant.user_id as string | undefined,
