@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
 import type { RestaurantLink } from "@/lib/restaurant-links";
+import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
+import { MenuLanguageSelector } from "./menu-language-selector";
 
 interface MenuHeaderProps {
   restaurantName: string;
@@ -12,6 +14,8 @@ interface MenuHeaderProps {
   headerBackgroundColor: string;
   titleFont: string;
   links: RestaurantLink[];
+  locale: PublicMenuLocale;
+  onLocaleChange: (locale: PublicMenuLocale) => void;
 }
 
 export function MenuHeader({
@@ -20,6 +24,8 @@ export function MenuHeader({
   headerBackgroundColor,
   titleFont,
   links,
+  locale,
+  onLocaleChange,
 }: MenuHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const textColor = contrastingTextColor(headerBackgroundColor);
@@ -67,7 +73,11 @@ export function MenuHeader({
           </div>
 
           <div className="flex justify-end">
-            <span className="h-10 w-10" aria-hidden />
+            <MenuLanguageSelector
+              locale={locale}
+              onLocaleChange={onLocaleChange}
+              headerBackgroundColor={headerBackgroundColor}
+            />
           </div>
         </div>
       </header>
@@ -91,7 +101,7 @@ export function MenuHeader({
               style={{ borderColor: textColor, color: textColor }}
             >
               <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: textColor }}>
-                Links
+                {menuUiString(locale, "links")}
               </p>
               <button
                 type="button"

@@ -6,12 +6,19 @@ import { parseContactInfo } from "@/lib/contact-info";
 import type { MenuThemeColors } from "@/lib/theme-colors";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { RestaurantLink } from "@/lib/restaurant-links";
-import { RestaurantLogo } from "@/components/restaurant-logo";
+import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
+import {
+  collectAllDishes,
+  collectMenuTags,
+  filterDishesByTags,
+} from "@/lib/public-menu-utils";
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
 import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
+import { PublicMenuFooter } from "./public-menu-footer";
+import { PublicMenuFilterBar } from "./public-menu-filter-bar";
 
 interface PublicMenuLayoutProps {
   restaurantName: string;
@@ -35,28 +42,43 @@ function DishSection({
   theme,
   titleFont,
   bodyFont,
+  locale,
+  activeFilters,
 }: {
   subcategory: PublicMenuSubcategory;
   mainTextColor: string;
   theme: MenuThemeColors;
   titleFont: string;
   bodyFont: string;
+  locale: PublicMenuLocale;
+  activeFilters: Set<string>;
 }) {
+  const filteredDishes = useMemo(
+    () => filterDishesByTags(subcategory.dishes, activeFilters),
+    [subcategory.dishes, activeFilters]
+  );
+
+  const emptyMessage =
+    subcategory.dishes.length === 0
+      ? menuUiString(locale, "noDishes")
+      : menuUiString(locale, "noFilterMatch");
+
   if (subcategory.layout_type === "carousel") {
     return (
       <DishCarousel
-        dishes={subcategory.dishes}
+        dishes={filteredDishes}
         accentColor={theme.categoryAccentColor}
         mainTextColor={mainTextColor}
         titleFont={titleFont}
         bodyFont={bodyFont}
+        emptyMessage={emptyMessage}
       />
     );
   }
 
   return (
     <div className="mx-auto max-w-3xl space-y-12">
-      {subcategory.dishes.map((dish) => (
+      {filteredDishes.map((dish) => (
         <DishCard
           key={dish.id}
           dish={dish}
@@ -67,9 +89,9 @@ function DishSection({
           imageClassName="w-full"
         />
       ))}
-      {subcategory.dishes.length === 0 && (
+      {filteredDishes.length === 0 && (
         <p className="text-center text-sm" style={{ color: mainTextColor }}>
-          No dishes in this category.
+          {emptyMessage}
         </p>
       )}
     </div>
@@ -91,10 +113,12 @@ export function PublicMenuLayout({
   hasNestedStructure,
   links,
 }: PublicMenuLayoutProps) {
+  const [locale, setLocale] = useState<PublicMenuLocale>("en");
   const [activeParentId, setActiveParentId] = useState(menu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
     menu[0]?.subcategories[0]?.id ?? flatCategories[0]?.id ?? ""
   );
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (hasNestedStructure) {
@@ -124,8 +148,14 @@ export function PublicMenuLayout({
     );
   }, [menu, flatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
 
+  const allDishes = useMemo(
+    () => collectAllDishes(menu, flatCategories, hasNestedStructure),
+    [menu, flatCategories, hasNestedStructure]
+  );
+
+  const menuTags = useMemo(() => collectMenuTags(allDishes), [allDishes]);
+
   const mainTextColor = contrastingTextColor(theme.mainContentBackgroundColor);
-  const footerTextColor = contrastingTextColor(theme.footerBackgroundColor);
   const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
   const hasMenu = hasNestedStructure ? menu.length > 0 : flatCategories.length > 0;
 
@@ -135,6 +165,18 @@ export function PublicMenuLayout({
     if (parent?.subcategories[0]) {
       setActiveSubcategoryId(parent.subcategories[0].id);
     }
+  }
+
+  function toggleFilter(tag: string) {
+    setActiveFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+      }
+      return next;
+    });
   }
 
   return (
@@ -148,6 +190,8 @@ export function PublicMenuLayout({
         headerBackgroundColor={theme.headerBackgroundColor}
         titleFont={titleFont}
         links={links}
+        locale={locale}
+        onLocaleChange={setLocale}
       />
 
       {hasNestedStructure ? (
@@ -190,79 +234,36 @@ export function PublicMenuLayout({
               theme={theme}
               titleFont={titleFont}
               bodyFont={bodyFont}
+              locale={locale}
+              activeFilters={activeFilters}
             />
           </section>
         )}
       </main>
 
-      {(location || hours || contactPhone || contactEmail || footerSlogan) && (
-        <footer
-          className="border-t border-black/5 px-6 py-12"
-          style={{ backgroundColor: theme.footerBackgroundColor, color: footerTextColor }}
-        >
-          <div className="mx-auto max-w-4xl space-y-10 text-center">
-            {logo ? (
-              <RestaurantLogo
-                src={logo}
-                alt={restaurantName}
-                wrapperClassName="mx-auto h-16 w-40"
-                className="h-16 w-full"
-              />
-            ) : (
-              <p
-                className="text-2xl font-bold uppercase tracking-[0.25em]"
-                style={{ fontFamily: titleFont, color: footerTextColor }}
-              >
-                {restaurantName}
-              </p>
-            )}
+      <PublicMenuFilterBar
+        backgroundColor={theme.footerBackgroundColor}
+        titleFont={titleFont}
+        bodyFont={bodyFont}
+        locale={locale}
+        activeFilters={activeFilters}
+        onToggleFilter={toggleFilter}
+        menuTags={menuTags}
+      />
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:text-left">
-              {hours && (
-                <div style={{ color: footerTextColor }}>
-                  <h3
-                    className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
-                    style={{ fontFamily: titleFont, color: footerTextColor }}
-                  >
-                    Open Hours
-                  </h3>
-                  <p className="whitespace-pre-line text-sm leading-relaxed" style={{ color: footerTextColor }}>
-                    {hours}
-                  </p>
-                </div>
-              )}
-              {(location || contactPhone || contactEmail) && (
-                <div style={{ color: footerTextColor }}>
-                  <h3
-                    className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
-                    style={{ fontFamily: titleFont, color: footerTextColor }}
-                  >
-                    Location & Contact
-                  </h3>
-                  <div className="space-y-1 text-sm leading-relaxed" style={{ color: footerTextColor }}>
-                    {contactPhone && <p>{contactPhone}</p>}
-                    {contactEmail && <p>{contactEmail}</p>}
-                    {location && <p>{location}</p>}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {footerSlogan && (
-              <p
-                className="mx-auto max-w-2xl text-sm leading-relaxed"
-                style={{ color: footerTextColor, fontFamily: bodyFont }}
-              >
-                {footerSlogan}
-              </p>
-            )}
-
-            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: footerTextColor }}>
-              Powered by Menulia.net
-            </p>
-          </div>
-        </footer>
-      )}
+      <PublicMenuFooter
+        restaurantName={restaurantName}
+        logo={logo}
+        location={location}
+        hours={hours}
+        contactPhone={contactPhone}
+        contactEmail={contactEmail}
+        footerSlogan={footerSlogan}
+        footerBackgroundColor={theme.footerBackgroundColor}
+        titleFont={titleFont}
+        bodyFont={bodyFont}
+        locale={locale}
+      />
     </div>
   );
 }

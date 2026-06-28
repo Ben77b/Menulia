@@ -34,7 +34,7 @@ import {
   loadRestaurantSettings,
   saveFullRestaurantSettings,
 } from "@/lib/restaurant-settings";
-import { fetchRestaurantLinks } from "@/lib/restaurant-links";
+import { MAX_CUSTOM_LINKS, MAX_LINK_LABEL_LENGTH } from "@/lib/menu-limits";
 
 interface CustomLink {
   id: string;
@@ -111,9 +111,8 @@ export default function SettingsPage() {
 
       setFooterSlogan(data.footer_slogan);
 
-      const links = await fetchRestaurantLinks(currentRestaurant.id);
       setCustomLinks(
-        links.map((link) => ({
+        data.custom_links.map((link) => ({
           id: link.id,
           label: link.label,
           url: link.url,
@@ -221,6 +220,7 @@ export default function SettingsPage() {
   }
 
   function addCustomLink() {
+    if (customLinks.length >= MAX_CUSTOM_LINKS) return;
     setCustomLinks([
       ...customLinks,
       { id: Date.now().toString(), label: "", url: "" },
@@ -394,15 +394,22 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-900">Public Page Footer & Links Settings</h2>
           </div>
           <p className="mb-4 text-sm text-gray-600">
-            Links appear in the hamburger menu on your public page. Both label and URL are required
-            for each link.
+            Links appear in the hamburger menu on your public page. Add a label and URL for each
+            link, then click Save Changes. Up to {MAX_CUSTOM_LINKS} links.
           </p>
 
           <div className="grid grid-cols-2 gap-6">
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addCustomLink} className="gap-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCustomLink}
+                  className="gap-1"
+                  disabled={customLinks.length >= MAX_CUSTOM_LINKS}
+                >
                   <Plus className="h-4 w-4" />
                   Add Link
                 </Button>
@@ -418,7 +425,10 @@ export default function SettingsPage() {
                         <input
                           type="text"
                           value={link.label}
-                          onChange={(e) => updateCustomLink(link.id, "label", e.target.value)}
+                          onChange={(e) =>
+                            updateCustomLink(link.id, "label", e.target.value.slice(0, MAX_LINK_LABEL_LENGTH))
+                          }
+                          maxLength={MAX_LINK_LABEL_LENGTH}
                           placeholder="Link label (e.g., TripAdvisor)"
                           className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />

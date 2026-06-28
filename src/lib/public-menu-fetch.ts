@@ -6,7 +6,7 @@ import {
   type PublicMenuParentCategory,
   type PublicMenuSubcategory,
 } from "@/lib/menu-hierarchy";
-import { fetchRestaurantLinks, type RestaurantLink } from "@/lib/restaurant-links";
+import { parseCustomLinks } from "@/lib/restaurant-links";
 
 export function hasNestedMenuStructure(categoryRows: CategoryRow[]): boolean {
   return categoryRows.some((row) => row.parent_id !== null);
@@ -39,21 +39,17 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
   menu: PublicMenuParentCategory[];
   flatCategories: PublicMenuSubcategory[];
   hasNestedStructure: boolean;
-  links: RestaurantLink[];
 }> {
   const supabase = createAnonClient();
 
-  const [{ data: categories, error: categoriesError }, links] = await Promise.all([
-    supabase
-      .from("categories")
-      .select("id, name, layout_type, order_index, parent_id")
-      .eq("restaurant_id", restaurantId)
-      .order("order_index", { ascending: true }),
-    fetchRestaurantLinks(restaurantId),
-  ]);
+  const { data: categories, error: categoriesError } = await supabase
+    .from("categories")
+    .select("id, name, layout_type, order_index, parent_id")
+    .eq("restaurant_id", restaurantId)
+    .order("order_index", { ascending: true });
 
   if (categoriesError || !categories?.length) {
-    return { menu: [], flatCategories: [], hasNestedStructure: false, links };
+    return { menu: [], flatCategories: [], hasNestedStructure: false };
   }
 
   const categoryRows: CategoryRow[] = categories.map((category) => ({
@@ -91,6 +87,5 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
     menu: buildMenuHierarchy(categoryRows, dishesByCategoryId),
     flatCategories: buildFlatCategories(categoryRows, dishesByCategoryId),
     hasNestedStructure: nested,
-    links,
   };
 }

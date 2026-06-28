@@ -25,8 +25,12 @@ export function FlatCategoryNav({
 
   return (
     <nav
-      className="sticky top-[72px] z-40 flex flex-wrap justify-center gap-2 border-b border-black/5 px-4 py-3 md:flex-nowrap md:justify-start md:overflow-x-auto"
-      style={{ backgroundColor: stripBackgroundColor, color: stripTextColor }}
+      className="flex w-full flex-wrap items-center justify-center gap-2 border-b border-black/5 px-4 py-4"
+      style={{
+        backgroundColor: stripBackgroundColor,
+        color: stripTextColor,
+        justifyContent: "center",
+      }}
     >
       {categories.map((category) => {
         const isActive = category.id === activeCategoryId;
@@ -36,18 +40,20 @@ export function FlatCategoryNav({
             key={category.id}
             type="button"
             onClick={() => onCategoryChange(category.id)}
-            className="whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:text-sm"
+            className="rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:text-sm"
             style={
               isActive
                 ? {
                     backgroundColor: accentColor,
                     color: accentFillText,
                     border: `1px solid ${accentColor}`,
+                    textAlign: "center",
                   }
                 : {
                     backgroundColor: "transparent",
                     color: stripTextColor,
                     border: `1px solid ${stripTextColor}`,
+                    textAlign: "center",
                   }
             }
           >

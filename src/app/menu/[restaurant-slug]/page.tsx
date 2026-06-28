@@ -4,6 +4,7 @@ import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
+import { parseCustomLinks } from "@/lib/restaurant-links";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 
 interface PageProps {
@@ -67,9 +68,10 @@ export default async function PublicMenuPage({ params }: PageProps) {
     return <MenuAwaitingSync slugParam={slugParam} />;
   }
 
-  const { menu, flatCategories, hasNestedStructure, links } = await fetchPublicMenuData(
+  const { menu, flatCategories, hasNestedStructure } = await fetchPublicMenuData(
     restaurant.id
   );
+  const links = parseCustomLinks(restaurant.custom_links);
   const theme = parseMenuThemeColors(restaurant.theme_colors);
   const fonts = resolveFonts(
     restaurant.typography && typeof restaurant.typography === "object"

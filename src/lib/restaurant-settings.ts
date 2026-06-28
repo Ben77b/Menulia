@@ -1,7 +1,13 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { compileHoursSchedule, type HoursScheduleBlock } from "./hours-schedule";
 import { formatContactInfo } from "./contact-info";
-import { saveRestaurantLinks, type RestaurantLinkInput } from "./restaurant-links";
+import {
+  CUSTOM_LINKS_SQL_HINT,
+  parseCustomLinks,
+  serializeCustomLinks,
+  type RestaurantLink,
+  type RestaurantLinkInput,
+} from "./restaurant-links";
 
 export interface RestaurantSettingsForm {
   name: string;
@@ -21,10 +27,14 @@ export interface RestaurantSettingsRecord {
   location: string;
   hours: string;
   contact_info: string;
+  footer_slogan: string;
+  custom_links: RestaurantLink[];
 }
 
-const CORE_PROFILE_COLUMNS =
-  "id, name, slug, location, hours, contact_info" as const;
+const EXTENDED_PROFILE_COLUMNS =
+  "id, name, slug, location, hours, contact_info, footer_slogan, custom_links" as const;
+
+const CORE_PROFILE_COLUMNS = "id, name, slug, location, hours, contact_info" as const;
 
 export function isMissingColumnError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
@@ -43,10 +53,16 @@ export function formatSchemaError(error: unknown): string {
   if (isMissingColumnError(error)) {
     const match = message.match(/column\s+[\w.]+\.(\w+)\s+does not exist/i);
     const column = match?.[1];
+
+    if (column === "custom_links" || column === "footer_slogan") {
+      return `Your database is missing the "${column}" column. ${CUSTOM_LINKS_SQL_HINT}`;
+    }
+
     if (column) {
       return `Your database is missing the "${column}" column on restaurants. Run supabase/migrations/20250629000000_restaurant_profile_columns.sql in the Supabase SQL editor, then refresh this page.`;
     }
-    return `Database schema is out of date (${message}). Run supabase/migrations/20250629000000_restaurant_profile_columns.sql in the Supabase SQL editor, then refresh.`;
+
+    return `Database schema is out of date (${message}). ${CUSTOM_LINKS_SQL_HINT}`;
   }
 
   return message;
@@ -59,37 +75,43 @@ export function missingColumnMessage(): string {
   } as PostgrestError);
 }
 
-async function loadOptionalFooterSlogan(
-  supabase: SupabaseClient,
-  restaurantId: string
-): Promise<string> {
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("footer_slogan")
-    .eq("id", restaurantId)
-    .maybeSingle();
-
-  if (error) {
-    if (isMissingColumnError(error)) {
-      return "";
-    }
-    throw error;
-  }
-
-  return data?.footer_slogan ?? "";
-}
-
 export async function loadRestaurantSettings(
   supabase: SupabaseClient,
   restaurantId: string
-): Promise<RestaurantSettingsRecord & { footer_slogan: string }> {
+): Promise<RestaurantSettingsRecord> {
   const { data, error } = await supabase
     .from("restaurants")
-    .select(CORE_PROFILE_COLUMNS)
+    .select(EXTENDED_PROFILE_COLUMNS)
     .eq("id", restaurantId)
     .single();
 
   if (error) {
+    if (isMissingColumnError(error)) {
+      const { data: coreData, error: coreError } = await supabase
+        .from("restaurants")
+        .select(CORE_PROFILE_COLUMNS)
+        .eq("id", restaurantId)
+        .single();
+
+      if (coreError) {
+        throw new Error(formatSchemaError(coreError));
+      }
+
+      if (!coreData) {
+        throw new Error("Restaurant not found.");
+      }
+
+      return {
+        name: coreData.name ?? "",
+        slug: typeof coreData.slug === "string" ? coreData.slug : "",
+        location: coreData.location ?? "",
+        hours: coreData.hours ?? "",
+        contact_info: coreData.contact_info ?? "",
+        footer_slogan: "",
+        custom_links: [],
+      };
+    }
+
     throw new Error(formatSchemaError(error));
   }
 
@@ -97,15 +119,14 @@ export async function loadRestaurantSettings(
     throw new Error("Restaurant not found.");
   }
 
-  const footer_slogan = await loadOptionalFooterSlogan(supabase, restaurantId);
-
   return {
     name: data.name ?? "",
     slug: typeof data.slug === "string" ? data.slug : "",
     location: data.location ?? "",
     hours: data.hours ?? "",
     contact_info: data.contact_info ?? "",
-    footer_slogan,
+    footer_slogan: data.footer_slogan ?? "",
+    custom_links: parseCustomLinks(data.custom_links),
   };
 }
 
@@ -114,6 +135,8 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
   location: string;
   hours: string;
   contact_info: string;
+  footer_slogan: string;
+  custom_links: ReturnType<typeof serializeCustomLinks>;
   updated_at: string;
   slug?: string;
 } {
@@ -125,6 +148,8 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
     location: string;
     hours: string;
     contact_info: string;
+    footer_slogan: string;
+    custom_links: ReturnType<typeof serializeCustomLinks>;
     updated_at: string;
     slug?: string;
   } = {
@@ -132,6 +157,8 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
     location: form.location.trim(),
     hours: compileHoursSchedule(form.scheduleBlocks),
     contact_info: formatContactInfo(form.phone, form.email),
+    footer_slogan: form.footerSlogan.trim(),
+    custom_links: serializeCustomLinks(form.links),
     updated_at: new Date().toISOString(),
   };
 
@@ -142,7 +169,7 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
   return payload;
 }
 
-export async function saveRestaurantSettings(
+export async function saveFullRestaurantSettings(
   supabase: SupabaseClient,
   restaurantId: string,
   form: RestaurantSettingsForm
@@ -173,35 +200,4 @@ export async function saveRestaurantSettings(
     normalizedSlug: slugUnchanged ? undefined : normalizedSlug,
     slugUnchanged,
   };
-}
-
-async function saveOptionalFooterSlogan(
-  supabase: SupabaseClient,
-  restaurantId: string,
-  footerSlogan: string
-): Promise<void> {
-  const { error } = await supabase
-    .from("restaurants")
-    .update({
-      footer_slogan: footerSlogan.trim(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", restaurantId);
-
-  if (error && !isMissingColumnError(error)) {
-    throw new Error(formatSchemaError(error));
-  }
-}
-
-export async function saveFullRestaurantSettings(
-  supabase: SupabaseClient,
-  restaurantId: string,
-  form: RestaurantSettingsForm
-): Promise<{ updatedId: string; normalizedSlug?: string; slugUnchanged: boolean }> {
-  const profileResult = await saveRestaurantSettings(supabase, restaurantId, form);
-
-  await saveOptionalFooterSlogan(supabase, restaurantId, form.footerSlogan);
-  await saveRestaurantLinks(restaurantId, form.links);
-
-  return profileResult;
 }

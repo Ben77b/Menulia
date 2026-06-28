@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
-import { DIETARY_ICONS } from "@/lib/dietary-tags";
+import { getTagMeta } from "@/lib/dietary-tags";
 
 export interface PublicMenuDish {
   id: string;
@@ -54,7 +54,7 @@ export function DishCard({
   );
 
   const textBlock = (
-    <div className={`space-y-2 ${layout === "carousel" ? "text-center" : "md:text-left text-center"}`}>
+    <div className="space-y-2 text-center">
       <h3
         className={`font-semibold uppercase leading-tight tracking-wide ${compact ? "text-sm" : "text-base sm:text-lg"}`}
         style={{ color: textColor, fontFamily: titleFont }}
@@ -70,9 +70,9 @@ export function DishCard({
         </p>
       )}
       {dish.tags.length > 0 && (
-        <div className={`flex flex-wrap gap-2 ${layout === "carousel" ? "justify-center" : "justify-center md:justify-start"}`}>
+        <div className="flex flex-wrap justify-center gap-2">
           {dish.tags.map((tag) => {
-            const meta = DIETARY_ICONS[tag];
+            const meta = getTagMeta(tag);
             return (
               <span
                 key={tag}
@@ -83,8 +83,8 @@ export function DishCard({
                   fontFamily: bodyFont,
                 }}
               >
-                {meta?.icon && <span>{meta.icon}</span>}
-                {meta?.label ?? tag}
+                {meta.icon && <span>{meta.icon}</span>}
+                {meta.label}
               </span>
             );
           })}
@@ -101,8 +101,8 @@ export function DishCard({
 
   if (layout === "stacked") {
     return (
-      <article className="flex flex-col items-center gap-4 md:flex-row md:items-start md:gap-6">
-        <div className="w-full max-w-sm shrink-0 md:w-48">{imageBlock}</div>
+      <article className="flex flex-col items-center gap-4 text-center">
+        <div className="w-full max-w-sm shrink-0">{imageBlock}</div>
         <div className="w-full max-w-xl flex-1">{textBlock}</div>
       </article>
     );

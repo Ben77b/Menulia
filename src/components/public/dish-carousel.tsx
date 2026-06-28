@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
 import { DishCard, type PublicMenuDish } from "./dish-card";
@@ -11,6 +11,7 @@ interface DishCarouselProps {
   mainTextColor: string;
   titleFont: string;
   bodyFont: string;
+  emptyMessage?: string;
 }
 
 function mod(n: number, m: number) {
@@ -23,9 +24,14 @@ export function DishCarousel({
   mainTextColor,
   titleFont,
   bodyFont,
+  emptyMessage = "No dishes in this category.",
 }: DishCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const arrowColor = contrastingTextColor(accentColor);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [dishes]);
 
   const slots = useMemo(() => {
     if (dishes.length === 0) return [];
@@ -44,7 +50,7 @@ export function DishCarousel({
   }, [activeIndex, dishes]);
 
   if (dishes.length === 0) {
-    return <p className="text-sm" style={{ color: mainTextColor }}>No dishes in this category.</p>;
+    return <p className="text-center text-sm" style={{ color: mainTextColor }}>{emptyMessage}</p>;
   }
 
   function goPrevious() {

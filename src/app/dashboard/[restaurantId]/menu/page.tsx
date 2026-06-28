@@ -15,7 +15,7 @@ import {
   updateMenuDish,
   deleteMenuDish,
 } from "@/lib/menu-db";
-import { formatSupabaseError } from "@/lib/auth/errors";
+import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
 
 export const dynamic = 'force-dynamic';
 
@@ -192,11 +192,18 @@ export default function MenuPage() {
   async function handleAddCategory() {
     if (!newCategoryName.trim() || !currentRestaurant?.id) return;
 
+    if (categories.length >= MAX_CATEGORIES_PER_RESTAURANT) {
+      setCategorySaveError(`You can add up to ${MAX_CATEGORIES_PER_RESTAURANT} categories.`);
+      return;
+    }
+
+    const trimmedName = newCategoryName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
+
     setCategorySaveError(null);
     setIsSaving(true);
 
     try {
-      const created = await createMenuCategory(newCategoryName, currentRestaurant.id, {
+      const created = await createMenuCategory(trimmedName, currentRestaurant.id, {
         layout_type: newCategoryLayoutType,
         parent_id: nestUnderParent && newCategoryParentId ? newCategoryParentId : null,
       });
@@ -558,6 +565,7 @@ export default function MenuPage() {
           variant="outline"
           onClick={() => setShowAddCategory(!showAddCategory)}
           className="gap-2 w-fit"
+          disabled={categories.length >= MAX_CATEGORIES_PER_RESTAURANT}
         >
           <FolderPlus className="h-4 w-4" />
           Add Category
@@ -585,7 +593,8 @@ export default function MenuPage() {
             type="text"
             placeholder="Category name..."
             value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
+            onChange={(e) => setNewCategoryName(e.target.value.slice(0, MAX_CATEGORY_NAME_LENGTH))}
+            maxLength={MAX_CATEGORY_NAME_LENGTH}
             className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
           />
