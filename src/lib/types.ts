@@ -31,6 +31,11 @@ export interface Restaurant {
   custom_links: CustomLink[];
   operating_hours: OperatingHourData[];
   font_pack_id: string;
+  location: string | null;
+  hours: string | null;
+  contact_info: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
   created_at: string;
   updated_at: string;
 }

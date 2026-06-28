@@ -22,7 +22,7 @@ interface CustomLink {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { currentRestaurant } = useRestaurant();
+  const { currentRestaurant, refreshRestaurants } = useRestaurant();
   const [operatingHours, setOperatingHours] = useState<OperatingHour[]>([
     { day: "Monday", isOpen: true, startTime: "09:00", endTime: "22:00" },
     { day: "Tuesday", isOpen: true, startTime: "09:00", endTime: "22:00" },
@@ -35,7 +35,9 @@ export default function SettingsPage() {
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
   const [restaurantName, setRestaurantName] = useState("");
-  const [restaurantEmail, setRestaurantEmail] = useState("");
+  const [restaurantLocation, setRestaurantLocation] = useState("");
+  const [restaurantHours, setRestaurantHours] = useState("");
+  const [restaurantContactInfo, setRestaurantContactInfo] = useState("");
   const [restaurantSlug, setRestaurantSlug] = useState("");
   const [slugError, setSlugError] = useState("");
   const [userFullName, setUserFullName] = useState("");
@@ -90,9 +92,9 @@ export default function SettingsPage() {
         if (data.name) {
           setRestaurantName(data.name);
         }
-        if (data.email) {
-          setRestaurantEmail(data.email || "");
-        }
+        setRestaurantLocation(data.location ?? "");
+        setRestaurantHours(data.hours ?? "");
+        setRestaurantContactInfo(data.contact_info ?? "");
         setRestaurantSlug(typeof data.slug === "string" ? data.slug : "");
       }
     } catch (error) {
@@ -146,13 +148,16 @@ export default function SettingsPage() {
         .from("restaurants")
         .update({
           name: restaurantName,
-          email: restaurantEmail,
           slug: restaurantSlug,
+          location: restaurantLocation,
+          hours: restaurantHours,
+          contact_info: restaurantContactInfo,
           updated_at: new Date().toISOString(),
         })
         .eq("id", currentRestaurant.id);
 
       if (error) throw error;
+      await refreshRestaurants();
       alert("Restaurant profile saved!");
     } catch (error) {
       console.error('Error saving restaurant profile:', error);
@@ -269,13 +274,35 @@ export default function SettingsPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
               <input
-                type="email"
-                value={restaurantEmail}
-                onChange={(e) => setRestaurantEmail(e.target.value)}
+                type="text"
+                value={restaurantLocation}
+                onChange={(e) => setRestaurantLocation(e.target.value)}
                 className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                placeholder="contact@restaurant.com"
+                placeholder="123 Main Street, Dublin"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Hours (public display)</label>
+              <input
+                type="text"
+                value={restaurantHours}
+                onChange={(e) => setRestaurantHours(e.target.value)}
+                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                placeholder="Mon–Fri 12:00–22:00"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Info</label>
+              <input
+                type="text"
+                value={restaurantContactInfo}
+                onChange={(e) => setRestaurantContactInfo(e.target.value)}
+                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                placeholder="+353 1 234 5678 · hello@restaurant.com"
               />
             </div>
 

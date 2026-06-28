@@ -28,7 +28,9 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
         .from("restaurants")
-        .select("name, logo, theme_colors, typography")
+        .select(
+          "name, logo, location, hours, contact_info, meta_title, meta_description, theme_colors, typography"
+        )
         .eq("id", restaurantId)
         .single();
 

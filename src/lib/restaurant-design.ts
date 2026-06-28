@@ -79,17 +79,28 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
 export function designFromRestaurant(row: {
   name?: string;
   logo?: string | null;
+  location?: string | null;
+  hours?: string | null;
+  contact_info?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
   theme_colors?: Record<string, string> | null;
   typography?: Record<string, string> | null;
 }): RestaurantDesign {
   const theme = row.theme_colors ?? {};
   const typography = row.typography ?? {};
   const titleFont = typography.titleFont ?? DEFAULT_DESIGN.titleFont;
+  const textFont = typography.textFont ?? titleFont;
 
   return {
     ...DEFAULT_DESIGN,
     restaurantName: row.name ?? "",
     logo: row.logo ?? "",
+    location: row.location ?? "",
+    hours: row.hours ?? "",
+    contactInfo: row.contact_info ?? "",
+    metaTitle: row.meta_title ?? "",
+    metaDescription: row.meta_description ?? "",
     headerFooterBackgroundColor:
       theme.headerFooterBackgroundColor ?? DEFAULT_DESIGN.headerFooterBackgroundColor,
     categoryBackgroundColor:
@@ -102,9 +113,7 @@ export function designFromRestaurant(row: {
     mainContentFontColor:
       theme.mainContentFontColor ?? DEFAULT_DESIGN.mainContentFontColor,
     titleFont,
-    textFont: titleFont,
-    metaTitle: typography.metaTitle ?? "",
-    metaDescription: typography.metaDescription ?? "",
+    textFont,
   };
 }
 

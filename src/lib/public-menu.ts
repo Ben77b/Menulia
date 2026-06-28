@@ -55,8 +55,10 @@ function resolveFontFamily(restaurant: RestaurantFull): { titleFont: string; tex
     (typeof typography?.customHeadingFont === "string" && typography.customHeadingFont) ||
     restaurant.font_pack_id ||
     "Inter";
+  const textFont =
+    (typeof typography?.textFont === "string" && typography.textFont) || titleFont;
 
-  return { titleFont, textFont: titleFont };
+  return { titleFont, textFont };
 }
 
 export function withPublicMenuDefaults(restaurant: RestaurantFull): RestaurantFull {
@@ -93,11 +95,6 @@ export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDes
   const theme =
     restaurant.theme_colors && typeof restaurant.theme_colors === "object"
       ? (restaurant.theme_colors as Record<string, string | boolean>)
-      : {};
-
-  const typography =
-    restaurant.typography && typeof restaurant.typography === "object"
-      ? (restaurant.typography as Record<string, string>)
       : {};
 
   const fonts = resolveFontFamily(restaurant);
@@ -141,15 +138,18 @@ export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDes
     logo: restaurant.logo ?? "",
     restaurantName: restaurant.name,
     slogan: restaurant.footer_slogan ?? "",
+    location: restaurant.location ?? "",
+    hours: restaurant.hours ?? "",
+    contactInfo: restaurant.contact_info ?? "",
     titleFont: fonts.titleFont,
     textFont: fonts.textFont,
-    hours: "Mon – Sun: 12:00 PM – 10:00 PM",
     showFooterLogo: true,
     showFooterContact: true,
     showFooterHours: true,
     showFooterLinks: true,
     showFooterTags: true,
-    metaTitle: typography.metaTitle || restaurant.name,
-    metaDescription: typography.metaDescription || `View the digital menu for ${restaurant.name}`,
+    metaTitle: restaurant.meta_title || restaurant.name,
+    metaDescription:
+      restaurant.meta_description || `View the digital menu for ${restaurant.name}`,
   };
 }

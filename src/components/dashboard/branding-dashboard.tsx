@@ -84,6 +84,11 @@ export function BrandingDashboard() {
         .update({
           name: design.restaurantName,
           logo: design.logo,
+          location: design.location,
+          hours: design.hours,
+          contact_info: design.contactInfo,
+          meta_title: design.metaTitle,
+          meta_description: design.metaDescription,
           theme_colors: {
             headerFooterBackgroundColor: design.headerFooterBackgroundColor,
             categoryBackgroundColor: design.categoryBackgroundColor,
@@ -93,8 +98,7 @@ export function BrandingDashboard() {
           },
           typography: {
             titleFont: design.titleFont,
-            metaTitle: design.metaTitle,
-            metaDescription: design.metaDescription,
+            textFont: design.textFont,
           },
           updated_at: new Date().toISOString(),
         })
@@ -228,6 +232,42 @@ export function BrandingDashboard() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
               />
               <p className="mt-1 text-xs text-gray-500">Appears in search engine results (recommended: 150-160 characters)</p>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Location</label>
+              <input
+                type="text"
+                placeholder="e.g., 123 Main Street, Dublin"
+                value={design.location}
+                onChange={(e) => updateDesign({ location: e.target.value })}
+                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Hours */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Hours</label>
+              <input
+                type="text"
+                placeholder="e.g., Mon–Fri 12:00–22:00, Sat–Sun 10:00–23:00"
+                value={design.hours}
+                onChange={(e) => updateDesign({ hours: e.target.value })}
+                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Contact Info */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Contact Info</label>
+              <input
+                type="text"
+                placeholder="e.g., +353 1 234 5678 · hello@restaurant.com"
+                value={design.contactInfo}
+                onChange={(e) => updateDesign({ contactInfo: e.target.value })}
+                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
             </div>
           </div>
         </div>
