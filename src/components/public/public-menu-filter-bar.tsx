@@ -10,6 +10,10 @@ interface PublicMenuFilterBarProps {
   borderColor?: string;
   titleFont: string;
   bodyFont: string;
+  titleFontWeight?: number;
+  titleFontStyle?: "normal" | "italic";
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
   locale: PublicMenuLocale;
   activeFilters: Set<string>;
   onToggleFilter: (tag: string) => void;
@@ -22,6 +26,10 @@ export function PublicMenuFilterBar({
   borderColor: borderColorProp,
   titleFont,
   bodyFont,
+  titleFontWeight,
+  titleFontStyle,
+  bodyFontWeight,
+  bodyFontStyle,
   locale,
   activeFilters,
   onToggleFilter,
@@ -43,7 +51,13 @@ export function PublicMenuFilterBar({
         <div className="w-full space-y-3">
           <h3
             className="text-xs font-bold uppercase tracking-[0.2em]"
-            style={{ fontFamily: titleFont, color: textColor, textAlign: "center" }}
+            style={{
+              fontFamily: titleFont,
+              fontWeight: titleFontWeight ?? 400,
+              fontStyle: titleFontStyle ?? "normal",
+              color: textColor,
+              textAlign: "center",
+            }}
           >
             {menuUiString(locale, "filterTitle")}
           </h3>
@@ -83,7 +97,13 @@ export function PublicMenuFilterBar({
           <div className="mt-8 w-full space-y-3">
             <h3
               className="text-sm font-bold uppercase tracking-[0.2em]"
-              style={{ fontFamily: titleFont, color: textColor, textAlign: "center" }}
+              style={{
+              fontFamily: titleFont,
+              fontWeight: titleFontWeight ?? 400,
+              fontStyle: titleFontStyle ?? "normal",
+              color: textColor,
+              textAlign: "center",
+            }}
             >
               {menuUiString(locale, "tagLegend")}
             </h3>
@@ -98,6 +118,8 @@ export function PublicMenuFilterBar({
                       color: textColor,
                       border: `1px solid ${borderColor}`,
                       fontFamily: bodyFont,
+                      fontWeight: bodyFontWeight ?? 400,
+                      fontStyle: bodyFontStyle ?? "normal",
                     }}
                   >
                     <span>{meta.icon}</span>

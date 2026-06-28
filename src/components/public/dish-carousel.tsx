@@ -13,6 +13,10 @@ interface DishCarouselProps {
   mainTextColor: string;
   titleFont: string;
   bodyFont: string;
+  titleFontWeight?: number;
+  titleFontStyle?: "normal" | "italic";
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
   display: PublicMenuDisplayOptions;
   titleColor?: string;
   descriptionColor?: string;
@@ -31,6 +35,10 @@ export function DishCarousel({
   mainTextColor,
   titleFont,
   bodyFont,
+  titleFontWeight,
+  titleFontStyle,
+  bodyFontWeight,
+  bodyFontStyle,
   display,
   titleColor,
   descriptionColor,
@@ -103,6 +111,10 @@ export function DishCarousel({
             dish={dishes[0]}
             titleFont={titleFont}
             bodyFont={bodyFont}
+            titleFontWeight={titleFontWeight}
+            titleFontStyle={titleFontStyle}
+            bodyFontWeight={bodyFontWeight}
+            bodyFontStyle={bodyFontStyle}
             textColor={mainTextColor}
             display={display}
             titleColor={titleColor}
@@ -127,6 +139,10 @@ export function DishCarousel({
                 dish={slot.dish}
                 titleFont={titleFont}
                 bodyFont={bodyFont}
+                titleFontWeight={titleFontWeight}
+                titleFontStyle={titleFontStyle}
+                bodyFontWeight={bodyFontWeight}
+                bodyFontStyle={bodyFontStyle}
                 textColor={mainTextColor}
                 display={display}
                 titleColor={titleColor}

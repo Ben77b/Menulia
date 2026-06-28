@@ -1,5 +1,6 @@
 import { contrastingTextColor } from "./contrast";
 import { parseDisplayOptions } from "./display-options";
+import { parseTypography } from "./typography";
 import {
   DEFAULT_MENU_THEME,
   parseMenuThemeColors,
@@ -15,6 +16,10 @@ export interface RestaurantDesign {
   menuViewMode: "carousel" | "stacked";
   titleFont: string;
   textFont: string;
+  titleFontWeight: 400 | 700;
+  textFontWeight: 400 | 700;
+  titleFontStyle: "normal" | "italic";
+  textFontStyle: "normal" | "italic";
   titleColor: string;
   textColor: string;
   priceColor: string;
@@ -67,6 +72,10 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
   menuViewMode: "carousel",
   titleFont: "Inter",
   textFont: "Inter",
+  titleFontWeight: 400,
+  textFontWeight: 400,
+  titleFontStyle: "normal",
+  textFontStyle: "normal",
   titleColor: "#000000",
   textColor: "#000000",
   priceColor: "#047857",
@@ -150,18 +159,10 @@ export function designFromRestaurant(row: {
 }): RestaurantDesign {
   const theme = parseMenuThemeColors(row.theme_colors);
   const display = parseDisplayOptions(row);
-  const typography =
-    row.typography && typeof row.typography === "object" && !Array.isArray(row.typography)
-      ? row.typography
-      : {};
-  const titleFont =
-    typeof typography.titleFont === "string" && typography.titleFont
-      ? typography.titleFont
-      : DEFAULT_DESIGN.titleFont;
-  const textFont =
-    typeof typography.textFont === "string" && typography.textFont
-      ? typography.textFont
-      : titleFont;
+  const typography = parseTypography(row.typography, {
+    titleFont: DEFAULT_DESIGN.titleFont,
+    textFont: DEFAULT_DESIGN.textFont,
+  });
 
   return applyComputedContrast({
     ...DEFAULT_DESIGN,
@@ -192,8 +193,12 @@ export function designFromRestaurant(row: {
       theme.footerBackgroundColor,
       DEFAULT_MENU_THEME.footerBackgroundColor
     ),
-    titleFont,
-    textFont,
+    titleFont: typography.titleFont,
+    textFont: typography.textFont,
+    titleFontWeight: typography.titleFontWeight,
+    textFontWeight: typography.textFontWeight,
+    titleFontStyle: typography.titleFontStyle,
+    textFontStyle: typography.textFontStyle,
     showPrices: display.showPrices,
     showDescriptions: display.showDescriptions,
     showImages: display.showImages,

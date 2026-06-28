@@ -14,6 +14,8 @@ interface MenuHeaderProps {
   headerBackgroundColor: string;
   headerTextColor?: string;
   titleFont: string;
+  titleFontWeight?: number;
+  titleFontStyle?: "normal" | "italic";
   links: RestaurantLink[];
   locale: PublicMenuLocale;
   onLocaleChange: (locale: PublicMenuLocale) => void;
@@ -25,6 +27,8 @@ export function MenuHeader({
   headerBackgroundColor,
   headerTextColor,
   titleFont,
+  titleFontWeight,
+  titleFontStyle,
   links,
   locale,
   onLocaleChange,
@@ -67,7 +71,12 @@ export function MenuHeader({
             ) : (
               <h1
                 className="text-center text-lg font-bold uppercase tracking-[0.2em] sm:text-xl"
-                style={{ fontFamily: titleFont, color: textColor }}
+                style={{
+                  fontFamily: titleFont,
+                  fontWeight: titleFontWeight ?? 400,
+                  fontStyle: titleFontStyle ?? "normal",
+                  color: textColor,
+                }}
               >
                 {restaurantName}
               </h1>

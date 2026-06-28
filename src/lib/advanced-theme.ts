@@ -45,6 +45,16 @@ export type ThemeHotspotId =
   | "footer"
   | "filters";
 
+/** Human-readable labels for hotspot popovers */
+export const HOTSPOT_LABELS: Record<ThemeHotspotId, string> = {
+  header: "Logo Area Background",
+  categoryBar: "Category Bar Background",
+  menuItem: "Item Title Text",
+  carousel: "Carousel Navigation",
+  footer: "Footer Background",
+  filters: "Filter Area Background",
+};
+
 /** First picker id in each hotspot group — used for scroll-to on preview click */
 export const HOTSPOT_PRIMARY_PICKER: Record<ThemeHotspotId, keyof AdvancedTheme | "headerNavBg" | "mainContentBg"> = {
   header: "logoAreaBg",

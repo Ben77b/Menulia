@@ -16,6 +16,10 @@ interface PublicMenuFooterProps {
   footerTextColor?: string;
   titleFont: string;
   bodyFont: string;
+  titleFontWeight?: number;
+  titleFontStyle?: "normal" | "italic";
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
   locale: PublicMenuLocale;
 }
 
@@ -31,6 +35,10 @@ export function PublicMenuFooter({
   footerTextColor,
   titleFont,
   bodyFont,
+  titleFontWeight,
+  titleFontStyle,
+  bodyFontWeight,
+  bodyFontStyle,
   locale,
 }: PublicMenuFooterProps) {
   const footerText = footerTextColor ?? contrastingTextColor(footerBackgroundColor);
@@ -55,7 +63,13 @@ export function PublicMenuFooter({
         ) : (
           <p
             className="text-2xl font-bold uppercase tracking-[0.25em]"
-            style={{ fontFamily: titleFont, color: footerText, textAlign: "center" }}
+            style={{
+              fontFamily: titleFont,
+              fontWeight: titleFontWeight ?? 400,
+              fontStyle: titleFontStyle ?? "normal",
+              color: footerText,
+              textAlign: "center",
+            }}
           >
             {restaurantName}
           </p>
@@ -65,7 +79,13 @@ export function PublicMenuFooter({
         {footerSlogan && (
           <p
             className="mt-4 max-w-xl text-sm italic leading-relaxed"
-            style={{ color: footerText, fontFamily: bodyFont, textAlign: "center" }}
+            style={{
+              color: footerText,
+              fontFamily: bodyFont,
+              fontWeight: bodyFontWeight ?? 400,
+              fontStyle: bodyFontStyle ?? "normal",
+              textAlign: "center",
+            }}
           >
             {footerSlogan}
           </p>
@@ -76,7 +96,13 @@ export function PublicMenuFooter({
           <div className="mt-10 w-full" style={{ color: footerText, textAlign: "center" }}>
             <h3
               className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
-              style={{ fontFamily: titleFont, color: footerText, textAlign: "center" }}
+              style={{
+              fontFamily: titleFont,
+              fontWeight: titleFontWeight ?? 400,
+              fontStyle: titleFontStyle ?? "normal",
+              color: footerText,
+              textAlign: "center",
+            }}
             >
               {menuUiString(locale, "openHours")}
             </h3>
@@ -94,7 +120,13 @@ export function PublicMenuFooter({
           <div className="mt-8 w-full" style={{ color: footerText, textAlign: "center" }}>
             <h3
               className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
-              style={{ fontFamily: titleFont, color: footerText, textAlign: "center" }}
+              style={{
+              fontFamily: titleFont,
+              fontWeight: titleFontWeight ?? 400,
+              fontStyle: titleFontStyle ?? "normal",
+              color: footerText,
+              textAlign: "center",
+            }}
             >
               {menuUiString(locale, "locationContact")}
             </h3>

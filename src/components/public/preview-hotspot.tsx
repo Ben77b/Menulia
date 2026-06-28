@@ -8,7 +8,7 @@ interface PreviewHotspotProps {
   id: ThemeHotspotId;
   active?: boolean;
   enabled?: boolean;
-  onSelect?: (id: ThemeHotspotId) => void;
+  onSelect?: (id: ThemeHotspotId, anchor: DOMRect) => void;
   className?: string;
   /** Position of the circular edit indicator */
   indicatorPosition?: "top-right" | "top-left" | "center-right" | "center-left" | "bottom-right";
@@ -55,7 +55,7 @@ export function PreviewHotspot({
         aria-label={`Edit ${id} colors`}
         onClick={(event) => {
           event.stopPropagation();
-          onSelect(id);
+          onSelect(id, event.currentTarget.getBoundingClientRect());
         }}
         className={cn(
           "absolute z-20 flex h-8 w-8 items-center justify-center rounded-full",

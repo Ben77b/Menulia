@@ -5,6 +5,9 @@ import { Upload, Image as ImageIcon, X, Search } from "lucide-react";
 import { useDesign } from "@/contexts/design-context";
 import { normalizeHexColor } from "@/lib/theme-colors";
 import { Button } from "@/components/ui/button";
+import type { FontStyle, FontWeight } from "@/lib/typography";
+import { cn } from "@/lib/utils";
+import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
 
 export const GOOGLE_FONTS = [
@@ -21,6 +24,99 @@ export const GOOGLE_FONTS = [
   { label: "Source Sans Pro", value: "Source Sans Pro", className: "font-[var(--font-source-sans)]" },
   { label: "Ubuntu", value: "Ubuntu", className: "font-[var(--font-ubuntu)]" },
 ];
+
+function FontModifierControls({
+  label,
+  weight,
+  style,
+  onWeightChange,
+  onStyleChange,
+}: {
+  label: string;
+  weight: FontWeight;
+  style: FontStyle;
+  onWeightChange: (weight: FontWeight) => void;
+  onStyleChange: (style: FontStyle) => void;
+}) {
+  return (
+    <div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
+      <p className="text-xs font-medium text-gray-600">{label} modifiers</p>
+      <div>
+        <p className="mb-2 text-xs text-gray-500">Weight</p>
+        <div className="flex gap-2">
+          {([400, 700] as FontWeight[]).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onWeightChange(value)}
+              className={cn(
+                "flex-1 rounded-lg border px-3 py-2 text-sm transition-colors",
+                weight === value
+                  ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-700"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+              )}
+            >
+              {value === 400 ? "Regular (400)" : "Bold (700)"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="mb-2 text-xs text-gray-500">Style</p>
+        <div className="flex gap-2">
+          {(["normal", "italic"] as FontStyle[]).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onStyleChange(value)}
+              className={cn(
+                "flex-1 rounded-lg border px-3 py-2 text-sm capitalize transition-colors",
+                style === value
+                  ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-700"
+                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+                value === "italic" && "italic"
+              )}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DesignDisplaySection() {
+  const { design, updateDesign } = useDesign();
+
+  return (
+    <div className="space-y-1">
+      <p className="mb-4 text-sm text-gray-600">
+        Control what guests see on your public menu.
+      </p>
+      <ToggleSwitch
+        label="Show Prices"
+        checked={design.showPrices ?? true}
+        onChange={(checked) => updateDesign({ showPrices: checked })}
+      />
+      <ToggleSwitch
+        label="Show Descriptions"
+        checked={design.showDescriptions ?? true}
+        onChange={(checked) => updateDesign({ showDescriptions: checked })}
+      />
+      <ToggleSwitch
+        label="Show Images"
+        checked={design.showImages ?? true}
+        onChange={(checked) => updateDesign({ showImages: checked })}
+      />
+      <ToggleSwitch
+        label="Show Dietary Info"
+        checked={design.showDietary ?? true}
+        onChange={(checked) => updateDesign({ showDietary: checked })}
+      />
+    </div>
+  );
+}
 
 function SectionColorPicker({
   label,
@@ -240,6 +336,13 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
             )}
           </div>
           <p className="mt-2 text-xs text-gray-600">Selected: {selectedTitleFont.label}</p>
+          <FontModifierControls
+            label="Title"
+            weight={design.titleFontWeight}
+            style={design.titleFontStyle}
+            onWeightChange={(titleFontWeight) => updateDesign({ titleFontWeight })}
+            onStyleChange={(titleFontStyle) => updateDesign({ titleFontStyle })}
+          />
         </div>
 
         <div>
@@ -280,6 +383,13 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
             )}
           </div>
           <p className="mt-2 text-xs text-gray-600">Selected: {selectedBodyFont.label}</p>
+          <FontModifierControls
+            label="Body"
+            weight={design.textFontWeight}
+            style={design.textFontStyle}
+            onWeightChange={(textFontWeight) => updateDesign({ textFontWeight })}
+            onStyleChange={(textFontStyle) => updateDesign({ textFontStyle })}
+          />
         </div>
       </div>
     </div>

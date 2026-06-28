@@ -18,6 +18,10 @@ interface DishCardProps {
   dish: PublicMenuDish;
   titleFont: string;
   bodyFont: string;
+  titleFontWeight?: number;
+  titleFontStyle?: "normal" | "italic";
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
   textColor: string;
   titleColor?: string;
   descriptionColor?: string;
@@ -32,6 +36,10 @@ export function DishCard({
   dish,
   titleFont,
   bodyFont,
+  titleFontWeight,
+  titleFontStyle,
+  bodyFontWeight,
+  bodyFontStyle,
   textColor,
   titleColor,
   descriptionColor,
@@ -64,14 +72,24 @@ export function DishCard({
     <div className="space-y-2 text-center">
       <h3
         className={`font-semibold uppercase leading-tight tracking-wide ${compact ? "text-sm" : "text-base sm:text-lg"}`}
-        style={{ color: resolvedTitle, fontFamily: titleFont }}
+        style={{
+          color: resolvedTitle,
+          fontFamily: titleFont,
+          fontWeight: titleFontWeight ?? 400,
+          fontStyle: titleFontStyle ?? "normal",
+        }}
       >
         {dish.name}
       </h3>
       {display.showDescriptions && dish.description && (
         <p
           className={`leading-relaxed ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
-          style={{ color: resolvedDescription, fontFamily: bodyFont }}
+          style={{
+            color: resolvedDescription,
+            fontFamily: bodyFont,
+            fontWeight: bodyFontWeight ?? 400,
+            fontStyle: bodyFontStyle ?? "normal",
+          }}
         >
           {dish.description}
         </p>
@@ -88,6 +106,8 @@ export function DishCard({
                   color: resolvedTitle,
                   border: `1px solid ${resolvedTitle}`,
                   fontFamily: bodyFont,
+                  fontWeight: bodyFontWeight ?? 400,
+                  fontStyle: bodyFontStyle ?? "normal",
                 }}
               >
                 {meta.icon && <span>{meta.icon}</span>}
@@ -100,7 +120,12 @@ export function DishCard({
       {display.showPrices && (
         <p
           className={`font-bold ${compact ? "text-sm" : "text-base"}`}
-          style={{ color: resolvedPrice, fontFamily: bodyFont }}
+          style={{
+            color: resolvedPrice,
+            fontFamily: bodyFont,
+            fontWeight: bodyFontWeight ?? 400,
+            fontStyle: bodyFontStyle ?? "normal",
+          }}
         >
           {formatPrice(dish.price)}
         </p>

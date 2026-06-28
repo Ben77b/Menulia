@@ -8,6 +8,7 @@ import { PublicMenuDocumentBackground } from "@/components/public/public-menu-do
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { parseDisplayOptions } from "@/lib/display-options";
+import { parseTypography } from "@/lib/typography";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 
 interface PageProps {
@@ -27,11 +28,10 @@ function MenuAwaitingSync({ slugParam }: { slugParam: string }) {
 }
 
 function resolveFonts(typography: Record<string, unknown> | null | undefined) {
-  const titleFont =
-    (typeof typography?.titleFont === "string" && typography.titleFont) || DEFAULT_DESIGN.titleFont;
-  const textFont =
-    (typeof typography?.textFont === "string" && typography.textFont) || titleFont;
-  return { titleFont, textFont };
+  return parseTypography(typography, {
+    titleFont: DEFAULT_DESIGN.titleFont,
+    textFont: DEFAULT_DESIGN.textFont,
+  });
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -98,6 +98,10 @@ export default async function PublicMenuPage({ params }: PageProps) {
       theme={theme}
       titleFont={fonts.titleFont}
       bodyFont={fonts.textFont}
+      titleFontWeight={fonts.titleFontWeight}
+      titleFontStyle={fonts.titleFontStyle}
+      bodyFontWeight={fonts.textFontWeight}
+      bodyFontStyle={fonts.textFontStyle}
       menu={menu}
       flatCategories={flatCategories}
       hasNestedStructure={hasNestedStructure}

@@ -24,7 +24,7 @@ import { PreviewHotspot } from "./preview-hotspot";
 export interface PreviewInteractiveConfig {
   enabled: boolean;
   activeHotspot?: ThemeHotspotId | null;
-  onHotspotClick?: (id: ThemeHotspotId) => void;
+  onHotspotClick?: (id: ThemeHotspotId, anchor: DOMRect) => void;
 }
 
 interface PublicMenuLayoutProps {
@@ -37,6 +37,10 @@ interface PublicMenuLayoutProps {
   theme: ResolvedMenuTheme;
   titleFont: string;
   bodyFont: string;
+  titleFontWeight?: number;
+  titleFontStyle?: "normal" | "italic";
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
   menu: PublicMenuParentCategory[];
   flatCategories: PublicMenuSubcategory[];
   hasNestedStructure: boolean;
@@ -50,6 +54,10 @@ function DishSection({
   theme,
   titleFont,
   bodyFont,
+  titleFontWeight,
+  titleFontStyle,
+  bodyFontWeight,
+  bodyFontStyle,
   locale,
   activeFilters,
   display,
@@ -59,6 +67,10 @@ function DishSection({
   theme: ResolvedMenuTheme;
   titleFont: string;
   bodyFont: string;
+  titleFontWeight?: number;
+  titleFontStyle?: "normal" | "italic";
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
   locale: PublicMenuLocale;
   activeFilters: Set<string>;
   display: PublicMenuDisplayOptions;
@@ -94,6 +106,10 @@ function DishSection({
           mainTextColor={theme.itemTitleText}
           titleFont={titleFont}
           bodyFont={bodyFont}
+          titleFontWeight={titleFontWeight}
+          titleFontStyle={titleFontStyle}
+          bodyFontWeight={bodyFontWeight}
+          bodyFontStyle={bodyFontStyle}
           display={display}
           titleColor={theme.itemTitleText}
           descriptionColor={theme.itemDescriptionText}
@@ -119,6 +135,10 @@ function DishSection({
             dish={dish}
             titleFont={titleFont}
             bodyFont={bodyFont}
+            titleFontWeight={titleFontWeight}
+            titleFontStyle={titleFontStyle}
+            bodyFontWeight={bodyFontWeight}
+            bodyFontStyle={bodyFontStyle}
             textColor={theme.itemTitleText}
             titleColor={theme.itemTitleText}
             descriptionColor={theme.itemDescriptionText}
@@ -148,6 +168,10 @@ export function PublicMenuLayout({
   theme,
   titleFont,
   bodyFont,
+  titleFontWeight,
+  titleFontStyle,
+  bodyFontWeight,
+  bodyFontStyle,
   menu,
   flatCategories,
   hasNestedStructure,
@@ -228,6 +252,8 @@ export function PublicMenuLayout({
         backgroundColor: theme.menuBackground,
         color: theme.itemTitleText,
         fontFamily: bodyFont,
+        fontWeight: bodyFontWeight ?? 400,
+        fontStyle: bodyFontStyle ?? "normal",
       }}
     >
       <PreviewHotspot
@@ -243,6 +269,8 @@ export function PublicMenuLayout({
           headerBackgroundColor={theme.logoAreaBg}
           headerTextColor={theme.logoAreaText}
           titleFont={titleFont}
+          titleFontWeight={titleFontWeight}
+          titleFontStyle={titleFontStyle}
           links={links}
           locale={locale}
           onLocaleChange={setLocale}
@@ -303,7 +331,12 @@ export function PublicMenuLayout({
           <div className="py-16 text-center" style={{ color: theme.itemTitleText }}>
             <p
               className="text-lg font-semibold uppercase tracking-wide"
-              style={{ fontFamily: titleFont, color: theme.itemTitleText }}
+              style={{
+                fontFamily: titleFont,
+                fontWeight: titleFontWeight ?? 400,
+                fontStyle: titleFontStyle ?? "normal",
+                color: theme.itemTitleText,
+              }}
             >
               Menu coming soon!
             </p>
@@ -318,6 +351,10 @@ export function PublicMenuLayout({
               theme={theme}
               titleFont={titleFont}
               bodyFont={bodyFont}
+              titleFontWeight={titleFontWeight}
+              titleFontStyle={titleFontStyle}
+              bodyFontWeight={bodyFontWeight}
+              bodyFontStyle={bodyFontStyle}
               locale={locale}
               activeFilters={activeFilters}
               display={display}
@@ -341,6 +378,10 @@ export function PublicMenuLayout({
             borderColor={theme.filterBorder}
             titleFont={titleFont}
             bodyFont={bodyFont}
+            titleFontWeight={titleFontWeight}
+            titleFontStyle={titleFontStyle}
+            bodyFontWeight={bodyFontWeight}
+            bodyFontStyle={bodyFontStyle}
             locale={locale}
             activeFilters={activeFilters}
             onToggleFilter={toggleFilter}
@@ -368,6 +409,10 @@ export function PublicMenuLayout({
           footerTextColor={theme.footerTextIcon}
           titleFont={titleFont}
           bodyFont={bodyFont}
+          titleFontWeight={titleFontWeight}
+          titleFontStyle={titleFontStyle}
+          bodyFontWeight={bodyFontWeight}
+          bodyFontStyle={bodyFontStyle}
           locale={locale}
         />
       </PreviewHotspot>
