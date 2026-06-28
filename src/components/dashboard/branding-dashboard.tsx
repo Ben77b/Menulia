@@ -6,7 +6,7 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
 import { themeColorsFromDesign } from "@/lib/restaurant-design";
-import { serializeMenuThemeColors } from "@/lib/theme-colors";
+import { normalizeHexColor, serializeMenuThemeColors } from "@/lib/theme-colors";
 import { Button } from "@/components/ui/button";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
 import { Upload, Image as ImageIcon, X, Search } from "lucide-react";
@@ -29,12 +29,16 @@ const GOOGLE_FONTS = [
 function ColorPicker({
   label,
   value,
+  fallback,
   onChange,
 }: {
   label: string;
   value: string;
+  fallback: string;
   onChange: (value: string) => void;
 }) {
+  const safeValue = normalizeHexColor(value, fallback);
+
   return (
     <div>
       <label className="mb-2 block text-sm font-medium text-gray-700">{label}</label>
@@ -42,12 +46,12 @@ function ColorPicker({
         <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
           <input
             type="color"
-            value={value}
+            value={safeValue}
             onChange={(e) => onChange(e.target.value)}
             className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
           />
         </div>
-        <span className="font-mono text-sm text-gray-600">{value}</span>
+        <span className="font-mono text-sm text-gray-600">{safeValue}</span>
       </div>
     </div>
   );
@@ -199,7 +203,7 @@ export function BrandingDashboard() {
           <input
             type="text"
             placeholder="e.g., Best Pizza in New York - Restaurant Name"
-            value={design.metaTitle}
+            value={design.metaTitle ?? ""}
             onChange={(e) => updateDesign({ metaTitle: e.target.value })}
             className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -212,7 +216,7 @@ export function BrandingDashboard() {
           </label>
           <textarea
             placeholder="e.g., Authentic Italian pizza made with fresh ingredients."
-            value={design.metaDescription}
+            value={design.metaDescription ?? ""}
             onChange={(e) => updateDesign({ metaDescription: e.target.value })}
             rows={3}
             className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -230,26 +234,31 @@ export function BrandingDashboard() {
           <ColorPicker
             label="Header Background"
             value={design.headerBackgroundColor}
+            fallback="#ffffff"
             onChange={(v) => updateDesign({ headerBackgroundColor: v })}
           />
           <ColorPicker
             label="Categories Strip Background"
             value={design.categoryStripBackgroundColor}
+            fallback="#f3f4f6"
             onChange={(v) => updateDesign({ categoryStripBackgroundColor: v })}
           />
           <ColorPicker
             label="Active Category Accent Color"
             value={design.categoryAccentColor}
+            fallback="#047857"
             onChange={(v) => updateDesign({ categoryAccentColor: v })}
           />
           <ColorPicker
             label="Main Content Background (Dish area)"
             value={design.mainContentBackgroundColor}
+            fallback="#fafafa"
             onChange={(v) => updateDesign({ mainContentBackgroundColor: v })}
           />
           <ColorPicker
             label="Footer Background"
             value={design.footerBackgroundColor}
+            fallback="#ffffff"
             onChange={(v) => updateDesign({ footerBackgroundColor: v })}
           />
         </div>

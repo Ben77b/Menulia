@@ -38,7 +38,12 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        setDesignState(designFromRestaurant(data));
+        try {
+          setDesignState(designFromRestaurant(data));
+        } catch (error) {
+          console.error("Failed to parse restaurant design:", error);
+          setDesignState(DEFAULT_DESIGN);
+        }
       }
     }
 
