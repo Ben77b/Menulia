@@ -284,7 +284,7 @@ export default function SettingsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">URL Slug</label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">menulia.net/</span>
+                <span className="text-sm text-gray-500">menulia.net/menu/</span>
                 <input
                   type="text"
                   value={restaurantSlug}

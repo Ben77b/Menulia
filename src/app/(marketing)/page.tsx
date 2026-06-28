@@ -186,7 +186,7 @@ export default function HomePage() {
             ].map((r, i) => (
               <ScrollReveal key={r.slug} delay={i * 100}>
                 <Link
-                  href={`/${r.slug}`}
+                  href={`/menu/${r.slug}`}
                   className="group flex flex-col rounded-2xl border border-border bg-white p-6 transition hover:-translate-y-1 hover:border-emerald-brand/50 hover:shadow-xl"
                 >
                   <span className="text-3xl">{r.emoji}</span>

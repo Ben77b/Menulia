@@ -39,7 +39,9 @@ export default function QrCodePage() {
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   }
 
-  const restaurantUrl = currentRestaurant ? `https://menulia.net/${currentRestaurant.slug}` : "https://menulia.net/";
+  const restaurantUrl = currentRestaurant
+    ? `https://menulia.net/menu/${currentRestaurant.slug}`
+    : "https://menulia.net/";
 
   return (
     <div className="space-y-6">

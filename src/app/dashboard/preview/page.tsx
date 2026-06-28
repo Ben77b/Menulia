@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { fetchDemoRestaurant, fetchRestaurantBySlug } from "@/lib/data";
 import { DinerApp } from "@/components/public/diner-app";
+import { buildPublicMenuDesign, withPublicMenuDefaults } from "@/lib/public-menu";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Preview Your Restaurant" };
@@ -24,7 +25,12 @@ export default async function PreviewPage() {
   const slug = restaurantAny.slug || restaurantAny.id;
   const full = await fetchRestaurantBySlug(slug);
 
-  if (!full) return null;
+  if (!full) {
+    return null;
+  }
+
+  const prepared = withPublicMenuDefaults(full);
+  const design = buildPublicMenuDesign(prepared);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
@@ -40,7 +46,7 @@ export default async function PreviewPage() {
         <span className="text-sm text-zinc-400">
           Preview — how guests see <strong className="text-white">{restaurantAny.name}</strong>
         </span>
-        <Link href={`/${slug}`} target="_blank" rel="noopener noreferrer">
+        <Link href={`/menu/${slug}`} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" className="border-zinc-600 text-white hover:bg-zinc-800">
             <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
             Open full screen
@@ -51,7 +57,7 @@ export default async function PreviewPage() {
       {/* Phone-frame preview */}
       <div className="flex flex-1 items-center justify-center overflow-hidden bg-zinc-950 p-4">
         <div className="h-full max-h-[900px] w-full max-w-[430px] overflow-hidden rounded-[2rem] border-4 border-zinc-700 shadow-2xl">
-          <DinerApp restaurant={full} previewMode />
+          <DinerApp restaurant={prepared} design={design} previewMode />
         </div>
       </div>
     </div>

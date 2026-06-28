@@ -18,5 +18,5 @@ export function getSiteUrl(): string {
 }
 
 export function getPublicMenuUrl(slug: string): string {
-  return `${getSiteUrl()}/${slug}`;
+  return `${getSiteUrl()}/menu/${slug}`;
 }

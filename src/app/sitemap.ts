@@ -15,7 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   const restaurantPages = slugs.map((slug) => ({
-    url: `${base}/${slug}`,
+    url: `${base}/menu/${slug}`,
     lastModified: new Date(),
     changeFrequency: "daily" as const,
     priority: 0.9,

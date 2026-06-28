@@ -118,7 +118,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
       if (slugWasAdjusted) {
         setSlug(finalSlug);
         setNotice(
-          `That URL was already taken. Your menu will live at menulia.net/${finalSlug}.`
+          `That URL was already taken. Your menu will live at menulia.net/menu/${finalSlug}.`
         );
       }
 
@@ -193,7 +193,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
               URL Slug
             </label>
             <div className="flex items-center rounded-lg border border-gray-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100">
-              <span className="pl-3 text-sm text-gray-400">menulia.net/</span>
+              <span className="pl-3 text-sm text-gray-400">menulia.net/menu/</span>
               <input
                 id="restaurant-slug"
                 type="text"

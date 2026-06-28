@@ -145,9 +145,12 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
       </div>
 
       {/* Sticky category navigation bar */}
-      <div className="sticky top-0 z-10 shrink-0 border-b border-border/20" style={{ backgroundColor: design.categoryBackgroundColor }}>
+      <div className="sticky top-24 z-10 shrink-0 border-b border-border/20" style={{ backgroundColor: design.categoryBackgroundColor }}>
         <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
-          {categories.map((cat: any) => (
+          {categories.length === 0 ? (
+            <span className="whitespace-nowrap px-4 py-2 text-sm text-gray-500">Menu</span>
+          ) : (
+          categories.map((cat: any) => (
             <button
               key={cat.id}
               onClick={() => scrollToCategory(cat.id)}
@@ -163,13 +166,24 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
             >
               {cat.name}
             </button>
-          ))}
+          ))
+          )}
         </div>
       </div>
 
       {/* Menu content - scrollable layout with all categories */}
       <div className="flex-1 px-4 py-4 space-y-8">
-        {filteredCategories.map((cat) => (
+        {categories.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-white/80 px-6 py-12 text-center">
+            <p className={`text-lg font-semibold ${fontClasses?.heading || ""}`} style={{ color: design.mainContentFontColor }}>
+              Menu coming soon
+            </p>
+            <p className={`mt-2 text-sm ${fontClasses?.body || ""}`} style={{ color: design.mainContentFontColor }}>
+              This restaurant is setting up their digital menu. Check back shortly.
+            </p>
+          </div>
+        ) : (
+        filteredCategories.map((cat) => (
           <div
             key={cat.id}
             id={`category-${cat.id}`}
@@ -254,7 +268,8 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
               </div>
             )}
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Dietary filter icons — bottom, compact */}

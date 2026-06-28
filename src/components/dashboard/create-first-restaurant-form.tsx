@@ -62,7 +62,7 @@ export function CreateFirstRestaurantForm() {
 
       if (slugWasAdjusted) {
         setSlug(finalSlug);
-        setNotice(`That URL was taken. Your public menu URL is menulia.net/${finalSlug}.`);
+        setNotice(`That URL was taken. Your public menu URL is menulia.net/menu/${finalSlug}.`);
       }
 
       await waitForRestaurantInList(refreshRestaurants, restaurant.id);
@@ -118,7 +118,7 @@ export function CreateFirstRestaurantForm() {
           URL Slug
         </label>
         <div className="flex items-center rounded-lg border border-gray-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100">
-          <span className="pl-3 text-sm text-gray-400">menulia.net/</span>
+          <span className="pl-3 text-sm text-gray-400">menulia.net/menu/</span>
           <input
             id="first-restaurant-slug"
             type="text"

@@ -46,65 +46,12 @@ export function RestaurantHeader({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex shrink-0 items-center px-4 py-3" style={{ backgroundColor: design.headerFooterBackgroundColor }}>
-      {/* Language dropdown on the left */}
+      {/* Custom links dropdown on the left */}
       <div className="relative w-10 flex-shrink-0 flex justify-start">
-        <button
-          onClick={() => { setLangOpen(!langOpen); setMenuOpen(false); }}
-          className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-2 text-xs font-medium shadow-sm"
-        >
-          <span>{currentLang.flag}</span>
-          <span>{currentLang.code.toUpperCase()}</span>
-          <ChevronDown className="h-3 w-3" />
-        </button>
-        {langOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
-            <div className="absolute left-0 top-12 z-50 max-h-64 min-w-[160px] overflow-y-auto rounded-2xl border border-border bg-white p-1 shadow-xl">
-              {availableLanguages.map((lang) => (
-                <button
-                  key={lang.code}
-                  onClick={() => { onLanguageChange(lang.code); setLangOpen(false); }}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted",
-                    language === lang.code && "font-medium"
-                  )}
-                  style={
-                    language === lang.code
-                      ? { backgroundColor: `${design.buttonColor}18`, color: design.buttonColor }
-                      : undefined
-                  }
-                >
-                  <span>{lang.flag}</span>
-                  {lang.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Logo */}
-      <div className="flex-1 flex justify-center">
-        <div className="relative h-20 w-20 overflow-hidden">
-          {logoUrl ? (
-            <Image src={logoUrl} alt={name} fill className="object-contain" sizes="80px" />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center text-2xl font-bold text-white"
-              style={{ backgroundColor: design.buttonColor }}
-            >
-              {name.charAt(0)}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Custom links dropdown on the right */}
-      <div className="relative w-10 flex-shrink-0 flex justify-end">
         <button
           onClick={() => { setMenuOpen(!menuOpen); setLangOpen(false); }}
           className="flex h-10 w-10 flex-col items-center justify-center gap-1 rounded-full bg-white/95 shadow-sm"
-          aria-label="Open menu"
+          aria-label="Open links menu"
         >
           {menuOpen ? (
             <X className="h-5 w-5" style={{ color: design.buttonColor }} />
@@ -119,7 +66,7 @@ export function RestaurantHeader({
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setMenuOpen(false)} />
-            <nav className="absolute right-0 top-12 z-50 min-w-[220px] rounded-2xl border border-border bg-white p-2 shadow-xl">
+            <nav className="absolute left-0 top-12 z-50 min-w-[220px] rounded-2xl border border-border bg-white p-2 shadow-xl">
               {links.length === 0 ? (
                 <p className="px-3 py-2 text-sm text-text-secondary">No links added yet</p>
               ) : (
@@ -141,6 +88,60 @@ export function RestaurantHeader({
                 })
               )}
             </nav>
+          </>
+        )}
+      </div>
+
+      {/* Logo centered */}
+      <div className="flex-1 flex justify-center">
+        <div className="relative h-20 w-20 overflow-hidden">
+          {logoUrl ? (
+            <Image src={logoUrl} alt={name} fill className="object-contain" sizes="80px" />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center rounded-full text-lg font-bold text-white"
+              style={{ backgroundColor: design.buttonColor }}
+            >
+              {name.charAt(0)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Language dropdown on the right */}
+      <div className="relative w-10 flex-shrink-0 flex justify-end">
+        <button
+          onClick={() => { setLangOpen(!langOpen); setMenuOpen(false); }}
+          className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-2 text-xs font-medium shadow-sm"
+          aria-label="Change language"
+        >
+          <span>{currentLang.flag}</span>
+          <span>{currentLang.code.toUpperCase()}</span>
+          <ChevronDown className="h-3 w-3" />
+        </button>
+        {langOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
+            <div className="absolute right-0 top-12 z-50 max-h-64 min-w-[160px] overflow-y-auto rounded-2xl border border-border bg-white p-1 shadow-xl">
+              {availableLanguages.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => { onLanguageChange(lang.code); setLangOpen(false); }}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted",
+                    language === lang.code && "font-medium"
+                  )}
+                  style={
+                    language === lang.code
+                      ? { backgroundColor: `${design.buttonColor}18`, color: design.buttonColor }
+                      : undefined
+                  }
+                >
+                  <span>{lang.flag}</span>
+                  {lang.label}
+                </button>
+              ))}
+            </div>
           </>
         )}
       </div>

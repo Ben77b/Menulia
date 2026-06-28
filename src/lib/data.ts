@@ -70,7 +70,7 @@ async function fetchCategoriesWithDishes(restaurantId: string) {
         restaurant_id: category.restaurant_id,
         name: category.name,
         sort_order: category.order_index ?? category.sort_order ?? 0,
-        layout_type: category.layout_type,
+        layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
         items: (dishes || []).map(mapDish),
       };
     })
