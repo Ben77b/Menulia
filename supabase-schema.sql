@@ -98,6 +98,13 @@ BEGIN
   ) THEN
     ALTER TABLE restaurants ADD COLUMN meta_description TEXT NOT NULL DEFAULT '';
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'restaurants' AND column_name = 'footer_slogan'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN footer_slogan TEXT NOT NULL DEFAULT '';
+  END IF;
 END $$;
 
 -- Create categories table

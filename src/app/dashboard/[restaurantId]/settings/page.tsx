@@ -213,7 +213,11 @@ export default function SettingsPage() {
         })
         .eq("id", currentRestaurant.id);
 
-      if (error) throw error;
+      if (error) {
+        alert(formatRestaurantSettingsError(error));
+        return;
+      }
+
       alert("Footer settings saved!");
     } catch (error) {
       console.error("Error saving footer settings:", error);

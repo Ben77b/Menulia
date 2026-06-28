@@ -4,7 +4,8 @@ ALTER TABLE public.restaurants
   ADD COLUMN IF NOT EXISTS hours TEXT NOT NULL DEFAULT '',
   ADD COLUMN IF NOT EXISTS contact_info TEXT NOT NULL DEFAULT '',
   ADD COLUMN IF NOT EXISTS meta_title TEXT NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS meta_description TEXT NOT NULL DEFAULT '';
+  ADD COLUMN IF NOT EXISTS meta_description TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS footer_slogan TEXT NOT NULL DEFAULT '';
 
 -- Ensure updated_at exists for dashboard saves.
 ALTER TABLE public.restaurants

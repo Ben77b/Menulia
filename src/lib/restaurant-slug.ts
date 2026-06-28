@@ -1,5 +1,5 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
-import { isMissingColumnError, missingColumnMessage } from "./restaurant-settings";
+import { formatSchemaError, isMissingColumnError } from "./restaurant-settings";
 
 export const SLUG_UNIQUE_VIOLATION = "23505";
 
@@ -41,15 +41,15 @@ export async function isRestaurantSlugAvailable(
 
 export function formatRestaurantSettingsError(error: unknown): string {
   if (isMissingColumnError(error)) {
-    return missingColumnMessage();
-  }
-
-  if (isSlugUniqueViolation(error)) {
-    return slugCollisionMessage();
+    return formatSchemaError(error);
   }
 
   if (error instanceof Error && error.message) {
     return error.message;
+  }
+
+  if (isSlugUniqueViolation(error)) {
+    return slugCollisionMessage();
   }
 
   if (typeof error === "object" && error !== null && "message" in error) {
