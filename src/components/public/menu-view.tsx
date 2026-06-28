@@ -98,21 +98,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
   }
 
   return (
-    <div className={`flex flex-1 flex-col ${fontClasses?.body || ''}`} style={{ backgroundColor: design.mainContentBackgroundColor }}>
-      {/* Header with title, slogan */}
-      <div className="shrink-0 px-4 py-6 text-center" style={{ backgroundColor: design.headerFooterBackgroundColor }}>
-        {design.restaurantName && (
-          <h1 className={`text-2xl font-bold text-center ${fontClasses?.heading || ''}`} style={{ color: design.headerFooterFontColor }}>
-            {design.restaurantName}
-          </h1>
-        )}
-        {design.slogan && (
-          <p className={`mt-1 text-sm text-center ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
-            {design.slogan}
-          </p>
-        )}
-      </div>
-
+    <div className={`flex flex-1 flex-col ${fontClasses?.body || ""}`} style={{ backgroundColor: design.mainContentBackgroundColor }}>
       {/* Sticky category navigation bar */}
       <div className="sticky top-24 z-10 shrink-0 border-b border-border/20" style={{ backgroundColor: design.categoryBackgroundColor }}>
         <div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
@@ -317,58 +303,64 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
             </div>
           )}
 
-          {/* Contact Info & Hours - Creative grid layout */}
-          {(design.showFooterContact || design.showFooterHours) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {design.showFooterContact && (restaurant.phone || restaurant.email || design.location || design.contactInfo) && (
-                <div className="flex flex-col items-center space-y-3 p-4 rounded-2xl" style={{ backgroundColor: `${design.buttonColor}08` }}>
-                  <h3 className={`font-bold text-center ${fontClasses?.heading || ''}`} style={{ color: design.headerFooterFontColor }}>Contact</h3>
-                  {design.location && (
-                    <p className={`text-sm text-center ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
-                      {design.location}
-                    </p>
-                  )}
-                  {restaurant.phone && (
-                    <a
-                      href={`tel:${restaurant.phone}`}
-                      className={`text-sm text-center hover:opacity-80 transition-opacity ${fontClasses?.body || ''}`}
-                      style={{ color: design.buttonColor }}
-                    >
-                      {restaurant.phone}
-                    </a>
-                  )}
-                  {restaurant.email && (
-                    <a
-                      href={`mailto:${restaurant.email}`}
-                      className={`text-sm text-center hover:opacity-80 transition-opacity ${fontClasses?.body || ''}`}
-                      style={{ color: design.buttonColor }}
-                    >
-                      {restaurant.email}
-                    </a>
-                  )}
-                  {design.contactInfo && (
-                    <p className={`text-sm text-center ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
-                      {design.contactInfo}
-                    </p>
-                  )}
+          {/* Contact & hours from database root columns */}
+          {(design.location || design.hours || design.contactInfo) && (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {design.location && (
+                <div
+                  className="flex flex-col items-center space-y-2 rounded-2xl p-4 text-center"
+                  style={{ backgroundColor: `${design.buttonColor}08` }}
+                >
+                  <h3
+                    className={`font-bold ${fontClasses?.heading || ""}`}
+                    style={{ color: design.headerFooterFontColor }}
+                  >
+                    Location
+                  </h3>
+                  <p
+                    className={`text-sm ${fontClasses?.body || ""}`}
+                    style={{ color: design.headerFooterFontColor }}
+                  >
+                    {design.location}
+                  </p>
                 </div>
               )}
-              {design.showFooterHours && restaurant.operating_hours && restaurant.operating_hours.length > 0 && (
-                <div className="flex flex-col items-center space-y-3 p-4 rounded-2xl text-center" style={{ backgroundColor: `${design.buttonColor}08` }}>
-                  <h3 className={`font-bold ${fontClasses?.heading || ''}`} style={{ color: design.headerFooterFontColor }}>Hours</h3>
-                  <div className="space-y-2">
-                    {restaurant.operating_hours.map((hour, index) => (
-                      <div key={index} className={`text-sm ${fontClasses?.body || ''}`} style={{ color: design.headerFooterFontColor }}>
-                        <span className="font-medium">
-                          {hour.day}
-                        </span>
-                        <span className="mx-2">•</span>
-                        <span>
-                          {!hour.isOpen ? "Closed" : `${hour.startTime} - ${hour.endTime}`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              {design.hours && (
+                <div
+                  className="flex flex-col items-center space-y-2 rounded-2xl p-4 text-center"
+                  style={{ backgroundColor: `${design.buttonColor}08` }}
+                >
+                  <h3
+                    className={`font-bold ${fontClasses?.heading || ""}`}
+                    style={{ color: design.headerFooterFontColor }}
+                  >
+                    Hours
+                  </h3>
+                  <p
+                    className={`text-sm whitespace-pre-line ${fontClasses?.body || ""}`}
+                    style={{ color: design.headerFooterFontColor }}
+                  >
+                    {design.hours}
+                  </p>
+                </div>
+              )}
+              {design.contactInfo && (
+                <div
+                  className="flex flex-col items-center space-y-2 rounded-2xl p-4 text-center"
+                  style={{ backgroundColor: `${design.buttonColor}08` }}
+                >
+                  <h3
+                    className={`font-bold ${fontClasses?.heading || ""}`}
+                    style={{ color: design.headerFooterFontColor }}
+                  >
+                    Contact
+                  </h3>
+                  <p
+                    className={`text-sm ${fontClasses?.body || ""}`}
+                    style={{ color: design.headerFooterFontColor }}
+                  >
+                    {design.contactInfo}
+                  </p>
                 </div>
               )}
             </div>

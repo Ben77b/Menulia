@@ -26,12 +26,10 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: "Menu Not Found" };
   }
 
-  const prepared = withPublicMenuDefaults(restaurant);
-  const design = buildPublicMenuDesign(prepared);
-
   return {
-    title: design.metaTitle || prepared.name,
-    description: design.metaDescription,
+    title: restaurant.meta_title || restaurant.name,
+    description:
+      restaurant.meta_description || `View the digital menu for ${restaurant.name}`,
   };
 }
 

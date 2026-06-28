@@ -41,9 +41,12 @@ export function DinerApp({ restaurant, design, previewMode = false }: DinerAppPr
   const [language, setLanguage] = useState<LanguageCode>("en");
 
   const fontClasses = useMemo(() => {
-    const fontPackId = design.titleFont || restaurant.font_pack_id || "Inter";
-    return FONT_CLASS_MAP[fontPackId] || FONT_CLASS_MAP.Inter;
-  }, [design.titleFont, restaurant.font_pack_id]);
+    const headingFont = design.titleFont || restaurant.font_pack_id || "Inter";
+    const bodyFont = design.textFont || headingFont;
+    const headingClasses = FONT_CLASS_MAP[headingFont] || FONT_CLASS_MAP.Inter;
+    const bodyClasses = FONT_CLASS_MAP[bodyFont] || FONT_CLASS_MAP.Inter;
+    return { heading: headingClasses.heading, body: bodyClasses.body };
+  }, [design.titleFont, design.textFont, restaurant.font_pack_id]);
 
   useEffect(() => {
     if (!previewMode) {

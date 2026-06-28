@@ -85,19 +85,19 @@ export function RestaurantHeader({
       </div>
 
       {/* Logo centered */}
-      <div className="flex-1 flex justify-center">
-        <div className="relative h-20 w-20 overflow-hidden">
-          {logoUrl ? (
+      <div className="flex-1 flex justify-center px-2">
+        {logoUrl ? (
+          <div className="relative h-20 w-20 overflow-hidden">
             <Image src={logoUrl} alt={name} fill className="object-contain" sizes="80px" />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center rounded-full text-lg font-bold text-white"
-              style={{ backgroundColor: design.buttonColor }}
-            >
-              {name.charAt(0)}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <p
+            className="text-center text-lg font-bold leading-tight truncate max-w-[200px]"
+            style={{ color: design.headerFooterFontColor }}
+          >
+            {name}
+          </p>
+        )}
       </div>
 
       {/* Language dropdown on the right */}

@@ -6,6 +6,11 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Clock, Link2, Trash2, Plus, Building2, Mail, Globe, User, LogOut, Lock, Download, AlertTriangle, CreditCard } from "lucide-react";
+import {
+  MenuDesignSettings,
+  menuDesignFromRestaurant,
+  defaultMenuDesignState,
+} from "@/components/dashboard/menu-design-settings";
 
 interface OperatingHour {
   day: string;
@@ -42,6 +47,7 @@ export default function SettingsPage() {
   const [slugError, setSlugError] = useState("");
   const [userFullName, setUserFullName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [menuDesign, setMenuDesign] = useState(defaultMenuDesignState());
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
 
@@ -96,6 +102,7 @@ export default function SettingsPage() {
         setRestaurantHours(data.hours ?? "");
         setRestaurantContactInfo(data.contact_info ?? "");
         setRestaurantSlug(typeof data.slug === "string" ? data.slug : "");
+        setMenuDesign(menuDesignFromRestaurant(data));
       }
     } catch (error) {
       console.error('Error loading restaurant data:', error);
@@ -330,6 +337,10 @@ export default function SettingsPage() {
           <Button className="mt-4" onClick={saveRestaurantProfile}>Save Profile</Button>
         </div>
 
+        <MenuDesignSettings
+          {...menuDesign}
+          onChange={(updates) => setMenuDesign((prev) => ({ ...prev, ...updates }))}
+        />
 
         {/* Operating Hours */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
