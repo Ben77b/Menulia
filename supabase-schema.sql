@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS restaurants (
     {"day":"Sunday","isOpen":true,"startTime":"10:00","endTime":"21:00"}
   ]'::jsonb,
   font_pack_id TEXT DEFAULT 'Inter',
+  location TEXT NOT NULL DEFAULT '',
+  hours TEXT NOT NULL DEFAULT '',
+  contact_info TEXT NOT NULL DEFAULT '',
+  meta_title TEXT NOT NULL DEFAULT '',
+  meta_description TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -53,6 +58,45 @@ BEGIN
     WHERE table_name = 'restaurants' AND column_name = 'font_pack_id'
   ) THEN
     ALTER TABLE restaurants ADD COLUMN font_pack_id TEXT DEFAULT 'Inter';
+  END IF;
+END $$;
+
+-- Migration: Public profile columns for settings + menu footer
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'restaurants' AND column_name = 'location'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN location TEXT NOT NULL DEFAULT '';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'restaurants' AND column_name = 'hours'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN hours TEXT NOT NULL DEFAULT '';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'restaurants' AND column_name = 'contact_info'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN contact_info TEXT NOT NULL DEFAULT '';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'restaurants' AND column_name = 'meta_title'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN meta_title TEXT NOT NULL DEFAULT '';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'restaurants' AND column_name = 'meta_description'
+  ) THEN
+    ALTER TABLE restaurants ADD COLUMN meta_description TEXT NOT NULL DEFAULT '';
   END IF;
 END $$;
 

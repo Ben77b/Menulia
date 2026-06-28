@@ -68,6 +68,46 @@ BEGIN
   CREATE UNIQUE INDEX IF NOT EXISTS restaurants_slug_unique_idx ON public.restaurants (slug);
   CREATE INDEX IF NOT EXISTS idx_restaurants_user_id ON public.restaurants (user_id);
 
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'restaurants' AND column_name = 'location'
+  ) THEN
+    ALTER TABLE public.restaurants ADD COLUMN location TEXT NOT NULL DEFAULT '';
+    result := result || jsonb_build_object('added_location', true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'restaurants' AND column_name = 'hours'
+  ) THEN
+    ALTER TABLE public.restaurants ADD COLUMN hours TEXT NOT NULL DEFAULT '';
+    result := result || jsonb_build_object('added_hours', true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'restaurants' AND column_name = 'contact_info'
+  ) THEN
+    ALTER TABLE public.restaurants ADD COLUMN contact_info TEXT NOT NULL DEFAULT '';
+    result := result || jsonb_build_object('added_contact_info', true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'restaurants' AND column_name = 'meta_title'
+  ) THEN
+    ALTER TABLE public.restaurants ADD COLUMN meta_title TEXT NOT NULL DEFAULT '';
+    result := result || jsonb_build_object('added_meta_title', true);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'restaurants' AND column_name = 'meta_description'
+  ) THEN
+    ALTER TABLE public.restaurants ADD COLUMN meta_description TEXT NOT NULL DEFAULT '';
+    result := result || jsonb_build_object('added_meta_description', true);
+  END IF;
+
   ALTER TABLE public.restaurants ENABLE ROW LEVEL SECURITY;
 
   IF NOT EXISTS (

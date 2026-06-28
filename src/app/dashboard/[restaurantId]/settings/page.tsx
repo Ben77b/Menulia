@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { HoursScheduleBuilder } from "@/components/dashboard/hours-schedule-builder";
 import {
@@ -20,18 +20,20 @@ import {
   CreditCard,
 } from "lucide-react";
 import {
-  compileHoursSchedule,
   defaultScheduleBlocks,
   parseHoursSchedule,
   type HoursScheduleBlock,
 } from "@/lib/hours-schedule";
-import { formatContactInfo, parseContactInfo } from "@/lib/contact-info";
+import { parseContactInfo } from "@/lib/contact-info";
 import {
   formatRestaurantSettingsError,
   isRestaurantSlugAvailable,
-  isSlugUniqueViolation,
   slugCollisionMessage,
 } from "@/lib/restaurant-slug";
+import {
+  loadRestaurantSettings,
+  saveRestaurantSettings,
+} from "@/lib/restaurant-settings";
 import { fetchRestaurantLinks, saveRestaurantLinks } from "@/lib/restaurant-links";
 
 interface CustomLink {
@@ -58,8 +60,10 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
+  const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
     if (currentRestaurant) {
@@ -88,42 +92,38 @@ export default function SettingsPage() {
   async function loadRestaurantData() {
     if (!currentRestaurant) return;
 
+    setLoadError(null);
+
     try {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("name, slug, location, hours, contact_info, footer_slogan")
-        .eq("id", currentRestaurant.id)
-        .single();
+      const data = await loadRestaurantSettings(supabase, currentRestaurant.id);
 
-      if (error) throw error;
+      setRestaurantName(data.name);
+      setRestaurantLocation(data.location);
+      setRestaurantSlug(data.slug);
+      setOriginalSlug(data.slug);
 
-      if (data) {
-        setRestaurantName(data.name ?? "");
-        setRestaurantLocation(data.location ?? "");
-        const slug = typeof data.slug === "string" ? data.slug : "";
-        setRestaurantSlug(slug);
-        setOriginalSlug(slug);
+      const parsedHours = parseHoursSchedule(data.hours);
+      setScheduleBlocks(parsedHours ?? defaultScheduleBlocks());
 
-        const parsedHours = parseHoursSchedule(data.hours);
-        setScheduleBlocks(parsedHours ?? defaultScheduleBlocks());
+      const contact = parseContactInfo(data.contact_info);
+      setRestaurantPhone(contact.phone);
+      setRestaurantEmail(contact.email);
 
-        const contact = parseContactInfo(data.contact_info);
-        setRestaurantPhone(contact.phone);
-        setRestaurantEmail(contact.email);
+      setFooterSlogan(data.footer_slogan);
 
-        setFooterSlogan(data.footer_slogan ?? "");
-
-        const links = await fetchRestaurantLinks(currentRestaurant.id);
-        setCustomLinks(
-          links.map((link) => ({
-            id: link.id,
-            label: link.label,
-            url: link.url,
-          }))
-        );
-      }
+      const links = await fetchRestaurantLinks(currentRestaurant.id);
+      setCustomLinks(
+        links.map((link) => ({
+          id: link.id,
+          label: link.label,
+          url: link.url,
+        }))
+      );
     } catch (error) {
-      console.error("Error loading restaurant data:", error);
+      console.error("[SettingsLoad:Failed]", error);
+      const message =
+        error instanceof Error ? error.message : "Failed to load restaurant settings.";
+      setLoadError(message);
     }
   }
 
@@ -150,6 +150,15 @@ export default function SettingsPage() {
     setSlugError("");
 
     try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error("You must be signed in to save settings.");
+      }
+
       if (!slugUnchanged) {
         const available = await isRestaurantSlugAvailable(supabase, normalizedSlug, restaurantId);
         if (!available) {
@@ -161,54 +170,23 @@ export default function SettingsPage() {
         }
       }
 
-      const updatePayload: {
-        name: string;
-        location: string;
-        hours: string;
-        contact_info: string;
-        updated_at: string;
-        slug?: string;
-      } = {
-        name: restaurantName.trim(),
-        location: restaurantLocation.trim(),
-        hours: compileHoursSchedule(scheduleBlocks),
-        contact_info: formatContactInfo(restaurantPhone, restaurantEmail),
-        updated_at: new Date().toISOString(),
-      };
+      const result = await saveRestaurantSettings(supabase, restaurantId, {
+        name: restaurantName,
+        slug: restaurantSlug,
+        originalSlug,
+        location: restaurantLocation,
+        phone: restaurantPhone,
+        email: restaurantEmail,
+        scheduleBlocks,
+      });
 
-      if (!slugUnchanged) {
-        updatePayload.slug = normalizedSlug;
-      }
-
-      const { data, error } = await supabase
-        .from("restaurants")
-        .update(updatePayload)
-        .eq("id", restaurantId)
-        .select("id")
-        .single();
-
-      if (error) {
-        console.error("[SettingsSave:Failed]", error);
-        if (isSlugUniqueViolation(error)) {
-          const message = slugCollisionMessage();
-          setSlugError(message);
-          setSaveError(message);
-          alert(message);
-          return;
-        }
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error("Could not update this restaurant. Please refresh and try again.");
-      }
-
-      if (!slugUnchanged) {
-        setOriginalSlug(normalizedSlug);
-        setRestaurantSlug(normalizedSlug);
+      if (result.normalizedSlug) {
+        setOriginalSlug(result.normalizedSlug);
+        setRestaurantSlug(result.normalizedSlug);
       }
 
       await refreshRestaurants();
+      await loadRestaurantData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
@@ -339,6 +317,12 @@ export default function SettingsPage() {
           {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
         </Button>
       </div>
+
+      {loadError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {loadError}
+        </div>
+      )}
 
       {saveError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
