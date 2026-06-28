@@ -44,7 +44,7 @@ export function DishCarousel({
   }, [activeIndex, dishes]);
 
   if (dishes.length === 0) {
-    return <p className="text-sm opacity-70">No dishes in this category.</p>;
+    return <p className="text-sm" style={{ color: mainTextColor }}>No dishes in this category.</p>;
   }
 
   function goPrevious() {
@@ -87,7 +87,6 @@ export function DishCarousel({
             titleFont={titleFont}
             bodyFont={bodyFont}
             textColor={mainTextColor}
-            accentColor={accentColor}
             layout="carousel"
             imageClassName="w-full"
           />
@@ -108,7 +107,6 @@ export function DishCarousel({
                 titleFont={titleFont}
                 bodyFont={bodyFont}
                 textColor={mainTextColor}
-                accentColor={accentColor}
                 layout="carousel"
                 compact={slot.position !== "center"}
                 imageClassName="w-full"

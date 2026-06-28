@@ -8,6 +8,7 @@ import { formatSupabaseError } from "@/lib/auth/errors";
 import { themeColorsFromDesign } from "@/lib/restaurant-design";
 import { serializeMenuThemeColors } from "@/lib/theme-colors";
 import { Button } from "@/components/ui/button";
+import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
 import { Upload, Image as ImageIcon, X, Search } from "lucide-react";
 
 const GOOGLE_FONTS = [
@@ -155,10 +156,11 @@ export function BrandingDashboard() {
           <div className="flex flex-col items-center gap-4">
             {design.logo ? (
               <div className="relative">
-                <img
+                <RestaurantLogo
                   src={design.logo}
                   alt="Restaurant Logo"
-                  className="h-32 w-32 rounded-xl border border-gray-100 bg-gray-50 object-contain p-3"
+                  wrapperClassName="h-32 w-32 rounded-xl border border-gray-100 bg-gray-50 p-3"
+                  className="h-full w-full"
                 />
                 <button
                   type="button"
@@ -185,7 +187,7 @@ export function BrandingDashboard() {
             <input
               ref={logoInputRef}
               type="file"
-              accept="image/*"
+              accept={LOGO_ACCEPT}
               onChange={handleLogoUpload}
               className="hidden"
             />

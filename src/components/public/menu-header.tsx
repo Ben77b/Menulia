@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
 import type { RestaurantLink } from "@/lib/restaurant-links";
+import { RestaurantLogo } from "@/components/restaurant-logo";
 
 interface MenuHeaderProps {
   restaurantName: string;
@@ -41,7 +41,7 @@ export function MenuHeader({
                 className="flex h-10 w-10 items-center justify-center rounded-full transition-opacity hover:opacity-80"
                 style={{ color: textColor }}
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-6 w-6" style={{ color: textColor }} />
               </button>
             ) : (
               <span className="h-10 w-10" />
@@ -50,11 +50,17 @@ export function MenuHeader({
 
           <div className="flex justify-center">
             {logo ? (
-              <div className="relative h-16 w-16 sm:h-20 sm:w-20">
-                <Image src={logo} alt={restaurantName} fill className="object-contain" sizes="80px" />
-              </div>
+              <RestaurantLogo
+                src={logo}
+                alt={restaurantName}
+                wrapperClassName="h-16 w-40 sm:h-20 sm:w-48"
+                className="h-full w-full"
+              />
             ) : (
-              <h1 className="text-center text-lg font-bold uppercase tracking-[0.2em] sm:text-xl" style={{ fontFamily: titleFont }}>
+              <h1
+                className="text-center text-lg font-bold uppercase tracking-[0.2em] sm:text-xl"
+                style={{ fontFamily: titleFont, color: textColor }}
+              >
                 {restaurantName}
               </h1>
             )}
@@ -80,8 +86,13 @@ export function MenuHeader({
             }`}
             style={{ backgroundColor: headerBackgroundColor, color: textColor }}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <p className="text-sm font-semibold uppercase tracking-widest">Links</p>
+            <div
+              className="flex items-center justify-between border-b px-5 py-4"
+              style={{ borderColor: textColor, color: textColor }}
+            >
+              <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: textColor }}>
+                Links
+              </p>
               <button
                 type="button"
                 aria-label="Close menu"
@@ -89,7 +100,7 @@ export function MenuHeader({
                 className="flex h-9 w-9 items-center justify-center rounded-full hover:opacity-80"
                 style={{ color: textColor }}
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5" style={{ color: textColor }} />
               </button>
             </div>
             <nav className="flex flex-col gap-1 p-4">

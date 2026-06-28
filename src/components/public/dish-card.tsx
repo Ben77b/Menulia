@@ -18,7 +18,6 @@ interface DishCardProps {
   titleFont: string;
   bodyFont: string;
   textColor: string;
-  accentColor: string;
   layout?: "carousel" | "stacked";
   compact?: boolean;
   imageClassName?: string;
@@ -29,7 +28,6 @@ export function DishCard({
   titleFont,
   bodyFont,
   textColor,
-  accentColor,
   layout = "carousel",
   compact = false,
   imageClassName = "w-full max-w-xs",
@@ -49,7 +47,9 @@ export function DishCard({
       className={`flex aspect-square items-center justify-center rounded-2xl bg-black/5 ${imageClassName}`}
       style={{ color: textColor }}
     >
-      <span className="text-sm opacity-60">No image</span>
+      <span className="text-sm" style={{ color: textColor }}>
+        No image
+      </span>
     </div>
   );
 
@@ -63,7 +63,7 @@ export function DishCard({
       </h3>
       {dish.description && (
         <p
-          className={`leading-relaxed opacity-90 ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
+          className={`leading-relaxed ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
           style={{ color: textColor, fontFamily: bodyFont }}
         >
           {dish.description}
@@ -79,7 +79,7 @@ export function DishCard({
                 className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
                 style={{
                   color: textColor,
-                  border: `1px solid ${accentColor}`,
+                  border: `1px solid ${textColor}`,
                   fontFamily: bodyFont,
                 }}
               >

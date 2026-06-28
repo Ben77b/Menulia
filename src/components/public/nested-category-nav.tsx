@@ -11,6 +11,7 @@ interface NestedCategoryNavProps {
   accentColor: string;
   activeParentId: string;
   activeSubcategoryId: string;
+  showTier1: boolean;
   onParentChange: (parentId: string) => void;
   onSubcategoryChange: (subcategoryId: string) => void;
 }
@@ -22,6 +23,7 @@ export function NestedCategoryNav({
   accentColor,
   activeParentId,
   activeSubcategoryId,
+  showTier1,
   onParentChange,
   onSubcategoryChange,
 }: NestedCategoryNavProps) {
@@ -35,7 +37,7 @@ export function NestedCategoryNav({
   );
 
   const subcategories = activeParent?.subcategories ?? [];
-  const showTier2 = subcategories.length > 1;
+  const showTier2 = subcategories.length > 1 || (showTier1 && subcategories.length > 0);
 
   useEffect(() => {
     if (!activeParent) return;
@@ -49,6 +51,7 @@ export function NestedCategoryNav({
 
   return (
     <div className="sticky top-[72px] z-40">
+      {showTier1 && (
       <nav
         className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide sm:justify-center"
         style={{ backgroundColor: headerBackgroundColor, color: tier1Text }}
@@ -80,6 +83,7 @@ export function NestedCategoryNav({
           );
         })}
       </nav>
+      )}
 
       {showTier2 && (
         <nav

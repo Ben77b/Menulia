@@ -4,11 +4,41 @@ import {
   mapDishRow,
   type CategoryRow,
   type PublicMenuParentCategory,
+  type PublicMenuSubcategory,
 } from "@/lib/menu-hierarchy";
 import { fetchRestaurantLinks, type RestaurantLink } from "@/lib/restaurant-links";
 
+export function hasNestedMenuStructure(categoryRows: CategoryRow[]): boolean {
+  return categoryRows.some((row) => row.parent_id !== null);
+}
+
+function rowToSubcategory(
+  row: CategoryRow,
+  dishesByCategoryId: Record<string, ReturnType<typeof mapDishRow>[]>
+): PublicMenuSubcategory {
+  return {
+    id: row.id,
+    name: row.name,
+    layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
+    dishes: dishesByCategoryId[row.id] ?? [],
+  };
+}
+
+export function buildFlatCategories(
+  categoryRows: CategoryRow[],
+  dishesByCategoryId: Record<string, ReturnType<typeof mapDishRow>[]>
+): PublicMenuSubcategory[] {
+  const leafRows = categoryRows.filter(
+    (row) => !categoryRows.some((child) => child.parent_id === row.id)
+  );
+
+  return leafRows.map((row) => rowToSubcategory(row, dishesByCategoryId));
+}
+
 export async function fetchPublicMenuData(restaurantId: string): Promise<{
   menu: PublicMenuParentCategory[];
+  flatCategories: PublicMenuSubcategory[];
+  hasNestedStructure: boolean;
   links: RestaurantLink[];
 }> {
   const supabase = createAnonClient();
@@ -23,7 +53,7 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
   ]);
 
   if (categoriesError || !categories?.length) {
-    return { menu: [], links };
+    return { menu: [], flatCategories: [], hasNestedStructure: false, links };
   }
 
   const categoryRows: CategoryRow[] = categories.map((category) => ({
@@ -55,8 +85,12 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
     })
   );
 
+  const nested = hasNestedMenuStructure(categoryRows);
+
   return {
     menu: buildMenuHierarchy(categoryRows, dishesByCategoryId),
+    flatCategories: buildFlatCategories(categoryRows, dishesByCategoryId),
+    hasNestedStructure: nested,
     links,
   };
 }

@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { contrastingTextColor } from "@/lib/contrast";
 import type { MenuThemeColors } from "@/lib/theme-colors";
-import type { PublicMenuParentCategory } from "@/lib/menu-hierarchy";
+import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { RestaurantLink } from "@/lib/restaurant-links";
+import { RestaurantLogo } from "@/components/restaurant-logo";
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
+import { FlatCategoryNav } from "./flat-category-nav";
 import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
 
@@ -20,7 +22,56 @@ interface PublicMenuLayoutProps {
   titleFont: string;
   bodyFont: string;
   menu: PublicMenuParentCategory[];
+  flatCategories: PublicMenuSubcategory[];
+  hasNestedStructure: boolean;
   links: RestaurantLink[];
+}
+
+function DishSection({
+  subcategory,
+  mainTextColor,
+  theme,
+  titleFont,
+  bodyFont,
+}: {
+  subcategory: PublicMenuSubcategory;
+  mainTextColor: string;
+  theme: MenuThemeColors;
+  titleFont: string;
+  bodyFont: string;
+}) {
+  if (subcategory.layout_type === "carousel") {
+    return (
+      <DishCarousel
+        dishes={subcategory.dishes}
+        accentColor={theme.categoryAccentColor}
+        mainTextColor={mainTextColor}
+        titleFont={titleFont}
+        bodyFont={bodyFont}
+      />
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-12">
+      {subcategory.dishes.map((dish) => (
+        <DishCard
+          key={dish.id}
+          dish={dish}
+          titleFont={titleFont}
+          bodyFont={bodyFont}
+          textColor={mainTextColor}
+          layout="stacked"
+          imageClassName="w-full"
+        />
+      ))}
+      {subcategory.dishes.length === 0 && (
+        <p className="text-center text-sm" style={{ color: mainTextColor }}>
+          No dishes in this category.
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function PublicMenuLayout({
@@ -33,31 +84,46 @@ export function PublicMenuLayout({
   titleFont,
   bodyFont,
   menu,
+  flatCategories,
+  hasNestedStructure,
   links,
 }: PublicMenuLayoutProps) {
   const [activeParentId, setActiveParentId] = useState(menu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
-    menu[0]?.subcategories[0]?.id ?? ""
+    menu[0]?.subcategories[0]?.id ?? flatCategories[0]?.id ?? ""
   );
 
   useEffect(() => {
-    if (menu.length === 0) return;
-    if (!menu.some((parent) => parent.id === activeParentId)) {
-      setActiveParentId(menu[0].id);
-      setActiveSubcategoryId(menu[0].subcategories[0]?.id ?? "");
+    if (hasNestedStructure) {
+      if (menu.length === 0) return;
+      if (!menu.some((parent) => parent.id === activeParentId)) {
+        setActiveParentId(menu[0].id);
+        setActiveSubcategoryId(menu[0].subcategories[0]?.id ?? "");
+      }
+      return;
     }
-  }, [menu, activeParentId]);
+
+    if (flatCategories.length === 0) return;
+    if (!flatCategories.some((category) => category.id === activeSubcategoryId)) {
+      setActiveSubcategoryId(flatCategories[0].id);
+    }
+  }, [menu, flatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
 
   const activeSubcategory = useMemo(() => {
+    if (!hasNestedStructure) {
+      return flatCategories.find((category) => category.id === activeSubcategoryId) ?? flatCategories[0];
+    }
+
     const parent = menu.find((item) => item.id === activeParentId) ?? menu[0];
     return (
       parent?.subcategories.find((sub) => sub.id === activeSubcategoryId) ??
       parent?.subcategories[0]
     );
-  }, [menu, activeParentId, activeSubcategoryId]);
+  }, [menu, flatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
 
   const mainTextColor = contrastingTextColor(theme.mainContentBackgroundColor);
   const footerTextColor = contrastingTextColor(theme.footerBackgroundColor);
+  const hasMenu = hasNestedStructure ? menu.length > 0 : flatCategories.length > 0;
 
   function handleParentChange(parentId: string) {
     setActiveParentId(parentId);
@@ -70,7 +136,7 @@ export function PublicMenuLayout({
   return (
     <div
       className="flex min-h-screen flex-col"
-      style={{ backgroundColor: theme.mainContentBackgroundColor, fontFamily: bodyFont }}
+      style={{ backgroundColor: theme.mainContentBackgroundColor, color: mainTextColor, fontFamily: bodyFont }}
     >
       <MenuHeader
         restaurantName={restaurantName}
@@ -80,56 +146,47 @@ export function PublicMenuLayout({
         links={links}
       />
 
-      <NestedCategoryNav
-        menu={menu}
-        headerBackgroundColor={theme.headerBackgroundColor}
-        stripBackgroundColor={theme.categoryStripBackgroundColor}
-        accentColor={theme.categoryAccentColor}
-        activeParentId={activeParentId}
-        activeSubcategoryId={activeSubcategoryId}
-        onParentChange={handleParentChange}
-        onSubcategoryChange={setActiveSubcategoryId}
-      />
+      {hasNestedStructure ? (
+        <NestedCategoryNav
+          menu={menu}
+          headerBackgroundColor={theme.headerBackgroundColor}
+          stripBackgroundColor={theme.categoryStripBackgroundColor}
+          accentColor={theme.categoryAccentColor}
+          activeParentId={activeParentId}
+          activeSubcategoryId={activeSubcategoryId}
+          showTier1
+          onParentChange={handleParentChange}
+          onSubcategoryChange={setActiveSubcategoryId}
+        />
+      ) : (
+        <FlatCategoryNav
+          categories={flatCategories}
+          stripBackgroundColor={theme.categoryStripBackgroundColor}
+          accentColor={theme.categoryAccentColor}
+          activeCategoryId={activeSubcategoryId}
+          onCategoryChange={setActiveSubcategoryId}
+        />
+      )}
 
       <main className="flex-1 px-4 py-8 sm:px-6">
-        {menu.length === 0 || !activeSubcategory ? (
+        {!hasMenu || !activeSubcategory ? (
           <div className="py-16 text-center" style={{ color: mainTextColor }}>
-            <p className="text-lg font-semibold uppercase tracking-wide" style={{ fontFamily: titleFont }}>
+            <p className="text-lg font-semibold uppercase tracking-wide" style={{ fontFamily: titleFont, color: mainTextColor }}>
               Menu coming soon!
             </p>
-            <p className="mt-2 text-sm opacity-80">This restaurant hasn&apos;t added any dishes yet.</p>
+            <p className="mt-2 text-sm" style={{ color: mainTextColor }}>
+              This restaurant hasn&apos;t added any dishes yet.
+            </p>
           </div>
         ) : (
           <section className="mx-auto max-w-5xl">
-            {activeSubcategory.layout_type === "carousel" ? (
-              <DishCarousel
-                dishes={activeSubcategory.dishes}
-                accentColor={theme.categoryAccentColor}
-                mainTextColor={mainTextColor}
-                titleFont={titleFont}
-                bodyFont={bodyFont}
-              />
-            ) : (
-              <div className="mx-auto max-w-3xl space-y-12">
-                {activeSubcategory.dishes.map((dish) => (
-                  <DishCard
-                    key={dish.id}
-                    dish={dish}
-                    titleFont={titleFont}
-                    bodyFont={bodyFont}
-                    textColor={mainTextColor}
-                    accentColor={theme.categoryAccentColor}
-                    layout="stacked"
-                    imageClassName="w-full"
-                  />
-                ))}
-                {activeSubcategory.dishes.length === 0 && (
-                  <p className="text-center text-sm opacity-70" style={{ color: mainTextColor }}>
-                    No dishes in this category.
-                  </p>
-                )}
-              </div>
-            )}
+            <DishSection
+              subcategory={activeSubcategory}
+              mainTextColor={mainTextColor}
+              theme={theme}
+              titleFont={titleFont}
+              bodyFont={bodyFont}
+            />
           </section>
         )}
       </main>
@@ -141,30 +198,44 @@ export function PublicMenuLayout({
         >
           <div className="mx-auto max-w-4xl space-y-10 text-center">
             {logo ? (
-              <div className="relative mx-auto h-16 w-40">
-                <img src={logo} alt={restaurantName} className="mx-auto h-full object-contain" />
-              </div>
+              <RestaurantLogo
+                src={logo}
+                alt={restaurantName}
+                wrapperClassName="mx-auto h-16 w-40"
+                className="h-16 w-full"
+              />
             ) : (
-              <p className="text-2xl font-bold uppercase tracking-[0.25em]" style={{ fontFamily: titleFont }}>
+              <p
+                className="text-2xl font-bold uppercase tracking-[0.25em]"
+                style={{ fontFamily: titleFont, color: footerTextColor }}
+              >
                 {restaurantName}
               </p>
             )}
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:text-left">
               {hours && (
-                <div>
-                  <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.2em]" style={{ fontFamily: titleFont }}>
+                <div style={{ color: footerTextColor }}>
+                  <h3
+                    className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
+                    style={{ fontFamily: titleFont, color: footerTextColor }}
+                  >
                     Open Hours
                   </h3>
-                  <p className="whitespace-pre-line text-sm leading-relaxed">{hours}</p>
+                  <p className="whitespace-pre-line text-sm leading-relaxed" style={{ color: footerTextColor }}>
+                    {hours}
+                  </p>
                 </div>
               )}
               {(location || contactInfo) && (
-                <div>
-                  <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.2em]" style={{ fontFamily: titleFont }}>
+                <div style={{ color: footerTextColor }}>
+                  <h3
+                    className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
+                    style={{ fontFamily: titleFont, color: footerTextColor }}
+                  >
                     Location & Contact
                   </h3>
-                  <div className="space-y-1 text-sm leading-relaxed">
+                  <div className="space-y-1 text-sm leading-relaxed" style={{ color: footerTextColor }}>
                     {contactInfo && <p>{contactInfo}</p>}
                     {location && <p>{location}</p>}
                   </div>
@@ -172,7 +243,9 @@ export function PublicMenuLayout({
               )}
             </div>
 
-            <p className="text-xs uppercase tracking-[0.2em] opacity-70">Powered by Menulia.net</p>
+            <p className="text-xs uppercase tracking-[0.2em]" style={{ color: footerTextColor }}>
+              Powered by Menulia.net
+            </p>
           </div>
         </footer>
       )}

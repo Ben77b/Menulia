@@ -67,7 +67,9 @@ export default async function PublicMenuPage({ params }: PageProps) {
     return <MenuAwaitingSync slugParam={slugParam} />;
   }
 
-  const { menu, links } = await fetchPublicMenuData(restaurant.id);
+  const { menu, flatCategories, hasNestedStructure, links } = await fetchPublicMenuData(
+    restaurant.id
+  );
   const theme = parseMenuThemeColors(restaurant.theme_colors);
   const fonts = resolveFonts(
     restaurant.typography && typeof restaurant.typography === "object"
@@ -86,6 +88,8 @@ export default async function PublicMenuPage({ params }: PageProps) {
       titleFont={fonts.titleFont}
       bodyFont={fonts.textFont}
       menu={menu}
+      flatCategories={flatCategories}
+      hasNestedStructure={hasNestedStructure}
       links={links}
     />
   );

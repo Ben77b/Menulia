@@ -45,15 +45,19 @@ function contrastRatio(luminanceA: number, luminanceB: number): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-/** Returns strictly #000000 or #FFFFFF — whichever yields the highest contrast ratio. */
+/**
+ * Absolute black/white text for a background.
+ * Light backgrounds (luminance > 0.5) → #000000, dark backgrounds → #FFFFFF.
+ */
 export function contrastingTextColor(backgroundHex: string): "#000000" | "#FFFFFF" {
+  return relativeLuminance(backgroundHex) > 0.5 ? BLACK : WHITE;
+}
+
+/** Highest WCAG contrast ratio pick — used for accent-on-accent edge cases. */
+export function highestContrastTextColor(backgroundHex: string): "#000000" | "#FFFFFF" {
   const backgroundLuminance = relativeLuminance(backgroundHex);
-  const blackLuminance = 0;
-  const whiteLuminance = 1;
-
-  const contrastWithBlack = contrastRatio(backgroundLuminance, blackLuminance);
-  const contrastWithWhite = contrastRatio(backgroundLuminance, whiteLuminance);
-
+  const contrastWithBlack = contrastRatio(backgroundLuminance, 0);
+  const contrastWithWhite = contrastRatio(backgroundLuminance, 1);
   return contrastWithWhite >= contrastWithBlack ? WHITE : BLACK;
 }
 

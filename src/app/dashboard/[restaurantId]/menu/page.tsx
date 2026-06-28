@@ -51,6 +51,7 @@ export default function MenuPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryLayoutType, setNewCategoryLayoutType] = useState<'stacked' | 'carousel'>('stacked');
   const [newCategoryParentId, setNewCategoryParentId] = useState<string>("");
+  const [nestUnderParent, setNestUnderParent] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
   const [draggedDishIndex, setDraggedDishIndex] = useState<number | null>(null);
@@ -197,7 +198,7 @@ export default function MenuPage() {
     try {
       const created = await createMenuCategory(newCategoryName, currentRestaurant.id, {
         layout_type: newCategoryLayoutType,
-        parent_id: newCategoryParentId || null,
+        parent_id: nestUnderParent && newCategoryParentId ? newCategoryParentId : null,
       });
 
       setCategories((prev) => [
@@ -214,6 +215,7 @@ export default function MenuPage() {
       setNewCategoryName("");
       setNewCategoryLayoutType("stacked");
       setNewCategoryParentId("");
+      setNestUnderParent(false);
       setShowAddCategory(false);
       await refreshRestaurants();
     } catch (error) {
@@ -587,25 +589,57 @@ export default function MenuPage() {
             className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
           />
-          <div className="mt-3">
-            <label className="mb-2 block text-sm font-medium text-gray-700">Category Level</label>
-            <select
-              value={newCategoryParentId}
-              onChange={(e) => setNewCategoryParentId(e.target.value)}
-              className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" onClick={handleAddCategory} disabled={!newCategoryName.trim()}>
+              Save Category
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setShowAddCategory(false);
+                setNestUnderParent(false);
+                setNewCategoryParentId("");
+              }}
             >
-              <option value="">Top level (Food, Drinks, etc.)</option>
-              {parentCategories.map((parent) => (
-                <option key={parent.id} value={parent.id}>
-                  Subcategory of {parent.name}
-                </option>
-              ))}
-            </select>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
+          <details className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+            <summary className="cursor-pointer text-sm font-medium text-gray-700">
+              Nest under parent section (Optional)
+            </summary>
+            <div className="mt-3 space-y-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={nestUnderParent}
+                  onChange={(e) => {
+                    setNestUnderParent(e.target.checked);
+                    if (!e.target.checked) setNewCategoryParentId("");
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                This is a subcategory
+              </label>
+              {nestUnderParent && (
+                <select
+                  value={newCategoryParentId}
+                  onChange={(e) => setNewCategoryParentId(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select parent section...</option>
+                  {parentCategories.map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </details>
           <div className="mt-3">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Display Layout
-            </label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Display Layout</label>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -631,14 +665,6 @@ export default function MenuPage() {
               </button>
             </div>
           </div>
-          <div className="flex gap-2 mt-3">
-            <Button size="sm" onClick={handleAddCategory}>
-              Add Category
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowAddCategory(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       )}
 
@@ -663,31 +689,35 @@ export default function MenuPage() {
                 <div className="flex items-center gap-3">
                   <GripVertical className="h-5 w-5 text-gray-400 cursor-move" />
                   <h2 className="text-lg font-semibold text-gray-900">{category.name}</h2>
-                  <span className="text-sm text-gray-500">
-                    ({category.items.length} dishes
-                    {category.parent_id
-                      ? ` · sub of ${categories.find((c) => c.id === category.parent_id)?.name ?? "parent"}`
-                      : " · top level"}
-                    )
-                  </span>
+                  <span className="text-sm text-gray-500">({category.items.length} dishes)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={category.parent_id ?? ""}
-                    onChange={(e) =>
-                      handleCategoryParentChange(category.id, e.target.value || null)
-                    }
-                    className="h-9 rounded-lg border border-gray-200 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="">Top level</option>
-                    {parentCategories
-                      .filter((parent) => parent.id !== category.id)
-                      .map((parent) => (
-                        <option key={parent.id} value={parent.id}>
-                          Under {parent.name}
-                        </option>
-                      ))}
-                  </select>
+                  <details className="relative">
+                    <summary className="cursor-pointer list-none rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50">
+                      Nesting
+                    </summary>
+                    <div className="absolute right-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+                      <label className="mb-1 block text-xs font-medium text-gray-700">
+                        Nest under parent (Optional)
+                      </label>
+                      <select
+                        value={category.parent_id ?? ""}
+                        onChange={(e) =>
+                          handleCategoryParentChange(category.id, e.target.value || null)
+                        }
+                        className="h-9 w-full rounded-lg border border-gray-200 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">Top level section</option>
+                        {parentCategories
+                          .filter((parent) => parent.id !== category.id)
+                          .map((parent) => (
+                            <option key={parent.id} value={parent.id}>
+                              Under {parent.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </details>
                   <div className="flex gap-1 mr-2">
                     <button
                       type="button"
