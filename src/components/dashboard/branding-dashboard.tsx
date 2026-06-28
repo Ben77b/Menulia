@@ -3,11 +3,12 @@
 import { useRef, useState } from "react";
 import { useDesign } from "@/contexts/design-context";
 import { useRestaurant } from "@/contexts/restaurant-context";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
 import { themeColorsFromDesign } from "@/lib/restaurant-design";
 import { normalizeHexColor, serializeMenuThemeColors } from "@/lib/theme-colors";
 import { serializeDisplayOptions } from "@/lib/display-options";
+import { isMissingColumnError } from "@/lib/restaurant-settings";
 import { Button } from "@/components/ui/button";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
@@ -71,6 +72,8 @@ export function BrandingDashboard() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const supabase = getSupabaseBrowserClient();
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -89,32 +92,58 @@ export function BrandingDashboard() {
     setSaveError(null);
 
     try {
-      const { error } = await supabase
+      const basePayload = {
+        logo: design.logo,
+        meta_title: design.metaTitle,
+        meta_description: design.metaDescription,
+        theme_colors: serializeMenuThemeColors(themeColorsFromDesign(design)),
+        typography: {
+          titleFont: design.titleFont,
+          textFont: design.textFont,
+        },
+        updated_at: new Date().toISOString(),
+      };
+
+      const fullPayload = {
+        ...basePayload,
+        ...serializeDisplayOptions({
+          showPrices: design.showPrices ?? true,
+          showDescriptions: design.showDescriptions ?? true,
+          showImages: design.showImages ?? true,
+          showDietary: design.showDietary ?? true,
+        }),
+      };
+
+      let displayColumnsMissing = false;
+
+      let { error } = await supabase
         .from("restaurants")
-        .update({
-          logo: design.logo,
-          meta_title: design.metaTitle,
-          meta_description: design.metaDescription,
-          theme_colors: serializeMenuThemeColors(themeColorsFromDesign(design)),
-          typography: {
-            titleFont: design.titleFont,
-            textFont: design.textFont,
-          },
-          ...serializeDisplayOptions({
-            showPrices: design.showPrices,
-            showDescriptions: design.showDescriptions,
-            showImages: design.showImages,
-            showDietary: design.showDietary,
-          }),
-          updated_at: new Date().toISOString(),
-        })
+        .update(fullPayload)
         .eq("id", currentRestaurant.id);
+
+      if (error && isMissingColumnError(error)) {
+        const retry = await supabase
+          .from("restaurants")
+          .update(basePayload)
+          .eq("id", currentRestaurant.id);
+        error = retry.error;
+        if (!error) {
+          displayColumnsMissing = true;
+        }
+      }
 
       if (error) throw error;
 
       await refreshRestaurants();
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
+
+      if (displayColumnsMissing) {
+        setSaveError(
+          "Theme saved, but display toggles need a database update. Run supabase/migrations/20250631000000_display_options.sql in Supabase, then save again."
+        );
+      } else {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+      }
     } catch (error) {
       console.error("Error saving branding:", error);
       setSaveError(formatSupabaseError(error));
@@ -168,25 +197,25 @@ export function BrandingDashboard() {
         <ToggleSwitch
           label="Show Prices"
           description="Display dish prices on the public menu"
-          checked={design.showPrices}
+          checked={design.showPrices ?? true}
           onChange={(checked) => updateDesign({ showPrices: checked })}
         />
         <ToggleSwitch
           label="Show Descriptions"
           description="Display dish descriptions beneath each item name"
-          checked={design.showDescriptions}
+          checked={design.showDescriptions ?? true}
           onChange={(checked) => updateDesign({ showDescriptions: checked })}
         />
         <ToggleSwitch
           label="Show Images"
           description="Display dish photos in carousel and stacked layouts"
-          checked={design.showImages}
+          checked={design.showImages ?? true}
           onChange={(checked) => updateDesign({ showImages: checked })}
         />
         <ToggleSwitch
           label="Show Dietary Info"
           description="Show dietary tags on dishes and the filter bar in the footer area"
-          checked={design.showDietary}
+          checked={design.showDietary ?? true}
           onChange={(checked) => updateDesign({ showDietary: checked })}
         />
       </div>

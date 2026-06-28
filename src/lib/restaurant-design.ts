@@ -1,3 +1,4 @@
+import { contrastingTextColor } from "./contrast";
 import { parseDisplayOptions } from "./display-options";
 import {
   DEFAULT_MENU_THEME,
