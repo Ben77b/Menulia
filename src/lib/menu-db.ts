@@ -6,6 +6,7 @@ export interface MenuCategoryRecord {
   name: string;
   layout_type: string;
   order_index: number;
+  parent_id: string | null;
   items: MenuDishRecord[];
 }
 
@@ -53,6 +54,7 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
         name: category.name,
         layout_type: category.layout_type ?? "stacked",
         order_index: category.order_index ?? 0,
+        parent_id: category.parent_id ?? null,
         items: (dishes ?? []).map((dish) => ({
           id: dish.id,
           name: dish.name,
@@ -69,7 +71,11 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
 
 export async function createMenuCategory(
   name: string,
-  restaurantId: string
+  restaurantId: string,
+  options?: {
+    layout_type?: "stacked" | "carousel";
+    parent_id?: string | null;
+  }
 ): Promise<MenuCategoryRecord> {
   const supabase = getSupabaseBrowserClient();
 
@@ -78,7 +84,8 @@ export async function createMenuCategory(
     .insert({
       name: name.trim(),
       restaurant_id: restaurantId,
-      layout_type: "stacked",
+      layout_type: options?.layout_type ?? "stacked",
+      parent_id: options?.parent_id ?? null,
     })
     .select("*")
     .single();
@@ -93,13 +100,14 @@ export async function createMenuCategory(
     name: data.name,
     layout_type: data.layout_type ?? "stacked",
     order_index: data.order_index ?? 0,
+    parent_id: data.parent_id ?? null,
     items: [],
   };
 }
 
 export async function updateMenuCategory(
   categoryId: string,
-  updates: Partial<Pick<MenuCategoryRecord, "name" | "layout_type" | "order_index">>
+  updates: Partial<Pick<MenuCategoryRecord, "name" | "layout_type" | "order_index" | "parent_id">>
 ): Promise<void> {
   const supabase = getSupabaseBrowserClient();
   const { error } = await supabase.from("categories").update(updates).eq("id", categoryId);

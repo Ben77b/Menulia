@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
-import { PublicMenuLayout, type PublicMenuCategory } from "@/components/public/public-menu-layout";
+import { PublicMenuLayout } from "@/components/public/public-menu-layout";
+import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 
 interface PageProps {
@@ -27,46 +28,6 @@ function resolveFonts(typography: Record<string, unknown> | null | undefined) {
   const textFont =
     (typeof typography?.textFont === "string" && typography.textFont) || titleFont;
   return { titleFont, textFont };
-}
-
-async function fetchMenuCategories(restaurantId: string): Promise<PublicMenuCategory[]> {
-  const supabase = createAnonClient();
-
-  const { data: categories, error: categoriesError } = await supabase
-    .from("categories")
-    .select("id, name, layout_type, order_index")
-    .eq("restaurant_id", restaurantId)
-    .order("order_index", { ascending: true });
-
-  if (categoriesError || !categories?.length) {
-    return [];
-  }
-
-  const results = await Promise.all(
-    categories.map(async (category) => {
-      const { data: dishes } = await supabase
-        .from("dishes")
-        .select("id, name, description, price, image, tags")
-        .eq("category_id", category.id)
-        .order("created_at", { ascending: true });
-
-      return {
-        id: category.id,
-        name: category.name,
-        layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
-        dishes: (dishes ?? []).map((dish) => ({
-          id: dish.id,
-          name: dish.name,
-          description: dish.description || "",
-          price: typeof dish.price === "number" ? dish.price : parseFloat(String(dish.price)) || 0,
-          image: dish.image ?? null,
-          tags: Array.isArray(dish.tags) ? dish.tags : [],
-        })),
-      } as PublicMenuCategory;
-    })
-  );
-
-  return results;
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -106,7 +67,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
     return <MenuAwaitingSync slugParam={slugParam} />;
   }
 
-  const categories = await fetchMenuCategories(restaurant.id);
+  const { menu, links } = await fetchPublicMenuData(restaurant.id);
   const theme = parseMenuThemeColors(restaurant.theme_colors);
   const fonts = resolveFonts(
     restaurant.typography && typeof restaurant.typography === "object"
@@ -124,7 +85,8 @@ export default async function PublicMenuPage({ params }: PageProps) {
       theme={theme}
       titleFont={fonts.titleFont}
       bodyFont={fonts.textFont}
-      categories={categories}
+      menu={menu}
+      links={links}
     />
   );
 }

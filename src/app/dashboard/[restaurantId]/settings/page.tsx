@@ -26,6 +26,7 @@ import {
   type OperatingHourData,
   type OperatingTimeSlot,
 } from "@/lib/operating-hours";
+import { fetchRestaurantLinks, saveRestaurantLinks } from "@/lib/restaurant-links";
 
 interface CustomLink {
   id: string;
@@ -87,9 +88,14 @@ export default function SettingsPage() {
 
       if (data) {
         setOperatingHours(normalizeOperatingHours(data.operating_hours));
-        if (data.custom_links) {
-          setCustomLinks(data.custom_links);
-        }
+        const links = await fetchRestaurantLinks(currentRestaurant.id);
+        setCustomLinks(
+          links.map((link) => ({
+            id: link.id,
+            label: link.label,
+            url: link.url,
+          }))
+        );
         if (data.footer_slogan) {
           setFooterSlogan(data.footer_slogan || "");
         }
@@ -132,10 +138,11 @@ export default function SettingsPage() {
     if (!currentRestaurant) return;
 
     try {
+      await saveRestaurantLinks(currentRestaurant.id, customLinks);
+
       const { error } = await supabase
         .from("restaurants")
         .update({
-          custom_links: customLinks,
           footer_slogan: footerSlogan,
           updated_at: new Date().toISOString(),
         })

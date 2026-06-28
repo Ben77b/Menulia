@@ -23,6 +23,7 @@ interface Category {
   id: string;
   name: string;
   layout_type: 'stacked' | 'carousel';
+  parent_id: string | null;
   items: MenuItem[];
 }
 
@@ -49,6 +50,7 @@ export default function MenuPage() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryLayoutType, setNewCategoryLayoutType] = useState<'stacked' | 'carousel'>('stacked');
+  const [newCategoryParentId, setNewCategoryParentId] = useState<string>("");
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
   const [draggedDishIndex, setDraggedDishIndex] = useState<number | null>(null);
@@ -147,7 +149,8 @@ export default function MenuPage() {
         categoriesWithItems.map((category) => ({
           id: category.id,
           name: category.name,
-          layout_type: category.layout_type,
+          layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
+          parent_id: category.parent_id,
           items: category.items.map((dish) => ({
             id: dish.id,
             name: dish.name,
@@ -192,20 +195,25 @@ export default function MenuPage() {
     setIsSaving(true);
 
     try {
-      const created = await createMenuCategory(newCategoryName, currentRestaurant.id);
+      const created = await createMenuCategory(newCategoryName, currentRestaurant.id, {
+        layout_type: newCategoryLayoutType,
+        parent_id: newCategoryParentId || null,
+      });
 
       setCategories((prev) => [
         ...prev,
         {
           id: created.id,
           name: created.name,
-          layout_type: created.layout_type,
+          layout_type: created.layout_type === "carousel" ? "carousel" : "stacked",
+          parent_id: created.parent_id,
           items: [],
         },
       ]);
 
       setNewCategoryName("");
       setNewCategoryLayoutType("stacked");
+      setNewCategoryParentId("");
       setShowAddCategory(false);
       await refreshRestaurants();
     } catch (error) {
@@ -518,6 +526,23 @@ export default function MenuPage() {
     setDraggedDishIndex(null);
   }
 
+  async function handleCategoryParentChange(categoryId: string, parentId: string | null) {
+    setCategories((prev) =>
+      prev.map((cat) => (cat.id === categoryId ? { ...cat, parent_id: parentId } : cat))
+    );
+
+    try {
+      await updateMenuCategory(categoryId, { parent_id: parentId });
+      await refreshRestaurants();
+    } catch (error) {
+      console.error("Error updating category parent:", error);
+      await loadMenuData();
+      alert("Failed to update category parent. Please try again.");
+    }
+  }
+
+  const parentCategories = categories.filter((category) => !category.parent_id);
+
   return (
     <div className="space-y-6">
       <div>
@@ -562,6 +587,21 @@ export default function MenuPage() {
             className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
           />
+          <div className="mt-3">
+            <label className="mb-2 block text-sm font-medium text-gray-700">Category Level</label>
+            <select
+              value={newCategoryParentId}
+              onChange={(e) => setNewCategoryParentId(e.target.value)}
+              className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Top level (Food, Drinks, etc.)</option>
+              {parentCategories.map((parent) => (
+                <option key={parent.id} value={parent.id}>
+                  Subcategory of {parent.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="mt-3">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Display Layout
@@ -623,9 +663,31 @@ export default function MenuPage() {
                 <div className="flex items-center gap-3">
                   <GripVertical className="h-5 w-5 text-gray-400 cursor-move" />
                   <h2 className="text-lg font-semibold text-gray-900">{category.name}</h2>
-                  <span className="text-sm text-gray-500">({category.items.length} dishes)</span>
+                  <span className="text-sm text-gray-500">
+                    ({category.items.length} dishes
+                    {category.parent_id
+                      ? ` · sub of ${categories.find((c) => c.id === category.parent_id)?.name ?? "parent"}`
+                      : " · top level"}
+                    )
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <select
+                    value={category.parent_id ?? ""}
+                    onChange={(e) =>
+                      handleCategoryParentChange(category.id, e.target.value || null)
+                    }
+                    className="h-9 rounded-lg border border-gray-200 px-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Top level</option>
+                    {parentCategories
+                      .filter((parent) => parent.id !== category.id)
+                      .map((parent) => (
+                        <option key={parent.id} value={parent.id}>
+                          Under {parent.name}
+                        </option>
+                      ))}
+                  </select>
                   <div className="flex gap-1 mr-2">
                     <button
                       type="button"

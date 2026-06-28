@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT NOT NULL,
   order_index INTEGER DEFAULT 0,
   layout_type TEXT DEFAULT 'stacked' CHECK (layout_type IN ('stacked', 'carousel')),
+  parent_id UUID REFERENCES categories(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -82,17 +83,32 @@ CREATE TABLE IF NOT EXISTS dishes (
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_categories_restaurant_id ON categories(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
 CREATE INDEX IF NOT EXISTS idx_dishes_category_id ON dishes(category_id);
+
+CREATE TABLE IF NOT EXISTS restaurant_links (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  url TEXT NOT NULL,
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_restaurant_links_restaurant_id ON restaurant_links(restaurant_id);
 
 -- Enable Row Level Security
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dishes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurant_links ENABLE ROW LEVEL SECURITY;
 
 -- Create policies (for now, allow all - can be tightened later)
 CREATE POLICY "Enable all access for restaurants" ON restaurants FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for categories" ON categories FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Enable all access for dishes" ON dishes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all access for restaurant_links" ON restaurant_links FOR ALL USING (true) WITH CHECK (true);
 
 -- Migration: Rename 'image' column to 'image_url' if it exists and is named 'image'
 DO $$
