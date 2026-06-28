@@ -1,15 +1,9 @@
-import type { CustomLink, OperatingHourData, RestaurantFull } from "./types";
+import type { CustomLink, RestaurantFull } from "./types";
+import type { OperatingHourData } from "./operating-hours";
+import { defaultOperatingHours, formatOperatingHoursDisplay, normalizeOperatingHours } from "./operating-hours";
 import { DEFAULT_DESIGN, type RestaurantDesign } from "./restaurant-design";
 
-export const DEFAULT_OPERATING_HOURS: OperatingHourData[] = [
-  { day: "Monday", isOpen: true, startTime: "12:00", endTime: "22:00" },
-  { day: "Tuesday", isOpen: true, startTime: "12:00", endTime: "22:00" },
-  { day: "Wednesday", isOpen: true, startTime: "12:00", endTime: "22:00" },
-  { day: "Thursday", isOpen: true, startTime: "12:00", endTime: "22:00" },
-  { day: "Friday", isOpen: true, startTime: "12:00", endTime: "22:00" },
-  { day: "Saturday", isOpen: true, startTime: "12:00", endTime: "22:00" },
-  { day: "Sunday", isOpen: true, startTime: "12:00", endTime: "22:00" },
-];
+export const DEFAULT_OPERATING_HOURS: OperatingHourData[] = defaultOperatingHours();
 
 export const DEFAULT_FOOTER_NOTE =
   "We look forward to serving you. Please inform your server of any allergies.";
@@ -62,10 +56,9 @@ function resolveFontFamily(restaurant: RestaurantFull): { titleFont: string; tex
 }
 
 export function withPublicMenuDefaults(restaurant: RestaurantFull): RestaurantFull {
-  const operating_hours =
-    Array.isArray(restaurant.operating_hours) && restaurant.operating_hours.length > 0
-      ? restaurant.operating_hours
-      : DEFAULT_OPERATING_HOURS;
+  const operating_hours = normalizeOperatingHours(restaurant.operating_hours);
+  const formattedHours =
+    restaurant.hours?.trim() || formatOperatingHoursDisplay(operating_hours);
 
   const categories = (restaurant.categories ?? []).map((category) => ({
     ...category,
@@ -84,6 +77,7 @@ export function withPublicMenuDefaults(restaurant: RestaurantFull): RestaurantFu
     logo: restaurant.logo ?? null,
     custom_links: normalizeCustomLinks(restaurant),
     operating_hours,
+    hours: formattedHours,
     footer_slogan: restaurant.footer_slogan || DEFAULT_FOOTER_NOTE,
     categories,
     phone: restaurant.phone ?? restaurant.contact_email ?? null,
@@ -92,6 +86,10 @@ export function withPublicMenuDefaults(restaurant: RestaurantFull): RestaurantFu
 }
 
 export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDesign {
+  const operating_hours = normalizeOperatingHours(restaurant.operating_hours);
+  const formattedHours =
+    restaurant.hours?.trim() || formatOperatingHoursDisplay(operating_hours);
+
   const theme =
     restaurant.theme_colors && typeof restaurant.theme_colors === "object"
       ? (restaurant.theme_colors as Record<string, string | boolean>)
@@ -139,7 +137,7 @@ export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDes
     restaurantName: restaurant.name,
     slogan: restaurant.footer_slogan ?? "",
     location: restaurant.location ?? "",
-    hours: restaurant.hours ?? "",
+    hours: formattedHours,
     contactInfo: restaurant.contact_info ?? "",
     titleFont: fonts.titleFont,
     textFont: fonts.textFont,

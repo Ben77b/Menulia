@@ -5,14 +5,27 @@ import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { Clock, Link2, Trash2, Plus, Building2, User, LogOut, Lock, Download, AlertTriangle, CreditCard } from "lucide-react";
-
-interface OperatingHour {
-  day: string;
-  isOpen: boolean;
-  startTime: string;
-  endTime: string;
-}
+import {
+  Clock,
+  Link2,
+  Trash2,
+  Plus,
+  Building2,
+  User,
+  LogOut,
+  Lock,
+  Download,
+  AlertTriangle,
+  CreditCard,
+} from "lucide-react";
+import {
+  defaultOperatingHours,
+  formatOperatingHoursDisplay,
+  normalizeOperatingHours,
+  newTimeSlot,
+  type OperatingHourData,
+  type OperatingTimeSlot,
+} from "@/lib/operating-hours";
 
 interface CustomLink {
   id: string;
@@ -23,20 +36,11 @@ interface CustomLink {
 export default function SettingsPage() {
   const router = useRouter();
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
-  const [operatingHours, setOperatingHours] = useState<OperatingHour[]>([
-    { day: "Monday", isOpen: true, startTime: "09:00", endTime: "22:00" },
-    { day: "Tuesday", isOpen: true, startTime: "09:00", endTime: "22:00" },
-    { day: "Wednesday", isOpen: true, startTime: "09:00", endTime: "22:00" },
-    { day: "Thursday", isOpen: true, startTime: "09:00", endTime: "22:00" },
-    { day: "Friday", isOpen: true, startTime: "09:00", endTime: "23:00" },
-    { day: "Saturday", isOpen: true, startTime: "10:00", endTime: "23:00" },
-    { day: "Sunday", isOpen: true, startTime: "10:00", endTime: "21:00" },
-  ]);
+  const [operatingHours, setOperatingHours] = useState<OperatingHourData[]>(defaultOperatingHours());
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
   const [restaurantName, setRestaurantName] = useState("");
   const [restaurantLocation, setRestaurantLocation] = useState("");
-  const [restaurantHours, setRestaurantHours] = useState("");
   const [restaurantContactInfo, setRestaurantContactInfo] = useState("");
   const [restaurantSlug, setRestaurantSlug] = useState("");
   const [slugError, setSlugError] = useState("");
@@ -57,13 +61,15 @@ export default function SettingsPage() {
 
   async function loadUserData() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || "");
         setUserFullName(user.user_metadata?.full_name || "");
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error("Error loading user data:", error);
     }
   }
 
@@ -80,9 +86,7 @@ export default function SettingsPage() {
       if (error) throw error;
 
       if (data) {
-        if (data.operating_hours) {
-          setOperatingHours(data.operating_hours);
-        }
+        setOperatingHours(normalizeOperatingHours(data.operating_hours));
         if (data.custom_links) {
           setCustomLinks(data.custom_links);
         }
@@ -93,28 +97,33 @@ export default function SettingsPage() {
           setRestaurantName(data.name);
         }
         setRestaurantLocation(data.location ?? "");
-        setRestaurantHours(data.hours ?? "");
         setRestaurantContactInfo(data.contact_info ?? "");
         setRestaurantSlug(typeof data.slug === "string" ? data.slug : "");
       }
     } catch (error) {
-      console.error('Error loading restaurant data:', error);
+      console.error("Error loading restaurant data:", error);
     }
   }
 
   async function saveOperatingHours() {
     if (!currentRestaurant) return;
 
+    const hoursText = formatOperatingHoursDisplay(operatingHours);
+
     try {
       const { error } = await supabase
-        .from('restaurants')
-        .update({ operating_hours: operatingHours, updated_at: new Date().toISOString() })
-        .eq('id', currentRestaurant.id);
+        .from("restaurants")
+        .update({
+          operating_hours: operatingHours,
+          hours: hoursText,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", currentRestaurant.id);
 
       if (error) throw error;
       alert("Operating hours saved!");
     } catch (error) {
-      console.error('Error saving operating hours:', error);
+      console.error("Error saving operating hours:", error);
       alert("Failed to save operating hours");
     }
   }
@@ -124,18 +133,18 @@ export default function SettingsPage() {
 
     try {
       const { error } = await supabase
-        .from('restaurants')
+        .from("restaurants")
         .update({
           custom_links: customLinks,
           footer_slogan: footerSlogan,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', currentRestaurant.id);
+        .eq("id", currentRestaurant.id);
 
       if (error) throw error;
       alert("Footer settings saved!");
     } catch (error) {
-      console.error('Error saving footer settings:', error);
+      console.error("Error saving footer settings:", error);
       alert("Failed to save footer settings");
     }
   }
@@ -150,7 +159,6 @@ export default function SettingsPage() {
           name: restaurantName,
           slug: restaurantSlug,
           location: restaurantLocation,
-          hours: restaurantHours,
           contact_info: restaurantContactInfo,
           updated_at: new Date().toISOString(),
         })
@@ -160,15 +168,71 @@ export default function SettingsPage() {
       await refreshRestaurants();
       alert("Restaurant profile saved!");
     } catch (error) {
-      console.error('Error saving restaurant profile:', error);
+      console.error("Error saving restaurant profile:", error);
       alert("Failed to save restaurant profile");
     }
   }
 
-  function handleOperatingHourChange(index: number, field: keyof OperatingHour, value: any) {
-    const newHours = [...operatingHours];
-    newHours[index] = { ...newHours[index], [field]: value };
-    setOperatingHours(newHours);
+  function handleDayOpenChange(dayIndex: number, isOpen: boolean) {
+    setOperatingHours((prev) =>
+      prev.map((day, index) => {
+        if (index !== dayIndex) return day;
+        return {
+          ...day,
+          isOpen,
+          slots:
+            isOpen && day.slots.length === 0
+              ? [newTimeSlot(day.day, 1)]
+              : day.slots,
+        };
+      })
+    );
+  }
+
+  function handleSlotChange(
+    dayIndex: number,
+    slotIndex: number,
+    field: keyof OperatingTimeSlot,
+    value: string
+  ) {
+    setOperatingHours((prev) =>
+      prev.map((day, index) => {
+        if (index !== dayIndex) return day;
+        return {
+          ...day,
+          slots: day.slots.map((slot, sIndex) =>
+            sIndex === slotIndex ? { ...slot, [field]: value } : slot
+          ),
+        };
+      })
+    );
+  }
+
+  function addTimeSlot(dayIndex: number) {
+    setOperatingHours((prev) =>
+      prev.map((day, index) => {
+        if (index !== dayIndex) return day;
+        return {
+          ...day,
+          isOpen: true,
+          slots: [...day.slots, newTimeSlot(day.day, day.slots.length + 1)],
+        };
+      })
+    );
+  }
+
+  function removeTimeSlot(dayIndex: number, slotIndex: number) {
+    setOperatingHours((prev) =>
+      prev.map((day, index) => {
+        if (index !== dayIndex) return day;
+        const nextSlots = day.slots.filter((_, sIndex) => sIndex !== slotIndex);
+        return {
+          ...day,
+          isOpen: nextSlots.length > 0 ? day.isOpen : false,
+          slots: nextSlots,
+        };
+      })
+    );
   }
 
   function addCustomLink() {
@@ -181,19 +245,22 @@ export default function SettingsPage() {
   }
 
   function removeCustomLink(id: string) {
-    setCustomLinks(customLinks.filter(link => link.id !== id));
+    setCustomLinks(customLinks.filter((link) => link.id !== id));
   }
 
   function updateCustomLink(id: string, field: keyof CustomLink, value: string) {
-    setCustomLinks(customLinks.map(link => 
-      link.id === id ? { ...link, [field]: value } : link
-    ));
+    setCustomLinks(
+      customLinks.map((link) => (link.id === id ? { ...link, [field]: value } : link))
+    );
   }
 
   function handleSlugChange(value: string) {
-    const formatted = value.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-');
+    const formatted = value
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/-+/g, "-");
     setRestaurantSlug(formatted);
-    
+
     if (formatted && !slugRegex.test(formatted)) {
       setSlugError("Slug must contain only lowercase letters, numbers, and hyphens");
     } else {
@@ -203,16 +270,20 @@ export default function SettingsPage() {
 
   async function saveAccountDetails() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         await supabase.auth.updateUser({
           data: { full_name: userFullName },
-          email: userEmail
+          email: userEmail,
         });
-        alert("Account details saved! If you changed your email, you will need to verify the new address before the change takes effect.");
+        alert(
+          "Account details saved! If you changed your email, you will need to verify the new address before the change takes effect."
+        );
       }
     } catch (error) {
-      console.error('Error saving account details:', error);
+      console.error("Error saving account details:", error);
       alert("Failed to save account details");
     }
   }
@@ -220,9 +291,9 @@ export default function SettingsPage() {
   async function handleLogout() {
     try {
       await supabase.auth.signOut();
-      router.push('/');
+      router.push("/");
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error("Error logging out:", error);
       alert("Failed to log out");
     }
   }
@@ -232,18 +303,19 @@ export default function SettingsPage() {
   }
 
   async function handleDeleteAccount() {
-    const confirmed = confirm("Are you sure? This will permanently delete your restaurant, menu, and account data. This cannot be undone.");
+    const confirmed = confirm(
+      "Are you sure? This will permanently delete your restaurant, menu, and account data. This cannot be undone."
+    );
     if (confirmed) {
       try {
         await supabase.auth.signOut();
-        router.push('/');
+        router.push("/");
       } catch (error) {
-        console.error('Error deleting account:', error);
+        console.error("Error deleting account:", error);
         alert("Failed to delete account");
       }
     }
   }
-
 
   return (
     <div className="space-y-6">
@@ -253,173 +325,194 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Restaurant Profile */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
             <Building2 className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Restaurant Profile</h2>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Update your restaurant's basic information</p>
-          
+          <p className="mb-4 text-sm text-gray-600">Update your restaurant&apos;s basic information</p>
+
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Restaurant Name</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Restaurant Name</label>
               <input
                 type="text"
                 value={restaurantName}
                 onChange={(e) => setRestaurantName(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Your Restaurant Name"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Location</label>
               <input
                 type="text"
                 value={restaurantLocation}
                 onChange={(e) => setRestaurantLocation(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="123 Main Street, Dublin"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Hours (public display)</label>
-              <input
-                type="text"
-                value={restaurantHours}
-                onChange={(e) => setRestaurantHours(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                placeholder="Mon–Fri 12:00–22:00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Info</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Contact Info</label>
               <input
                 type="text"
                 value={restaurantContactInfo}
                 onChange={(e) => setRestaurantContactInfo(e.target.value)}
-                className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="+353 1 234 5678 · hello@restaurant.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">URL Slug</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">URL Slug</label>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">menulia.net/menu/</span>
                 <input
                   type="text"
                   value={restaurantSlug}
                   onChange={(e) => handleSlugChange(e.target.value)}
-                  className="flex-1 h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="h-10 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="your-restaurant-slug"
                 />
               </div>
-              {slugError && (
-                <p className="mt-1 text-xs text-red-600">{slugError}</p>
-              )}
+              {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
               <p className="mt-1 text-xs text-gray-500">
                 Use only lowercase letters, numbers, and hyphens. No spaces.
               </p>
             </div>
           </div>
-          
-          <Button className="mt-4" onClick={saveRestaurantProfile}>Save Profile</Button>
+
+          <Button className="mt-4" onClick={saveRestaurantProfile}>
+            Save Profile
+          </Button>
         </div>
 
-        {/* Operating Hours */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
             <Clock className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Operating Hours</h2>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Set your restaurant's opening hours for each day of the week</p>
-          
-          <div className="space-y-3">
-            {operatingHours.map((hour, index) => (
-              <div key={hour.day} className="flex items-center gap-4 p-3 border border-gray-200 rounded-lg">
-                <div className="w-32 font-medium text-gray-900">{hour.day}</div>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={hour.isOpen}
-                    onChange={(e) => handleOperatingHourChange(index, 'isOpen', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-gray-700">Open</span>
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="time"
-                    value={hour.startTime}
-                    onChange={(e) => handleOperatingHourChange(index, 'startTime', e.target.value)}
-                    disabled={!hour.isOpen}
-                    className="h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  <span className="text-gray-500">to</span>
-                  <input
-                    type="time"
-                    value={hour.endTime}
-                    onChange={(e) => handleOperatingHourChange(index, 'endTime', e.target.value)}
-                    disabled={!hour.isOpen}
-                    className="h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
+          <p className="mb-4 text-sm text-gray-600">
+            Set opening hours for each day. Add multiple time ranges for split schedules (e.g. lunch
+            and dinner service).
+          </p>
+
+          <div className="space-y-4">
+            {operatingHours.map((day, dayIndex) => (
+              <div key={day.day} className="rounded-lg border border-gray-200 p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="w-32 font-medium text-gray-900">{day.day}</div>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={day.isOpen}
+                      onChange={(e) => handleDayOpenChange(dayIndex, e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">Open</span>
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addTimeSlot(dayIndex)}
+                    disabled={!day.isOpen}
+                    className="gap-1"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Time Range
+                  </Button>
                 </div>
+
+                {day.isOpen ? (
+                  <div className="space-y-2">
+                    {day.slots.map((slot, slotIndex) => (
+                      <div key={slot.id} className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="time"
+                          value={slot.startTime}
+                          onChange={(e) =>
+                            handleSlotChange(dayIndex, slotIndex, "startTime", e.target.value)
+                          }
+                          className="h-10 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <span className="text-gray-500">to</span>
+                        <input
+                          type="time"
+                          value={slot.endTime}
+                          onChange={(e) =>
+                            handleSlotChange(dayIndex, slotIndex, "endTime", e.target.value)
+                          }
+                          className="h-10 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        {day.slots.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTimeSlot(dayIndex, slotIndex)}
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Closed</p>
+                )}
               </div>
             ))}
           </div>
-          
-          <Button className="mt-4" onClick={saveOperatingHours}>Save Operating Hours</Button>
+
+          <Button className="mt-4" onClick={saveOperatingHours}>
+            Save Operating Hours
+          </Button>
         </div>
 
-        {/* Public Page Footer & Links Settings */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
             <Link2 className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Public Page Footer & Links Settings</h2>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Configure external links and footer content for your public menu page</p>
-          
+          <p className="mb-4 text-sm text-gray-600">
+            Configure external links and footer content for your public menu page
+          </p>
+
           <div className="grid grid-cols-2 gap-6">
-            {/* Left: Custom Links */}
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addCustomLink}
-                  className="gap-1"
-                >
+                <Button type="button" variant="outline" size="sm" onClick={addCustomLink} className="gap-1">
                   <Plus className="h-4 w-4" />
                   Add Link
                 </Button>
               </div>
-              
+
               {customLinks.length === 0 ? (
-                <p className="text-xs text-gray-500 italic">No custom links added yet</p>
+                <p className="text-xs italic text-gray-500">No custom links added yet</p>
               ) : (
                 <div className="space-y-3">
                   {customLinks.map((link) => (
-                    <div key={link.id} className="flex items-start gap-2 p-3 border border-gray-200 rounded-lg">
+                    <div key={link.id} className="flex items-start gap-2 rounded-lg border border-gray-200 p-3">
                       <div className="flex-1 space-y-2">
                         <input
                           type="text"
                           value={link.label}
-                          onChange={(e) => updateCustomLink(link.id, 'label', e.target.value)}
+                          onChange={(e) => updateCustomLink(link.id, "label", e.target.value)}
                           placeholder="Link label (e.g., TripAdvisor)"
-                          className="w-full h-9 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <input
                           type="url"
                           value={link.url}
-                          onChange={(e) => updateCustomLink(link.id, 'url', e.target.value)}
+                          onChange={(e) => updateCustomLink(link.id, "url", e.target.value)}
                           placeholder="https://..."
-                          className="w-full h-9 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <Button
@@ -427,7 +520,7 @@ export default function SettingsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => removeCustomLink(link.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -437,64 +530,65 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {/* Right: Footer Slogan */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3">Footer Slogan / Note</h3>
-              <p className="text-xs text-gray-500 mb-3">
-                Add a custom note to display in your menu footer
-              </p>
+              <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Slogan / Note</h3>
+              <p className="mb-3 text-xs text-gray-500">Add a custom note to display in your menu footer</p>
               <textarea
                 value={footerSlogan}
                 onChange={(e) => setFooterSlogan(e.target.value)}
                 placeholder="We recommend reservations after 12 PM"
                 rows={6}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
-          
-          <Button className="mt-4" onClick={saveFooterSettings}>Save Footer Settings</Button>
+
+          <Button className="mt-4" onClick={saveFooterSettings}>
+            Save Footer Settings
+          </Button>
         </div>
 
-        {/* Account Management */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
             <User className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Account Management</h2>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Manage your personal SaaS account details and security settings</p>
+          <p className="mb-4 text-sm text-gray-600">
+            Manage your personal SaaS account details and security settings
+          </p>
 
           <div className="space-y-6">
-            {/* Personal Details */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-gray-700">Personal Details</h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700">Full Name</label>
                 <input
                   type="text"
                   value={userFullName}
                   onChange={(e) => setUserFullName(e.target.value)}
-                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Your full name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Account Email</label>
+                <label className="mb-2 block text-sm font-medium text-gray-700">Account Email</label>
                 <input
                   type="email"
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
-                  className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="your@email.com"
                 />
-                <p className="mt-1 text-xs text-gray-500">If you change your email, you will need to verify the new address before the change takes effect.</p>
+                <p className="mt-1 text-xs text-gray-500">
+                  If you change your email, you will need to verify the new address before the change
+                  takes effect.
+                </p>
               </div>
               <Button onClick={saveAccountDetails}>Save Account Details</Button>
             </div>
 
-            {/* Subscription */}
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Subscription</h3>
+              <h3 className="mb-4 text-sm font-medium text-gray-700">Subscription</h3>
               <Button variant="outline" className="gap-2">
                 <CreditCard className="h-4 w-4" />
                 Manage Billing
@@ -502,7 +596,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Session & Security</h3>
+              <h3 className="mb-4 text-sm font-medium text-gray-700">Session & Security</h3>
               <div className="flex gap-3">
                 <Button variant="outline" className="gap-2">
                   <Lock className="h-4 w-4" />
@@ -517,19 +611,22 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Danger Zone */}
-        <div className="bg-white rounded-xl border-2 border-red-200 shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="rounded-xl border border-2 border-red-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-red-600" />
             <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
           </div>
-          <p className="text-sm text-gray-600 mb-4">Irreversible and destructive actions for your account and data</p>
+          <p className="mb-4 text-sm text-gray-600">
+            Irreversible and destructive actions for your account and data
+          </p>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100">
+            <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-900">Download My Data</h3>
-                <p className="text-xs text-gray-600">Export all your restaurant and account data (GDPR/CCPA compliance)</p>
+                <p className="text-xs text-gray-600">
+                  Export all your restaurant and account data (GDPR/CCPA compliance)
+                </p>
               </div>
               <Button variant="outline" className="gap-2" onClick={handleDownloadData}>
                 <Download className="h-4 w-4" />
@@ -537,10 +634,12 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-100">
+            <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
               <div>
                 <h3 className="text-sm font-medium text-red-900">Delete Account</h3>
-                <p className="text-xs text-gray-600">Permanently delete your restaurant, menu, and account data</p>
+                <p className="text-xs text-gray-600">
+                  Permanently delete your restaurant, menu, and account data
+                </p>
               </div>
               <Button variant="danger" className="gap-2" onClick={handleDeleteAccount}>
                 <Trash2 className="h-4 w-4" />

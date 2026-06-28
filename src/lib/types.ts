@@ -46,12 +46,8 @@ export interface CustomLink {
   url: string;
 }
 
-export interface OperatingHourData {
-  day: string;
-  isOpen: boolean;
-  startTime: string;
-  endTime: string;
-}
+import type { OperatingHourData } from "./operating-hours";
+export type { OperatingHourData, OperatingTimeSlot } from "./operating-hours";
 
 export interface MenuCategory {
   id: string;
