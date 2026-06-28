@@ -19,6 +19,7 @@ interface PublicMenuLayoutProps {
   location: string;
   hours: string;
   contactInfo: string;
+  footerSlogan?: string;
   theme: MenuThemeColors;
   titleFont: string;
   bodyFont: string;
@@ -81,6 +82,7 @@ export function PublicMenuLayout({
   location,
   hours,
   contactInfo,
+  footerSlogan = "",
   theme,
   titleFont,
   bodyFont,
@@ -193,7 +195,7 @@ export function PublicMenuLayout({
         )}
       </main>
 
-      {(location || hours || contactPhone || contactEmail) && (
+      {(location || hours || contactPhone || contactEmail || footerSlogan) && (
         <footer
           className="border-t border-black/5 px-6 py-12"
           style={{ backgroundColor: theme.footerBackgroundColor, color: footerTextColor }}
@@ -245,6 +247,15 @@ export function PublicMenuLayout({
                 </div>
               )}
             </div>
+
+            {footerSlogan && (
+              <p
+                className="mx-auto max-w-2xl text-sm leading-relaxed"
+                style={{ color: footerTextColor, fontFamily: bodyFont }}
+              >
+                {footerSlogan}
+              </p>
+            )}
 
             <p className="text-xs uppercase tracking-[0.2em]" style={{ color: footerTextColor }}>
               Powered by Menulia.net

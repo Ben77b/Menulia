@@ -1,6 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { compileHoursSchedule, type HoursScheduleBlock } from "./hours-schedule";
 import { formatContactInfo } from "./contact-info";
+import { saveRestaurantLinks, type RestaurantLinkInput } from "./restaurant-links";
 
 export interface RestaurantSettingsForm {
   name: string;
@@ -10,6 +11,8 @@ export interface RestaurantSettingsForm {
   phone: string;
   email: string;
   scheduleBlocks: HoursScheduleBlock[];
+  footerSlogan: string;
+  links: RestaurantLinkInput[];
 }
 
 export interface RestaurantSettingsRecord {
@@ -170,4 +173,35 @@ export async function saveRestaurantSettings(
     normalizedSlug: slugUnchanged ? undefined : normalizedSlug,
     slugUnchanged,
   };
+}
+
+async function saveOptionalFooterSlogan(
+  supabase: SupabaseClient,
+  restaurantId: string,
+  footerSlogan: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("restaurants")
+    .update({
+      footer_slogan: footerSlogan.trim(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", restaurantId);
+
+  if (error && !isMissingColumnError(error)) {
+    throw new Error(formatSchemaError(error));
+  }
+}
+
+export async function saveFullRestaurantSettings(
+  supabase: SupabaseClient,
+  restaurantId: string,
+  form: RestaurantSettingsForm
+): Promise<{ updatedId: string; normalizedSlug?: string; slugUnchanged: boolean }> {
+  const profileResult = await saveRestaurantSettings(supabase, restaurantId, form);
+
+  await saveOptionalFooterSlogan(supabase, restaurantId, form.footerSlogan);
+  await saveRestaurantLinks(restaurantId, form.links);
+
+  return profileResult;
 }

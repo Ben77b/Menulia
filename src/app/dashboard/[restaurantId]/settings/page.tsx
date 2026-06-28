@@ -32,9 +32,9 @@ import {
 } from "@/lib/restaurant-slug";
 import {
   loadRestaurantSettings,
-  saveRestaurantSettings,
+  saveFullRestaurantSettings,
 } from "@/lib/restaurant-settings";
-import { fetchRestaurantLinks, saveRestaurantLinks } from "@/lib/restaurant-links";
+import { fetchRestaurantLinks } from "@/lib/restaurant-links";
 
 interface CustomLink {
   id: string;
@@ -165,12 +165,11 @@ export default function SettingsPage() {
           const message = slugCollisionMessage();
           setSlugError(message);
           setSaveError(message);
-          alert(message);
           return;
         }
       }
 
-      const result = await saveRestaurantSettings(supabase, restaurantId, {
+      const result = await saveFullRestaurantSettings(supabase, restaurantId, {
         name: restaurantName,
         slug: restaurantSlug,
         originalSlug,
@@ -178,12 +177,21 @@ export default function SettingsPage() {
         phone: restaurantPhone,
         email: restaurantEmail,
         scheduleBlocks,
+        footerSlogan,
+        links: customLinks,
       });
 
       if (result.normalizedSlug) {
         setOriginalSlug(result.normalizedSlug);
         setRestaurantSlug(result.normalizedSlug);
       }
+
+      await supabase.auth.updateUser({
+        data: { full_name: userFullName.trim() },
+        ...(userEmail.trim() && userEmail.trim() !== user.email
+          ? { email: userEmail.trim() }
+          : {}),
+      });
 
       await refreshRestaurants();
       await loadRestaurantData();
@@ -193,35 +201,8 @@ export default function SettingsPage() {
       console.error("[SettingsSave:Failed]", error);
       const message = formatRestaurantSettingsError(error);
       setSaveError(message);
-      alert(`Save failed: ${message}`);
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function saveFooterSettings() {
-    if (!currentRestaurant) return;
-
-    try {
-      await saveRestaurantLinks(currentRestaurant.id, customLinks);
-
-      const { error } = await supabase
-        .from("restaurants")
-        .update({
-          footer_slogan: footerSlogan,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", currentRestaurant.id);
-
-      if (error) {
-        alert(formatRestaurantSettingsError(error));
-        return;
-      }
-
-      alert("Footer settings saved!");
-    } catch (error) {
-      console.error("Error saving footer settings:", error);
-      alert("Failed to save footer settings");
     }
   }
 
@@ -254,26 +235,6 @@ export default function SettingsPage() {
     setCustomLinks(
       customLinks.map((link) => (link.id === id ? { ...link, [field]: value } : link))
     );
-  }
-
-  async function saveAccountDetails() {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.auth.updateUser({
-          data: { full_name: userFullName },
-          email: userEmail,
-        });
-        alert(
-          "Account details saved! If you changed your email, you will need to verify the new address before the change takes effect."
-        );
-      }
-    } catch (error) {
-      console.error("Error saving account details:", error);
-      alert("Failed to save account details");
-    }
   }
 
   async function handleLogout() {
@@ -310,7 +271,9 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-          <p className="mt-1 text-sm text-gray-600">Manage your restaurant profile and operations</p>
+          <p className="mt-1 text-sm text-gray-600">
+            Update your restaurant profile, hours, links, and account details — then use Save Changes
+          </p>
         </div>
         <Button
           size="lg"
@@ -431,7 +394,8 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-gray-900">Public Page Footer & Links Settings</h2>
           </div>
           <p className="mb-4 text-sm text-gray-600">
-            Configure external links and footer content for your public menu page
+            Links appear in the hamburger menu on your public page. Both label and URL are required
+            for each link.
           </p>
 
           <div className="grid grid-cols-2 gap-6">
@@ -493,10 +457,6 @@ export default function SettingsPage() {
               />
             </div>
           </div>
-
-          <Button className="mt-4" onClick={saveFooterSettings}>
-            Save Footer Settings
-          </Button>
         </div>
 
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -531,11 +491,10 @@ export default function SettingsPage() {
                   placeholder="your@email.com"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  If you change your email, you will need to verify the new address before the change
-                  takes effect.
+                  Account name and email are saved together with the Save Changes button at the top
+                  or bottom of this page. Email changes may require verification.
                 </p>
               </div>
-              <Button onClick={saveAccountDetails}>Save Account Details</Button>
             </div>
 
             <div className="border-t border-gray-200 pt-6">
@@ -598,6 +557,17 @@ export default function SettingsPage() {
               </Button>
             </div>
           </div>
+        </div>
+
+        <div className="flex justify-end border-t border-gray-100 pt-6">
+          <Button
+            size="lg"
+            className="px-8"
+            onClick={saveChanges}
+            disabled={saving || !currentRestaurant?.id || Boolean(slugError)}
+          >
+            {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
+          </Button>
         </div>
       </div>
     </div>

@@ -84,6 +84,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
       location={(restaurant.location as string | null) ?? ""}
       hours={(restaurant.hours as string | null) ?? ""}
       contactInfo={(restaurant.contact_info as string | null) ?? ""}
+      footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
       theme={theme}
       titleFont={fonts.titleFont}
       bodyFont={fonts.textFont}
