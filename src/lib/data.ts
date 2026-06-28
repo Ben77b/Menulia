@@ -29,9 +29,9 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
     name: dish.name as string,
     description: (dish.description as string) || "",
     price: typeof price === "number" ? price : parseFloat(String(price)) || 0,
-    image_url: (dish.image_url as string) ?? (dish.image as string) ?? null,
-    allergens: (dish.allergens as string[]) || [],
-    is_available: dish.is_available !== false,
+    image_url: (dish.image as string) ?? null,
+    allergens: [],
+    is_available: true,
     tags: (dish.tags as string[]) || [],
     translations: [],
   };
@@ -58,11 +58,11 @@ async function fetchCategoriesWithDishes(restaurantId: string) {
     return [];
   }
 
-  if (!categories || categories.length === 0) {
+  if (!categories?.length) {
     return [];
   }
 
-  const results = await Promise.all(
+  return Promise.all(
     categories.map(async (category) => {
       const { data: dishes, error: dishesError } = await supabase
         .from("dishes")
@@ -72,28 +72,18 @@ async function fetchCategoriesWithDishes(restaurantId: string) {
 
       if (dishesError) {
         logSupabaseFailure("fetchCategoriesWithDishes.dishes", dishesError);
-        return {
-          id: category.id,
-          restaurant_id: category.restaurant_id,
-          name: category.name,
-          sort_order: category.order_index ?? category.sort_order ?? 0,
-          layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
-          items: [],
-        };
       }
 
       return {
         id: category.id,
         restaurant_id: category.restaurant_id,
         name: category.name,
-        sort_order: category.order_index ?? category.sort_order ?? 0,
-        layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
-        items: (dishes || []).map(mapDish),
+        sort_order: category.order_index ?? 0,
+        layout_type: category.layout_type ?? "stacked",
+        items: dishesError ? [] : (dishes ?? []).map(mapDish),
       };
     })
   );
-
-  return results;
 }
 
 export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFull | null> {

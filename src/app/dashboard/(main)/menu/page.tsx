@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { Plus, Trash2, Edit, FolderPlus, X, GripVertical, Upload, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ import {
   updateMenuDish,
   deleteMenuDish,
 } from "@/lib/menu-db";
-import { resolveRestaurantDbId } from "@/lib/restaurant-id";
 import { formatSupabaseError } from "@/lib/auth/errors";
 
 export const dynamic = 'force-dynamic';
@@ -43,9 +41,7 @@ interface MenuItem {
 
 
 export default function MenuPage() {
-  const params = useParams();
-  const routeRestaurantId = params.restaurantId as string | undefined;
-  const { currentRestaurant, restaurants, refreshRestaurants } = useRestaurant();
+  const { currentRestaurant, refreshRestaurants } = useRestaurant();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -139,18 +135,13 @@ export default function MenuPage() {
     }
   }
 
-  const activeRestaurantDbId = resolveRestaurantDbId(restaurants, {
-    routeParam: routeRestaurantId,
-    preferredId: currentRestaurant?.id,
-  });
-
   async function loadMenuData() {
-    if (!activeRestaurantDbId) return;
+    if (!currentRestaurant?.id) return;
 
     setIsLoading(true);
 
     try {
-      const categoriesWithItems = await fetchMenuCategories(activeRestaurantDbId);
+      const categoriesWithItems = await fetchMenuCategories(currentRestaurant.id);
 
       setCategories(
         categoriesWithItems.map((category) => ({
@@ -172,7 +163,7 @@ export default function MenuPage() {
         }))
       );
 
-      const savedTags = localStorage.getItem(`custom-tags-${activeRestaurantDbId}`);
+      const savedTags = localStorage.getItem(`custom-tags-${currentRestaurant.id}`);
       setCustomTags(savedTags ? JSON.parse(savedTags) : []);
     } catch (error) {
       console.error("Error loading menu data:", error);
@@ -183,37 +174,25 @@ export default function MenuPage() {
   }
 
   useEffect(() => {
-    if (activeRestaurantDbId) {
+    if (currentRestaurant?.id) {
       loadMenuData();
     }
-  }, [activeRestaurantDbId]);
+  }, [currentRestaurant?.id]);
 
   useEffect(() => {
-    if (activeRestaurantDbId) {
-      localStorage.setItem(`custom-tags-${activeRestaurantDbId}`, JSON.stringify(customTags));
+    if (currentRestaurant?.id) {
+      localStorage.setItem(`custom-tags-${currentRestaurant.id}`, JSON.stringify(customTags));
     }
-  }, [customTags, activeRestaurantDbId]);
+  }, [customTags, currentRestaurant?.id]);
 
   async function handleAddCategory() {
-    if (!newCategoryName.trim()) return;
-
-    if (!activeRestaurantDbId) {
-      setCategorySaveError(
-        "No valid restaurant UUID found. The URL may contain a slug instead of the database ID — refresh or re-select your restaurant."
-      );
-      return;
-    }
+    if (!newCategoryName.trim() || !currentRestaurant?.id) return;
 
     setCategorySaveError(null);
     setIsSaving(true);
 
     try {
-      const created = await createMenuCategory({
-        restaurantId: activeRestaurantDbId,
-        name: newCategoryName,
-        layout_type: newCategoryLayoutType,
-        order_index: categories.length,
-      });
+      const created = await createMenuCategory(newCategoryName, currentRestaurant.id);
 
       setCategories((prev) => [
         ...prev,
@@ -308,7 +287,14 @@ export default function MenuPage() {
 
     try {
       if (editingDish) {
-        await updateMenuDish(editingDish.id, dishPayload);
+        await updateMenuDish(
+          editingDish.id,
+          dishForm.name,
+          dishForm.description,
+          parseFloat(dishForm.price) || 0,
+          dishForm.image || null,
+          dishForm.tags
+        );
 
         setCategories((prev) =>
           prev.map((cat) =>
@@ -332,10 +318,14 @@ export default function MenuPage() {
           )
         );
       } else {
-        const created = await createMenuDish({
-          categoryId: editingCategoryIdForDish,
-          ...dishPayload,
-        });
+        const created = await createMenuDish(
+          editingCategoryIdForDish,
+          dishForm.name,
+          dishForm.description,
+          parseFloat(dishForm.price) || 0,
+          dishForm.image || null,
+          dishForm.tags
+        );
 
         setCategories((prev) =>
           prev.map((cat) =>

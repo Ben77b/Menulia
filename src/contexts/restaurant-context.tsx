@@ -250,9 +250,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     }
 
     if (restaurantId) {
-      const matched = restaurants.find(
-        (entry) => entry.id === restaurantId || entry.slug === restaurantId
-      );
+      const matched = restaurants.find((entry) => entry.id === restaurantId);
       setCurrentRestaurant(matched ?? restaurants[0]);
       return;
     }
@@ -288,9 +286,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     if (
       restaurantId &&
       restaurants.length > 0 &&
-      !restaurants.some(
-        (entry) => entry.id === restaurantId || entry.slug === restaurantId
-      )
+      !restaurants.some((entry) => entry.id === restaurantId)
     ) {
       router.replace(`/dashboard/${restaurants[0].id}`);
     }

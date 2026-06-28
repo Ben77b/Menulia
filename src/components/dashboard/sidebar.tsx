@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
-import { resolveRestaurantDbId } from "@/lib/restaurant-id";
 import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
 
 interface SidebarProps {
@@ -43,10 +42,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   } = useRestaurant();
 
   const activeRestaurantId = hasRestaurants
-    ? resolveRestaurantDbId(restaurants, {
-        routeParam: restaurantId,
-        preferredId: currentRestaurant?.id,
-      }) ?? undefined
+    ? currentRestaurant?.id ?? restaurants[0]?.id
     : undefined;
 
   const navItems =
