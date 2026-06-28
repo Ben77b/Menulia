@@ -4,6 +4,7 @@ import {
   normalizeHexColor,
   type MenuThemeColors,
 } from "./theme-colors";
+import type { ThemeMode } from "./theme-mode";
 
 /** Granular color overrides stored in restaurants.advanced_theme */
 export interface AdvancedTheme {
@@ -192,6 +193,122 @@ export function serializeAdvancedTheme(theme: Partial<AdvancedTheme>): Partial<A
     }
   }
   return out;
+}
+
+/** Static defaults for advanced layer — no auto-contrast derivation */
+export const ADVANCED_FIELD_DEFAULTS: Record<keyof AdvancedTheme, string> = {
+  menuBackground: DEFAULT_MENU_THEME.mainContentBackgroundColor,
+  dividerLineColor: "#00000014",
+  logoAreaBg: DEFAULT_MENU_THEME.headerBackgroundColor,
+  categoryBarBg: DEFAULT_MENU_THEME.categoryStripBackgroundColor,
+  tier1ActiveBg: "#111827",
+  tier1ActiveText: "#ffffff",
+  tier1ActiveBorder: "#111827",
+  tier1InactiveBg: "transparent",
+  tier1InactiveText: "#374151",
+  tier1InactiveBorder: "#374151",
+  tier2ActiveBg: DEFAULT_MENU_THEME.categoryAccentColor,
+  tier2ActiveText: "#ffffff",
+  tier2ActiveBorder: DEFAULT_MENU_THEME.categoryAccentColor,
+  tier2InactiveBg: "transparent",
+  tier2InactiveText: "#6b7280",
+  tier2InactiveBorder: "#9ca3af",
+  itemTitleText: "#111827",
+  itemDescriptionText: "#4b5563",
+  priceTextColor: DEFAULT_MENU_THEME.categoryAccentColor,
+  carouselActiveIndicator: DEFAULT_MENU_THEME.categoryAccentColor,
+  carouselInactiveDots: "#00000033",
+  carouselArrowBg: DEFAULT_MENU_THEME.categoryAccentColor,
+  carouselArrowIcon: "#ffffff",
+  footerBackground: DEFAULT_MENU_THEME.footerBackgroundColor,
+  footerTextIcon: "#111827",
+  filterAreaBg: DEFAULT_MENU_THEME.footerBackgroundColor,
+  filterText: "#111827",
+  filterBorder: "#d1d5db",
+};
+
+export function getAdvancedFieldDefault(key: keyof AdvancedTheme): string {
+  return ADVANCED_FIELD_DEFAULTS[key];
+}
+
+function readAdvancedColor(
+  advanced: Partial<AdvancedTheme>,
+  key: keyof AdvancedTheme
+): string {
+  const fallback = ADVANCED_FIELD_DEFAULTS[key];
+  const raw = advanced[key];
+  if (typeof raw === "string" && raw.trim()) {
+    return normalizeHexColor(raw, fallback);
+  }
+  return fallback;
+}
+
+/** Basic layer: macro colours with auto-contrast text derivation */
+export function resolveBasicMenuTheme(basic: MenuThemeColors): ResolvedMenuTheme {
+  return resolveMenuTheme(basic, {});
+}
+
+/** Advanced layer: granular colours only — no auto-contrast fallbacks */
+export function resolveAdvancedMenuTheme(advanced: Partial<AdvancedTheme>): ResolvedMenuTheme {
+  const logoAreaBg = readAdvancedColor(advanced, "logoAreaBg");
+  const categoryBarBg = readAdvancedColor(advanced, "categoryBarBg");
+  const menuBackground = readAdvancedColor(advanced, "menuBackground");
+  const footerBackground = readAdvancedColor(advanced, "footerBackground");
+  const tier2ActiveBg = readAdvancedColor(advanced, "tier2ActiveBg");
+
+  return {
+    headerBackgroundColor: logoAreaBg,
+    categoryStripBackgroundColor: categoryBarBg,
+    categoryAccentColor: tier2ActiveBg,
+    mainContentBackgroundColor: menuBackground,
+    footerBackgroundColor: footerBackground,
+
+    menuBackground,
+    dividerLineColor: readAdvancedColor(advanced, "dividerLineColor"),
+
+    logoAreaBg,
+    logoAreaText: readAdvancedColor(advanced, "tier1InactiveText"),
+    categoryBarBg,
+
+    tier1ActiveBg: readAdvancedColor(advanced, "tier1ActiveBg"),
+    tier1ActiveText: readAdvancedColor(advanced, "tier1ActiveText"),
+    tier1ActiveBorder: readAdvancedColor(advanced, "tier1ActiveBorder"),
+    tier1InactiveBg: readAdvancedColor(advanced, "tier1InactiveBg"),
+    tier1InactiveText: readAdvancedColor(advanced, "tier1InactiveText"),
+    tier1InactiveBorder: readAdvancedColor(advanced, "tier1InactiveBorder"),
+
+    tier2ActiveBg,
+    tier2ActiveText: readAdvancedColor(advanced, "tier2ActiveText"),
+    tier2ActiveBorder: readAdvancedColor(advanced, "tier2ActiveBorder"),
+    tier2InactiveBg: readAdvancedColor(advanced, "tier2InactiveBg"),
+    tier2InactiveText: readAdvancedColor(advanced, "tier2InactiveText"),
+    tier2InactiveBorder: readAdvancedColor(advanced, "tier2InactiveBorder"),
+
+    itemTitleText: readAdvancedColor(advanced, "itemTitleText"),
+    itemDescriptionText: readAdvancedColor(advanced, "itemDescriptionText"),
+    priceTextColor: readAdvancedColor(advanced, "priceTextColor"),
+
+    carouselActiveIndicator: readAdvancedColor(advanced, "carouselActiveIndicator"),
+    carouselInactiveDots: readAdvancedColor(advanced, "carouselInactiveDots"),
+    carouselArrowBg: readAdvancedColor(advanced, "carouselArrowBg"),
+    carouselArrowIcon: readAdvancedColor(advanced, "carouselArrowIcon"),
+
+    footerTextIcon: readAdvancedColor(advanced, "footerTextIcon"),
+    filterAreaBg: readAdvancedColor(advanced, "filterAreaBg"),
+    filterText: readAdvancedColor(advanced, "filterText"),
+    filterBorder: readAdvancedColor(advanced, "filterBorder"),
+  };
+}
+
+export function resolveMenuThemeForMode(
+  mode: ThemeMode,
+  basic: MenuThemeColors,
+  advanced: Partial<AdvancedTheme> = {}
+): ResolvedMenuTheme {
+  if (mode === "advanced") {
+    return resolveAdvancedMenuTheme(advanced);
+  }
+  return resolveBasicMenuTheme(basic);
 }
 
 export function resolveMenuTheme(

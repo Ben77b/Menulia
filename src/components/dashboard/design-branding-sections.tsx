@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import type { FontStyle, FontWeight } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
+import { TYPOGRAPHY_PRESETS, typographyPresetToDesignPatch } from "@/lib/typography";
+import { ChevronDown } from "lucide-react";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
 
 export const GOOGLE_FONTS = [
+  { label: "Cormorant Garamond", value: "Cormorant Garamond", className: "font-[var(--font-cormorant-garamond)]" },
   { label: "Inter", value: "Inter", className: "font-[var(--font-inter)]" },
   { label: "Montserrat", value: "Montserrat", className: "font-[var(--font-montserrat)]" },
   { label: "Playfair Display", value: "Playfair Display", className: "font-[var(--font-playfair-display)]" },
@@ -150,7 +153,7 @@ function SectionColorPicker({
 }
 
 export function DesignCategoryStylingSection() {
-  const { design, updateDesign } = useDesign();
+  const { getColorValue, setColorValue } = useDesign();
 
   return (
     <div className="border-t border-gray-100 pt-6">
@@ -163,15 +166,15 @@ export function DesignCategoryStylingSection() {
       <div className="space-y-4">
         <SectionColorPicker
           label="Categories Strip Background"
-          value={design.categoryStripBackgroundColor}
+          value={getColorValue("categoryStripBackgroundColor")}
           fallback="#f3f4f6"
-          onChange={(v) => updateDesign({ categoryStripBackgroundColor: v })}
+          onChange={(v) => setColorValue("categoryStripBackgroundColor", v)}
         />
         <SectionColorPicker
           label="Active Category Accent Color"
-          value={design.categoryAccentColor}
+          value={getColorValue("categoryAccentColor")}
           fallback="#047857"
-          onChange={(v) => updateDesign({ categoryAccentColor: v })}
+          onChange={(v) => setColorValue("categoryAccentColor", v)}
         />
       </div>
     </div>
@@ -273,10 +276,22 @@ export function DesignLogoSeoSection({ showHeading = true }: { showHeading?: boo
 
 export function DesignTypographySection({ showHeading = true }: { showHeading?: boolean }) {
   const { design, updateDesign } = useDesign();
+  const [fineTuneOpen, setFineTuneOpen] = useState(false);
   const [showTitleFontDropdown, setShowTitleFontDropdown] = useState(false);
   const [showBodyFontDropdown, setShowBodyFontDropdown] = useState(false);
   const [titleFontSearch, setTitleFontSearch] = useState("");
   const [bodyFontSearch, setBodyFontSearch] = useState("");
+
+  const activePresetId =
+    TYPOGRAPHY_PRESETS.find(
+      (preset) =>
+        preset.titleFont === design.titleFont &&
+        preset.textFont === design.textFont &&
+        preset.titleFontWeight === design.titleFontWeight &&
+        preset.textFontWeight === design.textFontWeight &&
+        preset.titleFontStyle === design.titleFontStyle &&
+        preset.textFontStyle === design.textFontStyle
+    )?.id ?? null;
 
   const selectedTitleFont =
     GOOGLE_FONTS.find((f) => f.value === design.titleFont) || GOOGLE_FONTS[0];
@@ -297,100 +312,149 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
           Typography
         </h2>
       )}
-      <div className="space-y-5">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">Title Font</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search fonts..."
-              value={titleFontSearch}
-              onChange={(e) => setTitleFontSearch(e.target.value)}
-              onFocus={() => setShowTitleFontDropdown(true)}
-              className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {showTitleFontDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowTitleFontDropdown(false)}
-                />
-                <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
-                  {filteredTitleFonts.map((font) => (
-                    <button
-                      key={font.value}
-                      type="button"
-                      onClick={() => {
-                        updateDesign({ titleFont: font.value });
-                        setShowTitleFontDropdown(false);
-                        setTitleFontSearch("");
-                      }}
-                      className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
-                    >
-                      {font.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          <p className="mt-2 text-xs text-gray-600">Selected: {selectedTitleFont.label}</p>
-          <FontModifierControls
-            label="Title"
-            weight={design.titleFontWeight}
-            style={design.titleFontStyle}
-            onWeightChange={(titleFontWeight) => updateDesign({ titleFontWeight })}
-            onStyleChange={(titleFontStyle) => updateDesign({ titleFontStyle })}
-          />
-        </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-medium text-gray-700">Body Font</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search fonts..."
-              value={bodyFontSearch}
-              onChange={(e) => setBodyFontSearch(e.target.value)}
-              onFocus={() => setShowBodyFontDropdown(true)}
-              className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {showBodyFontDropdown && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowBodyFontDropdown(false)}
-                />
-                <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
-                  {filteredBodyFonts.map((font) => (
-                    <button
-                      key={font.value}
-                      type="button"
-                      onClick={() => {
-                        updateDesign({ textFont: font.value });
-                        setShowBodyFontDropdown(false);
-                        setBodyFontSearch("");
-                      }}
-                      className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
-                    >
-                      {font.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          <p className="mt-2 text-xs text-gray-600">Selected: {selectedBodyFont.label}</p>
-          <FontModifierControls
-            label="Body"
-            weight={design.textFontWeight}
-            style={design.textFontStyle}
-            onWeightChange={(textFontWeight) => updateDesign({ textFontWeight })}
-            onStyleChange={(textFontStyle) => updateDesign({ textFontStyle })}
-          />
+      <div className="mb-6">
+        <h3 className="mb-1 text-sm font-semibold text-gray-900">Design Archetypes</h3>
+        <p className="mb-4 text-sm text-gray-600">
+          Pick a curated pairing — one click sets title and body fonts.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {TYPOGRAPHY_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => updateDesign(typographyPresetToDesignPatch(preset))}
+              className={cn(
+                "rounded-xl border p-4 text-left transition-all hover:shadow-md",
+                activePresetId === preset.id
+                  ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
+                  : "border-gray-200 bg-white hover:border-gray-300"
+              )}
+            >
+              <p className="text-sm font-semibold text-gray-900">{preset.name}</p>
+              <p className="mt-0.5 text-xs text-gray-500">{preset.description}</p>
+              <div className="mt-3 space-y-1 rounded-lg bg-gray-50 px-3 py-2">
+                <p className={cn("text-base leading-tight text-gray-900", preset.previewTitleClass)}>
+                  Menu Title
+                </p>
+                <p className={cn("text-sm text-gray-600", preset.previewBodyClass)}>
+                  Fresh seasonal dishes
+                </p>
+              </div>
+            </button>
+          ))}
         </div>
+      </div>
+
+      <div className="border-t border-gray-100 pt-4">
+        <button
+          type="button"
+          onClick={() => setFineTuneOpen((open) => !open)}
+          className="flex w-full items-center justify-between rounded-lg px-1 py-2 text-left text-sm font-semibold text-gray-900 hover:bg-gray-50"
+        >
+          Fine-tune Typography
+          <ChevronDown
+            className={cn("h-4 w-4 text-gray-500 transition-transform", fineTuneOpen && "rotate-180")}
+          />
+        </button>
+
+        {fineTuneOpen && (
+          <div className="mt-4 space-y-5">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Title Font</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search fonts..."
+                  value={titleFontSearch}
+                  onChange={(e) => setTitleFontSearch(e.target.value)}
+                  onFocus={() => setShowTitleFontDropdown(true)}
+                  className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {showTitleFontDropdown && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowTitleFontDropdown(false)}
+                    />
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                      {filteredTitleFonts.map((font) => (
+                        <button
+                          key={font.value}
+                          type="button"
+                          onClick={() => {
+                            updateDesign({ titleFont: font.value });
+                            setShowTitleFontDropdown(false);
+                            setTitleFontSearch("");
+                          }}
+                          className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                        >
+                          {font.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-gray-600">Selected: {selectedTitleFont.label}</p>
+              <FontModifierControls
+                label="Title"
+                weight={design.titleFontWeight}
+                style={design.titleFontStyle}
+                onWeightChange={(titleFontWeight) => updateDesign({ titleFontWeight })}
+                onStyleChange={(titleFontStyle) => updateDesign({ titleFontStyle })}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Body Font</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search fonts..."
+                  value={bodyFontSearch}
+                  onChange={(e) => setBodyFontSearch(e.target.value)}
+                  onFocus={() => setShowBodyFontDropdown(true)}
+                  className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {showBodyFontDropdown && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowBodyFontDropdown(false)}
+                    />
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                      {filteredBodyFonts.map((font) => (
+                        <button
+                          key={font.value}
+                          type="button"
+                          onClick={() => {
+                            updateDesign({ textFont: font.value });
+                            setShowBodyFontDropdown(false);
+                            setBodyFontSearch("");
+                          }}
+                          className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                        >
+                          {font.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-gray-600">Selected: {selectedBodyFont.label}</p>
+              <FontModifierControls
+                label="Body"
+                weight={design.textFontWeight}
+                style={design.textFontStyle}
+                onWeightChange={(textFontWeight) => updateDesign({ textFontWeight })}
+                onStyleChange={(textFontStyle) => updateDesign({ textFontStyle })}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

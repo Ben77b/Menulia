@@ -1,24 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useDesign } from "@/contexts/design-context";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
 import { themeColorsFromDesign } from "@/lib/restaurant-design";
-import { normalizeHexColor, serializeMenuThemeColors } from "@/lib/theme-colors";
+import { serializeMenuThemeColors, normalizeHexColor } from "@/lib/theme-colors";
 import { serializeDisplayOptions } from "@/lib/display-options";
 import { serializeTypography } from "@/lib/typography";
+import { serializeThemeMode } from "@/lib/theme-mode";
 import {
   ADVANCED_THEME_SECTIONS,
   HOTSPOT_LABELS,
-  HOTSPOT_PRIMARY_PICKER,
-  resolveMenuTheme,
   serializeAdvancedTheme,
-  type AdvancedTheme,
   type ThemeHotspotId,
 } from "@/lib/advanced-theme";
+import type { ThemeColorFieldId } from "@/lib/theme-color-fields";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { Button } from "@/components/ui/button";
@@ -88,7 +87,6 @@ const MOCK_FLAT: PublicMenuSubcategory[] = [
 
 interface ColorPopoverState {
   hotspot: ThemeHotspotId;
-  draftColor: string;
   position: { top: number; left: number };
 }
 
@@ -105,8 +103,6 @@ function StudioColorPicker({
   fallback: string;
   onChange: (value: string) => void;
 }) {
-  const safeValue = normalizeHexColor(value, fallback);
-
   return (
     <div id={id} className="scroll-mt-24 rounded-lg p-3 transition-all duration-300">
       <label className="mb-2 block text-sm font-medium text-gray-700">{label}</label>
@@ -114,24 +110,33 @@ function StudioColorPicker({
         <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
           <input
             type="color"
-            value={safeValue}
+            value={normalizeHexColor(value, fallback)}
             onChange={(e) => onChange(e.target.value)}
             className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
           />
         </div>
-        <span className="font-mono text-xs text-gray-600">{safeValue}</span>
+        <span className="font-mono text-xs text-gray-600">{normalizeHexColor(value, fallback)}</span>
       </div>
     </div>
   );
 }
 
 export function DesignStudio() {
-  const { design, advancedTheme, updateDesign, updateAdvancedTheme } = useDesign();
+  const {
+    design,
+    advancedTheme,
+    themeMode,
+    resolvedTheme,
+    setThemeMode,
+    getColorValue,
+    setColorValue,
+    getHotspotColor,
+    setHotspotColor,
+  } = useDesign();
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useState<StudioTab>("menu");
-  const [advancedMode, setAdvancedMode] = useState(false);
   const [activeHotspot, setActiveHotspot] = useState<ThemeHotspotId | null>(null);
   const [colorPopover, setColorPopover] = useState<ColorPopoverState | null>(null);
   const [saving, setSaving] = useState(false);
@@ -143,12 +148,7 @@ export function DesignStudio() {
   const [hasNestedStructure, setHasNestedStructure] = useState(false);
 
   const supabase = getSupabaseBrowserClient();
-
-  const basicTheme = useMemo(() => themeColorsFromDesign(design), [design]);
-  const resolvedTheme = useMemo(
-    () => resolveMenuTheme(basicTheme, advancedTheme),
-    [basicTheme, advancedTheme]
-  );
+  const isAdvancedMode = themeMode === "advanced";
 
   const displayOptions = useMemo(
     () => ({
@@ -172,120 +172,29 @@ export function DesignStudio() {
     });
   }, [currentRestaurant?.id]);
 
-  const getPickerValue = useCallback(
-    (fieldId: keyof AdvancedTheme | "headerNavBg" | "mainContentBg"): string => {
-      if (fieldId === "headerNavBg") {
-        return design.headerBackgroundColor;
-      }
-      if (fieldId === "mainContentBg") {
-        return design.mainContentBackgroundColor;
-      }
-      const key = fieldId as keyof AdvancedTheme;
-      if (advancedTheme[key]) {
-        return advancedTheme[key] as string;
-      }
-      const resolvedKey = fieldId as keyof typeof resolvedTheme;
-      if (resolvedKey in resolvedTheme) {
-        return String(resolvedTheme[resolvedKey as keyof typeof resolvedTheme]);
-      }
-      return "#ffffff";
-    },
-    [design, advancedTheme, resolvedTheme]
-  );
+  const handleHotspotClick = (hotspot: ThemeHotspotId, anchor: DOMRect) => {
+    const container = previewContainerRef.current;
+    if (!container) return;
 
-  const setPickerValue = useCallback(
-    (fieldId: keyof AdvancedTheme | "headerNavBg" | "mainContentBg", value: string) => {
-      if (fieldId === "headerNavBg") {
-        updateDesign({ headerBackgroundColor: value, footerBackgroundColor: value });
-        return;
-      }
-      if (fieldId === "mainContentBg") {
-        updateDesign({ mainContentBackgroundColor: value });
-        updateAdvancedTheme({ menuBackground: value });
-        return;
-      }
-      if (fieldId === "menuBackground") {
-        updateDesign({ mainContentBackgroundColor: value });
-        updateAdvancedTheme({ menuBackground: value });
-        return;
-      }
-      if (fieldId === "logoAreaBg") {
-        updateDesign({ headerBackgroundColor: value, footerBackgroundColor: value });
-        updateAdvancedTheme({ logoAreaBg: value });
-        return;
-      }
-      if (fieldId === "categoryBarBg") {
-        updateDesign({ categoryStripBackgroundColor: value });
-        updateAdvancedTheme({ categoryBarBg: value });
-        return;
-      }
-      if (fieldId === "tier2ActiveBg") {
-        updateDesign({ categoryAccentColor: value });
-        updateAdvancedTheme({ tier2ActiveBg: value });
-        return;
-      }
-      if (fieldId === "footerBackground") {
-        updateDesign({ footerBackgroundColor: value });
-        updateAdvancedTheme({ footerBackground: value });
-        return;
-      }
-      updateAdvancedTheme({ [fieldId]: value });
-    },
-    [updateDesign, updateAdvancedTheme]
-  );
+    const containerRect = container.getBoundingClientRect();
+    const popoverWidth = 224;
+    const left = Math.min(
+      Math.max(anchor.right - containerRect.left + 8, 8),
+      containerRect.width - popoverWidth - 8
+    );
+    const top = Math.min(
+      Math.max(anchor.top - containerRect.top + anchor.height / 2 - 60, 8),
+      containerRect.height - 180
+    );
 
-  const handleHotspotClick = useCallback(
-    (hotspot: ThemeHotspotId, anchor: DOMRect) => {
-      const container = previewContainerRef.current;
-      if (!container) return;
+    setActiveHotspot(hotspot);
+    setColorPopover({ hotspot, position: { top, left } });
+  };
 
-      const containerRect = container.getBoundingClientRect();
-      const fieldId = HOTSPOT_PRIMARY_PICKER[hotspot];
-      const currentColor = getPickerValue(fieldId);
-
-      const popoverWidth = 224;
-      const left = Math.min(
-        Math.max(anchor.right - containerRect.left + 8, 8),
-        containerRect.width - popoverWidth - 8
-      );
-      const top = Math.min(
-        Math.max(anchor.top - containerRect.top + anchor.height / 2 - 60, 8),
-        containerRect.height - 180
-      );
-
-      setActiveHotspot(hotspot);
-      setColorPopover({
-        hotspot,
-        draftColor: currentColor,
-        position: { top, left },
-      });
-    },
-    [getPickerValue]
-  );
-
-  const handlePopoverPreviewChange = useCallback(
-    (color: string) => {
-      if (!colorPopover) return;
-      setColorPopover((prev) => (prev ? { ...prev, draftColor: color } : null));
-      const fieldId = HOTSPOT_PRIMARY_PICKER[colorPopover.hotspot];
-      setPickerValue(fieldId, color);
-    },
-    [colorPopover, setPickerValue]
-  );
-
-  const handlePopoverApply = useCallback(() => {
-    if (colorPopover) {
-      const fieldId = HOTSPOT_PRIMARY_PICKER[colorPopover.hotspot];
-      setPickerValue(fieldId, colorPopover.draftColor);
-    }
+  const handlePopoverClose = () => {
     setColorPopover(null);
     setActiveHotspot(null);
-  }, [colorPopover, setPickerValue]);
-
-  const handlePopoverClose = useCallback(() => {
-    setColorPopover(null);
-    setActiveHotspot(null);
-  }, []);
+  };
 
   const handleSaveDesign = async () => {
     if (!currentRestaurant?.id) return;
@@ -298,6 +207,7 @@ export function DesignStudio() {
         logo: design.logo,
         meta_title: design.metaTitle,
         meta_description: design.metaDescription,
+        theme_mode: serializeThemeMode(themeMode),
         theme_colors: serializeMenuThemeColors(themeColorsFromDesign(design)),
         typography: serializeTypography(design),
         advanced_theme: serializeAdvancedTheme(advancedTheme),
@@ -311,6 +221,7 @@ export function DesignStudio() {
       };
 
       let advancedColumnMissing = false;
+      let themeModeMissing = false;
 
       let { error } = await supabase
         .from("restaurants")
@@ -318,15 +229,17 @@ export function DesignStudio() {
         .eq("id", currentRestaurant.id);
 
       if (error && isMissingColumnError(error)) {
-        const withoutAdvanced = { ...basePayload };
-        delete (withoutAdvanced as { advanced_theme?: unknown }).advanced_theme;
+        const retryPayload = { ...basePayload };
+        delete (retryPayload as { advanced_theme?: unknown }).advanced_theme;
+        delete (retryPayload as { theme_mode?: unknown }).theme_mode;
         const retry = await supabase
           .from("restaurants")
-          .update(withoutAdvanced)
+          .update(retryPayload)
           .eq("id", currentRestaurant.id);
         error = retry.error;
         if (!error) {
           advancedColumnMissing = true;
+          themeModeMissing = true;
         }
       }
 
@@ -334,9 +247,9 @@ export function DesignStudio() {
 
       await refreshRestaurants();
 
-      if (advancedColumnMissing) {
+      if (advancedColumnMissing || themeModeMissing) {
         setSaveError(
-          "Design saved. Run supabase/migrations/20250701000000_advanced_theme.sql in Supabase to persist advanced overrides."
+          "Design saved. Run supabase/migrations/20250702000000_theme_mode.sql (and advanced_theme migration if needed) in Supabase."
         );
       } else {
         setSaveSuccess(true);
@@ -379,7 +292,9 @@ export function DesignStudio() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Design Studio</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Click palette dots on the preview to edit colours in context
+            {isAdvancedMode
+              ? "Advanced layer active — granular colours from your saved palette"
+              : "Basic layer active — macro colours with auto-contrast"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -434,7 +349,7 @@ export function DesignStudio() {
         {activeTab === "menu" && (
           <div className="flex h-full min-h-[640px] flex-col items-center justify-start rounded-xl border border-gray-200 bg-gradient-to-b from-gray-100 to-gray-200 p-6 lg:p-10">
             <p className="mb-6 text-center text-xs font-medium uppercase tracking-wide text-gray-500">
-              Live Preview — tap a palette dot to open an inline colour editor
+              Live Preview — tap a palette dot to edit colours in context
             </p>
             <div ref={previewContainerRef} className="relative w-full max-w-[390px] shrink-0">
               <div className="overflow-hidden rounded-[2.75rem] border-[10px] border-gray-900 bg-gray-900 shadow-2xl">
@@ -459,11 +374,11 @@ export function DesignStudio() {
               {colorPopover && (
                 <HotspotColorPopover
                   label={HOTSPOT_LABELS[colorPopover.hotspot]}
-                  color={colorPopover.draftColor}
+                  color={getHotspotColor(colorPopover.hotspot)}
                   fallback="#ffffff"
                   position={colorPopover.position}
-                  onPreviewChange={handlePopoverPreviewChange}
-                  onApply={handlePopoverApply}
+                  onPreviewChange={(value) => setHotspotColor(colorPopover.hotspot, value)}
+                  onApply={handlePopoverClose}
                   onClose={handlePopoverClose}
                 />
               )}
@@ -475,12 +390,27 @@ export function DesignStudio() {
           <div className="mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <ToggleSwitch
               label="Advanced Theme Controls"
-              description="Unlock granular color pickers for every menu section"
-              checked={advancedMode}
-              onChange={setAdvancedMode}
+              description={
+                isAdvancedMode
+                  ? "Editing the advanced sandbox — basic colours are preserved separately"
+                  : "Editing basic macro colours — advanced palette is preserved separately"
+              }
+              checked={isAdvancedMode}
+              onChange={(checked) => setThemeMode(checked ? "advanced" : "basic")}
             />
 
-            {!advancedMode ? (
+            <div
+              className={cn(
+                "mt-3 rounded-lg px-3 py-2 text-xs font-medium",
+                isAdvancedMode
+                  ? "bg-purple-50 text-purple-800"
+                  : "bg-emerald-50 text-emerald-800"
+              )}
+            >
+              Active layer: {isAdvancedMode ? "Advanced (granular)" : "Basic (auto-contrast)"}
+            </div>
+
+            {!isAdvancedMode ? (
               <div className="mt-6 space-y-5">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
                   Basic Colors
@@ -488,21 +418,16 @@ export function DesignStudio() {
                 <StudioColorPicker
                   id="picker-headerNavBg"
                   label="Header & Navigation Background"
-                  value={design.headerBackgroundColor}
+                  value={getColorValue("headerNavBg")}
                   fallback="#ffffff"
-                  onChange={(v) =>
-                    updateDesign({ headerBackgroundColor: v, footerBackgroundColor: v })
-                  }
+                  onChange={(v) => setColorValue("headerNavBg", v)}
                 />
                 <StudioColorPicker
                   id="picker-mainContentBg"
                   label="Main Content Background"
-                  value={design.mainContentBackgroundColor}
+                  value={getColorValue("mainContentBackgroundColor")}
                   fallback="#fafafa"
-                  onChange={(v) => {
-                    updateDesign({ mainContentBackgroundColor: v });
-                    updateAdvancedTheme({ menuBackground: v });
-                  }}
+                  onChange={(v) => setColorValue("mainContentBackgroundColor", v)}
                 />
                 <p className="text-xs text-gray-500">
                   Text and icons auto-adjust to black or white for readable contrast.
@@ -522,9 +447,9 @@ export function DesignStudio() {
                           key={field.id}
                           id={`picker-${field.id}`}
                           label={field.label}
-                          value={getPickerValue(field.id)}
+                          value={getColorValue(field.id as ThemeColorFieldId)}
                           fallback="#ffffff"
-                          onChange={(v) => setPickerValue(field.id, v)}
+                          onChange={(v) => setColorValue(field.id as ThemeColorFieldId, v)}
                         />
                       ))}
                     </div>

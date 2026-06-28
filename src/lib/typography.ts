@@ -73,6 +73,96 @@ export function serializeTypography(
   };
 }
 
+export interface TypographyPreset {
+  id: string;
+  name: string;
+  description: string;
+  titleFont: string;
+  textFont: string;
+  titleFontWeight: FontWeight;
+  textFontWeight: FontWeight;
+  titleFontStyle: FontStyle;
+  textFontStyle: FontStyle;
+  previewTitleClass?: string;
+  previewBodyClass?: string;
+}
+
+export const TYPOGRAPHY_PRESETS: TypographyPreset[] = [
+  {
+    id: "elegant-dining",
+    name: "Elegant Dining",
+    description: "Playfair Display + Lato",
+    titleFont: "Playfair Display",
+    textFont: "Lato",
+    titleFontWeight: 400,
+    textFontWeight: 400,
+    titleFontStyle: "normal",
+    textFontStyle: "normal",
+    previewTitleClass: "font-[var(--font-playfair-display)]",
+    previewBodyClass: "font-[var(--font-lato)]",
+  },
+  {
+    id: "modern-minimalist",
+    name: "Modern Minimalist",
+    description: "Inter Bold + Inter Regular",
+    titleFont: "Inter",
+    textFont: "Inter",
+    titleFontWeight: 700,
+    textFontWeight: 400,
+    titleFontStyle: "normal",
+    textFontStyle: "normal",
+    previewTitleClass: "font-[var(--font-inter)] font-bold",
+    previewBodyClass: "font-[var(--font-inter)]",
+  },
+  {
+    id: "vintage-bistro",
+    name: "Vintage Bistro",
+    description: "Cormorant Garamond + Roboto",
+    titleFont: "Cormorant Garamond",
+    textFont: "Roboto",
+    titleFontWeight: 400,
+    textFontWeight: 400,
+    titleFontStyle: "normal",
+    textFontStyle: "normal",
+    previewTitleClass: "font-[var(--font-cormorant-garamond)]",
+    previewBodyClass: "font-[var(--font-roboto)]",
+  },
+  {
+    id: "urban-edgy",
+    name: "Urban & Edgy",
+    description: "Oswald + Montserrat",
+    titleFont: "Oswald",
+    textFont: "Montserrat",
+    titleFontWeight: 700,
+    textFontWeight: 400,
+    titleFontStyle: "normal",
+    textFontStyle: "normal",
+    previewTitleClass: "font-[var(--font-oswald)] font-bold uppercase tracking-wide",
+    previewBodyClass: "font-[var(--font-montserrat)]",
+  },
+];
+
+export function typographyPresetToDesignPatch(
+  preset: TypographyPreset
+): Pick<
+  RestaurantDesign,
+  | "titleFont"
+  | "textFont"
+  | "titleFontWeight"
+  | "textFontWeight"
+  | "titleFontStyle"
+  | "textFontStyle"
+> {
+  return {
+    titleFont: preset.titleFont,
+    textFont: preset.textFont,
+    titleFontWeight: preset.titleFontWeight,
+    textFontWeight: preset.textFontWeight,
+    titleFontStyle: preset.titleFontStyle,
+    textFontStyle: preset.textFontStyle,
+  };
+}
+
 export function titleFontStyleProps(typography: RestaurantTypography): CSSProperties {
   return {
     fontFamily: typography.titleFont,
