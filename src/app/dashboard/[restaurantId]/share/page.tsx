@@ -22,7 +22,7 @@ export default function SharePage() {
     loadData();
   }, []);
 
-  const publicUrl = restaurant ? `${window.location.origin}/r/${restaurant.slug}` : "";
+  const publicUrl = restaurant ? `${window.location.origin}/menu/${restaurant.slug}` : "";
 
   function handleCopyLink() {
     navigator.clipboard.writeText(publicUrl);
