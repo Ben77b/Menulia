@@ -5,6 +5,8 @@ import { useDesign } from "@/contexts/design-context";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
+import { themeColorsFromDesign } from "@/lib/restaurant-design";
+import { serializeMenuThemeColors } from "@/lib/theme-colors";
 import { Button } from "@/components/ui/button";
 import { Upload, Image as ImageIcon, X, Search } from "lucide-react";
 
@@ -86,14 +88,7 @@ export function BrandingDashboard() {
           logo: design.logo,
           meta_title: design.metaTitle,
           meta_description: design.metaDescription,
-          theme_colors: {
-            headerFooterBackgroundColor: design.headerFooterBackgroundColor,
-            categoryBackgroundColor: design.categoryBackgroundColor,
-            mainContentBackgroundColor: design.mainContentBackgroundColor,
-            headerFooterFontColor: design.headerFooterFontColor,
-            categoryFontColor: design.categoryFontColor,
-            mainContentFontColor: design.mainContentFontColor,
-          },
+          theme_colors: serializeMenuThemeColors(themeColorsFromDesign(design)),
           typography: {
             titleFont: design.titleFont,
             textFont: design.textFont,
@@ -226,41 +221,35 @@ export function BrandingDashboard() {
 
       <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Color Palette</h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-5">
-            <ColorPicker
-              label="Header & Footer Background"
-              value={design.headerFooterBackgroundColor}
-              onChange={(v) => updateDesign({ headerFooterBackgroundColor: v })}
-            />
-            <ColorPicker
-              label="Category Section Background"
-              value={design.categoryBackgroundColor}
-              onChange={(v) => updateDesign({ categoryBackgroundColor: v })}
-            />
-            <ColorPicker
-              label="Main Dish Section Background"
-              value={design.mainContentBackgroundColor}
-              onChange={(v) => updateDesign({ mainContentBackgroundColor: v })}
-            />
-          </div>
-          <div className="space-y-5">
-            <ColorPicker
-              label="Header/Footer Text Color"
-              value={design.headerFooterFontColor}
-              onChange={(v) => updateDesign({ headerFooterFontColor: v })}
-            />
-            <ColorPicker
-              label="Category Text Color"
-              value={design.categoryFontColor}
-              onChange={(v) => updateDesign({ categoryFontColor: v })}
-            />
-            <ColorPicker
-              label="Main Section Text Color"
-              value={design.mainContentFontColor}
-              onChange={(v) => updateDesign({ mainContentFontColor: v })}
-            />
-          </div>
+        <p className="text-sm text-gray-600">
+          Text and icons automatically adjust to black or white for maximum contrast on each section.
+        </p>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <ColorPicker
+            label="Header Background"
+            value={design.headerBackgroundColor}
+            onChange={(v) => updateDesign({ headerBackgroundColor: v })}
+          />
+          <ColorPicker
+            label="Categories Strip Background"
+            value={design.categoryStripBackgroundColor}
+            onChange={(v) => updateDesign({ categoryStripBackgroundColor: v })}
+          />
+          <ColorPicker
+            label="Active Category Accent Color"
+            value={design.categoryAccentColor}
+            onChange={(v) => updateDesign({ categoryAccentColor: v })}
+          />
+          <ColorPicker
+            label="Main Content Background (Dish area)"
+            value={design.mainContentBackgroundColor}
+            onChange={(v) => updateDesign({ mainContentBackgroundColor: v })}
+          />
+          <ColorPicker
+            label="Footer Background"
+            value={design.footerBackgroundColor}
+            onChange={(v) => updateDesign({ footerBackgroundColor: v })}
+          />
         </div>
       </div>
 

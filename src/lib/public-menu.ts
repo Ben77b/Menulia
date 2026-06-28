@@ -1,7 +1,9 @@
 import type { CustomLink, RestaurantFull } from "./types";
 import type { OperatingHourData } from "./operating-hours";
 import { defaultOperatingHours, formatOperatingHoursDisplay, normalizeOperatingHours } from "./operating-hours";
-import { DEFAULT_DESIGN, type RestaurantDesign } from "./restaurant-design";
+import { DEFAULT_DESIGN, applyComputedContrast, type RestaurantDesign } from "./restaurant-design";
+import { parseMenuThemeColors } from "./theme-colors";
+import { contrastingTextColor } from "./contrast";
 
 export const DEFAULT_OPERATING_HOURS: OperatingHourData[] = defaultOperatingHours();
 
@@ -90,49 +92,25 @@ export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDes
   const formattedHours =
     restaurant.hours?.trim() || formatOperatingHoursDisplay(operating_hours);
 
-  const theme =
-    restaurant.theme_colors && typeof restaurant.theme_colors === "object"
-      ? (restaurant.theme_colors as Record<string, string | boolean>)
-      : {};
+  const theme = parseMenuThemeColors(restaurant.theme_colors);
 
   const fonts = resolveFontFamily(restaurant);
-  const headerBg =
-    (typeof theme.headerFooterBackgroundColor === "string" && theme.headerFooterBackgroundColor) ||
-    (typeof theme.color2 === "string" && theme.color2) ||
-    DEFAULT_DESIGN.headerFooterBackgroundColor;
-  const categoryBg =
-    (typeof theme.categoryBackgroundColor === "string" && theme.categoryBackgroundColor) ||
-    (typeof theme.color2 === "string" && theme.color2) ||
-    DEFAULT_DESIGN.categoryBackgroundColor;
-  const mainBg =
-    (typeof theme.mainContentBackgroundColor === "string" && theme.mainContentBackgroundColor) ||
-    (typeof theme.color1 === "string" && theme.color1) ||
-    DEFAULT_DESIGN.mainContentBackgroundColor;
-  const headerFontColor =
-    (typeof theme.headerFooterFontColor === "string" && theme.headerFooterFontColor) ||
-    DEFAULT_DESIGN.headerFooterFontColor;
-  const categoryFontColor =
-    (typeof theme.categoryFontColor === "string" && theme.categoryFontColor) ||
-    DEFAULT_DESIGN.categoryFontColor;
-  const mainFontColor =
-    (typeof theme.mainContentFontColor === "string" && theme.mainContentFontColor) ||
-    DEFAULT_DESIGN.mainContentFontColor;
+  const mainText = contrastingTextColor(theme.mainContentBackgroundColor);
 
-  return {
+  return applyComputedContrast({
     ...DEFAULT_DESIGN,
-    accentColor: categoryBg,
-    backgroundColor: mainBg,
-    buttonColor: categoryBg,
-    categoryColor: categoryBg,
-    priceColor: categoryBg,
-    titleColor: mainFontColor,
-    textColor: mainFontColor,
-    headerFooterBackgroundColor: headerBg,
-    mainContentBackgroundColor: mainBg,
-    categoryBackgroundColor: categoryBg,
-    headerFooterFontColor: headerFontColor,
-    mainContentFontColor: mainFontColor,
-    categoryFontColor,
+    accentColor: theme.categoryAccentColor,
+    backgroundColor: theme.mainContentBackgroundColor,
+    buttonColor: theme.categoryAccentColor,
+    categoryColor: theme.categoryAccentColor,
+    priceColor: theme.categoryAccentColor,
+    titleColor: mainText,
+    textColor: mainText,
+    headerBackgroundColor: theme.headerBackgroundColor,
+    categoryStripBackgroundColor: theme.categoryStripBackgroundColor,
+    categoryAccentColor: theme.categoryAccentColor,
+    mainContentBackgroundColor: theme.mainContentBackgroundColor,
+    footerBackgroundColor: theme.footerBackgroundColor,
     logo: restaurant.logo ?? "",
     restaurantName: restaurant.name,
     slogan: restaurant.footer_slogan ?? "",
@@ -149,5 +127,5 @@ export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDes
     metaTitle: restaurant.meta_title || restaurant.name,
     metaDescription:
       restaurant.meta_description || `View the digital menu for ${restaurant.name}`,
-  };
+  });
 }

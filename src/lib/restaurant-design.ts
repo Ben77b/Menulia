@@ -1,3 +1,6 @@
+import { contrastingTextColor } from "./contrast";
+import { parseMenuThemeColors, type MenuThemeColors } from "./theme-colors";
+
 export interface RestaurantDesign {
   accentColor: string;
   backgroundColor: string;
@@ -29,12 +32,21 @@ export interface RestaurantDesign {
   metaTitle: string;
   metaDescription: string;
   customFont: string;
-  headerFooterBackgroundColor: string;
+  headerBackgroundColor: string;
+  categoryStripBackgroundColor: string;
+  categoryAccentColor: string;
   mainContentBackgroundColor: string;
-  categoryBackgroundColor: string;
+  footerBackgroundColor: string;
+  /** @deprecated Computed at render time — not persisted */
+  headerFooterBackgroundColor: string;
+  /** @deprecated Computed at render time — not persisted */
   headerFooterFontColor: string;
-  mainContentFontColor: string;
+  /** @deprecated Computed at render time — not persisted */
+  categoryBackgroundColor: string;
+  /** @deprecated Computed at render time — not persisted */
   categoryFontColor: string;
+  /** @deprecated Computed at render time — not persisted */
+  mainContentFontColor: string;
 }
 
 export const DEFAULT_DESIGN: RestaurantDesign = {
@@ -45,8 +57,8 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
   menuViewMode: "carousel",
   titleFont: "Inter",
   textFont: "Inter",
-  titleColor: "#1f2937",
-  textColor: "#6b7280",
+  titleColor: "#000000",
+  textColor: "#000000",
   priceColor: "#047857",
   logo: "",
   restaurantName: "",
@@ -68,13 +80,44 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
   metaTitle: "",
   metaDescription: "",
   customFont: "",
-  headerFooterBackgroundColor: "#ffffff",
+  headerBackgroundColor: "#ffffff",
+  categoryStripBackgroundColor: "#f3f4f6",
+  categoryAccentColor: "#047857",
   mainContentBackgroundColor: "#fafafa",
-  categoryBackgroundColor: "#047857",
-  headerFooterFontColor: "#1f2937",
-  mainContentFontColor: "#1f2937",
-  categoryFontColor: "#ffffff",
+  footerBackgroundColor: "#ffffff",
+  headerFooterBackgroundColor: "#ffffff",
+  headerFooterFontColor: "#000000",
+  categoryBackgroundColor: "#f3f4f6",
+  categoryFontColor: "#047857",
+  mainContentFontColor: "#000000",
 };
+
+export function applyComputedContrast(design: RestaurantDesign): RestaurantDesign {
+  const headerText = contrastingTextColor(design.headerBackgroundColor);
+  const stripText = contrastingTextColor(design.categoryStripBackgroundColor);
+  const mainText = contrastingTextColor(design.mainContentBackgroundColor);
+  const footerText = contrastingTextColor(design.footerBackgroundColor);
+  const accentText = contrastingTextColor(design.categoryAccentColor);
+
+  return {
+    ...design,
+    headerFooterBackgroundColor: design.headerBackgroundColor,
+    headerFooterFontColor: headerText,
+    categoryBackgroundColor: design.categoryStripBackgroundColor,
+    categoryFontColor: stripText,
+    mainContentFontColor: mainText,
+    footerColor: design.footerBackgroundColor,
+    headerColor: design.headerBackgroundColor,
+    mainColor: design.mainContentBackgroundColor,
+    accentColor: design.categoryAccentColor,
+    buttonColor: design.categoryAccentColor,
+    categoryColor: design.categoryAccentColor,
+    categoryTextColor: accentText,
+    priceColor: design.categoryAccentColor,
+    titleColor: mainText,
+    textColor: mainText,
+  };
+}
 
 export function designFromRestaurant(row: {
   name?: string;
@@ -87,12 +130,12 @@ export function designFromRestaurant(row: {
   theme_colors?: Record<string, string> | null;
   typography?: Record<string, string> | null;
 }): RestaurantDesign {
-  const theme = row.theme_colors ?? {};
+  const theme = parseMenuThemeColors(row.theme_colors);
   const typography = row.typography ?? {};
   const titleFont = typography.titleFont ?? DEFAULT_DESIGN.titleFont;
   const textFont = typography.textFont ?? titleFont;
 
-  return {
+  return applyComputedContrast({
     ...DEFAULT_DESIGN,
     restaurantName: row.name ?? "",
     logo: row.logo ?? "",
@@ -101,19 +144,23 @@ export function designFromRestaurant(row: {
     contactInfo: row.contact_info ?? "",
     metaTitle: row.meta_title ?? "",
     metaDescription: row.meta_description ?? "",
-    headerFooterBackgroundColor:
-      theme.headerFooterBackgroundColor ?? DEFAULT_DESIGN.headerFooterBackgroundColor,
-    categoryBackgroundColor:
-      theme.categoryBackgroundColor ?? DEFAULT_DESIGN.categoryBackgroundColor,
-    mainContentBackgroundColor:
-      theme.mainContentBackgroundColor ?? DEFAULT_DESIGN.mainContentBackgroundColor,
-    headerFooterFontColor:
-      theme.headerFooterFontColor ?? DEFAULT_DESIGN.headerFooterFontColor,
-    categoryFontColor: theme.categoryFontColor ?? DEFAULT_DESIGN.categoryFontColor,
-    mainContentFontColor:
-      theme.mainContentFontColor ?? DEFAULT_DESIGN.mainContentFontColor,
+    headerBackgroundColor: theme.headerBackgroundColor,
+    categoryStripBackgroundColor: theme.categoryStripBackgroundColor,
+    categoryAccentColor: theme.categoryAccentColor,
+    mainContentBackgroundColor: theme.mainContentBackgroundColor,
+    footerBackgroundColor: theme.footerBackgroundColor,
     titleFont,
     textFont,
+  });
+}
+
+export function themeColorsFromDesign(design: RestaurantDesign): MenuThemeColors {
+  return {
+    headerBackgroundColor: design.headerBackgroundColor,
+    categoryStripBackgroundColor: design.categoryStripBackgroundColor,
+    categoryAccentColor: design.categoryAccentColor,
+    mainContentBackgroundColor: design.mainContentBackgroundColor,
+    footerBackgroundColor: design.footerBackgroundColor,
   };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { DEFAULT_DESIGN, designFromRestaurant, type RestaurantDesign } from "@/lib/restaurant-design";
+import { DEFAULT_DESIGN, designFromRestaurant, applyComputedContrast, type RestaurantDesign } from "@/lib/restaurant-design";
 import { useRestaurant } from "./restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -46,7 +46,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   }, [currentRestaurant?.id]);
 
   const updateDesign = (updates: Partial<RestaurantDesign>) => {
-    setDesignState((prev) => ({ ...prev, ...updates }));
+    setDesignState((prev) => applyComputedContrast({ ...prev, ...updates }));
   };
 
   const setDesign = (newDesign: RestaurantDesign) => {
