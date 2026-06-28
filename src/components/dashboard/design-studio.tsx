@@ -20,9 +20,23 @@ import { isMissingColumnError } from "@/lib/restaurant-settings";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { Button } from "@/components/ui/button";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
+import {
+  DesignCategoryStylingSection,
+  DesignLogoSeoSection,
+  DesignTypographySection,
+} from "@/components/dashboard/design-branding-sections";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { cn } from "@/lib/utils";
-import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
+import type { RestaurantLink } from "@/lib/restaurant-links";
+
+type StudioTab = "menu" | "colours" | "fonts" | "logo-seo";
+
+const STUDIO_TABS: { id: StudioTab; label: string }[] = [
+  { id: "menu", label: "Menu" },
+  { id: "colours", label: "Colours" },
+  { id: "fonts", label: "Fonts" },
+  { id: "logo-seo", label: "Logo & SEO" },
+];
 
 const MOCK_FLAT: PublicMenuSubcategory[] = [
   {
@@ -86,8 +100,8 @@ function StudioColorPicker({
     <div
       id={id}
       className={cn(
-        "scroll-mt-24 rounded-lg p-3 transition-colors",
-        highlighted && "bg-indigo-50 ring-2 ring-indigo-400"
+        "scroll-mt-24 rounded-lg p-3 transition-all duration-300",
+        highlighted && "animate-[flash-highlight_1.2s_ease-in-out_2] bg-indigo-50 ring-2 ring-indigo-400"
       )}
     >
       <label className="mb-2 block text-sm font-medium text-gray-700">{label}</label>
@@ -109,8 +123,9 @@ function StudioColorPicker({
 export function DesignStudio() {
   const { design, advancedTheme, updateDesign, updateAdvancedTheme } = useDesign();
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  const coloursPanelRef = useRef<HTMLDivElement>(null);
 
+  const [activeTab, setActiveTab] = useState<StudioTab>("menu");
   const [advancedMode, setAdvancedMode] = useState(false);
   const [activeHotspot, setActiveHotspot] = useState<ThemeHotspotId | null>(null);
   const [highlightedPicker, setHighlightedPicker] = useState<string | null>(null);
@@ -181,6 +196,32 @@ export function DesignStudio() {
       }
       if (fieldId === "mainContentBg") {
         updateDesign({ mainContentBackgroundColor: value });
+        updateAdvancedTheme({ menuBackground: value });
+        return;
+      }
+      if (fieldId === "menuBackground") {
+        updateDesign({ mainContentBackgroundColor: value });
+        updateAdvancedTheme({ menuBackground: value });
+        return;
+      }
+      if (fieldId === "logoAreaBg") {
+        updateDesign({ headerBackgroundColor: value, footerBackgroundColor: value });
+        updateAdvancedTheme({ logoAreaBg: value });
+        return;
+      }
+      if (fieldId === "categoryBarBg") {
+        updateDesign({ categoryStripBackgroundColor: value });
+        updateAdvancedTheme({ categoryBarBg: value });
+        return;
+      }
+      if (fieldId === "tier2ActiveBg") {
+        updateDesign({ categoryAccentColor: value });
+        updateAdvancedTheme({ tier2ActiveBg: value });
+        return;
+      }
+      if (fieldId === "footerBackground") {
+        updateDesign({ footerBackgroundColor: value });
+        updateAdvancedTheme({ footerBackground: value });
         return;
       }
       updateAdvancedTheme({ [fieldId]: value });
@@ -188,26 +229,45 @@ export function DesignStudio() {
     [updateDesign, updateAdvancedTheme]
   );
 
-  const handleHotspotClick = useCallback((hotspot: ThemeHotspotId) => {
-    setActiveHotspot(hotspot);
-    const pickerId = HOTSPOT_PRIMARY_PICKER[hotspot];
-    const elementId = `picker-${pickerId}`;
+  const scrollToPicker = useCallback((elementId: string) => {
+    const scrollContainer = coloursPanelRef.current;
+    const element = document.getElementById(elementId);
 
-    if (!advancedMode) {
-      setAdvancedMode(true);
-      setTimeout(() => {
-        document.getElementById(elementId)?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
+    if (scrollContainer && element) {
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const elementTop = element.getBoundingClientRect().top;
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollTop + (elementTop - containerTop) - 80,
+        behavior: "smooth",
+      });
     } else {
-      document.getElementById(elementId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+  }, []);
 
-    setHighlightedPicker(elementId);
-    setTimeout(() => {
-      setHighlightedPicker(null);
-      setActiveHotspot(null);
-    }, 2000);
-  }, [advancedMode]);
+  const handleHotspotClick = useCallback(
+    (hotspot: ThemeHotspotId) => {
+      setActiveHotspot(hotspot);
+      setActiveTab("colours");
+
+      const pickerId = HOTSPOT_PRIMARY_PICKER[hotspot];
+      const elementId = `picker-${pickerId}`;
+
+      // Hotspots always jump to granular colour controls
+      setAdvancedMode(true);
+
+      requestAnimationFrame(() => {
+        setTimeout(() => scrollToPicker(elementId), 80);
+      });
+
+      setHighlightedPicker(elementId);
+      setTimeout(() => {
+        setHighlightedPicker(null);
+        setActiveHotspot(null);
+      }, 2400);
+    },
+    [scrollToPicker]
+  );
 
   const handleSaveDesign = async () => {
     if (!currentRestaurant?.id) return;
@@ -275,16 +335,39 @@ export function DesignStudio() {
     }
   };
 
+  const previewProps = {
+    restaurantName: currentRestaurant?.name ?? "Your Restaurant",
+    logo: design.logo || null,
+    location: design.location || "123 Main Street",
+    hours: "Mon–Fri: 11:00 – 22:00\nSat–Sun: 10:00 – 23:00",
+    contactInfo: design.contactInfo || "+1 555 0100 | hello@restaurant.com",
+    footerSlogan: "Fresh ingredients, crafted with care.",
+    theme: resolvedTheme,
+    titleFont: design.titleFont,
+    bodyFont: design.textFont,
+    menu,
+    flatCategories,
+    hasNestedStructure,
+    links: [] as RestaurantLink[],
+    display: displayOptions,
+  };
+
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+      {/* Header */}
       <div className="mb-4 flex shrink-0 items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Design Studio</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Click areas in the live preview to jump to their color controls
+            Customize your menu appearance — click hotspots on the preview to edit colours
           </p>
         </div>
-        <Button size="lg" className="px-8" onClick={handleSaveDesign} disabled={saving || !currentRestaurant?.id}>
+        <Button
+          size="lg"
+          className="px-8"
+          onClick={handleSaveDesign}
+          disabled={saving || !currentRestaurant?.id}
+        >
           {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Design"}
         </Button>
       </div>
@@ -295,127 +378,185 @@ export function DesignStudio() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 lg:flex-row">
-        {/* Left — controls sidebar */}
-        <div
-          ref={sidebarRef}
-          className="w-full shrink-0 overflow-y-auto rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:w-[380px] lg:max-w-[40%]"
-        >
-          <ToggleSwitch
-            label="Advanced Theme Controls"
-            description="Unlock granular color pickers for every menu section"
-            checked={advancedMode}
-            onChange={setAdvancedMode}
-          />
-
-          {!advancedMode ? (
-            <div className="mt-6 space-y-5">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Basic Colors</h2>
-              <StudioColorPicker
-                id="picker-headerNavBg"
-                label="Header & Navigation Background"
-                value={design.headerBackgroundColor}
-                fallback="#ffffff"
-                highlighted={highlightedPicker === "picker-headerNavBg"}
-                onChange={(v) => updateDesign({ headerBackgroundColor: v, footerBackgroundColor: v })}
-              />
-              <StudioColorPicker
-                id="picker-mainContentBg"
-                label="Main Content Background"
-                value={design.mainContentBackgroundColor}
-                fallback="#fafafa"
-                highlighted={highlightedPicker === "picker-mainContentBg"}
-                onChange={(v) => updateDesign({ mainContentBackgroundColor: v })}
-              />
-              <p className="text-xs text-gray-500">
-                Text and icons auto-adjust to black or white for readable contrast.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-8">
-              {ADVANCED_THEME_SECTIONS.map((section) => (
-                <div key={section.title}>
-                  <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                    {section.title}
-                  </h2>
-                  <div className="space-y-2">
-                    {section.fields.map((field) => (
-                      <StudioColorPicker
-                        key={field.id}
-                        id={`picker-${field.id}`}
-                        label={field.label}
-                        value={getPickerValue(field.id)}
-                        fallback="#ffffff"
-                        highlighted={highlightedPicker === `picker-${field.id}`}
-                        onChange={(v) => setPickerValue(field.id, v)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-8 border-t border-gray-100 pt-6">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">Display Options</h2>
-            <ToggleSwitch
-              label="Show Prices"
-              checked={design.showPrices ?? true}
-              onChange={(checked) => updateDesign({ showPrices: checked })}
-            />
-            <ToggleSwitch
-              label="Show Descriptions"
-              checked={design.showDescriptions ?? true}
-              onChange={(checked) => updateDesign({ showDescriptions: checked })}
-            />
-            <ToggleSwitch
-              label="Show Images"
-              checked={design.showImages ?? true}
-              onChange={(checked) => updateDesign({ showImages: checked })}
-            />
-            <ToggleSwitch
-              label="Show Dietary Info"
-              checked={design.showDietary ?? true}
-              onChange={(checked) => updateDesign({ showDietary: checked })}
-            />
-          </div>
-        </div>
-
-        {/* Right — live preview canvas */}
-        <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-inner">
-          <div className="border-b border-gray-200 bg-white px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-            Live Preview — click any section to edit
-          </div>
-          <div className="h-full overflow-auto p-4">
-            <div
-              className="mx-auto origin-top overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-lg"
-              style={{ transform: "scale(0.72)", transformOrigin: "top center", width: "138%", marginLeft: "-19%" }}
+      {/* Tab navigation */}
+      <div className="mb-4 shrink-0 border-b border-gray-200">
+        <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Design studio sections">
+          {STUDIO_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors",
+                activeTab === tab.id
+                  ? "border-indigo-600 text-indigo-600"
+                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+              )}
             >
-              <PublicMenuLayout
-                restaurantName={currentRestaurant?.name ?? "Your Restaurant"}
-                logo={design.logo || null}
-                location={design.location || "123 Main Street"}
-                hours={"Mon–Fri: 11:00 – 22:00\nSat–Sun: 10:00 – 23:00"}
-                contactInfo={design.contactInfo || "+1 555 0100 | hello@restaurant.com"}
-                footerSlogan="Fresh ingredients, crafted with care."
-                theme={resolvedTheme}
-                titleFont={design.titleFont}
-                bodyFont={design.textFont}
-                menu={menu}
-                flatCategories={flatCategories}
-                hasNestedStructure={hasNestedStructure}
-                links={[]}
-                display={displayOptions}
-                previewInteractive={{
-                  enabled: true,
-                  activeHotspot,
-                  onHotspotClick: handleHotspotClick,
-                }}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab panels */}
+      <div className="min-h-0 flex-1">
+        {/* Menu (Preview) */}
+        {activeTab === "menu" && (
+          <div className="flex h-full min-h-[640px] flex-col items-center justify-start rounded-xl border border-gray-200 bg-gradient-to-b from-gray-100 to-gray-200 p-6 lg:p-10">
+            <p className="mb-6 text-center text-xs font-medium uppercase tracking-wide text-gray-500">
+              Live Preview — tap a coloured dot to edit that section&apos;s colours
+            </p>
+            <div className="relative w-full max-w-[390px] shrink-0">
+              {/* Smartphone frame */}
+              <div className="overflow-hidden rounded-[2.75rem] border-[10px] border-gray-900 bg-gray-900 shadow-2xl">
+                <div className="flex items-center justify-center bg-gray-900 py-2">
+                  <div className="h-1 w-16 rounded-full bg-gray-700" />
+                </div>
+                <div className="h-[720px] overflow-y-auto bg-white">
+                  <PublicMenuLayout
+                    {...previewProps}
+                    previewInteractive={{
+                      enabled: true,
+                      activeHotspot,
+                      onHotspotClick: handleHotspotClick,
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-center bg-gray-900 py-3">
+                  <div className="h-1 w-28 rounded-full bg-gray-700" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Colours */}
+        {activeTab === "colours" && (
+          <div
+            ref={coloursPanelRef}
+            className="mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+          >
+            <ToggleSwitch
+              label="Advanced Theme Controls"
+              description="Unlock granular color pickers for every menu section"
+              checked={advancedMode}
+              onChange={setAdvancedMode}
+            />
+
+            {!advancedMode ? (
+              <div className="mt-6 space-y-5">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                  Basic Colors
+                </h2>
+                <StudioColorPicker
+                  id="picker-headerNavBg"
+                  label="Header & Navigation Background"
+                  value={design.headerBackgroundColor}
+                  fallback="#ffffff"
+                  highlighted={highlightedPicker === "picker-headerNavBg"}
+                  onChange={(v) =>
+                    updateDesign({ headerBackgroundColor: v, footerBackgroundColor: v })
+                  }
+                />
+                <StudioColorPicker
+                  id="picker-mainContentBg"
+                  label="Main Content Background"
+                  value={design.mainContentBackgroundColor}
+                  fallback="#fafafa"
+                  highlighted={highlightedPicker === "picker-mainContentBg"}
+                  onChange={(v) => {
+                    updateDesign({ mainContentBackgroundColor: v });
+                    updateAdvancedTheme({ menuBackground: v });
+                  }}
+                />
+                <p className="text-xs text-gray-500">
+                  Text and icons auto-adjust to black or white for readable contrast.
+                </p>
+                <DesignCategoryStylingSection />
+              </div>
+            ) : (
+              <div className="mt-6 space-y-8">
+                {ADVANCED_THEME_SECTIONS.map((section) => (
+                  <div key={section.title}>
+                    <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                      {section.title}
+                    </h2>
+                    <div className="space-y-2">
+                      {section.fields.map((field) => (
+                        <StudioColorPicker
+                          key={field.id}
+                          id={`picker-${field.id}`}
+                          label={field.label}
+                          value={getPickerValue(field.id)}
+                          fallback="#ffffff"
+                          highlighted={highlightedPicker === `picker-${field.id}`}
+                          onChange={(v) => setPickerValue(field.id, v)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-8 border-t border-gray-100 pt-6">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                Display Options
+              </h2>
+              <ToggleSwitch
+                label="Show Prices"
+                checked={design.showPrices ?? true}
+                onChange={(checked) => updateDesign({ showPrices: checked })}
+              />
+              <ToggleSwitch
+                label="Show Descriptions"
+                checked={design.showDescriptions ?? true}
+                onChange={(checked) => updateDesign({ showDescriptions: checked })}
+              />
+              <ToggleSwitch
+                label="Show Images"
+                checked={design.showImages ?? true}
+                onChange={(checked) => updateDesign({ showImages: checked })}
+              />
+              <ToggleSwitch
+                label="Show Dietary Info"
+                checked={design.showDietary ?? true}
+                onChange={(checked) => updateDesign({ showDietary: checked })}
               />
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Fonts */}
+        {activeTab === "fonts" && (
+          <div className="mx-auto max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <DesignTypographySection showHeading={false} />
+          </div>
+        )}
+
+        {/* Logo & SEO */}
+        {activeTab === "logo-seo" && (
+          <div className="mx-auto max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <DesignLogoSeoSection showHeading={false} />
+          </div>
+        )}
       </div>
+
+      {/* Flash highlight keyframe */}
+      <style jsx global>{`
+        @keyframes flash-highlight {
+          0%,
+          100% {
+            background-color: rgb(238 242 255);
+            box-shadow: 0 0 0 2px rgb(129 140 248);
+          }
+          50% {
+            background-color: rgb(199 210 254);
+            box-shadow: 0 0 0 4px rgb(99 102 241);
+          }
+        }
+      `}</style>
     </div>
   );
 }

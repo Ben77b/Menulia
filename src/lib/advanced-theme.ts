@@ -69,50 +69,25 @@ export interface ThemePickerSection {
 
 export const ADVANCED_THEME_SECTIONS: ThemePickerSection[] = [
   {
-    title: "Global / Main",
-    hotspot: "menuItem",
-    fields: [
-      { id: "mainContentBg", label: "Menu Background", fallbackKey: "mainContentBackgroundColor" },
-      { id: "dividerLineColor", label: "Divider Line Color" },
-    ],
-  },
-  {
     title: "Header & Nav",
     hotspot: "header",
     fields: [
       { id: "logoAreaBg", label: "Logo Area BG", fallbackKey: "headerBackgroundColor" },
       { id: "categoryBarBg", label: "Category Bar BG", fallbackKey: "categoryStripBackgroundColor" },
-      { id: "tier1ActiveBg", label: "Tier 1 Active Button BG" },
-      { id: "tier1ActiveText", label: "Tier 1 Active Button Text" },
-      { id: "tier1ActiveBorder", label: "Tier 1 Active Button Border" },
-      { id: "tier1InactiveBg", label: "Tier 1 Inactive Button BG" },
-      { id: "tier1InactiveText", label: "Tier 1 Inactive Button Text" },
-      { id: "tier1InactiveBorder", label: "Tier 1 Inactive Button Border" },
-      { id: "tier2ActiveBg", label: "Tier 2 Active Button BG", fallbackKey: "categoryAccentColor" },
-      { id: "tier2ActiveText", label: "Tier 2 Active Button Text" },
-      { id: "tier2ActiveBorder", label: "Tier 2 Active Button Border" },
-      { id: "tier2InactiveBg", label: "Tier 2 Inactive Button BG" },
-      { id: "tier2InactiveText", label: "Tier 2 Inactive Button Text" },
-      { id: "tier2InactiveBorder", label: "Tier 2 Inactive Button Border" },
+      { id: "tier2ActiveBg", label: "Active Category Button BG", fallbackKey: "categoryAccentColor" },
+      { id: "tier2ActiveText", label: "Active Category Button Text" },
+      { id: "tier2InactiveText", label: "Inactive Category Button Text" },
+      { id: "tier2InactiveBorder", label: "Inactive Category Button Border" },
     ],
   },
   {
     title: "Menu Items",
     hotspot: "menuItem",
     fields: [
+      { id: "menuBackground", label: "Menu Background", fallbackKey: "mainContentBackgroundColor" },
       { id: "itemTitleText", label: "Item Title Text" },
       { id: "itemDescriptionText", label: "Item Description Text" },
       { id: "priceTextColor", label: "Price Text Color", fallbackKey: "categoryAccentColor" },
-    ],
-  },
-  {
-    title: "Interactive / Cover Flow",
-    hotspot: "carousel",
-    fields: [
-      { id: "carouselActiveIndicator", label: "Active Indicator Pill", fallbackKey: "categoryAccentColor" },
-      { id: "carouselInactiveDots", label: "Inactive Dots" },
-      { id: "carouselArrowBg", label: "Navigation Arrow Circles", fallbackKey: "categoryAccentColor" },
-      { id: "carouselArrowIcon", label: "Navigation Arrow Icon" },
     ],
   },
   {
@@ -124,6 +99,16 @@ export const ADVANCED_THEME_SECTIONS: ThemePickerSection[] = [
       { id: "filterAreaBg", label: "Filter Area Background", fallbackKey: "footerBackgroundColor" },
       { id: "filterText", label: "Filter Text Color" },
       { id: "filterBorder", label: "Filter Border Color" },
+    ],
+  },
+  {
+    title: "Carousel & Navigation",
+    hotspot: "carousel",
+    fields: [
+      { id: "carouselActiveIndicator", label: "Active Indicator Pill", fallbackKey: "categoryAccentColor" },
+      { id: "carouselInactiveDots", label: "Inactive Dots" },
+      { id: "carouselArrowBg", label: "Navigation Arrow Circles", fallbackKey: "categoryAccentColor" },
+      { id: "carouselArrowIcon", label: "Navigation Arrow Icon" },
     ],
   },
 ];

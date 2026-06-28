@@ -85,6 +85,7 @@ function DishSection({
         enabled={hotspotEnabled}
         active={previewInteractive?.activeHotspot === "carousel"}
         onSelect={previewInteractive?.onHotspotClick}
+        indicatorPosition="center-right"
       >
         <DishCarousel
           dishes={filteredDishes}
@@ -109,6 +110,7 @@ function DishSection({
       enabled={hotspotEnabled}
       active={previewInteractive?.activeHotspot === "menuItem"}
       onSelect={previewInteractive?.onHotspotClick}
+      indicatorPosition="center-left"
     >
       <div className="mx-auto max-w-3xl space-y-12">
         {filteredDishes.map((dish) => (
@@ -233,6 +235,7 @@ export function PublicMenuLayout({
         enabled={hotspotEnabled}
         active={previewInteractive?.activeHotspot === "header"}
         onSelect={previewInteractive?.onHotspotClick}
+        indicatorPosition="top-right"
       >
         <MenuHeader
           restaurantName={restaurantName}
@@ -251,6 +254,7 @@ export function PublicMenuLayout({
         enabled={hotspotEnabled}
         active={previewInteractive?.activeHotspot === "categoryBar"}
         onSelect={previewInteractive?.onHotspotClick}
+        indicatorPosition="center-right"
       >
         {hasNestedStructure ? (
           <NestedCategoryNav
@@ -329,6 +333,7 @@ export function PublicMenuLayout({
           enabled={hotspotEnabled}
           active={previewInteractive?.activeHotspot === "filters"}
           onSelect={previewInteractive?.onHotspotClick}
+          indicatorPosition="top-left"
         >
           <PublicMenuFilterBar
             backgroundColor={theme.filterAreaBg}
@@ -349,6 +354,7 @@ export function PublicMenuLayout({
         enabled={hotspotEnabled}
         active={previewInteractive?.activeHotspot === "footer"}
         onSelect={previewInteractive?.onHotspotClick}
+        indicatorPosition="bottom-right"
       >
         <PublicMenuFooter
           restaurantName={restaurantName}
