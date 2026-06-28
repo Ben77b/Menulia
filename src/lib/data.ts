@@ -53,17 +53,34 @@ async function fetchCategoriesWithDishes(restaurantId: string) {
     .eq("restaurant_id", restaurantId)
     .order("order_index", { ascending: true });
 
-  if (categoriesError) throw categoriesError;
+  if (categoriesError) {
+    logSupabaseFailure("fetchCategoriesWithDishes.categories", categoriesError);
+    return [];
+  }
 
-  return Promise.all(
-    (categories || []).map(async (category) => {
+  if (!categories || categories.length === 0) {
+    return [];
+  }
+
+  const results = await Promise.all(
+    categories.map(async (category) => {
       const { data: dishes, error: dishesError } = await supabase
         .from("dishes")
         .select("*")
         .eq("category_id", category.id)
-        .order("order_index", { ascending: true });
+        .order("created_at", { ascending: true });
 
-      if (dishesError) throw dishesError;
+      if (dishesError) {
+        logSupabaseFailure("fetchCategoriesWithDishes.dishes", dishesError);
+        return {
+          id: category.id,
+          restaurant_id: category.restaurant_id,
+          name: category.name,
+          sort_order: category.order_index ?? category.sort_order ?? 0,
+          layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
+          items: [],
+        };
+      }
 
       return {
         id: category.id,
@@ -75,36 +92,33 @@ async function fetchCategoriesWithDishes(restaurantId: string) {
       };
     })
   );
+
+  return results;
 }
 
 export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFull | null> {
-  try {
-    const supabase = createAnonClient();
+  const supabase = createAnonClient();
 
-    const { data: restaurant, error } = await supabase
-      .from("restaurants")
-      .select("*")
-      .eq("slug", slug)
-      .single();
+  const { data: restaurant, error } = await supabase
+    .from("restaurants")
+    .select("*")
+    .eq("slug", slug)
+    .single();
 
-    if (error) {
-      if (error.code === "PGRST116") return null;
-      logSupabaseFailure("fetchRestaurantBySlug", error);
-      return null;
-    }
-
-    if (!restaurant) return null;
-
-    const categories = await fetchCategoriesWithDishes(restaurant.id);
-
-    return {
-      ...normalizeRestaurantRow(restaurant),
-      categories,
-    } as RestaurantFull;
-  } catch (error) {
-    console.error("Error fetching restaurant by slug:", error);
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    logSupabaseFailure("fetchRestaurantBySlug", error);
     return null;
   }
+
+  if (!restaurant) return null;
+
+  const categories = await fetchCategoriesWithDishes(restaurant.id);
+
+  return {
+    ...normalizeRestaurantRow(restaurant),
+    categories,
+  } as RestaurantFull;
 }
 
 export async function fetchAllRestaurantSlugs(): Promise<string[]> {

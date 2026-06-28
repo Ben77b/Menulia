@@ -176,10 +176,10 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
         {categories.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 bg-white/80 px-6 py-12 text-center">
             <p className={`text-lg font-semibold ${fontClasses?.heading || ""}`} style={{ color: design.mainContentFontColor }}>
-              Menu coming soon
+              Menu coming soon!
             </p>
             <p className={`mt-2 text-sm ${fontClasses?.body || ""}`} style={{ color: design.mainContentFontColor }}>
-              This restaurant is setting up their digital menu. Check back shortly.
+              This restaurant hasn&apos;t added any dishes yet.
             </p>
           </div>
         ) : (

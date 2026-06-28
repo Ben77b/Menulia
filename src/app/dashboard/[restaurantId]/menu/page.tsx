@@ -6,6 +6,15 @@ import { Plus, Trash2, Edit, FolderPlus, X, GripVertical, Upload, Camera } from 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import {
+  fetchMenuCategories,
+  createMenuCategory,
+  updateMenuCategory,
+  deleteMenuCategory,
+  createMenuDish,
+  updateMenuDish,
+  deleteMenuDish,
+} from "@/lib/menu-db";
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +40,10 @@ interface MenuItem {
 
 
 export default function MenuPage() {
-  const { currentRestaurant } = useRestaurant();
+  const { currentRestaurant, refreshRestaurants } = useRestaurant();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryLayoutType, setNewCategoryLayoutType] = useState<'stacked' | 'carousel'>('stacked');
@@ -131,187 +142,38 @@ export default function MenuPage() {
   async function loadMenuData() {
     if (!currentRestaurant) return;
 
+    setIsLoading(true);
+
     try {
-      // Load categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('restaurant_id', currentRestaurant.id)
-        .order('order_index');
+      const categoriesWithItems = await fetchMenuCategories(currentRestaurant.id);
 
-      if (categoriesError) throw categoriesError;
-
-      // Load dishes for each category
-      const categoriesWithItems = await Promise.all(
-        (categoriesData || []).map(async (category) => {
-          const { data: dishesData, error: dishesError } = await supabase
-            .from('dishes')
-            .select('*')
-            .eq('category_id', category.id);
-
-          if (dishesError) throw dishesError;
-
-          return {
-            id: category.id,
-            name: category.name,
-            layout_type: (category.layout_type as 'stacked' | 'carousel') || 'stacked',
-            items: (dishesData || []).map((dish) => ({
-              id: dish.id,
-              name: dish.name,
-              description: dish.description || "",
-              price: parseFloat(dish.price) || 0,
-              image_url: dish.image_url,
-              image_alt: "",
-              allergens: [],
-              tags: dish.tags || [],
-              keywords: "",
-              is_available: true,
-            })),
-          };
-        })
+      setCategories(
+        categoriesWithItems.map((category) => ({
+          id: category.id,
+          name: category.name,
+          layout_type: category.layout_type,
+          items: category.items.map((dish) => ({
+            id: dish.id,
+            name: dish.name,
+            description: dish.description,
+            price: dish.price,
+            image_url: dish.image_url,
+            image_alt: "",
+            allergens: [],
+            tags: dish.tags,
+            keywords: "",
+            is_available: dish.is_available,
+          })),
+        }))
       );
 
-      setCategories(categoriesWithItems);
-
-      // Load custom tags from restaurant theme
-      const { data: restaurantData, error: restaurantError } = await supabase
-        .from('restaurants')
-        .select('typography')
-        .eq('id', currentRestaurant.id)
-        .single();
-
-      if (restaurantError) throw restaurantError;
-
-      // For now, custom tags are stored in localStorage as a fallback
       const savedTags = localStorage.getItem(`custom-tags-${currentRestaurant.id}`);
-      if (savedTags) {
-        setCustomTags(JSON.parse(savedTags));
-      } else {
-        setCustomTags([]);
-      }
+      setCustomTags(savedTags ? JSON.parse(savedTags) : []);
     } catch (error) {
-      console.error('Error loading menu data:', error);
+      console.error("Error loading menu data:", error);
       setCategories([]);
-      // Fallback to localStorage
-      const saved = localStorage.getItem(`menu-categories-${currentRestaurant.id}`);
-      if (saved) {
-        setCategories(JSON.parse(saved));
-      } else {
-        setCategories([]);
-      }
-
-      const savedTags = localStorage.getItem(`custom-tags-${currentRestaurant.id}`);
-      if (savedTags) {
-        setCustomTags(JSON.parse(savedTags));
-      } else {
-        setCustomTags([]);
-      }
-    }
-  }
-
-  useEffect(() => {
-    if (currentRestaurant) {
-      saveCategories();
-    }
-  }, [categories, currentRestaurant]);
-
-  async function saveCategories() {
-    if (!currentRestaurant) return;
-
-    try {
-      // Get existing categories
-      const { data: existingCategories, error: fetchError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('restaurant_id', currentRestaurant.id);
-
-      if (fetchError) throw fetchError;
-
-      const existingCategoryIds = new Set((existingCategories || []).map(c => c.id));
-
-      // Upsert categories
-      for (let i = 0; i < categories.length; i++) {
-        const category = categories[i];
-        
-        if (existingCategoryIds.has(category.id)) {
-          // Update existing category
-          await supabase
-            .from('categories')
-            .update({
-              name: category.name,
-              layout_type: category.layout_type,
-              order_index: i,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', category.id);
-        } else {
-          // Insert new category
-          const { error: insertError } = await supabase
-            .from('categories')
-            .insert({
-              id: category.id,
-              restaurant_id: currentRestaurant.id,
-              name: category.name,
-              layout_type: category.layout_type,
-              order_index: i,
-            });
-
-          if (insertError) throw insertError;
-        }
-
-        // Handle dishes for this category
-        const existingDishesResponse = await supabase
-          .from('dishes')
-          .select('id')
-          .eq('category_id', category.id);
-
-        const existingDishIds = new Set((existingDishesResponse.data || []).map(d => d.id));
-
-        for (const item of category.items) {
-          if (existingDishIds.has(item.id)) {
-            // Update existing dish
-            await supabase
-              .from('dishes')
-              .update({
-                name: item.name,
-                description: item.description,
-                price: item.price.toString(),
-                image_url: item.image_url,
-                tags: item.tags,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', item.id);
-          } else {
-            // Insert new dish
-            await supabase
-              .from('dishes')
-              .insert({
-                id: item.id,
-                category_id: category.id,
-                name: item.name,
-                description: item.description,
-                price: item.price.toString(),
-                image_url: item.image_url,
-                tags: item.tags,
-              });
-          }
-        }
-      }
-
-      // Delete categories that no longer exist
-      const currentCategoryIds = new Set(categories.map(c => c.id));
-      for (const existingCat of existingCategories || []) {
-        if (!currentCategoryIds.has(existingCat.id)) {
-          await supabase
-            .from('categories')
-            .delete()
-            .eq('id', existingCat.id);
-        }
-      }
-    } catch (error) {
-      console.error('Error saving categories:', error);
-      // Fallback to localStorage
-      localStorage.setItem(`menu-categories-${currentRestaurant.id}`, JSON.stringify(categories));
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -321,30 +183,74 @@ export default function MenuPage() {
     }
   }, [customTags, currentRestaurant]);
 
-  function handleAddCategory() {
-    if (!newCategoryName.trim()) return;
-    const newCategory: Category = {
-      id: `cat-${Date.now()}`,
-      name: newCategoryName,
-      layout_type: newCategoryLayoutType,
-      items: [],
-    };
-    setCategories([...categories, newCategory]);
-    setNewCategoryName("");
-    setNewCategoryLayoutType('stacked');
-    setShowAddCategory(false);
+  async function handleAddCategory() {
+    if (!currentRestaurant || !newCategoryName.trim()) return;
+
+    setIsSaving(true);
+
+    try {
+      const created = await createMenuCategory({
+        restaurantId: currentRestaurant.id,
+        name: newCategoryName,
+        layout_type: newCategoryLayoutType,
+        order_index: categories.length,
+      });
+
+      setCategories((prev) => [
+        ...prev,
+        {
+          id: created.id,
+          name: created.name,
+          layout_type: created.layout_type,
+          items: [],
+        },
+      ]);
+
+      setNewCategoryName("");
+      setNewCategoryLayoutType("stacked");
+      setShowAddCategory(false);
+      await refreshRestaurants();
+    } catch (error) {
+      console.error("Error creating category:", error);
+      alert("Failed to save category. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function handleDeleteCategory(categoryId: string) {
-    setCategories(categories.filter((cat) => cat.id !== categoryId));
+  async function handleDeleteCategory(categoryId: string) {
+    if (!confirm("Delete this category and all of its dishes?")) return;
+
+    setIsSaving(true);
+
+    try {
+      await deleteMenuCategory(categoryId);
+      setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+      await refreshRestaurants();
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      alert("Failed to delete category. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function handleCategoryLayoutTypeChange(categoryId: string, layoutType: 'stacked' | 'carousel') {
+  async function handleCategoryLayoutTypeChange(
+    categoryId: string,
+    layoutType: "stacked" | "carousel"
+  ) {
     setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === categoryId ? { ...cat, layout_type: layoutType } : cat
-      )
+      prev.map((cat) => (cat.id === categoryId ? { ...cat, layout_type: layoutType } : cat))
     );
+
+    try {
+      await updateMenuCategory(categoryId, { layout_type: layoutType });
+      await refreshRestaurants();
+    } catch (error) {
+      console.error("Error updating category layout:", error);
+      await loadMenuData();
+      alert("Failed to update category layout. Please try again.");
+    }
   }
 
   function handleAddDish(categoryId: string) {
@@ -368,46 +274,108 @@ export default function MenuPage() {
     setShowDishForm(true);
   }
 
-  function handleSaveDish() {
-    if (!editingCategoryIdForDish) return;
-    
-    const dishData: MenuItem = {
-      id: editingDish?.id || `item-${Date.now()}`,
+  async function handleSaveDish() {
+    if (!editingCategoryIdForDish || !dishForm.name.trim()) return;
+
+    setIsSaving(true);
+
+    const dishPayload = {
       name: dishForm.name,
-      price: parseFloat(dishForm.price) || 0,
       description: dishForm.description,
+      price: parseFloat(dishForm.price) || 0,
       image_url: dishForm.image || null,
-      image_alt: "",
-      allergens: [],
       tags: dishForm.tags,
-      keywords: "",
-      is_available: true,
     };
 
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === editingCategoryIdForDish
-          ? editingDish
-            ? { ...cat, items: cat.items.map((i) => i.id === editingDish.id ? dishData : i) }
-            : { ...cat, items: [...cat.items, dishData] }
-          : cat
-      )
-    );
+    try {
+      if (editingDish) {
+        await updateMenuDish(editingDish.id, dishPayload);
 
-    setShowDishForm(false);
-    setEditingDish(null);
-    setEditingCategoryIdForDish(null);
-    setDishForm({ name: "", price: "", description: "", image: "", tags: [], customTag: "" });
+        setCategories((prev) =>
+          prev.map((cat) =>
+            cat.id === editingCategoryIdForDish
+              ? {
+                  ...cat,
+                  items: cat.items.map((item) =>
+                    item.id === editingDish.id
+                      ? {
+                          ...item,
+                          ...dishPayload,
+                          image_alt: item.image_alt,
+                          allergens: item.allergens,
+                          keywords: item.keywords,
+                          is_available: item.is_available,
+                        }
+                      : item
+                  ),
+                }
+              : cat
+          )
+        );
+      } else {
+        const created = await createMenuDish({
+          categoryId: editingCategoryIdForDish,
+          ...dishPayload,
+        });
+
+        setCategories((prev) =>
+          prev.map((cat) =>
+            cat.id === editingCategoryIdForDish
+              ? {
+                  ...cat,
+                  items: [
+                    ...cat.items,
+                    {
+                      id: created.id,
+                      name: created.name,
+                      description: created.description,
+                      price: created.price,
+                      image_url: created.image_url,
+                      image_alt: "",
+                      allergens: [],
+                      tags: created.tags,
+                      keywords: "",
+                      is_available: created.is_available,
+                    },
+                  ],
+                }
+              : cat
+          )
+        );
+      }
+
+      setShowDishForm(false);
+      setEditingDish(null);
+      setEditingCategoryIdForDish(null);
+      setDishForm({ name: "", price: "", description: "", image: "", tags: [], customTag: "" });
+      await refreshRestaurants();
+    } catch (error) {
+      console.error("Error saving dish:", error);
+      alert("Failed to save dish. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function handleDeleteDish(item: MenuItem, categoryId: string) {
-    setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === categoryId
-          ? { ...cat, items: cat.items.filter((i) => i.id !== item.id) }
-          : cat
-      )
-    );
+  async function handleDeleteDish(item: MenuItem, categoryId: string) {
+    if (!confirm("Delete this dish?")) return;
+
+    setIsSaving(true);
+
+    try {
+      await deleteMenuDish(item.id);
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.id === categoryId ? { ...cat, items: cat.items.filter((i) => i.id !== item.id) } : cat
+        )
+      );
+      await refreshRestaurants();
+    } catch (error) {
+      console.error("Error deleting dish:", error);
+      alert("Failed to delete dish. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
 
@@ -487,15 +455,27 @@ export default function MenuPage() {
     e.preventDefault();
   }
 
-  function handleCategoryDrop(index: number) {
+  async function handleCategoryDrop(index: number) {
     if (draggedCategoryIndex === null || draggedCategoryIndex === index) return;
-    
+
     const newCategories = [...categories];
     const [draggedCategory] = newCategories.splice(draggedCategoryIndex, 1);
     newCategories.splice(index, 0, draggedCategory);
-    
+
     setCategories(newCategories);
     setDraggedCategoryIndex(null);
+
+    try {
+      await Promise.all(
+        newCategories.map((category, orderIndex) =>
+          updateMenuCategory(category.id, { order_index: orderIndex })
+        )
+      );
+      await refreshRestaurants();
+    } catch (error) {
+      console.error("Error reordering categories:", error);
+      await loadMenuData();
+    }
   }
 
   // Drag and drop handlers for dishes

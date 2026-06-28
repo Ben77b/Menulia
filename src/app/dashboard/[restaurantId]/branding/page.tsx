@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { updateRestaurantBranding } from "@/lib/menu-db";
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,8 @@ function getContrastColor(hexColor: string): string {
 }
 
 export default function BrandingPage() {
-  const { currentRestaurant } = useRestaurant();
+  const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const dataLoadedRef = useRef(false);
 
   const [color1, setColor1] = useState("#FFFFFF");
   const [color2, setColor2] = useState("#F3F4F6");
@@ -90,6 +92,8 @@ export default function BrandingPage() {
   async function loadRestaurantData() {
     if (!currentRestaurant) return;
 
+    dataLoadedRef.current = false;
+
     try {
       const { data, error } = await supabase
         .from('restaurants')
@@ -115,70 +119,37 @@ export default function BrandingPage() {
       }
     } catch (error) {
       console.error('Error loading restaurant data:', error);
-      // Fallback to localStorage if Supabase fails
-      const saved = localStorage.getItem(`branding-colors-${currentRestaurant.id}`);
-      if (saved) {
-        const colors = JSON.parse(saved);
-        setColor1(colors.color1 || "#FFFFFF");
-        setColor2(colors.color2 || "#F3F4F6");
-        setColor3(colors.color3 || "#FFFFFF");
-        setMatchMainBackground(colors.matchMainBackground || false);
-      }
-
-      const savedFonts = localStorage.getItem(`branding-fonts-${currentRestaurant.id}`);
-      if (savedFonts) {
-        const fonts = JSON.parse(savedFonts);
-        setSelectedPreset(fonts.selectedPreset || "minimalist-cafe");
-        setCustomHeadingFont(fonts.customHeadingFont || "");
-        setCustomBodyFont(fonts.customBodyFont || "");
-      }
+    } finally {
+      dataLoadedRef.current = true;
     }
   }
 
   // Save colors and fonts when they change
   useEffect(() => {
-    if (currentRestaurant) {
-      saveRestaurantData();
-    }
+    if (!currentRestaurant || !dataLoadedRef.current) return;
+    saveRestaurantData();
   }, [color1, color2, color3, matchMainBackground, selectedPreset, customHeadingFont, customBodyFont, currentRestaurant]);
 
   async function saveRestaurantData() {
     if (!currentRestaurant) return;
 
     try {
-      const { error } = await supabase
-        .from('restaurants')
-        .update({
-          theme_colors: {
-            color1,
-            color2,
-            color3,
-            matchMainBackground,
-          },
-          typography: {
-            selectedPreset,
-            customHeadingFont,
-            customBodyFont,
-          },
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', currentRestaurant.id);
-
-      if (error) throw error;
+      await updateRestaurantBranding(currentRestaurant.id, {
+        theme_colors: {
+          color1,
+          color2,
+          color3,
+          matchMainBackground,
+        },
+        typography: {
+          selectedPreset,
+          customHeadingFont,
+          customBodyFont,
+        },
+      });
+      await refreshRestaurants();
     } catch (error) {
       console.error('Error saving restaurant data:', error);
-      // Fallback to localStorage if Supabase fails
-      localStorage.setItem(`branding-colors-${currentRestaurant.id}`, JSON.stringify({
-        color1,
-        color2,
-        color3,
-        matchMainBackground,
-      }));
-      localStorage.setItem(`branding-fonts-${currentRestaurant.id}`, JSON.stringify({
-        selectedPreset,
-        customHeadingFont,
-        customBodyFont,
-      }));
     }
   }
 

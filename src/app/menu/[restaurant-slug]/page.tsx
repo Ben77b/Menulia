@@ -3,13 +3,19 @@ import { fetchRestaurantBySlug, fetchAllRestaurantSlugs } from "@/lib/data";
 import { DinerApp } from "@/components/public/diner-app";
 import { buildPublicMenuDesign, withPublicMenuDefaults } from "@/lib/public-menu";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ "restaurant-slug": string }>;
 }
 
 export async function generateStaticParams() {
-  const slugs = await fetchAllRestaurantSlugs();
-  return slugs.map((slug) => ({ "restaurant-slug": slug }));
+  try {
+    const slugs = await fetchAllRestaurantSlugs();
+    return slugs.map((slug) => ({ "restaurant-slug": slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: PageProps) {
@@ -37,7 +43,10 @@ export default async function PublicMenuPage({ params }: PageProps) {
     notFound();
   }
 
-  const prepared = withPublicMenuDefaults(restaurant);
+  const prepared = withPublicMenuDefaults({
+    ...restaurant,
+    categories: restaurant.categories ?? [],
+  });
   const design = buildPublicMenuDesign(prepared);
 
   return <DinerApp restaurant={prepared} design={design} />;
