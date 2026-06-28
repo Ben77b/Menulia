@@ -1,10 +1,4 @@
--- Paste this entire block into Supabase → SQL Editor → Run
-
-ALTER TABLE public.restaurants
-  ADD COLUMN IF NOT EXISTS custom_links JSONB NOT NULL DEFAULT '[]'::jsonb;
-
-ALTER TABLE public.restaurants
-  ADD COLUMN IF NOT EXISTS footer_slogan TEXT NOT NULL DEFAULT '';
+-- Display toggles for the public menu (prices, descriptions, images, dietary info).
 
 ALTER TABLE public.restaurants
   ADD COLUMN IF NOT EXISTS show_prices BOOLEAN NOT NULL DEFAULT true,

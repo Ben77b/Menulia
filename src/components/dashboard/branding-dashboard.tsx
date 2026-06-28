@@ -7,7 +7,9 @@ import { supabase } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
 import { themeColorsFromDesign } from "@/lib/restaurant-design";
 import { normalizeHexColor, serializeMenuThemeColors } from "@/lib/theme-colors";
+import { serializeDisplayOptions } from "@/lib/display-options";
 import { Button } from "@/components/ui/button";
+import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
 import { Upload, Image as ImageIcon, X, Search } from "lucide-react";
 
@@ -98,6 +100,12 @@ export function BrandingDashboard() {
             titleFont: design.titleFont,
             textFont: design.textFont,
           },
+          ...serializeDisplayOptions({
+            showPrices: design.showPrices,
+            showDescriptions: design.showDescriptions,
+            showImages: design.showImages,
+            showDietary: design.showDietary,
+          }),
           updated_at: new Date().toISOString(),
         })
         .eq("id", currentRestaurant.id);
@@ -131,9 +139,9 @@ export function BrandingDashboard() {
     <div className="mx-auto max-w-[800px] space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Branding</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Design & Display</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Logo, colors, fonts, and SEO for your public menu
+            Control what guests see on your public menu and set your brand colors
           </p>
         </div>
         <Button
@@ -151,6 +159,84 @@ export function BrandingDashboard() {
           {saveError}
         </div>
       )}
+
+      <div className="space-y-1 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">Display Options</h2>
+        <p className="mb-4 text-sm text-gray-600">
+          Choose which elements appear on your live public menu page.
+        </p>
+        <ToggleSwitch
+          label="Show Prices"
+          description="Display dish prices on the public menu"
+          checked={design.showPrices}
+          onChange={(checked) => updateDesign({ showPrices: checked })}
+        />
+        <ToggleSwitch
+          label="Show Descriptions"
+          description="Display dish descriptions beneath each item name"
+          checked={design.showDescriptions}
+          onChange={(checked) => updateDesign({ showDescriptions: checked })}
+        />
+        <ToggleSwitch
+          label="Show Images"
+          description="Display dish photos in carousel and stacked layouts"
+          checked={design.showImages}
+          onChange={(checked) => updateDesign({ showImages: checked })}
+        />
+        <ToggleSwitch
+          label="Show Dietary Info"
+          description="Show dietary tags on dishes and the filter bar in the footer area"
+          checked={design.showDietary}
+          onChange={(checked) => updateDesign({ showDietary: checked })}
+        />
+      </div>
+
+      <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Brand Colors</h2>
+        <p className="text-sm text-gray-600">
+          Quick theme colors for your public menu. Text and icons auto-adjust for contrast.
+        </p>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <ColorPicker
+            label="Header & Footer Background"
+            value={design.headerBackgroundColor}
+            fallback="#ffffff"
+            onChange={(v) =>
+              updateDesign({
+                headerBackgroundColor: v,
+                footerBackgroundColor: v,
+              })
+            }
+          />
+          <ColorPicker
+            label="Main Page Background"
+            value={design.mainContentBackgroundColor}
+            fallback="#fafafa"
+            onChange={(v) => updateDesign({ mainContentBackgroundColor: v })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Category Styling</h2>
+        <p className="text-sm text-gray-600">
+          Fine-tune the category navigation strip and active pill accent color.
+        </p>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <ColorPicker
+            label="Categories Strip Background"
+            value={design.categoryStripBackgroundColor}
+            fallback="#f3f4f6"
+            onChange={(v) => updateDesign({ categoryStripBackgroundColor: v })}
+          />
+          <ColorPicker
+            label="Active Category Accent Color"
+            value={design.categoryAccentColor}
+            fallback="#047857"
+            onChange={(v) => updateDesign({ categoryAccentColor: v })}
+          />
+        </div>
+      </div>
 
       <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Logo & SEO</h2>
@@ -222,45 +308,6 @@ export function BrandingDashboard() {
             className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <p className="mt-1 text-xs text-gray-500">Recommended: 150–160 characters</p>
-        </div>
-      </div>
-
-      <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Color Palette</h2>
-        <p className="text-sm text-gray-600">
-          Text and icons automatically adjust to black or white for maximum contrast on each section.
-        </p>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <ColorPicker
-            label="Header Background"
-            value={design.headerBackgroundColor}
-            fallback="#ffffff"
-            onChange={(v) => updateDesign({ headerBackgroundColor: v })}
-          />
-          <ColorPicker
-            label="Categories Strip Background"
-            value={design.categoryStripBackgroundColor}
-            fallback="#f3f4f6"
-            onChange={(v) => updateDesign({ categoryStripBackgroundColor: v })}
-          />
-          <ColorPicker
-            label="Active Category Accent Color"
-            value={design.categoryAccentColor}
-            fallback="#047857"
-            onChange={(v) => updateDesign({ categoryAccentColor: v })}
-          />
-          <ColorPicker
-            label="Main Content Background (Dish area)"
-            value={design.mainContentBackgroundColor}
-            fallback="#fafafa"
-            onChange={(v) => updateDesign({ mainContentBackgroundColor: v })}
-          />
-          <ColorPicker
-            label="Footer Background"
-            value={design.footerBackgroundColor}
-            fallback="#ffffff"
-            onChange={(v) => updateDesign({ footerBackgroundColor: v })}
-          />
         </div>
       </div>
 

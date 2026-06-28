@@ -36,6 +36,10 @@ export interface Restaurant {
   contact_info: string | null;
   meta_title: string | null;
   meta_description: string | null;
+  show_prices: boolean;
+  show_descriptions: boolean;
+  show_images: boolean;
+  show_dietary: boolean;
   created_at: string;
   updated_at: string;
 }

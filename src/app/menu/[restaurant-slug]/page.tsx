@@ -6,6 +6,7 @@ import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { parseCustomLinks } from "@/lib/restaurant-links";
+import { parseDisplayOptions } from "@/lib/display-options";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 
 interface PageProps {
@@ -73,6 +74,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
     restaurant.id
   );
   const links = parseCustomLinks(restaurant.custom_links);
+  const display = parseDisplayOptions(restaurant);
   const theme = parseMenuThemeColors(restaurant.theme_colors);
   const fonts = resolveFonts(
     restaurant.typography && typeof restaurant.typography === "object"
@@ -97,6 +99,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
       flatCategories={flatCategories}
       hasNestedStructure={hasNestedStructure}
       links={links}
+      display={display}
     />
     </>
   );

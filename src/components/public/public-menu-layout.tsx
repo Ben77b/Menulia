@@ -6,6 +6,7 @@ import { parseContactInfo } from "@/lib/contact-info";
 import type { MenuThemeColors } from "@/lib/theme-colors";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { RestaurantLink } from "@/lib/restaurant-links";
+import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import {
   collectAllDishes,
@@ -34,6 +35,7 @@ interface PublicMenuLayoutProps {
   flatCategories: PublicMenuSubcategory[];
   hasNestedStructure: boolean;
   links: RestaurantLink[];
+  display: PublicMenuDisplayOptions;
 }
 
 function DishSection({
@@ -44,6 +46,7 @@ function DishSection({
   bodyFont,
   locale,
   activeFilters,
+  display,
 }: {
   subcategory: PublicMenuSubcategory;
   mainTextColor: string;
@@ -52,11 +55,14 @@ function DishSection({
   bodyFont: string;
   locale: PublicMenuLocale;
   activeFilters: Set<string>;
+  display: PublicMenuDisplayOptions;
 }) {
-  const filteredDishes = useMemo(
-    () => filterDishesByTags(subcategory.dishes, activeFilters),
-    [subcategory.dishes, activeFilters]
-  );
+  const filteredDishes = useMemo(() => {
+    if (!display.showDietary || activeFilters.size === 0) {
+      return subcategory.dishes;
+    }
+    return filterDishesByTags(subcategory.dishes, activeFilters);
+  }, [subcategory.dishes, activeFilters, display.showDietary]);
 
   const emptyMessage =
     subcategory.dishes.length === 0
@@ -71,6 +77,7 @@ function DishSection({
         mainTextColor={mainTextColor}
         titleFont={titleFont}
         bodyFont={bodyFont}
+        display={display}
         emptyMessage={emptyMessage}
       />
     );
@@ -85,6 +92,7 @@ function DishSection({
           titleFont={titleFont}
           bodyFont={bodyFont}
           textColor={mainTextColor}
+          display={display}
           layout="stacked"
           imageClassName="w-full"
         />
@@ -112,6 +120,7 @@ export function PublicMenuLayout({
   flatCategories,
   hasNestedStructure,
   links,
+  display,
 }: PublicMenuLayoutProps) {
   const [locale, setLocale] = useState<PublicMenuLocale>("en");
   const [activeParentId, setActiveParentId] = useState(menu[0]?.id ?? "");
@@ -236,20 +245,23 @@ export function PublicMenuLayout({
               bodyFont={bodyFont}
               locale={locale}
               activeFilters={activeFilters}
+              display={display}
             />
           </section>
         )}
       </main>
 
-      <PublicMenuFilterBar
-        backgroundColor={theme.footerBackgroundColor}
-        titleFont={titleFont}
-        bodyFont={bodyFont}
-        locale={locale}
-        activeFilters={activeFilters}
-        onToggleFilter={toggleFilter}
-        menuTags={menuTags}
-      />
+      {display.showDietary && (
+        <PublicMenuFilterBar
+          backgroundColor={theme.footerBackgroundColor}
+          titleFont={titleFont}
+          bodyFont={bodyFont}
+          locale={locale}
+          activeFilters={activeFilters}
+          onToggleFilter={toggleFilter}
+          menuTags={menuTags}
+        />
+      )}
 
       <PublicMenuFooter
         restaurantName={restaurantName}

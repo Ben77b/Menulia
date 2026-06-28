@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
+import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { DishCard, type PublicMenuDish } from "./dish-card";
 
 interface DishCarouselProps {
@@ -11,6 +12,7 @@ interface DishCarouselProps {
   mainTextColor: string;
   titleFont: string;
   bodyFont: string;
+  display: PublicMenuDisplayOptions;
   emptyMessage?: string;
 }
 
@@ -24,6 +26,7 @@ export function DishCarousel({
   mainTextColor,
   titleFont,
   bodyFont,
+  display,
   emptyMessage = "No dishes in this category.",
 }: DishCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -93,6 +96,7 @@ export function DishCarousel({
             titleFont={titleFont}
             bodyFont={bodyFont}
             textColor={mainTextColor}
+            display={display}
             layout="carousel"
             imageClassName="w-full"
           />
@@ -113,6 +117,7 @@ export function DishCarousel({
                 titleFont={titleFont}
                 bodyFont={bodyFont}
                 textColor={mainTextColor}
+                display={display}
                 layout="carousel"
                 compact={slot.position !== "center"}
                 imageClassName="w-full"

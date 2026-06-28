@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { DEFAULT_DESIGN, designFromRestaurant, applyComputedContrast, type RestaurantDesign } from "@/lib/restaurant-design";
+import { isMissingColumnError } from "@/lib/restaurant-settings";
 import { useRestaurant } from "./restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -26,11 +27,24 @@ export function DesignProvider({ children }: { children: ReactNode }) {
 
     async function loadDesignFromDatabase() {
       const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
+      const fullSelect =
+        "logo, meta_title, meta_description, theme_colors, typography, show_prices, show_descriptions, show_images, show_dietary";
+
+      let { data, error } = await supabase
         .from("restaurants")
-        .select("logo, meta_title, meta_description, theme_colors, typography")
+        .select(fullSelect)
         .eq("id", restaurantId)
         .single();
+
+      if (error && isMissingColumnError(error)) {
+        const fallback = await supabase
+          .from("restaurants")
+          .select("logo, meta_title, meta_description, theme_colors, typography")
+          .eq("id", restaurantId)
+          .single();
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (error) {
         console.error("Failed to load restaurant design:", error);

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { getTagMeta } from "@/lib/dietary-tags";
+import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 
 export interface PublicMenuDish {
   id: string;
@@ -18,6 +19,7 @@ interface DishCardProps {
   titleFont: string;
   bodyFont: string;
   textColor: string;
+  display: PublicMenuDisplayOptions;
   layout?: "carousel" | "stacked";
   compact?: boolean;
   imageClassName?: string;
@@ -28,30 +30,25 @@ export function DishCard({
   titleFont,
   bodyFont,
   textColor,
+  display,
   layout = "carousel",
   compact = false,
   imageClassName = "w-full max-w-xs",
 }: DishCardProps) {
-  const imageBlock = dish.image ? (
-    <div className={`relative aspect-square overflow-hidden rounded-2xl ${imageClassName}`}>
-      <Image
-        src={dish.image}
-        alt={dish.name}
-        fill
-        className="object-cover"
-        sizes="(max-width: 768px) 80vw, 320px"
-      />
-    </div>
-  ) : (
-    <div
-      className={`flex aspect-square items-center justify-center rounded-2xl bg-black/5 ${imageClassName}`}
-      style={{ color: textColor }}
-    >
-      <span className="text-sm" style={{ color: textColor }}>
-        No image
-      </span>
-    </div>
-  );
+  const showImage = display.showImages && Boolean(dish.image);
+
+  const imageBlock =
+    showImage && dish.image ? (
+      <div className={`relative aspect-square overflow-hidden rounded-2xl ${imageClassName}`}>
+        <Image
+          src={dish.image}
+          alt={dish.name}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 80vw, 320px"
+        />
+      </div>
+    ) : null;
 
   const textBlock = (
     <div className="space-y-2 text-center">
@@ -61,7 +58,7 @@ export function DishCard({
       >
         {dish.name}
       </h3>
-      {dish.description && (
+      {display.showDescriptions && dish.description && (
         <p
           className={`leading-relaxed ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
           style={{ color: textColor, fontFamily: bodyFont }}
@@ -69,7 +66,7 @@ export function DishCard({
           {dish.description}
         </p>
       )}
-      {dish.tags.length > 0 && (
+      {display.showDietary && dish.tags.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2">
           {dish.tags.map((tag) => {
             const meta = getTagMeta(tag);
@@ -90,19 +87,21 @@ export function DishCard({
           })}
         </div>
       )}
-      <p
-        className={`font-bold ${compact ? "text-sm" : "text-base"}`}
-        style={{ color: textColor, fontFamily: bodyFont }}
-      >
-        {formatPrice(dish.price)}
-      </p>
+      {display.showPrices && (
+        <p
+          className={`font-bold ${compact ? "text-sm" : "text-base"}`}
+          style={{ color: textColor, fontFamily: bodyFont }}
+        >
+          {formatPrice(dish.price)}
+        </p>
+      )}
     </div>
   );
 
   if (layout === "stacked") {
     return (
       <article className="flex flex-col items-center gap-4 text-center">
-        <div className="w-full max-w-sm shrink-0">{imageBlock}</div>
+        {imageBlock && <div className="w-full max-w-sm shrink-0">{imageBlock}</div>}
         <div className="w-full max-w-xl flex-1">{textBlock}</div>
       </article>
     );
@@ -111,7 +110,7 @@ export function DishCard({
   return (
     <article className="flex flex-col">
       {imageBlock}
-      <div className="mt-4">{textBlock}</div>
+      <div className={imageBlock ? "mt-4" : undefined}>{textBlock}</div>
     </article>
   );
 }

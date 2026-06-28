@@ -1,4 +1,4 @@
-import { contrastingTextColor } from "./contrast";
+import { parseDisplayOptions } from "./display-options";
 import {
   DEFAULT_MENU_THEME,
   parseMenuThemeColors,
@@ -42,6 +42,10 @@ export interface RestaurantDesign {
   categoryAccentColor: string;
   mainContentBackgroundColor: string;
   footerBackgroundColor: string;
+  showPrices: boolean;
+  showDescriptions: boolean;
+  showImages: boolean;
+  showDietary: boolean;
   /** @deprecated Computed at render time — not persisted */
   headerFooterBackgroundColor: string;
   /** @deprecated Computed at render time — not persisted */
@@ -90,6 +94,10 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
   categoryAccentColor: DEFAULT_MENU_THEME.categoryAccentColor,
   mainContentBackgroundColor: DEFAULT_MENU_THEME.mainContentBackgroundColor,
   footerBackgroundColor: DEFAULT_MENU_THEME.footerBackgroundColor,
+  showPrices: true,
+  showDescriptions: true,
+  showImages: true,
+  showDietary: true,
   headerFooterBackgroundColor: "#ffffff",
   headerFooterFontColor: "#000000",
   categoryBackgroundColor: "#f3f4f6",
@@ -134,8 +142,13 @@ export function designFromRestaurant(row: {
   meta_description?: string | null;
   theme_colors?: Record<string, string> | null;
   typography?: Record<string, string> | null;
+  show_prices?: boolean | null;
+  show_descriptions?: boolean | null;
+  show_images?: boolean | null;
+  show_dietary?: boolean | null;
 }): RestaurantDesign {
   const theme = parseMenuThemeColors(row.theme_colors);
+  const display = parseDisplayOptions(row);
   const typography =
     row.typography && typeof row.typography === "object" && !Array.isArray(row.typography)
       ? row.typography
@@ -180,6 +193,10 @@ export function designFromRestaurant(row: {
     ),
     titleFont,
     textFont,
+    showPrices: display.showPrices,
+    showDescriptions: display.showDescriptions,
+    showImages: display.showImages,
+    showDietary: display.showDietary,
   });
 }
 
