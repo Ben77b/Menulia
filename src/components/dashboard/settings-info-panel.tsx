@@ -14,7 +14,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { loadDesign, saveDesign, DEFAULT_DESIGN, type RestaurantDesign } from "@/lib/restaurant-design";
+import { DEFAULT_DESIGN, type RestaurantDesign } from "@/lib/restaurant-design";
 import {
   loadRestaurantInfo,
   saveRestaurantInfo,
@@ -130,7 +130,6 @@ export function SettingsInfoPanel({
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setDesign(loadDesign(restaurantId));
     setInfo(
       loadRestaurantInfo(restaurantId, {
         phone: defaultPhone ?? "",
@@ -160,7 +159,6 @@ export function SettingsInfoPanel({
   }
 
   function handleSave() {
-    saveDesign(restaurantId, design);
     saveRestaurantInfo(restaurantId, info);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);

@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import { useDesign } from "@/contexts/design-context";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
+import { formatSupabaseError } from "@/lib/auth/errors";
 import { Button } from "@/components/ui/button";
-import { Upload, Image as ImageIcon, X, Type, Search, FileUp } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Search, FileUp } from "lucide-react";
 
 const GOOGLE_FONTS = [
   { label: "Inter", value: "Inter", className: "font-[var(--font-inter)]" },
@@ -24,12 +25,14 @@ const GOOGLE_FONTS = [
 
 export function BrandingDashboard() {
   const { design, updateDesign } = useDesign();
-  const { currentRestaurant } = useRestaurant();
+  const { currentRestaurant, refreshRestaurants } = useRestaurant();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const fontInputRef = useRef<HTMLInputElement>(null);
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [fontSearch, setFontSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,17 +72,42 @@ export function BrandingDashboard() {
     updateDesign({ customFont: "" });
   };
 
-  const handleSaveFontPack = async (fontPackId: string) => {
-    if (!currentRestaurant) return;
+  const handleSaveChanges = async () => {
+    if (!currentRestaurant?.id) return;
+
     setSaving(true);
+    setSaveError(null);
+
     try {
       const { error } = await supabase
-        .from('restaurants')
-        .update({ font_pack_id: fontPackId, updated_at: new Date().toISOString() })
-        .eq('id', currentRestaurant.id);
+        .from("restaurants")
+        .update({
+          name: design.restaurantName,
+          logo: design.logo,
+          theme_colors: {
+            headerFooterBackgroundColor: design.headerFooterBackgroundColor,
+            categoryBackgroundColor: design.categoryBackgroundColor,
+            mainContentBackgroundColor: design.mainContentBackgroundColor,
+            headerFooterFontColor: design.headerFooterFontColor,
+            categoryFontColor: design.categoryFontColor,
+          },
+          typography: {
+            titleFont: design.titleFont,
+            metaTitle: design.metaTitle,
+            metaDescription: design.metaDescription,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", currentRestaurant.id);
+
       if (error) throw error;
+
+      await refreshRestaurants();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
-      console.error('Error saving font pack:', error);
+      console.error("Error saving branding:", error);
+      setSaveError(formatSupabaseError(error));
     } finally {
       setSaving(false);
     }
@@ -96,12 +124,23 @@ export function BrandingDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Branding & Design</h1>
-          <p className="mt-1 text-sm text-gray-600">Customize your restaurant's visual identity</p>
+          <p className="mt-1 text-sm text-gray-600">Customize your restaurant&apos;s visual identity</p>
         </div>
-        <Button size="lg" className="px-8">
-          Save Changes
+        <Button
+          size="lg"
+          className="px-8"
+          onClick={handleSaveChanges}
+          disabled={saving || !currentRestaurant?.id}
+        >
+          {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
         </Button>
       </div>
+
+      {saveError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {saveError}
+        </div>
+      )}
 
       {/* Section 1: Brand Identity */}
       <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -340,7 +379,6 @@ export function BrandingDashboard() {
                           type="button"
                           onClick={() => {
                             updateDesign({ titleFont: font.value, textFont: font.value });
-                            handleSaveFontPack(font.value);
                             setShowFontDropdown(false);
                             setFontSearch("");
                           }}

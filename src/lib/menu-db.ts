@@ -195,27 +195,3 @@ export async function deleteMenuDish(dishId: string): Promise<void> {
     throw error;
   }
 }
-
-export async function updateRestaurantBranding(
-  restaurantId: string,
-  branding: {
-    theme_colors: Record<string, unknown>;
-    typography: Record<string, unknown>;
-  }
-): Promise<void> {
-  const supabase = getSupabaseBrowserClient();
-
-  const { error } = await supabase
-    .from("restaurants")
-    .update({
-      theme_colors: branding.theme_colors,
-      typography: branding.typography,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", restaurantId);
-
-  if (error) {
-    logSupabaseFailure("restaurants.updateBranding", error);
-    throw error;
-  }
-}

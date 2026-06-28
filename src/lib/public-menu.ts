@@ -50,15 +50,13 @@ function normalizeCustomLinks(restaurant: RestaurantFull): CustomLink[] {
 
 function resolveFontFamily(restaurant: RestaurantFull): { titleFont: string; textFont: string } {
   const typography = restaurant.typography;
-  const heading =
+  const titleFont =
+    (typeof typography?.titleFont === "string" && typography.titleFont) ||
     (typeof typography?.customHeadingFont === "string" && typography.customHeadingFont) ||
     restaurant.font_pack_id ||
     "Inter";
-  const body =
-    (typeof typography?.customBodyFont === "string" && typography.customBodyFont) ||
-    heading;
 
-  return { titleFont: heading, textFont: body };
+  return { titleFont, textFont: titleFont };
 }
 
 export function withPublicMenuDefaults(restaurant: RestaurantFull): RestaurantFull {
@@ -97,32 +95,49 @@ export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDes
       ? (restaurant.theme_colors as Record<string, string | boolean>)
       : {};
 
+  const typography =
+    restaurant.typography && typeof restaurant.typography === "object"
+      ? (restaurant.typography as Record<string, string>)
+      : {};
+
   const fonts = resolveFontFamily(restaurant);
-  const accent =
-    (typeof theme.color3 === "string" && theme.color3) ||
-    DEFAULT_DESIGN.buttonColor;
   const headerBg =
+    (typeof theme.headerFooterBackgroundColor === "string" && theme.headerFooterBackgroundColor) ||
     (typeof theme.color2 === "string" && theme.color2) ||
     DEFAULT_DESIGN.headerFooterBackgroundColor;
+  const categoryBg =
+    (typeof theme.categoryBackgroundColor === "string" && theme.categoryBackgroundColor) ||
+    (typeof theme.color2 === "string" && theme.color2) ||
+    DEFAULT_DESIGN.categoryBackgroundColor;
   const mainBg =
+    (typeof theme.mainContentBackgroundColor === "string" && theme.mainContentBackgroundColor) ||
     (typeof theme.color1 === "string" && theme.color1) ||
     DEFAULT_DESIGN.mainContentBackgroundColor;
+  const headerFontColor =
+    (typeof theme.headerFooterFontColor === "string" && theme.headerFooterFontColor) ||
+    DEFAULT_DESIGN.headerFooterFontColor;
+  const categoryFontColor =
+    (typeof theme.categoryFontColor === "string" && theme.categoryFontColor) ||
+    DEFAULT_DESIGN.categoryFontColor;
+  const mainFontColor =
+    (typeof theme.mainContentFontColor === "string" && theme.mainContentFontColor) ||
+    DEFAULT_DESIGN.mainContentFontColor;
 
   return {
     ...DEFAULT_DESIGN,
-    accentColor: accent,
+    accentColor: categoryBg,
     backgroundColor: mainBg,
-    buttonColor: accent,
-    categoryColor: accent,
-    priceColor: accent,
-    titleColor: DEFAULT_DESIGN.mainContentFontColor,
-    textColor: DEFAULT_DESIGN.mainContentFontColor,
+    buttonColor: categoryBg,
+    categoryColor: categoryBg,
+    priceColor: categoryBg,
+    titleColor: mainFontColor,
+    textColor: mainFontColor,
     headerFooterBackgroundColor: headerBg,
     mainContentBackgroundColor: mainBg,
-    categoryBackgroundColor: headerBg,
-    headerFooterFontColor: DEFAULT_DESIGN.headerFooterFontColor,
-    mainContentFontColor: DEFAULT_DESIGN.mainContentFontColor,
-    categoryFontColor: DEFAULT_DESIGN.categoryFontColor,
+    categoryBackgroundColor: categoryBg,
+    headerFooterFontColor: headerFontColor,
+    mainContentFontColor: mainFontColor,
+    categoryFontColor,
     logo: restaurant.logo ?? "",
     restaurantName: restaurant.name,
     slogan: restaurant.footer_slogan ?? "",
@@ -134,7 +149,7 @@ export function buildPublicMenuDesign(restaurant: RestaurantFull): RestaurantDes
     showFooterHours: true,
     showFooterLinks: true,
     showFooterTags: true,
-    metaTitle: restaurant.name,
-    metaDescription: `View the digital menu for ${restaurant.name}`,
+    metaTitle: typography.metaTitle || restaurant.name,
+    metaDescription: typography.metaDescription || `View the digital menu for ${restaurant.name}`,
   };
 }

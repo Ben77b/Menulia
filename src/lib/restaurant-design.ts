@@ -76,31 +76,36 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
   categoryFontColor: "#ffffff",
 };
 
-const STORAGE_KEY = "menulia_restaurant_design";
+export function designFromRestaurant(row: {
+  name?: string;
+  logo?: string | null;
+  theme_colors?: Record<string, string> | null;
+  typography?: Record<string, string> | null;
+}): RestaurantDesign {
+  const theme = row.theme_colors ?? {};
+  const typography = row.typography ?? {};
+  const titleFont = typography.titleFont ?? DEFAULT_DESIGN.titleFont;
 
-export function loadDesign(restaurantId: string, useLocalStorage = false): RestaurantDesign {
-  if (typeof window === "undefined") return { ...DEFAULT_DESIGN };
-  
-  const key = `${STORAGE_KEY}_${restaurantId}`;
-  
-  // If explicitly requesting localStorage (for preview mode)
-  if (useLocalStorage) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? { ...DEFAULT_DESIGN, ...JSON.parse(raw) } : { ...DEFAULT_DESIGN };
-    } catch {
-      return { ...DEFAULT_DESIGN };
-    }
-  }
-  
-  // For production, load from restaurant data (will be passed as prop)
-  // This function now serves as a fallback for preview mode only
-  return { ...DEFAULT_DESIGN };
-}
-
-export function saveDesign(restaurantId: string, design: RestaurantDesign) {
-  const key = `${STORAGE_KEY}_${restaurantId}`;
-  localStorage.setItem(key, JSON.stringify(design));
+  return {
+    ...DEFAULT_DESIGN,
+    restaurantName: row.name ?? "",
+    logo: row.logo ?? "",
+    headerFooterBackgroundColor:
+      theme.headerFooterBackgroundColor ?? DEFAULT_DESIGN.headerFooterBackgroundColor,
+    categoryBackgroundColor:
+      theme.categoryBackgroundColor ?? DEFAULT_DESIGN.categoryBackgroundColor,
+    mainContentBackgroundColor:
+      theme.mainContentBackgroundColor ?? DEFAULT_DESIGN.mainContentBackgroundColor,
+    headerFooterFontColor:
+      theme.headerFooterFontColor ?? DEFAULT_DESIGN.headerFooterFontColor,
+    categoryFontColor: theme.categoryFontColor ?? DEFAULT_DESIGN.categoryFontColor,
+    mainContentFontColor:
+      theme.mainContentFontColor ?? DEFAULT_DESIGN.mainContentFontColor,
+    titleFont,
+    textFont: titleFont,
+    metaTitle: typography.metaTitle ?? "",
+    metaDescription: typography.metaDescription ?? "",
+  };
 }
 
 export function radiusClass(design: RestaurantDesign): string {
