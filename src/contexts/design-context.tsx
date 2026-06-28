@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { DEFAULT_DESIGN, type RestaurantDesign } from "@/lib/restaurant-design";
+import { DEFAULT_DESIGN, designFromRestaurant, type RestaurantDesign } from "@/lib/restaurant-design";
 import { useRestaurant } from "./restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -28,9 +28,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
         .from("restaurants")
-        .select(
-          "logo, meta_title, meta_description"
-        )
+        .select("logo, meta_title, meta_description, theme_colors, typography")
         .eq("id", restaurantId)
         .single();
 
@@ -40,12 +38,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
-        setDesignState({
-          ...DEFAULT_DESIGN,
-          logo: data.logo ?? "",
-          metaTitle: data.meta_title ?? "",
-          metaDescription: data.meta_description ?? "",
-        });
+        setDesignState(designFromRestaurant(data));
       }
     }
 

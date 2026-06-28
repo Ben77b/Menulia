@@ -44,6 +44,17 @@ function normalizeRestaurantRow(row: Record<string, unknown>): Restaurant {
   };
 }
 
+export async function attachMenuCategories(
+  restaurant: Record<string, unknown>
+): Promise<RestaurantFull> {
+  const normalized = normalizeRestaurantRow(restaurant);
+  const categories = await fetchCategoriesWithDishes(normalized.id);
+  return {
+    ...normalized,
+    categories,
+  } as RestaurantFull;
+}
+
 async function fetchCategoriesWithDishes(restaurantId: string) {
   const supabase = createAnonClient();
 

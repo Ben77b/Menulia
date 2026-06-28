@@ -6,12 +6,58 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
 import { Button } from "@/components/ui/button";
-import { Upload, Image as ImageIcon, X } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Search } from "lucide-react";
+
+const GOOGLE_FONTS = [
+  { label: "Inter", value: "Inter", className: "font-[var(--font-inter)]" },
+  { label: "Montserrat", value: "Montserrat", className: "font-[var(--font-montserrat)]" },
+  { label: "Playfair Display", value: "Playfair Display", className: "font-[var(--font-playfair-display)]" },
+  { label: "Poppins", value: "Poppins", className: "font-[var(--font-poppins)]" },
+  { label: "Roboto", value: "Roboto", className: "font-[var(--font-roboto)]" },
+  { label: "Open Sans", value: "Open Sans", className: "font-[var(--font-open-sans)]" },
+  { label: "Lato", value: "Lato", className: "font-[var(--font-lato)]" },
+  { label: "Merriweather", value: "Merriweather", className: "font-[var(--font-merriweather)]" },
+  { label: "Oswald", value: "Oswald", className: "font-[var(--font-oswald)]" },
+  { label: "Raleway", value: "Raleway", className: "font-[var(--font-raleway)]" },
+  { label: "Source Sans Pro", value: "Source Sans Pro", className: "font-[var(--font-source-sans)]" },
+  { label: "Ubuntu", value: "Ubuntu", className: "font-[var(--font-ubuntu)]" },
+];
+
+function ColorPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-gray-700">{label}</label>
+      <div className="flex items-center gap-3">
+        <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
+          />
+        </div>
+        <span className="font-mono text-sm text-gray-600">{value}</span>
+      </div>
+    </div>
+  );
+}
 
 export function BrandingDashboard() {
   const { design, updateDesign } = useDesign();
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [showTitleFontDropdown, setShowTitleFontDropdown] = useState(false);
+  const [showBodyFontDropdown, setShowBodyFontDropdown] = useState(false);
+  const [titleFontSearch, setTitleFontSearch] = useState("");
+  const [bodyFontSearch, setBodyFontSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -40,6 +86,18 @@ export function BrandingDashboard() {
           logo: design.logo,
           meta_title: design.metaTitle,
           meta_description: design.metaDescription,
+          theme_colors: {
+            headerFooterBackgroundColor: design.headerFooterBackgroundColor,
+            categoryBackgroundColor: design.categoryBackgroundColor,
+            mainContentBackgroundColor: design.mainContentBackgroundColor,
+            headerFooterFontColor: design.headerFooterFontColor,
+            categoryFontColor: design.categoryFontColor,
+            mainContentFontColor: design.mainContentFontColor,
+          },
+          typography: {
+            titleFont: design.titleFont,
+            textFont: design.textFont,
+          },
           updated_at: new Date().toISOString(),
         })
         .eq("id", currentRestaurant.id);
@@ -57,12 +115,26 @@ export function BrandingDashboard() {
     }
   };
 
+  const selectedTitleFont =
+    GOOGLE_FONTS.find((f) => f.value === design.titleFont) || GOOGLE_FONTS[0];
+  const selectedBodyFont =
+    GOOGLE_FONTS.find((f) => f.value === design.textFont) || GOOGLE_FONTS[0];
+
+  const filteredTitleFonts = GOOGLE_FONTS.filter((font) =>
+    font.label.toLowerCase().includes(titleFontSearch.toLowerCase())
+  );
+  const filteredBodyFonts = GOOGLE_FONTS.filter((font) =>
+    font.label.toLowerCase().includes(bodyFontSearch.toLowerCase())
+  );
+
   return (
-    <div className="mx-auto max-w-[640px] space-y-6">
+    <div className="mx-auto max-w-[800px] space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Branding</h1>
-          <p className="mt-1 text-sm text-gray-600">Logo and SEO settings for your public menu</p>
+          <p className="mt-1 text-sm text-gray-600">
+            Logo, colors, fonts, and SEO for your public menu
+          </p>
         </div>
         <Button
           size="lg"
@@ -80,27 +152,29 @@ export function BrandingDashboard() {
         </div>
       )}
 
-      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm space-y-6">
+      <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Logo & SEO</h2>
+
         <div>
-          <label className="block text-sm font-medium mb-3 text-gray-700">Restaurant Logo</label>
+          <label className="mb-3 block text-sm font-medium text-gray-700">Restaurant Logo</label>
           <div className="flex flex-col items-center gap-4">
             {design.logo ? (
               <div className="relative">
                 <img
                   src={design.logo}
                   alt="Restaurant Logo"
-                  className="w-32 h-32 object-contain rounded-xl border border-gray-100 p-3 bg-gray-50"
+                  className="h-32 w-32 rounded-xl border border-gray-100 bg-gray-50 object-contain p-3"
                 />
                 <button
                   type="button"
                   onClick={() => updateDesign({ logo: "" })}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             ) : (
-              <div className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+              <div className="flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
                 <ImageIcon className="h-8 w-8 text-gray-400" />
               </div>
             )}
@@ -108,7 +182,7 @@ export function BrandingDashboard() {
               size="sm"
               variant="outline"
               onClick={() => logoInputRef.current?.click()}
-              className="gap-2 w-full max-w-xs"
+              className="w-full max-w-xs gap-2"
             >
               <Upload className="h-4 w-4" />
               Upload Logo
@@ -124,27 +198,154 @@ export function BrandingDashboard() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700">Meta Title (SEO)</label>
+          <label className="mb-2 block text-sm font-medium text-gray-700">Meta Title (SEO)</label>
           <input
             type="text"
             placeholder="e.g., Best Pizza in New York - Restaurant Name"
             value={design.metaTitle}
             onChange={(e) => updateDesign({ metaTitle: e.target.value })}
-            className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <p className="mt-1 text-xs text-gray-500">Recommended: 50–60 characters</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-700">Meta Description (SEO)</label>
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Meta Description (SEO)
+          </label>
           <textarea
             placeholder="e.g., Authentic Italian pizza made with fresh ingredients."
             value={design.metaDescription}
             onChange={(e) => updateDesign({ metaDescription: e.target.value })}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+            className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <p className="mt-1 text-xs text-gray-500">Recommended: 150–160 characters</p>
+        </div>
+      </div>
+
+      <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Color Palette</h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-5">
+            <ColorPicker
+              label="Header & Footer Background"
+              value={design.headerFooterBackgroundColor}
+              onChange={(v) => updateDesign({ headerFooterBackgroundColor: v })}
+            />
+            <ColorPicker
+              label="Category Section Background"
+              value={design.categoryBackgroundColor}
+              onChange={(v) => updateDesign({ categoryBackgroundColor: v })}
+            />
+            <ColorPicker
+              label="Main Dish Section Background"
+              value={design.mainContentBackgroundColor}
+              onChange={(v) => updateDesign({ mainContentBackgroundColor: v })}
+            />
+          </div>
+          <div className="space-y-5">
+            <ColorPicker
+              label="Header/Footer Text Color"
+              value={design.headerFooterFontColor}
+              onChange={(v) => updateDesign({ headerFooterFontColor: v })}
+            />
+            <ColorPicker
+              label="Category Text Color"
+              value={design.categoryFontColor}
+              onChange={(v) => updateDesign({ categoryFontColor: v })}
+            />
+            <ColorPicker
+              label="Main Section Text Color"
+              value={design.mainContentFontColor}
+              onChange={(v) => updateDesign({ mainContentFontColor: v })}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6 rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Typography</h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Title Font</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search fonts..."
+                value={titleFontSearch}
+                onChange={(e) => setTitleFontSearch(e.target.value)}
+                onFocus={() => setShowTitleFontDropdown(true)}
+                className="h-12 w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              {showTitleFontDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowTitleFontDropdown(false)}
+                  />
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                    {filteredTitleFonts.map((font) => (
+                      <button
+                        key={font.value}
+                        type="button"
+                        onClick={() => {
+                          updateDesign({ titleFont: font.value });
+                          setShowTitleFontDropdown(false);
+                          setTitleFontSearch("");
+                        }}
+                        className={`flex w-full items-center rounded-lg px-4 py-3 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                      >
+                        {font.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <p className="mt-2 text-sm text-gray-600">Selected: {selectedTitleFont.label}</p>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Body Font</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search fonts..."
+                value={bodyFontSearch}
+                onChange={(e) => setBodyFontSearch(e.target.value)}
+                onFocus={() => setShowBodyFontDropdown(true)}
+                className="h-12 w-full rounded-lg border border-gray-200 py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              {showBodyFontDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowBodyFontDropdown(false)}
+                  />
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                    {filteredBodyFonts.map((font) => (
+                      <button
+                        key={font.value}
+                        type="button"
+                        onClick={() => {
+                          updateDesign({ textFont: font.value });
+                          setShowBodyFontDropdown(false);
+                          setBodyFontSearch("");
+                        }}
+                        className={`flex w-full items-center rounded-lg px-4 py-3 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                      >
+                        {font.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <p className="mt-2 text-sm text-gray-600">Selected: {selectedBodyFont.label}</p>
+          </div>
         </div>
       </div>
     </div>
