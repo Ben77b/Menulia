@@ -40,6 +40,7 @@ export interface Restaurant {
   show_descriptions: boolean;
   show_images: boolean;
   show_dietary: boolean;
+  advanced_theme: Record<string, string> | null;
   created_at: string;
   updated_at: string;
 }

@@ -54,7 +54,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           { icon: Settings, label: "Settings", href: `/dashboard/${activeRestaurantId}/settings` },
           {
             icon: Palette,
-            label: "Design & Display",
+            label: "Design Studio",
             href: `/dashboard/${activeRestaurantId}/branding`,
           },
         ]

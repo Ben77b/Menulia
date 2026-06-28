@@ -12,4 +12,7 @@ ALTER TABLE public.restaurants
   ADD COLUMN IF NOT EXISTS show_images BOOLEAN NOT NULL DEFAULT true,
   ADD COLUMN IF NOT EXISTS show_dietary BOOLEAN NOT NULL DEFAULT true;
 
+ALTER TABLE public.restaurants
+  ADD COLUMN IF NOT EXISTS advanced_theme JSONB NOT NULL DEFAULT '{}'::jsonb;
+
 NOTIFY pgrst, 'reload schema';

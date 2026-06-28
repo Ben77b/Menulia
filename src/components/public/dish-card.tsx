@@ -19,6 +19,9 @@ interface DishCardProps {
   titleFont: string;
   bodyFont: string;
   textColor: string;
+  titleColor?: string;
+  descriptionColor?: string;
+  priceColor?: string;
   display: PublicMenuDisplayOptions;
   layout?: "carousel" | "stacked";
   compact?: boolean;
@@ -30,12 +33,19 @@ export function DishCard({
   titleFont,
   bodyFont,
   textColor,
+  titleColor,
+  descriptionColor,
+  priceColor,
   display,
   layout = "carousel",
   compact = false,
   imageClassName = "w-full max-w-xs",
 }: DishCardProps) {
   const showImage = display.showImages && Boolean(dish.image);
+
+  const resolvedTitle = titleColor ?? textColor;
+  const resolvedDescription = descriptionColor ?? textColor;
+  const resolvedPrice = priceColor ?? textColor;
 
   const imageBlock =
     showImage && dish.image ? (
@@ -54,14 +64,14 @@ export function DishCard({
     <div className="space-y-2 text-center">
       <h3
         className={`font-semibold uppercase leading-tight tracking-wide ${compact ? "text-sm" : "text-base sm:text-lg"}`}
-        style={{ color: textColor, fontFamily: titleFont }}
+        style={{ color: resolvedTitle, fontFamily: titleFont }}
       >
         {dish.name}
       </h3>
       {display.showDescriptions && dish.description && (
         <p
           className={`leading-relaxed ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
-          style={{ color: textColor, fontFamily: bodyFont }}
+          style={{ color: resolvedDescription, fontFamily: bodyFont }}
         >
           {dish.description}
         </p>
@@ -75,8 +85,8 @@ export function DishCard({
                 key={tag}
                 className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
                 style={{
-                  color: textColor,
-                  border: `1px solid ${textColor}`,
+                  color: resolvedTitle,
+                  border: `1px solid ${resolvedTitle}`,
                   fontFamily: bodyFont,
                 }}
               >
@@ -90,7 +100,7 @@ export function DishCard({
       {display.showPrices && (
         <p
           className={`font-bold ${compact ? "text-sm" : "text-base"}`}
-          style={{ color: textColor, fontFamily: bodyFont }}
+          style={{ color: resolvedPrice, fontFamily: bodyFont }}
         >
           {formatPrice(dish.price)}
         </p>

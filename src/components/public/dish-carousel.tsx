@@ -9,10 +9,14 @@ import { DishCard, type PublicMenuDish } from "./dish-card";
 interface DishCarouselProps {
   dishes: PublicMenuDish[];
   accentColor: string;
+  arrowIconColor?: string;
   mainTextColor: string;
   titleFont: string;
   bodyFont: string;
   display: PublicMenuDisplayOptions;
+  titleColor?: string;
+  descriptionColor?: string;
+  priceColor?: string;
   emptyMessage?: string;
 }
 
@@ -23,14 +27,18 @@ function mod(n: number, m: number) {
 export function DishCarousel({
   dishes,
   accentColor,
+  arrowIconColor,
   mainTextColor,
   titleFont,
   bodyFont,
   display,
+  titleColor,
+  descriptionColor,
+  priceColor,
   emptyMessage = "No dishes in this category.",
 }: DishCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const arrowColor = contrastingTextColor(accentColor);
+  const arrowColor = arrowIconColor ?? contrastingTextColor(accentColor);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -97,6 +105,9 @@ export function DishCarousel({
             bodyFont={bodyFont}
             textColor={mainTextColor}
             display={display}
+            titleColor={titleColor}
+            descriptionColor={descriptionColor}
+            priceColor={priceColor}
             layout="carousel"
             imageClassName="w-full"
           />
@@ -118,6 +129,9 @@ export function DishCarousel({
                 bodyFont={bodyFont}
                 textColor={mainTextColor}
                 display={display}
+                titleColor={titleColor}
+                descriptionColor={descriptionColor}
+                priceColor={priceColor}
                 layout="carousel"
                 compact={slot.position !== "center"}
                 imageClassName="w-full"

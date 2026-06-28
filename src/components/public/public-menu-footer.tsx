@@ -13,6 +13,7 @@ interface PublicMenuFooterProps {
   contactEmail: string;
   footerSlogan: string;
   footerBackgroundColor: string;
+  footerTextColor?: string;
   titleFont: string;
   bodyFont: string;
   locale: PublicMenuLocale;
@@ -27,16 +28,17 @@ export function PublicMenuFooter({
   contactEmail,
   footerSlogan,
   footerBackgroundColor,
+  footerTextColor,
   titleFont,
   bodyFont,
   locale,
 }: PublicMenuFooterProps) {
-  const footerTextColor = contrastingTextColor(footerBackgroundColor);
+  const footerText = footerTextColor ?? contrastingTextColor(footerBackgroundColor);
 
   return (
     <footer
       className="border-t border-black/5 px-6 py-12"
-      style={{ backgroundColor: footerBackgroundColor, color: footerTextColor }}
+      style={{ backgroundColor: footerBackgroundColor, color: footerText }}
     >
       <div
         className="mx-auto flex w-full max-w-2xl flex-col items-center text-center"
@@ -53,7 +55,7 @@ export function PublicMenuFooter({
         ) : (
           <p
             className="text-2xl font-bold uppercase tracking-[0.25em]"
-            style={{ fontFamily: titleFont, color: footerTextColor, textAlign: "center" }}
+            style={{ fontFamily: titleFont, color: footerText, textAlign: "center" }}
           >
             {restaurantName}
           </p>
@@ -63,7 +65,7 @@ export function PublicMenuFooter({
         {footerSlogan && (
           <p
             className="mt-4 max-w-xl text-sm italic leading-relaxed"
-            style={{ color: footerTextColor, fontFamily: bodyFont, textAlign: "center" }}
+            style={{ color: footerText, fontFamily: bodyFont, textAlign: "center" }}
           >
             {footerSlogan}
           </p>
@@ -71,16 +73,16 @@ export function PublicMenuFooter({
 
         {/* 3. Open hours */}
         {hours && (
-          <div className="mt-10 w-full" style={{ color: footerTextColor, textAlign: "center" }}>
+          <div className="mt-10 w-full" style={{ color: footerText, textAlign: "center" }}>
             <h3
               className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
-              style={{ fontFamily: titleFont, color: footerTextColor, textAlign: "center" }}
+              style={{ fontFamily: titleFont, color: footerText, textAlign: "center" }}
             >
               {menuUiString(locale, "openHours")}
             </h3>
             <p
               className="whitespace-pre-line text-sm leading-relaxed"
-              style={{ color: footerTextColor, textAlign: "center" }}
+              style={{ color: footerText, textAlign: "center" }}
             >
               {hours}
             </p>
@@ -89,16 +91,16 @@ export function PublicMenuFooter({
 
         {/* 4. Location & contact */}
         {(location || contactPhone || contactEmail) && (
-          <div className="mt-8 w-full" style={{ color: footerTextColor, textAlign: "center" }}>
+          <div className="mt-8 w-full" style={{ color: footerText, textAlign: "center" }}>
             <h3
               className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
-              style={{ fontFamily: titleFont, color: footerTextColor, textAlign: "center" }}
+              style={{ fontFamily: titleFont, color: footerText, textAlign: "center" }}
             >
               {menuUiString(locale, "locationContact")}
             </h3>
             <div
               className="space-y-1 text-sm leading-relaxed"
-              style={{ color: footerTextColor, textAlign: "center" }}
+              style={{ color: footerText, textAlign: "center" }}
             >
               {contactPhone && <p style={{ textAlign: "center" }}>{contactPhone}</p>}
               {contactEmail && <p style={{ textAlign: "center" }}>{contactEmail}</p>}
@@ -110,7 +112,7 @@ export function PublicMenuFooter({
         {/* 5. Powered by — bottom */}
         <p
           className="mt-10 text-xs uppercase tracking-[0.2em]"
-          style={{ color: footerTextColor, textAlign: "center" }}
+          style={{ color: footerText, textAlign: "center" }}
         >
           {menuUiString(locale, "poweredBy")}
         </p>

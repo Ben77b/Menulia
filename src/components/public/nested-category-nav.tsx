@@ -8,7 +8,18 @@ interface NestedCategoryNavProps {
   menu: PublicMenuParentCategory[];
   headerBackgroundColor: string;
   stripBackgroundColor: string;
-  accentColor: string;
+  tier1ActiveBg: string;
+  tier1ActiveText: string;
+  tier1ActiveBorder: string;
+  tier1InactiveBg: string;
+  tier1InactiveText: string;
+  tier1InactiveBorder: string;
+  tier2ActiveBg: string;
+  tier2ActiveText: string;
+  tier2ActiveBorder: string;
+  tier2InactiveBg: string;
+  tier2InactiveText: string;
+  tier2InactiveBorder: string;
   activeParentId: string;
   activeSubcategoryId: string;
   showTier1: boolean;
@@ -20,7 +31,18 @@ export function NestedCategoryNav({
   menu,
   headerBackgroundColor,
   stripBackgroundColor,
-  accentColor,
+  tier1ActiveBg,
+  tier1ActiveText,
+  tier1ActiveBorder,
+  tier1InactiveBg,
+  tier1InactiveText,
+  tier1InactiveBorder,
+  tier2ActiveBg,
+  tier2ActiveText,
+  tier2ActiveBorder,
+  tier2InactiveBg,
+  tier2InactiveText,
+  tier2InactiveBorder,
   activeParentId,
   activeSubcategoryId,
   showTier1,
@@ -29,7 +51,6 @@ export function NestedCategoryNav({
 }: NestedCategoryNavProps) {
   const tier1Text = contrastingTextColor(headerBackgroundColor);
   const tier2Text = contrastingTextColor(stripBackgroundColor);
-  const accentFillText = contrastingTextColor(accentColor);
 
   const activeParent = useMemo(
     () => menu.find((parent) => parent.id === activeParentId) ?? menu[0],
@@ -71,15 +92,15 @@ export function NestedCategoryNav({
                 style={
                   isActive
                     ? {
-                        backgroundColor: tier1Text,
-                        color: headerBackgroundColor,
-                        border: `1px solid ${tier1Text}`,
+                        backgroundColor: tier1ActiveBg,
+                        color: tier1ActiveText,
+                        border: `1px solid ${tier1ActiveBorder}`,
                         textAlign: "center",
                       }
                     : {
-                        backgroundColor: "transparent",
-                        color: tier1Text,
-                        border: `1px solid ${tier1Text}`,
+                        backgroundColor: tier1InactiveBg,
+                        color: tier1InactiveText,
+                        border: `1px solid ${tier1InactiveBorder}`,
                         textAlign: "center",
                       }
                 }
@@ -111,15 +132,15 @@ export function NestedCategoryNav({
                 style={
                   isActive
                     ? {
-                        backgroundColor: accentColor,
-                        color: accentFillText,
-                        border: `1px solid ${accentColor}`,
+                        backgroundColor: tier2ActiveBg,
+                        color: tier2ActiveText,
+                        border: `1px solid ${tier2ActiveBorder}`,
                         textAlign: "center",
                       }
                     : {
-                        backgroundColor: "transparent",
-                        color: tier2Text,
-                        border: `1px solid ${tier2Text}`,
+                        backgroundColor: tier2InactiveBg,
+                        color: tier2InactiveText,
+                        border: `1px solid ${tier2InactiveBorder}`,
                         textAlign: "center",
                       }
                 }

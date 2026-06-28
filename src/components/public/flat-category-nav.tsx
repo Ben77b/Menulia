@@ -6,7 +6,12 @@ import type { PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 interface FlatCategoryNavProps {
   categories: PublicMenuSubcategory[];
   stripBackgroundColor: string;
-  accentColor: string;
+  tier2ActiveBg: string;
+  tier2ActiveText: string;
+  tier2ActiveBorder: string;
+  tier2InactiveBg: string;
+  tier2InactiveText: string;
+  tier2InactiveBorder: string;
   activeCategoryId: string;
   onCategoryChange: (categoryId: string) => void;
 }
@@ -14,12 +19,16 @@ interface FlatCategoryNavProps {
 export function FlatCategoryNav({
   categories,
   stripBackgroundColor,
-  accentColor,
+  tier2ActiveBg,
+  tier2ActiveText,
+  tier2ActiveBorder,
+  tier2InactiveBg,
+  tier2InactiveText,
+  tier2InactiveBorder,
   activeCategoryId,
   onCategoryChange,
 }: FlatCategoryNavProps) {
   const stripTextColor = contrastingTextColor(stripBackgroundColor);
-  const accentFillText = contrastingTextColor(accentColor);
 
   if (categories.length === 0) return null;
 
@@ -44,15 +53,15 @@ export function FlatCategoryNav({
             style={
               isActive
                 ? {
-                    backgroundColor: accentColor,
-                    color: accentFillText,
-                    border: `1px solid ${accentColor}`,
+                    backgroundColor: tier2ActiveBg,
+                    color: tier2ActiveText,
+                    border: `1px solid ${tier2ActiveBorder}`,
                     textAlign: "center",
                   }
                 : {
-                    backgroundColor: "transparent",
-                    color: stripTextColor,
-                    border: `1px solid ${stripTextColor}`,
+                    backgroundColor: tier2InactiveBg,
+                    color: tier2InactiveText,
+                    border: `1px solid ${tier2InactiveBorder}`,
                     textAlign: "center",
                   }
             }

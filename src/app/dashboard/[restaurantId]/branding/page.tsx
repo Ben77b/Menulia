@@ -1,12 +1,12 @@
 "use client";
 
 import { DesignProvider } from "@/contexts/design-context";
-import { BrandingDashboard } from "@/components/dashboard/branding-dashboard";
+import { DesignStudio } from "@/components/dashboard/design-studio";
 
 export default function BrandingPage() {
   return (
     <DesignProvider>
-      <BrandingDashboard />
+      <DesignStudio />
     </DesignProvider>
   );
 }

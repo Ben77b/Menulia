@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { contrastingTextColor } from "@/lib/contrast";
 import { parseContactInfo } from "@/lib/contact-info";
-import type { MenuThemeColors } from "@/lib/theme-colors";
+import type { ResolvedMenuTheme, ThemeHotspotId } from "@/lib/advanced-theme";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { RestaurantLink } from "@/lib/restaurant-links";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
@@ -20,6 +19,13 @@ import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
 import { PublicMenuFooter } from "./public-menu-footer";
 import { PublicMenuFilterBar } from "./public-menu-filter-bar";
+import { PreviewHotspot } from "./preview-hotspot";
+
+export interface PreviewInteractiveConfig {
+  enabled: boolean;
+  activeHotspot?: ThemeHotspotId | null;
+  onHotspotClick?: (id: ThemeHotspotId) => void;
+}
 
 interface PublicMenuLayoutProps {
   restaurantName: string;
@@ -28,7 +34,7 @@ interface PublicMenuLayoutProps {
   hours: string;
   contactInfo: string;
   footerSlogan?: string;
-  theme: MenuThemeColors;
+  theme: ResolvedMenuTheme;
   titleFont: string;
   bodyFont: string;
   menu: PublicMenuParentCategory[];
@@ -36,26 +42,27 @@ interface PublicMenuLayoutProps {
   hasNestedStructure: boolean;
   links: RestaurantLink[];
   display: PublicMenuDisplayOptions;
+  previewInteractive?: PreviewInteractiveConfig;
 }
 
 function DishSection({
   subcategory,
-  mainTextColor,
   theme,
   titleFont,
   bodyFont,
   locale,
   activeFilters,
   display,
+  previewInteractive,
 }: {
   subcategory: PublicMenuSubcategory;
-  mainTextColor: string;
-  theme: MenuThemeColors;
+  theme: ResolvedMenuTheme;
   titleFont: string;
   bodyFont: string;
   locale: PublicMenuLocale;
   activeFilters: Set<string>;
   display: PublicMenuDisplayOptions;
+  previewInteractive?: PreviewInteractiveConfig;
 }) {
   const filteredDishes = useMemo(() => {
     if (!display.showDietary || activeFilters.size === 0) {
@@ -69,40 +76,63 @@ function DishSection({
       ? menuUiString(locale, "noDishes")
       : menuUiString(locale, "noFilterMatch");
 
+  const hotspotEnabled = previewInteractive?.enabled ?? false;
+
   if (subcategory.layout_type === "carousel") {
     return (
-      <DishCarousel
-        dishes={filteredDishes}
-        accentColor={theme.categoryAccentColor}
-        mainTextColor={mainTextColor}
-        titleFont={titleFont}
-        bodyFont={bodyFont}
-        display={display}
-        emptyMessage={emptyMessage}
-      />
+      <PreviewHotspot
+        id="carousel"
+        enabled={hotspotEnabled}
+        active={previewInteractive?.activeHotspot === "carousel"}
+        onSelect={previewInteractive?.onHotspotClick}
+      >
+        <DishCarousel
+          dishes={filteredDishes}
+          accentColor={theme.carouselArrowBg}
+          arrowIconColor={theme.carouselArrowIcon}
+          mainTextColor={theme.itemTitleText}
+          titleFont={titleFont}
+          bodyFont={bodyFont}
+          display={display}
+          titleColor={theme.itemTitleText}
+          descriptionColor={theme.itemDescriptionText}
+          priceColor={theme.priceTextColor}
+          emptyMessage={emptyMessage}
+        />
+      </PreviewHotspot>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-12">
-      {filteredDishes.map((dish) => (
-        <DishCard
-          key={dish.id}
-          dish={dish}
-          titleFont={titleFont}
-          bodyFont={bodyFont}
-          textColor={mainTextColor}
-          display={display}
-          layout="stacked"
-          imageClassName="w-full"
-        />
-      ))}
-      {filteredDishes.length === 0 && (
-        <p className="text-center text-sm" style={{ color: mainTextColor }}>
-          {emptyMessage}
-        </p>
-      )}
-    </div>
+    <PreviewHotspot
+      id="menuItem"
+      enabled={hotspotEnabled}
+      active={previewInteractive?.activeHotspot === "menuItem"}
+      onSelect={previewInteractive?.onHotspotClick}
+    >
+      <div className="mx-auto max-w-3xl space-y-12">
+        {filteredDishes.map((dish) => (
+          <DishCard
+            key={dish.id}
+            dish={dish}
+            titleFont={titleFont}
+            bodyFont={bodyFont}
+            textColor={theme.itemTitleText}
+            titleColor={theme.itemTitleText}
+            descriptionColor={theme.itemDescriptionText}
+            priceColor={theme.priceTextColor}
+            display={display}
+            layout="stacked"
+            imageClassName="w-full"
+          />
+        ))}
+        {filteredDishes.length === 0 && (
+          <p className="text-center text-sm" style={{ color: theme.itemTitleText }}>
+            {emptyMessage}
+          </p>
+        )}
+      </div>
+    </PreviewHotspot>
   );
 }
 
@@ -121,6 +151,7 @@ export function PublicMenuLayout({
   hasNestedStructure,
   links,
   display,
+  previewInteractive,
 }: PublicMenuLayoutProps) {
   const [locale, setLocale] = useState<PublicMenuLocale>("en");
   const [activeParentId, setActiveParentId] = useState(menu[0]?.id ?? "");
@@ -164,9 +195,9 @@ export function PublicMenuLayout({
 
   const menuTags = useMemo(() => collectMenuTags(allDishes), [allDishes]);
 
-  const mainTextColor = contrastingTextColor(theme.mainContentBackgroundColor);
   const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
   const hasMenu = hasNestedStructure ? menu.length > 0 : flatCategories.length > 0;
+  const hotspotEnabled = previewInteractive?.enabled ?? false;
 
   function handleParentChange(parentId: string) {
     setActiveParentId(parentId);
@@ -191,47 +222,88 @@ export function PublicMenuLayout({
   return (
     <div
       className="flex min-h-screen flex-col"
-      style={{ backgroundColor: theme.mainContentBackgroundColor, color: mainTextColor, fontFamily: bodyFont }}
+      style={{
+        backgroundColor: theme.menuBackground,
+        color: theme.itemTitleText,
+        fontFamily: bodyFont,
+      }}
     >
-      <MenuHeader
-        restaurantName={restaurantName}
-        logo={logo}
-        headerBackgroundColor={theme.headerBackgroundColor}
-        titleFont={titleFont}
-        links={links}
-        locale={locale}
-        onLocaleChange={setLocale}
-      />
-
-      {hasNestedStructure ? (
-        <NestedCategoryNav
-          menu={menu}
-          headerBackgroundColor={theme.headerBackgroundColor}
-          stripBackgroundColor={theme.categoryStripBackgroundColor}
-          accentColor={theme.categoryAccentColor}
-          activeParentId={activeParentId}
-          activeSubcategoryId={activeSubcategoryId}
-          showTier1
-          onParentChange={handleParentChange}
-          onSubcategoryChange={setActiveSubcategoryId}
+      <PreviewHotspot
+        id="header"
+        enabled={hotspotEnabled}
+        active={previewInteractive?.activeHotspot === "header"}
+        onSelect={previewInteractive?.onHotspotClick}
+      >
+        <MenuHeader
+          restaurantName={restaurantName}
+          logo={logo}
+          headerBackgroundColor={theme.logoAreaBg}
+          headerTextColor={theme.logoAreaText}
+          titleFont={titleFont}
+          links={links}
+          locale={locale}
+          onLocaleChange={setLocale}
         />
-      ) : (
-        <FlatCategoryNav
-          categories={flatCategories}
-          stripBackgroundColor={theme.categoryStripBackgroundColor}
-          accentColor={theme.categoryAccentColor}
-          activeCategoryId={activeSubcategoryId}
-          onCategoryChange={setActiveSubcategoryId}
-        />
-      )}
+      </PreviewHotspot>
 
-      <main className="flex-1 px-4 py-8 sm:px-6">
+      <PreviewHotspot
+        id="categoryBar"
+        enabled={hotspotEnabled}
+        active={previewInteractive?.activeHotspot === "categoryBar"}
+        onSelect={previewInteractive?.onHotspotClick}
+      >
+        {hasNestedStructure ? (
+          <NestedCategoryNav
+            menu={menu}
+            headerBackgroundColor={theme.logoAreaBg}
+            stripBackgroundColor={theme.categoryBarBg}
+            tier1ActiveBg={theme.tier1ActiveBg}
+            tier1ActiveText={theme.tier1ActiveText}
+            tier1ActiveBorder={theme.tier1ActiveBorder}
+            tier1InactiveBg={theme.tier1InactiveBg}
+            tier1InactiveText={theme.tier1InactiveText}
+            tier1InactiveBorder={theme.tier1InactiveBorder}
+            tier2ActiveBg={theme.tier2ActiveBg}
+            tier2ActiveText={theme.tier2ActiveText}
+            tier2ActiveBorder={theme.tier2ActiveBorder}
+            tier2InactiveBg={theme.tier2InactiveBg}
+            tier2InactiveText={theme.tier2InactiveText}
+            tier2InactiveBorder={theme.tier2InactiveBorder}
+            activeParentId={activeParentId}
+            activeSubcategoryId={activeSubcategoryId}
+            showTier1
+            onParentChange={handleParentChange}
+            onSubcategoryChange={setActiveSubcategoryId}
+          />
+        ) : (
+          <FlatCategoryNav
+            categories={flatCategories}
+            stripBackgroundColor={theme.categoryBarBg}
+            tier2ActiveBg={theme.tier2ActiveBg}
+            tier2ActiveText={theme.tier2ActiveText}
+            tier2ActiveBorder={theme.tier2ActiveBorder}
+            tier2InactiveBg={theme.tier2InactiveBg}
+            tier2InactiveText={theme.tier2InactiveText}
+            tier2InactiveBorder={theme.tier2InactiveBorder}
+            activeCategoryId={activeSubcategoryId}
+            onCategoryChange={setActiveSubcategoryId}
+          />
+        )}
+      </PreviewHotspot>
+
+      <main
+        className="flex-1 px-4 py-8 sm:px-6"
+        style={{ borderTop: `1px solid ${theme.dividerLineColor}` }}
+      >
         {!hasMenu || !activeSubcategory ? (
-          <div className="py-16 text-center" style={{ color: mainTextColor }}>
-            <p className="text-lg font-semibold uppercase tracking-wide" style={{ fontFamily: titleFont, color: mainTextColor }}>
+          <div className="py-16 text-center" style={{ color: theme.itemTitleText }}>
+            <p
+              className="text-lg font-semibold uppercase tracking-wide"
+              style={{ fontFamily: titleFont, color: theme.itemTitleText }}
+            >
               Menu coming soon!
             </p>
-            <p className="mt-2 text-sm" style={{ color: mainTextColor }}>
+            <p className="mt-2 text-sm" style={{ color: theme.itemDescriptionText }}>
               This restaurant hasn&apos;t added any dishes yet.
             </p>
           </div>
@@ -239,43 +311,60 @@ export function PublicMenuLayout({
           <section className="mx-auto max-w-5xl">
             <DishSection
               subcategory={activeSubcategory}
-              mainTextColor={mainTextColor}
               theme={theme}
               titleFont={titleFont}
               bodyFont={bodyFont}
               locale={locale}
               activeFilters={activeFilters}
               display={display}
+              previewInteractive={previewInteractive}
             />
           </section>
         )}
       </main>
 
       {display.showDietary && (
-        <PublicMenuFilterBar
-          backgroundColor={theme.footerBackgroundColor}
+        <PreviewHotspot
+          id="filters"
+          enabled={hotspotEnabled}
+          active={previewInteractive?.activeHotspot === "filters"}
+          onSelect={previewInteractive?.onHotspotClick}
+        >
+          <PublicMenuFilterBar
+            backgroundColor={theme.filterAreaBg}
+            textColor={theme.filterText}
+            borderColor={theme.filterBorder}
+            titleFont={titleFont}
+            bodyFont={bodyFont}
+            locale={locale}
+            activeFilters={activeFilters}
+            onToggleFilter={toggleFilter}
+            menuTags={menuTags}
+          />
+        </PreviewHotspot>
+      )}
+
+      <PreviewHotspot
+        id="footer"
+        enabled={hotspotEnabled}
+        active={previewInteractive?.activeHotspot === "footer"}
+        onSelect={previewInteractive?.onHotspotClick}
+      >
+        <PublicMenuFooter
+          restaurantName={restaurantName}
+          logo={logo}
+          location={location}
+          hours={hours}
+          contactPhone={contactPhone}
+          contactEmail={contactEmail}
+          footerSlogan={footerSlogan}
+          footerBackgroundColor={theme.footerBackgroundColor}
+          footerTextColor={theme.footerTextIcon}
           titleFont={titleFont}
           bodyFont={bodyFont}
           locale={locale}
-          activeFilters={activeFilters}
-          onToggleFilter={toggleFilter}
-          menuTags={menuTags}
         />
-      )}
-
-      <PublicMenuFooter
-        restaurantName={restaurantName}
-        logo={logo}
-        location={location}
-        hours={hours}
-        contactPhone={contactPhone}
-        contactEmail={contactEmail}
-        footerSlogan={footerSlogan}
-        footerBackgroundColor={theme.footerBackgroundColor}
-        titleFont={titleFont}
-        bodyFont={bodyFont}
-        locale={locale}
-      />
+      </PreviewHotspot>
     </div>
   );
 }

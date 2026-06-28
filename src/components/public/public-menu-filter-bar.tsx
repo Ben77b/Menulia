@@ -6,6 +6,8 @@ import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 
 interface PublicMenuFilterBarProps {
   backgroundColor: string;
+  textColor?: string;
+  borderColor?: string;
   titleFont: string;
   bodyFont: string;
   locale: PublicMenuLocale;
@@ -16,6 +18,8 @@ interface PublicMenuFilterBarProps {
 
 export function PublicMenuFilterBar({
   backgroundColor,
+  textColor: textColorProp,
+  borderColor: borderColorProp,
   titleFont,
   bodyFont,
   locale,
@@ -23,7 +27,8 @@ export function PublicMenuFilterBar({
   onToggleFilter,
   menuTags,
 }: PublicMenuFilterBarProps) {
-  const textColor = contrastingTextColor(backgroundColor);
+  const textColor = textColorProp ?? contrastingTextColor(backgroundColor);
+  const borderColor = borderColorProp ?? textColor;
 
   if (menuTags.length === 0 && FOOTER_FILTER_TAGS.length === 0) {
     return null;
@@ -57,12 +62,12 @@ export function PublicMenuFilterBar({
                       ? {
                           backgroundColor: textColor,
                           color: backgroundColor,
-                          border: `1px solid ${textColor}`,
+                          border: `1px solid ${borderColor}`,
                         }
                       : {
                           backgroundColor: "transparent",
                           color: textColor,
-                          border: `1px solid ${textColor}`,
+                          border: `1px solid ${borderColor}`,
                         }
                   }
                 >
@@ -91,7 +96,7 @@ export function PublicMenuFilterBar({
                     className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"
                     style={{
                       color: textColor,
-                      border: `1px solid ${textColor}`,
+                      border: `1px solid ${borderColor}`,
                       fontFamily: bodyFont,
                     }}
                   >

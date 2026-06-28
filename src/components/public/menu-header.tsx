@@ -12,6 +12,7 @@ interface MenuHeaderProps {
   restaurantName: string;
   logo: string | null;
   headerBackgroundColor: string;
+  headerTextColor?: string;
   titleFont: string;
   links: RestaurantLink[];
   locale: PublicMenuLocale;
@@ -22,13 +23,14 @@ export function MenuHeader({
   restaurantName,
   logo,
   headerBackgroundColor,
+  headerTextColor,
   titleFont,
   links,
   locale,
   onLocaleChange,
 }: MenuHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const textColor = contrastingTextColor(headerBackgroundColor);
+  const textColor = headerTextColor ?? contrastingTextColor(headerBackgroundColor);
   const hasLinks = links.length > 0;
 
   return (

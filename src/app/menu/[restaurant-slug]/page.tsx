@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
+import { parseAdvancedTheme, resolveMenuTheme } from "@/lib/advanced-theme";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
@@ -75,7 +76,9 @@ export default async function PublicMenuPage({ params }: PageProps) {
   );
   const links = parseCustomLinks(restaurant.custom_links);
   const display = parseDisplayOptions(restaurant);
-  const theme = parseMenuThemeColors(restaurant.theme_colors);
+  const basicTheme = parseMenuThemeColors(restaurant.theme_colors);
+  const advancedTheme = parseAdvancedTheme(restaurant.advanced_theme);
+  const theme = resolveMenuTheme(basicTheme, advancedTheme);
   const fonts = resolveFonts(
     restaurant.typography && typeof restaurant.typography === "object"
       ? (restaurant.typography as Record<string, unknown>)
