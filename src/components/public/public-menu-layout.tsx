@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { contrastingTextColor } from "@/lib/contrast";
+import { parseContactInfo } from "@/lib/contact-info";
 import type { MenuThemeColors } from "@/lib/theme-colors";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { RestaurantLink } from "@/lib/restaurant-links";
@@ -123,6 +124,7 @@ export function PublicMenuLayout({
 
   const mainTextColor = contrastingTextColor(theme.mainContentBackgroundColor);
   const footerTextColor = contrastingTextColor(theme.footerBackgroundColor);
+  const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
   const hasMenu = hasNestedStructure ? menu.length > 0 : flatCategories.length > 0;
 
   function handleParentChange(parentId: string) {
@@ -191,7 +193,7 @@ export function PublicMenuLayout({
         )}
       </main>
 
-      {(location || hours || contactInfo) && (
+      {(location || hours || contactPhone || contactEmail) && (
         <footer
           className="border-t border-black/5 px-6 py-12"
           style={{ backgroundColor: theme.footerBackgroundColor, color: footerTextColor }}
@@ -227,7 +229,7 @@ export function PublicMenuLayout({
                   </p>
                 </div>
               )}
-              {(location || contactInfo) && (
+              {(location || contactPhone || contactEmail) && (
                 <div style={{ color: footerTextColor }}>
                   <h3
                     className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
@@ -236,7 +238,8 @@ export function PublicMenuLayout({
                     Location & Contact
                   </h3>
                   <div className="space-y-1 text-sm leading-relaxed" style={{ color: footerTextColor }}>
-                    {contactInfo && <p>{contactInfo}</p>}
+                    {contactPhone && <p>{contactPhone}</p>}
+                    {contactEmail && <p>{contactEmail}</p>}
                     {location && <p>{location}</p>}
                   </div>
                 </div>
