@@ -1,40 +1,30 @@
+"use client";
+
+import { useRestaurant } from "@/contexts/restaurant-context";
 import { PremiumPaywall } from "@/components/dashboard/premium-paywall";
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts";
 import { ExpenseLedger } from "@/components/dashboard/expense-ledger";
-import {
-  fetchDemoRestaurant,
-  fetchPageViews,
-  fetchReservations,
-  fetchExpenses,
-} from "@/lib/data";
 
-export const metadata = { title: "Analytics" };
+export default function AnalyticsPage() {
+  const { currentRestaurant } = useRestaurant();
 
-export default async function AnalyticsPage() {
-  const restaurant = await fetchDemoRestaurant();
-
-  if (!restaurant) {
+  if (!currentRestaurant) {
     return (
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
         <p className="mt-1 text-text-secondary">
           Traffic, conversions, seasonality, and operational expenses.
         </p>
-        <div className="mt-8">
-          <div className="rounded-2xl border border-border bg-white p-6">
-            <p className="text-sm text-text-secondary">Please select a restaurant to view analytics.</p>
-          </div>
+        <div className="mt-8 rounded-2xl border border-border bg-white p-6">
+          <p className="text-sm text-text-secondary">Select a restaurant to view analytics.</p>
         </div>
       </div>
     );
   }
 
-  const restaurantAny = restaurant as any;
-  const [pageViews, reservations, expenses] = await Promise.all([
-    fetchPageViews(restaurantAny.id),
-    fetchReservations(restaurantAny.id),
-    fetchExpenses(restaurantAny.id),
-  ]);
+  const pageViews: never[] = [];
+  const reservations: never[] = [];
+  const expenses: never[] = [];
 
   return (
     <div>
@@ -43,16 +33,16 @@ export default async function AnalyticsPage() {
         Traffic, conversions, seasonality, and operational expenses.
       </p>
       <div className="mt-8">
-        <PremiumPaywall isPremium={restaurantAny.is_premium || false}>
-          <AnalyticsCharts
-            pageViews={pageViews}
-            reservations={reservations}
-            expenses={expenses}
-          />
+        <PremiumPaywall isPremium={false}>
+          <AnalyticsCharts pageViews={pageViews} reservations={reservations} expenses={expenses} />
           <div className="mt-8">
-            <ExpenseLedger initialExpenses={expenses} restaurantId={restaurantAny.id} />
+            <ExpenseLedger initialExpenses={expenses} restaurantId={currentRestaurant.id} />
           </div>
         </PremiumPaywall>
+        <p className="mt-6 text-sm text-text-secondary">
+          Analytics tables are not configured yet. Connect page views, reservations, and expenses in
+          Supabase to populate these charts.
+        </p>
       </div>
     </div>
   );

@@ -1,19 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { fetchDemoRestaurant, fetchRestaurantBySlug } from "@/lib/data";
-import { DinerApp } from "@/components/public/diner-app";
-import { buildPublicMenuDesign, withPublicMenuDefaults } from "@/lib/public-menu";
+import { useRestaurant } from "@/contexts/restaurant-context";
+import { getPublicMenuUrl } from "@/lib/site-url";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Preview Your Restaurant" };
+export default function PreviewPage() {
+  const { currentRestaurant } = useRestaurant();
 
-export default async function PreviewPage() {
-  const restaurant = await fetchDemoRestaurant();
-
-  if (!restaurant) {
+  if (!currentRestaurant) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-950 text-white">
-        <p className="text-zinc-400">Please select a restaurant to preview.</p>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <p className="text-muted-foreground">Select a restaurant to preview its public menu.</p>
         <Link href="/dashboard">
           <Button className="mt-4">Go to Dashboard</Button>
         </Link>
@@ -21,32 +20,22 @@ export default async function PreviewPage() {
     );
   }
 
-  const restaurantAny = restaurant as any;
-  const slug = restaurantAny.slug || restaurantAny.id;
-  const full = await fetchRestaurantBySlug(slug);
-
-  if (!full) {
-    return null;
-  }
-
-  const prepared = withPublicMenuDefaults(full);
-  const design = buildPublicMenuDesign(prepared);
+  const menuUrl = getPublicMenuUrl(currentRestaurant.slug);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* Top bar — stays in same tab */}
+    <div className="fixed inset-0 z-50 flex flex-col bg-zinc-950">
       <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-zinc-900 px-4 py-3 text-white">
         <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-sm font-medium transition hover:text-emerald-brand-light"
+          href={`/dashboard/${currentRestaurant.id}`}
+          className="flex items-center gap-2 text-sm font-medium transition hover:text-emerald-400"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Link>
         <span className="text-sm text-zinc-400">
-          Preview — how guests see <strong className="text-white">{restaurantAny.name}</strong>
+          Preview — <strong className="text-white">{currentRestaurant.name}</strong>
         </span>
-        <Link href={`/menu/${slug}`} target="_blank" rel="noopener noreferrer">
+        <Link href={menuUrl} target="_blank" rel="noopener noreferrer">
           <Button variant="outline" size="sm" className="border-zinc-600 text-white hover:bg-zinc-800">
             <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
             Open full screen
@@ -54,10 +43,13 @@ export default async function PreviewPage() {
         </Link>
       </div>
 
-      {/* Phone-frame preview */}
       <div className="flex flex-1 items-center justify-center overflow-hidden bg-zinc-950 p-4">
-        <div className="h-full max-h-[900px] w-full max-w-[430px] overflow-hidden rounded-[2rem] border-4 border-zinc-700 shadow-2xl">
-          <DinerApp restaurant={prepared} design={design} previewMode />
+        <div className="h-full max-h-[900px] w-full max-w-[430px] overflow-hidden rounded-[2rem] border-4 border-zinc-700 shadow-2xl bg-white">
+          <iframe
+            src={menuUrl}
+            title={`${currentRestaurant.name} menu preview`}
+            className="h-full w-full border-0"
+          />
         </div>
       </div>
     </div>

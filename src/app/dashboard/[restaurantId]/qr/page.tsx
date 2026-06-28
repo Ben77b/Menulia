@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
+import { getPublicMenuUrl } from "@/lib/site-url";
 import { Button } from "@/components/ui/button";
 import { QrCode, Download } from "lucide-react";
 import QRCode from "react-qr-code";
@@ -40,8 +41,8 @@ export default function QrCodePage() {
   }
 
   const restaurantUrl = currentRestaurant
-    ? `https://menulia.net/menu/${currentRestaurant.slug}`
-    : "https://menulia.net/";
+    ? getPublicMenuUrl(currentRestaurant.slug)
+    : getPublicMenuUrl("demo");
 
   return (
     <div className="space-y-6">

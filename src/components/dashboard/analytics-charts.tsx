@@ -85,7 +85,7 @@ export function AnalyticsCharts({ pageViews, reservations, expenses }: Analytics
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => `€${v.toLocaleString()}`} />
+              <Tooltip formatter={(v) => `€${Number(v).toLocaleString()}`} />
             </PieChart>
           </ResponsiveContainer>
           <ul className="space-y-2 text-sm">
@@ -115,7 +115,7 @@ function buildMonthlyTraffic(views: PageView[], reservations: Reservation[]) {
   reservations
     .filter((r) => r.status === "completed")
     .forEach((r) => {
-      const m = format(startOfMonth(parseISO(r.date)), "MMM yyyy");
+      const m = format(startOfMonth(parseISO(r.reserved_at)), "MMM yyyy");
       const cur = months.get(m) ?? { views: 0, conversions: 0 };
       cur.conversions++;
       months.set(m, cur);

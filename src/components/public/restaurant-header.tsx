@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { X, ExternalLink, ChevronDown } from "lucide-react";
 import { LANGUAGES, type LanguageCode } from "@/lib/languages";
@@ -29,15 +29,7 @@ export function RestaurantHeader({
 }: RestaurantHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const [visibleLanguages, setVisibleLanguages] = useState<Set<LanguageCode>>(new Set(["en"]));
-
-  useEffect(() => {
-    // Load visible languages from localStorage
-    const saved = localStorage.getItem(`visible-languages-${restaurantId}`);
-    if (saved) {
-      setVisibleLanguages(new Set(JSON.parse(saved)));
-    }
-  }, [restaurantId]);
+  const visibleLanguages = new Set<LanguageCode>(LANGUAGES.map((lang) => lang.code));
 
   const links = customLinks.map((l) => ({ label: l.label, url: l.url, icon: ExternalLink }));
 

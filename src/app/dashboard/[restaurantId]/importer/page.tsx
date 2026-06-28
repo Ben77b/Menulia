@@ -1,23 +1,21 @@
+"use client";
+
+import { useRestaurant } from "@/contexts/restaurant-context";
 import { PremiumPaywall } from "@/components/dashboard/premium-paywall";
 import { MenuImporter } from "@/components/dashboard/menu-importer";
-import { fetchDemoRestaurant } from "@/lib/data";
 
-export const metadata = { title: "AI Menu Importer" };
+export default function ImporterPage() {
+  const { currentRestaurant } = useRestaurant();
 
-export default async function ImporterPage() {
-  const restaurant = await fetchDemoRestaurant();
-
-  if (!restaurant) {
+  if (!currentRestaurant) {
     return (
       <div>
         <h1 className="text-2xl font-bold">AI Menu Importer</h1>
         <p className="mt-1 text-text-secondary">
           Upload a photo of your paper menu to automatically extract items.
         </p>
-        <div className="mt-8">
-          <div className="rounded-2xl border border-border bg-white p-6">
-            <p className="text-sm text-text-secondary">Please select a restaurant to use this feature.</p>
-          </div>
+        <div className="mt-8 rounded-2xl border border-border bg-white p-6">
+          <p className="text-sm text-text-secondary">Select a restaurant to use this feature.</p>
         </div>
       </div>
     );
@@ -30,9 +28,13 @@ export default async function ImporterPage() {
         Upload a photo of your paper menu to automatically extract items.
       </p>
       <div className="mt-8">
-        <PremiumPaywall isPremium={(restaurant as any).is_premium || false}>
+        <PremiumPaywall isPremium={false}>
           <MenuImporter />
         </PremiumPaywall>
+        <p className="mt-4 text-sm text-text-secondary">
+          Demo mode: uploaded menus return sample parsed items. Wire an OCR/AI endpoint to enable
+          production imports.
+        </p>
       </div>
     </div>
   );

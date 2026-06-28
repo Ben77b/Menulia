@@ -347,19 +347,3 @@ export async function uploadRestaurantLogo(file: File, userId: string): Promise<
 
   return publicUrl;
 }
-
-export async function fetchDemoRestaurant() {
-  return null;
-}
-
-export async function fetchReservations(_restaurantId: string) {
-  return [];
-}
-
-export async function fetchPageViews(_restaurantId: string) {
-  return [];
-}
-
-export async function fetchExpenses(_restaurantId: string) {
-  return [];
-}

@@ -1,21 +1,21 @@
-# menulia.net
+# Menulia
 
-Premium SaaS platform for restaurant owners — digital menus, reservations, and analytics.
+Premium SaaS platform for restaurant owners — digital menus, branding, and QR codes.
+
+**Production:** [menulia.net](https://menulia.net)
 
 ## Tech Stack
 
-| Layer | Choice | Why |
-|-------|--------|-----|
-| **Framework** | Next.js 15 (App Router) | Full-stack React, SSR, PWA-ready |
-| **Database** | **Supabase (PostgreSQL)** | Your schema references `auth.users`; Supabase provides auth + Postgres + RLS in one |
-| **Styling** | Tailwind CSS v4 | Design system with Emerald (#047857) + Coral CTA (#F97316) |
-| **Charts** | Recharts | Analytics dashboard |
-| **Local dev** | Mock data layer | Works without Supabase out of the box |
+| Layer | Choice |
+|-------|--------|
+| Framework | Next.js 15 (App Router) |
+| Database & Auth | Supabase (PostgreSQL) |
+| Styling | Tailwind CSS v4 |
+| Hosting | Vercel (GitHub `main` branch) |
 
 ## Quick Start
 
 ```bash
-cd ~/Projects/menulia
 npm install
 cp .env.example .env.local
 npm run dev
@@ -23,58 +23,61 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-> **Note:** Node.js 18+ is required. Install from [nodejs.org](https://nodejs.org) if `npm` is not found.
+## Environment Variables
 
-## Demo Restaurants
+Set these in `.env.local` (local) and in **Vercel → Project → Settings → Environment Variables** (production):
 
-| Restaurant | Slug | Tier | Reservations |
-|------------|------|------|--------------|
-| La Calle Tacos (Mexican) | `/la-calle-tacos` | Free | No |
-| Sakura Omakase (Sushi) | `/sakura-omakase` | Premium | Yes |
-| Nonna Rosa Trattoria (Italian) | `/nonna-rosa-trattoria` | Free | No |
-| Smash & Co. (Burgers) | `/smash-and-co` | Premium | Yes |
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL, e.g. `https://menulia.net` |
 
 ## Routes
 
-- **Marketing:** `/`, `/pricing`, `/services`, `/about`, `/blog`, `/contact`
-- **Public menu (PWA):** `/[restaurant-slug]`
-- **Onboarding:** `/onboarding`
-- **Admin dashboard:** `/dashboard` (+ `/menu`, `/importer`, `/reservations`, `/analytics`, `/settings`)
+| Area | Path |
+|------|------|
+| Marketing | `/`, `/pricing`, `/services`, `/about`, `/blog`, `/contact` |
+| Auth | `/login`, `/signup`, `/logout` |
+| Public menu | `/menu/[restaurant-slug]` |
+| Legacy redirect | `/[restaurant-slug]` → `/menu/[slug]` |
+| Dashboard | `/dashboard` → `/dashboard/[restaurant-id]` |
+| Menu builder | `/dashboard/[id]/menu` |
+| Branding | `/dashboard/[id]/branding` |
+| Settings | `/dashboard/[id]/settings` |
+| QR code | `/dashboard/[id]/qr` |
 
-## Supabase Setup (Production)
+## Supabase Setup
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Run the migration: `supabase/migrations/20250608000000_initial_schema.sql`
-3. Optionally run `supabase/seed.sql` for demo data
-4. Set env vars in `.env.local`:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-   NEXT_PUBLIC_USE_MOCK_DATA=false
-   ```
+**Use the canonical schema:** run `supabase-schema.sql` in the Supabase SQL Editor. Do not use the older `supabase/migrations/20250608000000_initial_schema.sql` — it targets different table names (`menu_categories`, `menu_items`) that this app does not use.
+
+See [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) for full database, storage, auth, and Vercel configuration.
 
 ## Design System
 
-- **60%** — White/light-grey backgrounds (`#fafafa`)
-- **30%** — Deep Emerald Green `#047857` (nav, success, brand)
-- **10%** — Burnt Coral `#F97316` (primary CTAs only)
+- **Brand:** Deep Emerald `#047857`
+- **CTA:** Burnt Coral `#F97316`
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── (marketing)/     # B2B website
-│   ├── [restaurant-slug]/ # Public diner PWA
-│   ├── dashboard/       # Admin dashboard
-│   └── onboarding/
+│   ├── (marketing)/              # B2B website
+│   ├── menu/[restaurant-slug]/   # Public diner menu
+│   ├── dashboard/
+│   │   ├── (main)/               # First-restaurant onboarding gate
+│   │   └── [restaurantId]/       # Authenticated dashboard features
+│   ├── login, signup, logout
+│   └── ...
 ├── components/
 │   ├── marketing/
-│   ├── public/          # Diner-facing UI
-│   ├── dashboard/
-│   └── ui/
+│   ├── public/                   # Diner-facing UI (DinerApp)
+│   └── dashboard/
+├── contexts/                     # Auth, restaurant, design state
 └── lib/
-    ├── mock-data.ts     # Sandbox seed data
-    ├── types.ts
-    └── supabase/
+    ├── data.ts                   # Server-side restaurant/menu fetch
+    ├── menu-db.ts                # Client-side menu CRUD
+    ├── restaurant-design.ts      # Design types & defaults
+    └── supabase.ts               # Browser Supabase client
 ```

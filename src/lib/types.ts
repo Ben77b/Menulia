@@ -81,6 +81,19 @@ export interface PageView {
   viewed_at: string;
 }
 
+export type ReservationStatus = "pending" | "confirmed" | "cancelled" | "completed";
+
+export interface Reservation {
+  id: string;
+  restaurant_id: string;
+  guest_name: string;
+  guest_email: string | null;
+  party_size: number;
+  reserved_at: string;
+  status: ReservationStatus;
+  created_at: string;
+}
+
 export interface BusinessExpense {
   id: string;
   restaurant_id: string;

@@ -18,7 +18,8 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const { currentRestaurant } = useRestaurant();
 
   useEffect(() => {
-    if (!currentRestaurant?.id) {
+    const restaurantId = currentRestaurant?.id;
+    if (!restaurantId) {
       setDesignState(DEFAULT_DESIGN);
       return;
     }
@@ -28,7 +29,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase
         .from("restaurants")
         .select("name, logo, theme_colors, typography")
-        .eq("id", currentRestaurant.id)
+        .eq("id", restaurantId)
         .single();
 
       if (error) {

@@ -25,41 +25,10 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
   const categoryRefs = useRef<Record<string, HTMLElement>>({});
 
-  // Load menu categories from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(`menu-categories-${restaurant.id}`);
-    if (saved) {
-      try {
-        const savedCategories = JSON.parse(saved);
-        if (savedCategories.length > 0) {
-          setCategories(savedCategories);
-          setActiveCategory(savedCategories[0]?.id ?? "");
-        }
-      } catch (e) {
-        console.error("Failed to load saved menu:", e);
-      }
-    }
-  }, [restaurant.id]);
-
-  // Listen for storage changes (for preview mode)
-  useEffect(() => {
-    const onStorage = () => {
-      const saved = localStorage.getItem(`menu-categories-${restaurant.id}`);
-      if (saved) {
-        try {
-          const savedCategories = JSON.parse(saved);
-          if (savedCategories.length > 0) {
-            setCategories(savedCategories);
-            setActiveCategory(savedCategories[0]?.id ?? "");
-          }
-        } catch (e) {
-          console.error("Failed to load saved menu:", e);
-        }
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, [restaurant.id]);
+    setCategories(restaurant.categories);
+    setActiveCategory(restaurant.categories[0]?.id ?? "");
+  }, [restaurant.id, restaurant.categories]);
 
   // Intersection observer for active category highlighting
   useEffect(() => {
