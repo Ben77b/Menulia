@@ -1,5 +1,6 @@
 import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
+import { isRestaurantUuid } from "./restaurant-id";
 
 export interface MenuCategoryRecord {
   id: string;
@@ -80,16 +81,22 @@ export async function createMenuCategory(input: {
 }): Promise<MenuCategoryRecord> {
   const supabase = getSupabaseBrowserClient();
 
-  const { data, error } = await supabase
-    .from("categories")
-    .insert({
-      restaurant_id: input.restaurantId,
-      name: input.name.trim(),
-      layout_type: input.layout_type,
-      order_index: input.order_index,
-    })
-    .select("*")
-    .single();
+  if (!isRestaurantUuid(input.restaurantId)) {
+    throw new Error(
+      `Invalid restaurant_id: expected a database UUID, received "${input.restaurantId}".`
+    );
+  }
+
+  const payload = {
+    restaurant_id: input.restaurantId,
+    name: input.name.trim(),
+    layout_type: input.layout_type,
+    order_index: input.order_index,
+  };
+
+  console.log("[CategorySave:Payload]", payload);
+
+  const { data, error } = await supabase.from("categories").insert(payload).select("*").single();
 
   if (error || !data) {
     logSupabaseFailure("menu.createCategory", error);

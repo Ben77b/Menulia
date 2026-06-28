@@ -43,3 +43,20 @@ export function logSupabaseFailure(scope: string, error: PostgrestError | Error 
 
   console.error(`[${scope}]`, error);
 }
+
+export function formatSupabaseError(error: unknown): string {
+  if (!error) return "Unknown error";
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const supabaseError = error as PostgrestError;
+    return [supabaseError.message, supabaseError.details, supabaseError.hint, supabaseError.code]
+      .filter(Boolean)
+      .join(" — ");
+  }
+
+  return String(error);
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useParams } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { Plus, Trash2, Edit, FolderPlus, X, GripVertical, Upload, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import {
   updateMenuDish,
   deleteMenuDish,
 } from "@/lib/menu-db";
+import { resolveRestaurantDbId } from "@/lib/restaurant-id";
+import { formatSupabaseError } from "@/lib/auth/errors";
 
 export const dynamic = 'force-dynamic';
 
@@ -40,10 +43,13 @@ interface MenuItem {
 
 
 export default function MenuPage() {
-  const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const params = useParams();
+  const routeRestaurantId = params.restaurantId as string | undefined;
+  const { currentRestaurant, restaurants, refreshRestaurants } = useRestaurant();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [categorySaveError, setCategorySaveError] = useState<string | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryLayoutType, setNewCategoryLayoutType] = useState<'stacked' | 'carousel'>('stacked');
@@ -133,19 +139,18 @@ export default function MenuPage() {
     }
   }
 
-  useEffect(() => {
-    if (currentRestaurant) {
-      loadMenuData();
-    }
-  }, [currentRestaurant]);
+  const activeRestaurantDbId = resolveRestaurantDbId(restaurants, {
+    routeParam: routeRestaurantId,
+    preferredId: currentRestaurant?.id,
+  });
 
   async function loadMenuData() {
-    if (!currentRestaurant) return;
+    if (!activeRestaurantDbId) return;
 
     setIsLoading(true);
 
     try {
-      const categoriesWithItems = await fetchMenuCategories(currentRestaurant.id);
+      const categoriesWithItems = await fetchMenuCategories(activeRestaurantDbId);
 
       setCategories(
         categoriesWithItems.map((category) => ({
@@ -167,7 +172,7 @@ export default function MenuPage() {
         }))
       );
 
-      const savedTags = localStorage.getItem(`custom-tags-${currentRestaurant.id}`);
+      const savedTags = localStorage.getItem(`custom-tags-${activeRestaurantDbId}`);
       setCustomTags(savedTags ? JSON.parse(savedTags) : []);
     } catch (error) {
       console.error("Error loading menu data:", error);
@@ -178,19 +183,33 @@ export default function MenuPage() {
   }
 
   useEffect(() => {
-    if (currentRestaurant) {
-      localStorage.setItem(`custom-tags-${currentRestaurant.id}`, JSON.stringify(customTags));
+    if (activeRestaurantDbId) {
+      loadMenuData();
     }
-  }, [customTags, currentRestaurant]);
+  }, [activeRestaurantDbId]);
+
+  useEffect(() => {
+    if (activeRestaurantDbId) {
+      localStorage.setItem(`custom-tags-${activeRestaurantDbId}`, JSON.stringify(customTags));
+    }
+  }, [customTags, activeRestaurantDbId]);
 
   async function handleAddCategory() {
-    if (!currentRestaurant || !newCategoryName.trim()) return;
+    if (!newCategoryName.trim()) return;
 
+    if (!activeRestaurantDbId) {
+      setCategorySaveError(
+        "No valid restaurant UUID found. The URL may contain a slug instead of the database ID — refresh or re-select your restaurant."
+      );
+      return;
+    }
+
+    setCategorySaveError(null);
     setIsSaving(true);
 
     try {
       const created = await createMenuCategory({
-        restaurantId: currentRestaurant.id,
+        restaurantId: activeRestaurantDbId,
         name: newCategoryName,
         layout_type: newCategoryLayoutType,
         order_index: categories.length,
@@ -212,7 +231,7 @@ export default function MenuPage() {
       await refreshRestaurants();
     } catch (error) {
       console.error("Error creating category:", error);
-      alert("Failed to save category. Please try again.");
+      setCategorySaveError(formatSupabaseError(error));
     } finally {
       setIsSaving(false);
     }
@@ -536,6 +555,12 @@ export default function MenuPage() {
           Manage Global Tags
         </Button>
       </div>
+
+      {categorySaveError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {categorySaveError}
+        </div>
+      )}
 
       {showAddCategory && (
         <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
