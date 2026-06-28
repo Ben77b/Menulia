@@ -12,6 +12,9 @@ interface FlatCategoryNavProps {
   tier2InactiveBg: string;
   tier2InactiveText: string;
   tier2InactiveBorder: string;
+  categoryFont: string;
+  categoryFontWeight?: number;
+  categoryFontStyle?: "normal" | "italic";
   activeCategoryId: string;
   onCategoryChange: (categoryId: string) => void;
 }
@@ -25,10 +28,18 @@ export function FlatCategoryNav({
   tier2InactiveBg,
   tier2InactiveText,
   tier2InactiveBorder,
+  categoryFont,
+  categoryFontWeight,
+  categoryFontStyle,
   activeCategoryId,
   onCategoryChange,
 }: FlatCategoryNavProps) {
   const stripTextColor = contrastingTextColor(stripBackgroundColor);
+  const categoryTypeStyle = {
+    fontFamily: categoryFont,
+    fontWeight: categoryFontWeight ?? 400,
+    fontStyle: categoryFontStyle ?? "normal",
+  } as const;
 
   if (categories.length === 0) return null;
 
@@ -53,12 +64,14 @@ export function FlatCategoryNav({
             style={
               isActive
                 ? {
+                    ...categoryTypeStyle,
                     backgroundColor: tier2ActiveBg,
                     color: tier2ActiveText,
                     border: `1px solid ${tier2ActiveBorder}`,
                     textAlign: "center",
                   }
                 : {
+                    ...categoryTypeStyle,
                     backgroundColor: tier2InactiveBg,
                     color: tier2InactiveText,
                     border: `1px solid ${tier2InactiveBorder}`,

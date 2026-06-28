@@ -102,6 +102,9 @@ export default async function PublicMenuPage({ params }: PageProps) {
       bodyFont={fonts.textFont}
       titleFontWeight={fonts.titleFontWeight}
       titleFontStyle={fonts.titleFontStyle}
+      categoryFont={fonts.categoryFont}
+      categoryFontWeight={fonts.categoryFontWeight}
+      categoryFontStyle={fonts.categoryFontStyle}
       bodyFontWeight={fonts.textFontWeight}
       bodyFontStyle={fonts.textFontStyle}
       menu={menu}

@@ -7,10 +7,14 @@ export type FontStyle = "normal" | "italic";
 export interface RestaurantTypography {
   titleFont: string;
   textFont: string;
+  categoryFont: string;
   titleFontWeight: FontWeight;
   textFontWeight: FontWeight;
+  categoryFontWeight: FontWeight;
   titleFontStyle: FontStyle;
   textFontStyle: FontStyle;
+  categoryFontStyle: FontStyle;
+  categoryFontLinkedToTitle: boolean;
 }
 
 export function parseFontWeight(value: unknown, fallback: FontWeight = 400): FontWeight {
@@ -41,14 +45,30 @@ export function parseTypography(
       : defaults.titleFont;
   const textFont =
     typeof source.textFont === "string" && source.textFont ? source.textFont : titleFont;
+  const categoryFontLinkedToTitle =
+    source.categoryFontLinkedToTitle !== false &&
+    source.categoryFontLinkedToTitle !== "false";
+  const categoryFont =
+    typeof source.categoryFont === "string" && source.categoryFont && !categoryFontLinkedToTitle
+      ? source.categoryFont
+      : titleFont;
 
   return {
     titleFont,
     textFont,
+    categoryFont,
     titleFontWeight: parseFontWeight(source.titleFontWeight),
     textFontWeight: parseFontWeight(source.textFontWeight),
+    categoryFontWeight: parseFontWeight(
+      source.categoryFontWeight,
+      parseFontWeight(source.titleFontWeight)
+    ),
     titleFontStyle: parseFontStyle(source.titleFontStyle),
     textFontStyle: parseFontStyle(source.textFontStyle),
+    categoryFontStyle: categoryFontLinkedToTitle
+      ? parseFontStyle(source.titleFontStyle)
+      : parseFontStyle(source.categoryFontStyle),
+    categoryFontLinkedToTitle,
   };
 }
 
@@ -57,19 +77,79 @@ export function serializeTypography(
     RestaurantDesign,
     | "titleFont"
     | "textFont"
+    | "categoryFont"
     | "titleFontWeight"
     | "textFontWeight"
+    | "categoryFontWeight"
     | "titleFontStyle"
     | "textFontStyle"
+    | "categoryFontStyle"
+    | "categoryFontLinkedToTitle"
   >
-): Record<string, string | number> {
+): Record<string, string | number | boolean> {
   return {
     titleFont: design.titleFont,
     textFont: design.textFont,
+    categoryFont: design.categoryFontLinkedToTitle
+      ? design.titleFont
+      : design.categoryFont,
     titleFontWeight: design.titleFontWeight,
     textFontWeight: design.textFontWeight,
+    categoryFontWeight: design.categoryFontLinkedToTitle
+      ? design.titleFontWeight
+      : design.categoryFontWeight,
     titleFontStyle: design.titleFontStyle,
     textFontStyle: design.textFontStyle,
+    categoryFontStyle: design.categoryFontLinkedToTitle
+      ? design.titleFontStyle
+      : design.categoryFontStyle,
+    categoryFontLinkedToTitle: design.categoryFontLinkedToTitle,
+  };
+}
+
+export function resolveCategoryTypography(
+  design: Pick<
+    RestaurantDesign,
+    | "titleFont"
+    | "categoryFont"
+    | "titleFontWeight"
+    | "categoryFontWeight"
+    | "titleFontStyle"
+    | "categoryFontStyle"
+    | "categoryFontLinkedToTitle"
+  >
+): Pick<RestaurantTypography, "categoryFont" | "categoryFontWeight" | "categoryFontStyle"> {
+  if (design.categoryFontLinkedToTitle) {
+    return {
+      categoryFont: design.titleFont,
+      categoryFontWeight: design.titleFontWeight,
+      categoryFontStyle: design.titleFontStyle,
+    };
+  }
+  return {
+    categoryFont: design.categoryFont,
+    categoryFontWeight: design.categoryFontWeight,
+    categoryFontStyle: design.categoryFontStyle,
+  };
+}
+
+export function categoryFontStyleProps(
+  design: Pick<
+    RestaurantDesign,
+    | "titleFont"
+    | "categoryFont"
+    | "titleFontWeight"
+    | "categoryFontWeight"
+    | "titleFontStyle"
+    | "categoryFontStyle"
+    | "categoryFontLinkedToTitle"
+  >
+): CSSProperties {
+  const category = resolveCategoryTypography(design);
+  return {
+    fontFamily: category.categoryFont,
+    fontWeight: category.categoryFontWeight,
+    fontStyle: category.categoryFontStyle,
   };
 }
 
@@ -148,18 +228,26 @@ export function typographyPresetToDesignPatch(
   RestaurantDesign,
   | "titleFont"
   | "textFont"
+  | "categoryFont"
   | "titleFontWeight"
   | "textFontWeight"
+  | "categoryFontWeight"
   | "titleFontStyle"
   | "textFontStyle"
+  | "categoryFontStyle"
+  | "categoryFontLinkedToTitle"
 > {
   return {
     titleFont: preset.titleFont,
     textFont: preset.textFont,
+    categoryFont: preset.titleFont,
     titleFontWeight: preset.titleFontWeight,
     textFontWeight: preset.textFontWeight,
+    categoryFontWeight: preset.titleFontWeight,
     titleFontStyle: preset.titleFontStyle,
     textFontStyle: preset.textFontStyle,
+    categoryFontStyle: preset.titleFontStyle,
+    categoryFontLinkedToTitle: true,
   };
 }
 

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { FontStyle, FontWeight } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
-import { TYPOGRAPHY_PRESETS, typographyPresetToDesignPatch } from "@/lib/typography";
+import { TYPOGRAPHY_PRESETS, typographyPresetToDesignPatch, resolveCategoryTypography } from "@/lib/typography";
 import { ChevronDown } from "lucide-react";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
 
@@ -278,10 +278,13 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
   const { design, updateDesign } = useDesign();
   const [fineTuneOpen, setFineTuneOpen] = useState(false);
   const [showTitleFontDropdown, setShowTitleFontDropdown] = useState(false);
+  const [showCategoryFontDropdown, setShowCategoryFontDropdown] = useState(false);
   const [showBodyFontDropdown, setShowBodyFontDropdown] = useState(false);
   const [titleFontSearch, setTitleFontSearch] = useState("");
+  const [categoryFontSearch, setCategoryFontSearch] = useState("");
   const [bodyFontSearch, setBodyFontSearch] = useState("");
 
+  const resolvedCategory = resolveCategoryTypography(design);
   const activePresetId =
     TYPOGRAPHY_PRESETS.find(
       (preset) =>
@@ -295,11 +298,16 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
 
   const selectedTitleFont =
     GOOGLE_FONTS.find((f) => f.value === design.titleFont) || GOOGLE_FONTS[0];
+  const selectedCategoryFont =
+    GOOGLE_FONTS.find((f) => f.value === resolvedCategory.categoryFont) || GOOGLE_FONTS[0];
   const selectedBodyFont =
     GOOGLE_FONTS.find((f) => f.value === design.textFont) || GOOGLE_FONTS[0];
 
   const filteredTitleFonts = GOOGLE_FONTS.filter((font) =>
     font.label.toLowerCase().includes(titleFontSearch.toLowerCase())
+  );
+  const filteredCategoryFonts = GOOGLE_FONTS.filter((font) =>
+    font.label.toLowerCase().includes(categoryFontSearch.toLowerCase())
   );
   const filteredBodyFonts = GOOGLE_FONTS.filter((font) =>
     font.label.toLowerCase().includes(bodyFontSearch.toLowerCase())
@@ -405,6 +413,83 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                 onWeightChange={(titleFontWeight) => updateDesign({ titleFontWeight })}
                 onStyleChange={(titleFontStyle) => updateDesign({ titleFontStyle })}
               />
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <label className="text-sm font-medium text-gray-700">Category Font</label>
+                {design.categoryFontLinkedToTitle && (
+                  <span className="text-xs text-indigo-600">Linked to title font</span>
+                )}
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search fonts..."
+                  value={categoryFontSearch}
+                  onChange={(e) => setCategoryFontSearch(e.target.value)}
+                  onFocus={() => setShowCategoryFontDropdown(true)}
+                  className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {showCategoryFontDropdown && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowCategoryFontDropdown(false)}
+                    />
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                      {filteredCategoryFonts.map((font) => (
+                        <button
+                          key={font.value}
+                          type="button"
+                          onClick={() => {
+                            updateDesign({
+                              categoryFont: font.value,
+                              categoryFontLinkedToTitle: false,
+                              categoryFontWeight: resolvedCategory.categoryFontWeight,
+                              categoryFontStyle: resolvedCategory.categoryFontStyle,
+                            });
+                            setShowCategoryFontDropdown(false);
+                            setCategoryFontSearch("");
+                          }}
+                          className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                        >
+                          {font.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-gray-600">Selected: {selectedCategoryFont.label}</p>
+              <FontModifierControls
+                label="Category"
+                weight={resolvedCategory.categoryFontWeight}
+                style={resolvedCategory.categoryFontStyle}
+                onWeightChange={(categoryFontWeight) =>
+                  updateDesign({
+                    categoryFont: resolvedCategory.categoryFont,
+                    categoryFontWeight,
+                    categoryFontStyle: resolvedCategory.categoryFontStyle,
+                    categoryFontLinkedToTitle: false,
+                  })
+                }
+                onStyleChange={(categoryFontStyle) =>
+                  updateDesign({
+                    categoryFont: resolvedCategory.categoryFont,
+                    categoryFontWeight: resolvedCategory.categoryFontWeight,
+                    categoryFontStyle,
+                    categoryFontLinkedToTitle: false,
+                  })
+                }
+              />
+              {design.categoryFontLinkedToTitle && (
+                <p className="mt-2 text-xs text-gray-500">
+                  Category headings use the title font until you pick a different category font
+                  above.
+                </p>
+              )}
             </div>
 
             <div>

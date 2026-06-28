@@ -20,6 +20,9 @@ interface NestedCategoryNavProps {
   tier2InactiveBg: string;
   tier2InactiveText: string;
   tier2InactiveBorder: string;
+  categoryFont: string;
+  categoryFontWeight?: number;
+  categoryFontStyle?: "normal" | "italic";
   activeParentId: string;
   activeSubcategoryId: string;
   showTier1: boolean;
@@ -43,6 +46,9 @@ export function NestedCategoryNav({
   tier2InactiveBg,
   tier2InactiveText,
   tier2InactiveBorder,
+  categoryFont,
+  categoryFontWeight,
+  categoryFontStyle,
   activeParentId,
   activeSubcategoryId,
   showTier1,
@@ -51,6 +57,11 @@ export function NestedCategoryNav({
 }: NestedCategoryNavProps) {
   const tier1Text = contrastingTextColor(headerBackgroundColor);
   const tier2Text = contrastingTextColor(stripBackgroundColor);
+  const categoryTypeStyle = {
+    fontFamily: categoryFont,
+    fontWeight: categoryFontWeight ?? 400,
+    fontStyle: categoryFontStyle ?? "normal",
+  } as const;
 
   const activeParent = useMemo(
     () => menu.find((parent) => parent.id === activeParentId) ?? menu[0],
@@ -92,12 +103,14 @@ export function NestedCategoryNav({
                 style={
                   isActive
                     ? {
+                        ...categoryTypeStyle,
                         backgroundColor: tier1ActiveBg,
                         color: tier1ActiveText,
                         border: `1px solid ${tier1ActiveBorder}`,
                         textAlign: "center",
                       }
                     : {
+                        ...categoryTypeStyle,
                         backgroundColor: tier1InactiveBg,
                         color: tier1InactiveText,
                         border: `1px solid ${tier1InactiveBorder}`,
@@ -132,12 +145,14 @@ export function NestedCategoryNav({
                 style={
                   isActive
                     ? {
+                        ...categoryTypeStyle,
                         backgroundColor: tier2ActiveBg,
                         color: tier2ActiveText,
                         border: `1px solid ${tier2ActiveBorder}`,
                         textAlign: "center",
                       }
                     : {
+                        ...categoryTypeStyle,
                         backgroundColor: tier2InactiveBg,
                         color: tier2InactiveText,
                         border: `1px solid ${tier2InactiveBorder}`,

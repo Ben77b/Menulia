@@ -39,6 +39,9 @@ interface PublicMenuLayoutProps {
   bodyFont: string;
   titleFontWeight?: number;
   titleFontStyle?: "normal" | "italic";
+  categoryFont: string;
+  categoryFontWeight?: number;
+  categoryFontStyle?: "normal" | "italic";
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
   menu: PublicMenuParentCategory[];
@@ -170,6 +173,9 @@ export function PublicMenuLayout({
   bodyFont,
   titleFontWeight,
   titleFontStyle,
+  categoryFont,
+  categoryFontWeight,
+  categoryFontStyle,
   bodyFontWeight,
   bodyFontStyle,
   menu,
@@ -301,6 +307,9 @@ export function PublicMenuLayout({
             tier2InactiveBg={theme.tier2InactiveBg}
             tier2InactiveText={theme.tier2InactiveText}
             tier2InactiveBorder={theme.tier2InactiveBorder}
+            categoryFont={categoryFont}
+            categoryFontWeight={categoryFontWeight}
+            categoryFontStyle={categoryFontStyle}
             activeParentId={activeParentId}
             activeSubcategoryId={activeSubcategoryId}
             showTier1
@@ -317,6 +326,9 @@ export function PublicMenuLayout({
             tier2InactiveBg={theme.tier2InactiveBg}
             tier2InactiveText={theme.tier2InactiveText}
             tier2InactiveBorder={theme.tier2InactiveBorder}
+            categoryFont={categoryFont}
+            categoryFontWeight={categoryFontWeight}
+            categoryFontStyle={categoryFontStyle}
             activeCategoryId={activeSubcategoryId}
             onCategoryChange={setActiveSubcategoryId}
           />

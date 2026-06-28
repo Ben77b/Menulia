@@ -9,7 +9,7 @@ import { formatSupabaseError } from "@/lib/auth/errors";
 import { themeColorsFromDesign } from "@/lib/restaurant-design";
 import { serializeMenuThemeColors, normalizeHexColor } from "@/lib/theme-colors";
 import { serializeDisplayOptions } from "@/lib/display-options";
-import { serializeTypography } from "@/lib/typography";
+import { serializeTypography, resolveCategoryTypography } from "@/lib/typography";
 import { serializeThemeMode } from "@/lib/theme-mode";
 import {
   ADVANCED_THEME_SECTIONS,
@@ -275,6 +275,7 @@ export function DesignStudio() {
     bodyFont: design.textFont,
     titleFontWeight: design.titleFontWeight,
     titleFontStyle: design.titleFontStyle,
+    ...resolveCategoryTypography(design),
     bodyFontWeight: design.textFontWeight,
     bodyFontStyle: design.textFontStyle,
     menu,

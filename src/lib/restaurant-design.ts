@@ -16,10 +16,14 @@ export interface RestaurantDesign {
   menuViewMode: "carousel" | "stacked";
   titleFont: string;
   textFont: string;
+  categoryFont: string;
   titleFontWeight: 400 | 700;
   textFontWeight: 400 | 700;
+  categoryFontWeight: 400 | 700;
   titleFontStyle: "normal" | "italic";
   textFontStyle: "normal" | "italic";
+  categoryFontStyle: "normal" | "italic";
+  categoryFontLinkedToTitle: boolean;
   titleColor: string;
   textColor: string;
   priceColor: string;
@@ -72,10 +76,14 @@ export const DEFAULT_DESIGN: RestaurantDesign = {
   menuViewMode: "carousel",
   titleFont: "Inter",
   textFont: "Inter",
+  categoryFont: "Inter",
   titleFontWeight: 400,
   textFontWeight: 400,
+  categoryFontWeight: 400,
   titleFontStyle: "normal",
   textFontStyle: "normal",
+  categoryFontStyle: "normal",
+  categoryFontLinkedToTitle: true,
   titleColor: "#000000",
   textColor: "#000000",
   priceColor: "#047857",
@@ -195,10 +203,14 @@ export function designFromRestaurant(row: {
     ),
     titleFont: typography.titleFont,
     textFont: typography.textFont,
+    categoryFont: typography.categoryFont,
     titleFontWeight: typography.titleFontWeight,
     textFontWeight: typography.textFontWeight,
+    categoryFontWeight: typography.categoryFontWeight,
     titleFontStyle: typography.titleFontStyle,
     textFontStyle: typography.textFontStyle,
+    categoryFontStyle: typography.categoryFontStyle,
+    categoryFontLinkedToTitle: typography.categoryFontLinkedToTitle,
     showPrices: display.showPrices,
     showDescriptions: display.showDescriptions,
     showImages: display.showImages,
