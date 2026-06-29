@@ -7,6 +7,9 @@ export interface Profile {
   id: string;
   email: string;
   created_at: string;
+  security_preferences?: {
+    two_factor_enabled: boolean;
+  };
 }
 
 export interface Restaurant {

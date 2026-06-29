@@ -208,7 +208,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 isExternal
-                className="mt-3 h-auto w-full justify-start px-4 py-3"
+                className="mt-3 w-full justify-start"
               >
                 View Live Menu
               </Button>

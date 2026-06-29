@@ -1,19 +1,46 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { PageHero } from "@/components/marketing/page-hero";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
-import { Globe, Calendar, ScanLine, BarChart3, Eye, Palette } from "lucide-react";
+import { Layers, Palette, Smartphone, Check } from "lucide-react";
+import { marketingPageMetadata } from "@/lib/marketing/seo";
 
-export const metadata = {
+export const metadata = marketingPageMetadata({
   title: "Services",
-  description: "Digital menus, reservations, AI menu import, analytics, and guest preview — everything your restaurant needs.",
-};
+  description:
+    "3-Tier Menu Builder, Design Studio, and mobile live previews — the core Menulia platform for modern restaurants.",
+  path: "/services",
+});
 
-const SERVICES = [
-  { icon: Globe, title: "Digital Menu Platform", description: "Interactive, mobile-first menus with 28+ languages, dietary filters, and horizontal dish carousels." },
-  { icon: Calendar, title: "Reservation Management", description: "Let diners book tables directly. Smart time slots respect your operating hours." },
-  { icon: ScanLine, title: "AI Menu Importer", description: "Upload a photo of your paper menu. AI extracts items into a reviewable staging table." },
-  { icon: BarChart3, title: "Analytics & Insights", description: "Track page views, reservation conversions, seasonal patterns, and expenses." },
-  { icon: Eye, title: "Guest Preview", description: "See exactly how diners view your restaurant — from inside your dashboard, same tab." },
-  { icon: Palette, title: "Design Customization", description: "Customize accent colors, backgrounds, card styles, and burger menu links." },
+const CORE_SERVICES = [
+  {
+    icon: Layers,
+    title: "3-Tier Menu Builder",
+    description:
+      "Structure sections, categories, and dishes in a hierarchy that mirrors your kitchen. Rapid-add workflows, dietary tags, and pricing controls keep updates fast.",
+    highlights: ["Nested sections & categories", "Bulk dish editing", "Availability toggles"],
+  },
+  {
+    icon: Palette,
+    title: "Design Studio",
+    description:
+      "Fine-tune typography, colors, and layout accents with live hotspot editing. Parent-child theme inheritance keeps your brand consistent across every region.",
+    highlights: ["Typography archetypes", "Color hotspot editor", "Brand presets"],
+  },
+  {
+    icon: Smartphone,
+    title: "Mobile Live Previews",
+    description:
+      "See exactly what guests experience on their phones before you publish. Real device framing, swipe carousels, and language switching — no guesswork.",
+    highlights: ["In-dashboard phone preview", "Public menu URL", "QR code generator"],
+  },
+];
+
+const SUPPORTING = [
+  "28+ languages with auto-detect",
+  "Reservation booking (Premium)",
+  "AI menu import (Premium)",
+  "Analytics & expense tracking (Premium)",
 ];
 
 export default function ServicesPage() {
@@ -21,26 +48,53 @@ export default function ServicesPage() {
     <>
       <PageHero
         eyebrow="Services"
-        title="Everything you need to run a modern restaurant"
-        subtitle="From menu to metrics — one platform, zero complexity."
+        title="The Menulia platform, built for hospitality"
+        subtitle="Three core pillars — structure, design, and preview — plus everything you need to run a modern guest experience."
       />
-      <section className="pb-24">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6">
-          <div className="space-y-6">
-            {SERVICES.map((s, i) => (
-              <ScrollReveal key={s.title} delay={i * 80}>
-                <div className="group flex gap-5 rounded-2xl border border-border bg-white p-6 transition hover:-translate-y-0.5 hover:border-emerald-brand/30 hover:shadow-lg">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-brand-light transition group-hover:scale-110">
-                    <s.icon className="h-6 w-6 text-emerald-brand" />
+      <section className="pb-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            {CORE_SERVICES.map((service, i) => (
+              <ScrollReveal key={service.title} delay={i * 100}>
+                <article className="flex h-full flex-col rounded-2xl border border-border bg-card p-6 transition hover:-translate-y-0.5 hover:shadow-lg">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10">
+                    <service.icon className="h-6 w-6 text-accent" aria-hidden />
                   </div>
-                  <div>
-                    <h2 className="text-xl font-semibold">{s.title}</h2>
-                    <p className="mt-2 text-text-secondary">{s.description}</p>
-                  </div>
-                </div>
+                  <h2 className="mt-4 text-xl font-semibold tracking-tight">{service.title}</h2>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
+                    {service.description}
+                  </p>
+                  <ul className="mt-4 space-y-2">
+                    {service.highlights.map((item) => (
+                      <li key={item} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
               </ScrollReveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border bg-muted/50 py-16">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <h2 className="text-2xl font-bold tracking-tight">Also included</h2>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            {SUPPORTING.map((item) => (
+              <li
+                key={item}
+                className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Link href="/signup" className="mt-8 inline-block">
+            <Button variant="primary">Start free</Button>
+          </Link>
         </div>
       </section>
     </>

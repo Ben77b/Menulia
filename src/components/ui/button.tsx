@@ -49,10 +49,12 @@ const VARIANT_STYLES: Record<ResolvedVariant, string> = {
     "bg-emerald-brand text-white border border-emerald-brand shadow-sm hover:bg-emerald-brand-dark hover:opacity-95 hover:-translate-y-px",
 };
 
+const BUTTON_HEIGHT = "h-10 min-h-10 shrink-0";
+
 const SIZE_STYLES: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-sm rounded-[var(--radius)]",
-  md: "h-10 px-4 text-sm rounded-[var(--radius)]",
-  lg: "h-12 px-6 text-base rounded-[12px]",
+  sm: `${BUTTON_HEIGHT} px-3 text-sm rounded-[var(--radius)]`,
+  md: `${BUTTON_HEIGHT} px-4 text-sm rounded-[var(--radius)]`,
+  lg: `${BUTTON_HEIGHT} px-5 text-sm rounded-[var(--radius)]`,
 };
 
 function resolveVariant(variant: ButtonVariant): ResolvedVariant {

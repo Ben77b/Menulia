@@ -18,8 +18,10 @@
   --color-emerald-brand: #047857;
   --color-emerald-brand-dark: #065f46;
   --color-emerald-brand-light: #d1fae5;
-  --color-coral-cta: #f97316;
-  --color-coral-cta-dark: #ea580c;
+  --color-coral-cta: #ff6b4a;
+  --color-coral-cta-dark: #e85a3a;
+  --color-accent: #ff6b4a;
+  --color-accent-dark: #e85a3a;
 
   --color-air-bg: #f5f5f7;
   --color-air-border: #e5e5ea;

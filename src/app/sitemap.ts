@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { fetchAllRestaurantSlugs } from "@/lib/data";
+import { getAllBlogSlugs } from "@/lib/marketing/blog-posts";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net";
@@ -14,6 +15,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
+  const blogPages = getAllBlogSlugs().map((slug) => ({
+    url: `${base}/blog/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
   const restaurantPages = slugs.map((slug) => ({
     url: `${base}/menu/${slug}`,
     lastModified: new Date(),
@@ -21,5 +29,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
-  return [...staticPages, ...restaurantPages];
+  return [...staticPages, ...blogPages, ...restaurantPages];
 }

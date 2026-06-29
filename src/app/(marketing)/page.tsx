@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
 import { AnimatedCounter } from "@/components/marketing/animated-counter";
+import { marketingPageMetadata } from "@/lib/marketing/seo";
 import {
   ArrowRight,
   Globe,
@@ -14,32 +15,34 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+export const metadata = marketingPageMetadata({
+  title: "Menus with Main Character Energy",
+  description:
+    "menulia.net — stunning digital menus, design studio, and mobile live previews for restaurants that refuse to ship another PDF.",
+  path: "/",
+});
+
 export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative min-h-[90vh] overflow-hidden">
+      <section className="relative min-h-[90vh] overflow-hidden" aria-labelledby="hero-heading">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -left-32 top-20 h-96 w-96 rounded-full bg-emerald-brand/10 blur-3xl animate-pulse-slow" />
-          <div className="absolute -right-32 bottom-20 h-80 w-80 rounded-full bg-coral-cta/10 blur-3xl animate-pulse-slow" />
+          <div className="absolute -right-32 bottom-20 h-80 w-80 rounded-full bg-accent/15 blur-3xl animate-pulse-slow" />
         </div>
         <div className="relative mx-auto flex min-h-[90vh] max-w-6xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
           <ScrollReveal>
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-brand/30 bg-emerald-brand-light/50 px-4 py-1.5 text-sm font-medium text-emerald-brand">
-              <Zap className="h-3.5 w-3.5" /> Restaurant SaaS Platform
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent">
+              <Zap className="h-3.5 w-3.5" aria-hidden /> Restaurant SaaS Platform
             </p>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-              Your menu,{" "}
-              <span className="bg-gradient-to-r from-emerald-brand to-emerald-brand-dark bg-clip-text text-transparent">
-                digitized
-              </span>
-              <br />
-              and{" "}
-              <span className="text-coral-cta">unforgettable</span>
+            <h1 id="hero-heading" className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
+              Menus with{" "}
+              <span className="text-accent">main character energy</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-text-secondary sm:text-xl">
-              Stunning multi-language digital menus, smart reservations, and analytics —
-              built for restaurant owners who care about every detail.
+              Stunning multi-language digital menus, a full Design Studio, and mobile live previews —
+              built for restaurant owners who care about every pixel.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/signup">
@@ -162,7 +165,7 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
-                <div className="absolute -right-4 -top-4 rounded-xl bg-coral-cta px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                <div className="absolute -right-4 -top-4 rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-lg">
                   Live preview
                 </div>
               </div>
@@ -192,7 +195,7 @@ export default function HomePage() {
                   <span className="text-3xl">{r.emoji}</span>
                   <h3 className="mt-3 font-semibold group-hover:text-emerald-brand">{r.name}</h3>
                   <p className="mt-1 text-sm text-text-secondary">{r.type}</p>
-                  <span className="mt-4 text-sm font-medium text-coral-cta opacity-0 transition group-hover:opacity-100">
+                  <span className="mt-4 text-sm font-medium text-accent opacity-0 transition group-hover:opacity-100">
                     View menu →
                   </span>
                 </Link>
@@ -264,9 +267,7 @@ export default function HomePage() {
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-coral-cta hover:bg-coral-cta-dark">
-                Start free today
-              </Button>
+              <Button variant="primary">Start free today</Button>
             </Link>
             <Link href="/pricing">
               <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10">
