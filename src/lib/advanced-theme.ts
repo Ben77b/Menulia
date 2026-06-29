@@ -11,6 +11,7 @@ export interface AdvancedTheme {
   menuBackground?: string;
   dividerLineColor?: string;
   logoAreaBg?: string;
+  logoAreaText?: string;
   categoryBarBg?: string;
   tier1ActiveBg?: string;
   tier1ActiveText?: string;
@@ -209,10 +210,11 @@ export function parseAdvancedTheme(raw: unknown): Partial<AdvancedTheme> {
   const source = raw as Record<string, unknown>;
   const result: Partial<AdvancedTheme> = {};
 
-  for (const key of Object.keys(source) as (keyof AdvancedTheme)[]) {
+  for (const key of Object.keys(source)) {
+    if (key === "_overrides") continue;
     const value = source[key];
     if (typeof value === "string" && value.trim()) {
-      result[key] = normalizeHexColor(value, "#000000");
+      result[key as keyof AdvancedTheme] = normalizeHexColor(value, "#000000");
     }
   }
 
@@ -234,6 +236,7 @@ export const ADVANCED_FIELD_DEFAULTS: Record<keyof AdvancedTheme, string> = {
   menuBackground: DEFAULT_MENU_THEME.mainContentBackgroundColor,
   dividerLineColor: "#00000014",
   logoAreaBg: DEFAULT_MENU_THEME.headerBackgroundColor,
+  logoAreaText: "#111827",
   categoryBarBg: DEFAULT_MENU_THEME.categoryStripBackgroundColor,
   tier1ActiveBg: "#111827",
   tier1ActiveText: "#ffffff",
@@ -311,7 +314,7 @@ export function resolveAdvancedMenuTheme(advanced: Partial<AdvancedTheme>): Reso
     dividerLineColor: readAdvancedColor(advanced, "dividerLineColor"),
 
     logoAreaBg,
-    logoAreaText: readAdvancedColor(advanced, "tier1InactiveText"),
+    logoAreaText: readAdvancedColor(advanced, "logoAreaText"),
     categoryBarBg,
 
     tier1ActiveBg: tier2ActiveBg,
@@ -405,7 +408,7 @@ export function resolveMenuTheme(
     ),
 
     logoAreaBg,
-    logoAreaText: contrastingTextColor(logoAreaBg),
+    logoAreaText: pickColor(advanced, "logoAreaText", contrastingTextColor(logoAreaBg)),
     categoryBarBg,
 
     tier1ActiveBg: pickColor(advanced, "tier1ActiveBg", tier2ActiveBgDefault),

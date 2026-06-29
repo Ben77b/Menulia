@@ -9,37 +9,48 @@ import {
   type RestaurantDesign,
 } from "@/lib/restaurant-design";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
+import type { AdvancedTheme, ThemeHotspotId } from "@/lib/advanced-theme";
 import {
-  getAdvancedFieldDefault,
-  parseAdvancedTheme,
-  resolveMenuThemeForMode,
-  type AdvancedTheme,
-} from "@/lib/advanced-theme";
-import {
-  hotspotFieldForMode,
-  readThemeColorValue,
-  writeThemeColorPatch,
+  isBasicColorField,
+  readBasicColor,
+  writeBasicColorPatch,
   type ThemeColorFieldId,
 } from "@/lib/theme-color-fields";
-import { DEFAULT_THEME_MODE, parseThemeMode, type ThemeMode } from "@/lib/theme-mode";
-import type { ThemeHotspotId } from "@/lib/advanced-theme";
+import {
+  clearChildOverride,
+  clearGroupChildOverrides,
+  getEffectiveChildColor,
+  getGroupParentColor,
+  getHotspotGroup,
+  groupsForBasicField,
+  resolveUnifiedMenuTheme,
+  setChildOverride,
+  setGroupParentColor,
+  splitAdvancedThemeStorage,
+  type ThemeHotspotGroup,
+} from "@/lib/theme-inheritance";
 import { useRestaurant } from "./restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 interface DesignContextType {
   design: RestaurantDesign;
   advancedTheme: Partial<AdvancedTheme>;
-  themeMode: ThemeMode;
-  resolvedTheme: ReturnType<typeof resolveMenuThemeForMode>;
+  themeOverrides: Set<string>;
+  resolvedTheme: ReturnType<typeof resolveUnifiedMenuTheme>;
   updateDesign: (updates: Partial<RestaurantDesign>) => void;
   updateAdvancedTheme: (updates: Partial<AdvancedTheme>) => void;
-  setThemeMode: (mode: ThemeMode) => void;
   getColorValue: (fieldId: ThemeColorFieldId) => string;
   setColorValue: (fieldId: ThemeColorFieldId, value: string) => void;
-  getHotspotColor: (hotspot: ThemeHotspotId) => string;
-  setHotspotColor: (hotspot: ThemeHotspotId, value: string) => void;
+  getHotspotGroup: (hotspot: ThemeHotspotId) => ThemeHotspotGroup;
+  getGroupParentColor: (hotspot: ThemeHotspotId) => string;
+  setGroupParentColor: (hotspot: ThemeHotspotId, color: string) => void;
+  getChildColor: (fieldId: keyof AdvancedTheme) => string;
+  setChildColor: (fieldId: keyof AdvancedTheme, color: string) => void;
+  isChildOverridden: (fieldId: keyof AdvancedTheme) => boolean;
+  clearChildOverride: (fieldId: keyof AdvancedTheme) => void;
   setDesign: (design: RestaurantDesign) => void;
   setAdvancedTheme: (theme: Partial<AdvancedTheme>) => void;
+  setThemeOverrides: (overrides: Set<string>) => void;
 }
 
 const DesignContext = createContext<DesignContextType | undefined>(undefined);
@@ -47,7 +58,7 @@ const DesignContext = createContext<DesignContextType | undefined>(undefined);
 export function DesignProvider({ children }: { children: ReactNode }) {
   const [design, setDesignState] = useState<RestaurantDesign>(DEFAULT_DESIGN);
   const [advancedTheme, setAdvancedThemeState] = useState<Partial<AdvancedTheme>>({});
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(DEFAULT_THEME_MODE);
+  const [themeOverrides, setThemeOverridesState] = useState<Set<string>>(new Set());
   const { currentRestaurant } = useRestaurant();
 
   useEffect(() => {
@@ -55,14 +66,14 @@ export function DesignProvider({ children }: { children: ReactNode }) {
     if (!restaurantId) {
       setDesignState(DEFAULT_DESIGN);
       setAdvancedThemeState({});
-      setThemeModeState(DEFAULT_THEME_MODE);
+      setThemeOverridesState(new Set());
       return;
     }
 
     async function loadDesignFromDatabase() {
       const supabase = getSupabaseBrowserClient();
       const fullSelect =
-        "logo, meta_title, meta_description, theme_colors, typography, show_prices, show_descriptions, show_images, show_dietary, advanced_theme, theme_mode";
+        "logo, meta_title, meta_description, theme_colors, typography, show_prices, show_descriptions, show_images, show_dietary, advanced_theme";
 
       let { data, error } = await supabase
         .from("restaurants")
@@ -74,11 +85,11 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         const fallback = await supabase
           .from("restaurants")
           .select(
-            "logo, meta_title, meta_description, theme_colors, typography, show_prices, show_descriptions, show_images, show_dietary, advanced_theme"
+            "logo, meta_title, meta_description, theme_colors, typography, show_prices, show_descriptions, show_images, show_dietary"
           )
           .eq("id", restaurantId)
           .single();
-        data = fallback.data;
+        data = fallback.data as typeof data;
         error = fallback.error;
       }
 
@@ -90,13 +101,14 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       if (data) {
         try {
           setDesignState(designFromRestaurant(data));
-          setAdvancedThemeState(parseAdvancedTheme(data.advanced_theme));
-          setThemeModeState(parseThemeMode(data.theme_mode));
+          const { theme, overrides } = splitAdvancedThemeStorage(data.advanced_theme);
+          setAdvancedThemeState(theme);
+          setThemeOverridesState(overrides);
         } catch (loadError) {
           console.error("Failed to parse restaurant design:", loadError);
           setDesignState(DEFAULT_DESIGN);
           setAdvancedThemeState({});
-          setThemeModeState(DEFAULT_THEME_MODE);
+          setThemeOverridesState(new Set());
         }
       }
     }
@@ -112,50 +124,116 @@ export function DesignProvider({ children }: { children: ReactNode }) {
     setAdvancedThemeState((prev) => ({ ...prev, ...updates }));
   }, []);
 
-  const setThemeMode = useCallback((mode: ThemeMode) => {
-    setThemeModeState(mode);
-  }, []);
+  const basicColors = themeColorsFromDesign(design);
 
   const getColorValue = useCallback(
     (fieldId: ThemeColorFieldId): string => {
-      return readThemeColorValue(
-        themeMode,
-        design,
-        advancedTheme,
+      if (isBasicColorField(fieldId)) {
+        return readBasicColor(design, fieldId);
+      }
+      return getEffectiveChildColor(
         fieldId,
-        getAdvancedFieldDefault
+        basicColors,
+        advancedTheme,
+        themeOverrides
       );
     },
-    [themeMode, design, advancedTheme]
+    [design, basicColors, advancedTheme, themeOverrides]
+  );
+
+  const applyBasicColorWithInheritance = useCallback(
+    (fieldId: ThemeColorFieldId, value: string) => {
+      if (!isBasicColorField(fieldId)) return;
+
+      updateDesign(writeBasicColorPatch(fieldId, value));
+
+      const affectedGroups = groupsForBasicField(fieldId);
+      if (affectedGroups.length === 0) return;
+
+      let nextAdvanced = { ...advancedTheme };
+      let nextOverrides = new Set(themeOverrides);
+
+      for (const group of affectedGroups) {
+        const cleared = clearGroupChildOverrides(group, nextAdvanced, nextOverrides);
+        nextAdvanced = cleared.advanced;
+        nextOverrides = cleared.overrides;
+      }
+
+      setAdvancedThemeState(nextAdvanced);
+      setThemeOverridesState(nextOverrides);
+    },
+    [advancedTheme, themeOverrides, updateDesign]
   );
 
   const setColorValue = useCallback(
     (fieldId: ThemeColorFieldId, value: string) => {
-      const patch = writeThemeColorPatch(themeMode, fieldId, value);
-      if (patch.design) {
-        updateDesign(patch.design);
+      if (isBasicColorField(fieldId)) {
+        applyBasicColorWithInheritance(fieldId, value);
+        return;
       }
-      if (patch.advanced) {
-        updateAdvancedTheme(patch.advanced);
-      }
+
+      const result = setChildOverride(
+        fieldId,
+        value,
+        advancedTheme,
+        themeOverrides
+      );
+      setAdvancedThemeState(result.advanced);
+      setThemeOverridesState(result.overrides);
     },
-    [themeMode, updateDesign, updateAdvancedTheme]
+    [advancedTheme, themeOverrides, applyBasicColorWithInheritance]
   );
 
-  const getHotspotColor = useCallback(
+  const getHotspotGroupFn = useCallback((hotspot: ThemeHotspotId) => {
+    return getHotspotGroup(hotspot);
+  }, []);
+
+  const getGroupParentColorFn = useCallback(
     (hotspot: ThemeHotspotId) => {
-      const fieldId = hotspotFieldForMode(hotspot, themeMode);
-      return getColorValue(fieldId);
+      return getGroupParentColor(getHotspotGroup(hotspot), design);
     },
-    [themeMode, getColorValue]
+    [design]
   );
 
-  const setHotspotColor = useCallback(
-    (hotspot: ThemeHotspotId, value: string) => {
-      const fieldId = hotspotFieldForMode(hotspot, themeMode);
-      setColorValue(fieldId, value);
+  const setGroupParentColorFn = useCallback(
+    (hotspot: ThemeHotspotId, color: string) => {
+      const group = getHotspotGroup(hotspot);
+      const result = setGroupParentColor(group, color, advancedTheme, themeOverrides);
+      updateDesign(result.designPatch);
+      setAdvancedThemeState(result.advanced);
+      setThemeOverridesState(result.overrides);
     },
-    [themeMode, setColorValue]
+    [advancedTheme, themeOverrides, updateDesign]
+  );
+
+  const getChildColorFn = useCallback(
+    (fieldId: keyof AdvancedTheme) => {
+      return getEffectiveChildColor(fieldId, basicColors, advancedTheme, themeOverrides);
+    },
+    [basicColors, advancedTheme, themeOverrides]
+  );
+
+  const setChildColorFn = useCallback(
+    (fieldId: keyof AdvancedTheme, color: string) => {
+      const result = setChildOverride(fieldId, color, advancedTheme, themeOverrides);
+      setAdvancedThemeState(result.advanced);
+      setThemeOverridesState(result.overrides);
+    },
+    [advancedTheme, themeOverrides]
+  );
+
+  const isChildOverriddenFn = useCallback(
+    (fieldId: keyof AdvancedTheme) => themeOverrides.has(fieldId),
+    [themeOverrides]
+  );
+
+  const clearChildOverrideFn = useCallback(
+    (fieldId: keyof AdvancedTheme) => {
+      const result = clearChildOverride(fieldId, advancedTheme, themeOverrides);
+      setAdvancedThemeState(result.advanced);
+      setThemeOverridesState(result.overrides);
+    },
+    [advancedTheme, themeOverrides]
   );
 
   const setDesign = useCallback((newDesign: RestaurantDesign) => {
@@ -166,10 +244,14 @@ export function DesignProvider({ children }: { children: ReactNode }) {
     setAdvancedThemeState(theme);
   }, []);
 
-  const resolvedTheme = resolveMenuThemeForMode(
-    themeMode,
-    themeColorsFromDesign(design),
-    advancedTheme
+  const setThemeOverrides = useCallback((overrides: Set<string>) => {
+    setThemeOverridesState(overrides);
+  }, []);
+
+  const resolvedTheme = resolveUnifiedMenuTheme(
+    basicColors,
+    advancedTheme,
+    themeOverrides
   );
 
   return (
@@ -177,17 +259,22 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       value={{
         design,
         advancedTheme,
-        themeMode,
+        themeOverrides,
         resolvedTheme,
         updateDesign,
         updateAdvancedTheme,
-        setThemeMode,
         getColorValue,
         setColorValue,
-        getHotspotColor,
-        setHotspotColor,
+        getHotspotGroup: getHotspotGroupFn,
+        getGroupParentColor: getGroupParentColorFn,
+        setGroupParentColor: setGroupParentColorFn,
+        getChildColor: getChildColorFn,
+        setChildColor: setChildColorFn,
+        isChildOverridden: isChildOverriddenFn,
+        clearChildOverride: clearChildOverrideFn,
         setDesign,
         setAdvancedTheme,
+        setThemeOverrides,
       }}
     >
       {children}

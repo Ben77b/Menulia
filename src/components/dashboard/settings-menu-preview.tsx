@@ -13,10 +13,13 @@ import {
 } from "@/lib/restaurant-links";
 import { parseDisplayOptions } from "@/lib/display-options";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
-import { parseAdvancedTheme, resolveMenuThemeForMode } from "@/lib/advanced-theme";
-import { parseThemeMode } from "@/lib/theme-mode";
+import {
+  resolveUnifiedMenuTheme,
+  splitAdvancedThemeStorage,
+} from "@/lib/theme-inheritance";
 import { parseTypography, resolveCategoryTypography } from "@/lib/typography";
 import { formatContactInfo } from "@/lib/contact-info";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { compileHoursSchedule, type HoursScheduleBlock } from "@/lib/hours-schedule";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { ResolvedMenuTheme } from "@/lib/advanced-theme";
@@ -79,7 +82,7 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
   const [flatCategories, setFlatCategories] = useState<PublicMenuSubcategory[]>(MOCK_FLAT);
   const [hasNestedStructure, setHasNestedStructure] = useState(false);
   const [theme, setTheme] = useState<ResolvedMenuTheme>(() =>
-    resolveMenuThemeForMode("basic", parseMenuThemeColors(null), {})
+    resolveUnifiedMenuTheme(parseMenuThemeColors(null), {}, new Set())
   );
   const [fonts, setFonts] = useState<PreviewFonts>({
     titleFont: "Inter",
@@ -102,14 +105,15 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
     }
 
     let cancelled = false;
+    const id = restaurantId;
     const supabase = getSupabaseBrowserClient();
 
     async function load() {
       setLoading(true);
       try {
         const [{ data: restaurant }, menuData] = await Promise.all([
-          supabase.from("restaurants").select("*").eq("id", restaurantId).single(),
-          fetchPublicMenuData(restaurantId),
+          supabase.from("restaurants").select("*").eq("id", id).single(),
+          fetchPublicMenuData(id),
         ]);
 
         if (cancelled || !restaurant) return;
@@ -123,9 +127,10 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
         setSavedLinks(parseCustomLinks(restaurant.custom_links));
 
         const basicTheme = parseMenuThemeColors(restaurant.theme_colors);
-        const advancedTheme = parseAdvancedTheme(restaurant.advanced_theme);
-        const themeMode = parseThemeMode(restaurant.theme_mode);
-        setTheme(resolveMenuThemeForMode(themeMode, basicTheme, advancedTheme));
+        const { theme: advancedTheme, overrides } = splitAdvancedThemeStorage(
+          restaurant.advanced_theme
+        );
+        setTheme(resolveUnifiedMenuTheme(basicTheme, advancedTheme, overrides));
 
         const typography = parseTypography(
           restaurant.typography && typeof restaurant.typography === "object"

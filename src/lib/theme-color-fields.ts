@@ -22,6 +22,19 @@ export type BasicColorField =
 
 export type ThemeColorFieldId = BasicColorField | keyof AdvancedTheme;
 
+const BASIC_COLOR_FIELDS = new Set<string>([
+  "headerNavBg",
+  "headerBackgroundColor",
+  "categoryStripBackgroundColor",
+  "categoryAccentColor",
+  "mainContentBackgroundColor",
+  "footerBackgroundColor",
+]);
+
+export function isBasicColorField(fieldId: ThemeColorFieldId): fieldId is BasicColorField {
+  return BASIC_COLOR_FIELDS.has(fieldId);
+}
+
 export const HOTSPOT_BASIC_PICKER: Record<ThemeHotspotId, ThemeColorFieldId> = {
   header: "headerNavBg",
   categoryBar: "categoryStripBackgroundColor",
