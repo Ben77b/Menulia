@@ -19,12 +19,14 @@ export const THEME_OVERRIDE_META_KEY = "_overrides" as const;
 export interface ThemeChildField {
   id: keyof AdvancedTheme;
   label: string;
+  description: string;
 }
 
 export interface ThemeHotspotGroup {
   hotspot: ThemeHotspotId;
   title: string;
   parentLabel: string;
+  parentDescription: string;
   parentBasicField: BasicColorField;
   childFields: ThemeChildField[];
 }
@@ -34,77 +36,161 @@ export const THEME_HOTSPOT_GROUPS: ThemeHotspotGroup[] = [
     hotspot: "header",
     title: "Header",
     parentLabel: "Header Background",
+    parentDescription: "Sets the background behind your logo and restaurant name at the top of the menu.",
     parentBasicField: "headerBackgroundColor",
     childFields: [
-      { id: "logoAreaText", label: "Logo Area Text & Icons" },
-      { id: "carouselArrowBg", label: "Navigation Arrow Circles" },
-      { id: "carouselArrowIcon", label: "Arrow Icon" },
+      {
+        id: "logoAreaText",
+        label: "Logo Area Text & Icons",
+        description: "Changes the color of your restaurant name, logo accents, and header icons.",
+      },
     ],
   },
   {
     hotspot: "categoryBar",
     title: "Category Bar",
     parentLabel: "Category Bar Background",
+    parentDescription: "Sets the background color of the horizontal category navigation strip.",
     parentBasicField: "categoryStripBackgroundColor",
     childFields: [
-      { id: "categoryBarBg", label: "Bar Background" },
-      { id: "tier2ActiveBg", label: "Active Tab Background" },
-      { id: "tier2ActiveText", label: "Active Tab Text" },
-      { id: "tier2ActiveBorder", label: "Active Tab Border" },
-      { id: "tier2InactiveText", label: "Inactive Tab Text" },
-      { id: "tier2InactiveBorder", label: "Inactive Tab Border" },
+      {
+        id: "categoryBarBg",
+        label: "Bar Background",
+        description: "Fine-tune the category strip background independently from the parent color.",
+      },
+      {
+        id: "tier2ActiveBg",
+        label: "Active Tab Background",
+        description: "Background color of the currently selected category tab.",
+      },
+      {
+        id: "tier2ActiveText",
+        label: "Active Tab Text",
+        description: "Text color on the active category tab.",
+      },
+      {
+        id: "tier2ActiveBorder",
+        label: "Active Tab Border",
+        description: "Border color outlining the active category tab.",
+      },
+      {
+        id: "tier2InactiveText",
+        label: "Inactive Tab Text",
+        description: "Text color for categories that are not currently selected.",
+      },
+      {
+        id: "tier2InactiveBorder",
+        label: "Inactive Tab Border",
+        description: "Border color for unselected category tabs.",
+      },
     ],
   },
   {
     hotspot: "menuItem",
     title: "Menu Items",
     parentLabel: "Card Background",
+    parentDescription: "Sets the main content area background behind your dish cards and carousel layouts.",
     parentBasicField: "mainContentBackgroundColor",
     childFields: [
-      { id: "menuBackground", label: "Menu Background" },
-      { id: "itemTitleText", label: "Dish Title" },
-      { id: "itemDescriptionText", label: "Description Text" },
-      { id: "priceTextColor", label: "Price Text" },
-      { id: "dividerLineColor", label: "Divider Line" },
-    ],
-  },
-  {
-    hotspot: "carousel",
-    title: "Carousel",
-    parentLabel: "Accent Color",
-    parentBasicField: "categoryAccentColor",
-    childFields: [
-      { id: "carouselActiveIndicator", label: "Active Indicator" },
-      { id: "carouselInactiveDots", label: "Inactive Dots" },
-      { id: "carouselArrowIcon", label: "Arrow Icon" },
+      {
+        id: "menuBackground",
+        label: "Menu Background",
+        description: "Fine-tune the main menu content background independently from the parent color.",
+      },
+      {
+        id: "itemTitleText",
+        label: "Dish Title Color",
+        description: "Changes the font color of your main menu item names.",
+      },
+      {
+        id: "itemDescriptionText",
+        label: "Description Text Color",
+        description: "Changes the font color of dish descriptions below each title.",
+      },
+      {
+        id: "priceTextColor",
+        label: "Price Text Color",
+        description: "Changes the font color of dish prices on your menu.",
+      },
+      {
+        id: "dividerLineColor",
+        label: "Divider Line Color",
+        description: "Color of subtle separator lines between menu sections.",
+      },
+      {
+        id: "carouselArrowBg",
+        label: "Navigation Arrow Circles",
+        description: "Background color of the left and right carousel navigation buttons.",
+      },
+      {
+        id: "carouselArrowIcon",
+        label: "Navigation Arrow Icons",
+        description: "Icon color inside the carousel left and right navigation buttons.",
+      },
+      {
+        id: "carouselActiveIndicator",
+        label: "Active Carousel Indicator",
+        description: "Color of the highlighted dot or pill showing the active carousel slide.",
+      },
+      {
+        id: "carouselInactiveDots",
+        label: "Inactive Carousel Dots",
+        description: "Color of inactive carousel position indicators.",
+      },
     ],
   },
   {
     hotspot: "footer",
     title: "Footer",
     parentLabel: "Footer Background",
+    parentDescription: "Sets the background color of the bottom footer area with contact details.",
     parentBasicField: "footerBackgroundColor",
     childFields: [
-      { id: "footerBackground", label: "Footer Background" },
-      { id: "footerTextIcon", label: "Footer Text & Icons" },
+      {
+        id: "footerBackground",
+        label: "Footer Background",
+        description: "Fine-tune the footer background independently from the parent color.",
+      },
+      {
+        id: "footerTextIcon",
+        label: "Footer Text & Icons",
+        description: "Changes the color of footer text, links, and icons.",
+      },
     ],
   },
   {
     hotspot: "filters",
     title: "Tags & Filters",
     parentLabel: "Tags Section Background",
+    parentDescription: "Sets the background behind the dietary tag filter bar above the footer.",
     parentBasicField: "footerBackgroundColor",
     childFields: [
-      { id: "filterAreaBg", label: "Tags Area Background" },
-      { id: "filterText", label: "Tags Text" },
-      { id: "filterBorder", label: "Tags Border" },
+      {
+        id: "filterAreaBg",
+        label: "Tags Area Background",
+        description: "Fine-tune the filter bar background independently from the parent color.",
+      },
+      {
+        id: "filterText",
+        label: "Tags Text Color",
+        description: "Changes the text color on dietary filter tags.",
+      },
+      {
+        id: "filterBorder",
+        label: "Tags Border Color",
+        description: "Changes the border color around each filter tag.",
+      },
     ],
   },
 ];
 
+/** Sidebar and popover groups — excludes legacy carousel hotspot bucket */
+export const THEME_COLOR_PANEL_GROUPS = THEME_HOTSPOT_GROUPS;
+
 export function getHotspotGroup(hotspot: ThemeHotspotId): ThemeHotspotGroup {
+  const resolvedHotspot = hotspot === "carousel" ? "menuItem" : hotspot;
   return (
-    THEME_HOTSPOT_GROUPS.find((group) => group.hotspot === hotspot) ??
+    THEME_HOTSPOT_GROUPS.find((group) => group.hotspot === resolvedHotspot) ??
     THEME_HOTSPOT_GROUPS[0]
   );
 }
@@ -132,11 +218,11 @@ export function splitAdvancedThemeStorage(raw: unknown): {
   const overrides = parseThemeOverrides(raw);
   const theme: Partial<AdvancedTheme> = {};
 
-  for (const key of Object.keys(source) as (keyof AdvancedTheme)[]) {
-    if (key === (THEME_OVERRIDE_META_KEY as unknown as keyof AdvancedTheme)) continue;
+  for (const key of Object.keys(source)) {
+    if (key === THEME_OVERRIDE_META_KEY) continue;
     const value = source[key];
     if (typeof value === "string" && value.trim()) {
-      theme[key] = normalizeHexColor(value, "#000000");
+      theme[key as keyof AdvancedTheme] = normalizeHexColor(value, "#000000");
     }
   }
 
@@ -207,7 +293,7 @@ const BASIC_FIELD_GROUPS: Partial<Record<BasicColorField, ThemeHotspotId[]>> = {
   headerBackgroundColor: ["header"],
   headerNavBg: ["header"],
   categoryStripBackgroundColor: ["categoryBar"],
-  categoryAccentColor: ["categoryBar", "carousel"],
+  categoryAccentColor: ["categoryBar"],
   mainContentBackgroundColor: ["menuItem"],
   footerBackgroundColor: ["footer", "filters"],
 };
@@ -228,11 +314,6 @@ export function clearGroupChildOverrides(
   for (const child of group.childFields) {
     delete nextAdvanced[child.id];
     nextOverrides.delete(child.id);
-  }
-
-  if (group.hotspot === "header") {
-    delete nextAdvanced.carouselArrowBg;
-    nextOverrides.delete("carouselArrowBg");
   }
 
   if (group.hotspot === "categoryBar") {
@@ -363,6 +444,7 @@ export function inheritedChildHint(
     fieldId === "priceTextColor" ||
     fieldId === "filterText" ||
     fieldId === "footerTextIcon" ||
+    fieldId === "logoAreaText" ||
     fieldId === "tier2InactiveText" ||
     fieldId === "tier2ActiveText" ||
     fieldId === "carouselArrowIcon"

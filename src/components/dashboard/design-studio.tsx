@@ -15,7 +15,7 @@ import {
 } from "@/lib/advanced-theme";
 import {
   serializeAdvancedThemeWithOverrides,
-  THEME_HOTSPOT_GROUPS,
+  THEME_COLOR_PANEL_GROUPS,
 } from "@/lib/theme-inheritance";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
@@ -360,7 +360,7 @@ export function DesignStudio() {
             </div>
 
             <div className="space-y-4">
-              {THEME_HOTSPOT_GROUPS.map((group) => (
+              {THEME_COLOR_PANEL_GROUPS.map((group) => (
                 <ThemeColorGroupSection
                   key={group.hotspot}
                   group={group}

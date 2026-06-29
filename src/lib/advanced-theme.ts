@@ -255,7 +255,7 @@ export const ADVANCED_FIELD_DEFAULTS: Record<keyof AdvancedTheme, string> = {
   priceTextColor: DEFAULT_MENU_THEME.categoryAccentColor,
   carouselActiveIndicator: DEFAULT_MENU_THEME.categoryAccentColor,
   carouselInactiveDots: "#00000033",
-  carouselArrowBg: DEFAULT_MENU_THEME.headerBackgroundColor,
+  carouselArrowBg: DEFAULT_MENU_THEME.mainContentBackgroundColor,
   carouselArrowIcon: "#111827",
   footerBackground: DEFAULT_MENU_THEME.footerBackgroundColor,
   footerTextIcon: "#111827",
@@ -301,7 +301,7 @@ export function resolveAdvancedMenuTheme(advanced: Partial<AdvancedTheme>): Reso
   const carouselArrowBg =
     advanced.carouselArrowBg?.trim()
       ? carouselArrowBgDefault
-      : logoAreaBg;
+      : menuBackground;
 
   return {
     headerBackgroundColor: logoAreaBg,
@@ -386,7 +386,7 @@ export function resolveMenuTheme(
   const tier2ActiveTextDefault = contrastingTextColor(tier2ActiveBgDefault);
   const stripContrast = contrastingTextColor(categoryBarBg);
   const menuTextContrast = contrastingTextColor(menuBackground);
-  const carouselArrowBgDefault = pickColor(advanced, "carouselArrowBg", logoAreaBg);
+  const carouselArrowBgDefault = pickColor(advanced, "carouselArrowBg", menuBackground);
   const carouselArrowIconDefault = pickColor(
     advanced,
     "carouselArrowIcon",

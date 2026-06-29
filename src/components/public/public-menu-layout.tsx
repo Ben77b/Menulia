@@ -100,9 +100,9 @@ function DishSection({
   if (subcategory.layout_type === "carousel") {
     return (
       <PreviewHotspot
-        id="carousel"
+        id="menuItem"
         enabled={hotspotEnabled}
-        active={previewInteractive?.activeHotspot === "carousel"}
+        active={previewInteractive?.activeHotspot === "menuItem"}
         onSelect={previewInteractive?.onHotspotClick}
         indicatorPosition="center-right"
       >
