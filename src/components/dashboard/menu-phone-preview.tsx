@@ -1,18 +1,31 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import type { ResolvedMenuTheme } from "@/lib/advanced-theme";
+import { resolvedThemeToPreviewCssProperties } from "@/lib/preview-theme-vars";
+import { PreviewCanvasProvider } from "@/contexts/preview-canvas-context";
 
 interface MenuPhonePreviewProps {
   children: ReactNode;
   label?: string;
   className?: string;
+  /** Resolved theme — mapped to CSS variables on the canvas root for instant hotspot updates */
+  previewTheme?: ResolvedMenuTheme;
+  /** Enable CSS-variable driven styling inside the canvas */
+  previewCanvas?: boolean;
 }
 
 export function MenuPhonePreview({
   children,
   label = "Live Preview",
   className = "",
+  previewTheme,
+  previewCanvas = false,
 }: MenuPhonePreviewProps) {
+  const canvasStyle: CSSProperties | undefined = previewTheme
+    ? resolvedThemeToPreviewCssProperties(previewTheme)
+    : undefined;
+
   return (
     <div
       className={`flex flex-col items-center justify-start rounded-xl border border-gray-200 bg-gradient-to-b from-gray-100 to-gray-200 p-4 lg:p-6 ${className}`}
@@ -25,7 +38,20 @@ export function MenuPhonePreview({
           <div className="flex items-center justify-center bg-gray-900 py-2">
             <div className="h-1 w-16 rounded-full bg-gray-700" />
           </div>
-          <div className="h-[720px] overflow-y-auto bg-white">{children}</div>
+          <PreviewCanvasProvider enabled={previewCanvas}>
+            <div
+              className="menu-preview-canvas h-[720px] overflow-y-auto"
+              style={{
+                ...canvasStyle,
+                backgroundColor: previewCanvas
+                  ? "var(--preview-menu-bg, #ffffff)"
+                  : "#ffffff",
+              }}
+              data-preview-canvas={previewCanvas ? "true" : undefined}
+            >
+              {children}
+            </div>
+          </PreviewCanvasProvider>
           <div className="flex items-center justify-center bg-gray-900 py-3">
             <div className="h-1 w-28 rounded-full bg-gray-700" />
           </div>

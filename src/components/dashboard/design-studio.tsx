@@ -14,15 +14,20 @@ import { serializeThemeMode } from "@/lib/theme-mode";
 import {
   ADVANCED_THEME_SECTIONS,
   HOTSPOT_LABELS,
+  getAdvancedFieldDefault,
   serializeAdvancedTheme,
+  type AdvancedTheme,
   type ThemeHotspotId,
+  type ThemePickerField,
 } from "@/lib/advanced-theme";
-import type { ThemeColorFieldId } from "@/lib/theme-color-fields";
+import type { ThemeColorFieldId, BasicColorField } from "@/lib/theme-color-fields";
+import { getHotspotPopoverFields } from "@/lib/theme-color-fields";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { Button } from "@/components/ui/button";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
-import { HotspotColorPopover } from "@/components/dashboard/hotspot-color-popover";
+import { HotspotColorPopover, buildAdvancedHotspotFields, buildBasicHotspotFields } from "@/components/dashboard/hotspot-color-popover";
+import { MenuPhonePreview } from "@/components/dashboard/menu-phone-preview";
 import {
   DesignCategoryStylingSection,
   DesignDisplaySection,
@@ -32,7 +37,7 @@ import {
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { cn } from "@/lib/utils";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
-import type { RestaurantLink } from "@/lib/restaurant-links";
+import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
 
 type StudioTab = "menu" | "colours" | "fonts" | "display" | "logo-seo";
 
@@ -263,13 +268,18 @@ export function DesignStudio() {
     }
   };
 
+  const profile = useMemo(
+    () => restaurantPreviewProfileFromSummary(currentRestaurant),
+    [currentRestaurant]
+  );
+
   const previewProps = {
-    restaurantName: currentRestaurant?.name ?? "Your Restaurant",
-    logo: design.logo || null,
-    location: design.location || "123 Main Street",
-    hours: "Mon–Fri: 11:00 – 22:00\nSat–Sun: 10:00 – 23:00",
-    contactInfo: design.contactInfo || "+1 555 0100 | hello@restaurant.com",
-    footerSlogan: "Fresh ingredients, crafted with care.",
+    restaurantName: profile.restaurantName || "Your Restaurant",
+    logo: design.logo || currentRestaurant?.logo || null,
+    location: profile.location,
+    hours: profile.hours,
+    contactInfo: profile.contactInfo,
+    footerSlogan: profile.footerSlogan,
     theme: resolvedTheme,
     titleFont: design.titleFont,
     bodyFont: design.textFont,
@@ -281,11 +291,37 @@ export function DesignStudio() {
     menu,
     flatCategories,
     hasNestedStructure,
-    links: [] as RestaurantLink[],
+    links: profile.links,
     display: displayOptions,
   };
 
   const publicMenuUrl = currentRestaurant?.slug ? `/menu/${currentRestaurant.slug}` : null;
+
+  const activePopoverFields = useMemo(() => {
+    if (!colorPopover) return [];
+    const hotspot = colorPopover.hotspot;
+    const fieldDefs = getHotspotPopoverFields(hotspot, themeMode);
+
+    if (themeMode === "advanced") {
+      return buildAdvancedHotspotFields(
+        fieldDefs as ThemePickerField[],
+        (id) => getColorValue(id as ThemeColorFieldId),
+        (id, value) => setColorValue(id as ThemeColorFieldId, value),
+        (field) => {
+          if (field.fallbackKey) {
+            return themeColorsFromDesign(design)[field.fallbackKey];
+          }
+          return getAdvancedFieldDefault(field.id as keyof AdvancedTheme);
+        }
+      );
+    }
+
+    return buildBasicHotspotFields(
+      fieldDefs as BasicColorField[],
+      (id) => getColorValue(id),
+      (id, value) => setColorValue(id, value)
+    );
+  }, [colorPopover, themeMode, design, advancedTheme, getColorValue, setColorValue]);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
@@ -349,36 +385,28 @@ export function DesignStudio() {
       <div className="min-h-0 flex-1">
         {activeTab === "menu" && (
           <div className="flex h-full min-h-[640px] flex-col items-center justify-start rounded-xl border border-gray-200 bg-gradient-to-b from-gray-100 to-gray-200 p-6 lg:p-10">
-            <p className="mb-6 text-center text-xs font-medium uppercase tracking-wide text-gray-500">
-              Live Preview — tap a palette dot to edit colours in context
-            </p>
             <div ref={previewContainerRef} className="relative w-full max-w-[390px] shrink-0">
-              <div className="overflow-hidden rounded-[2.75rem] border-[10px] border-gray-900 bg-gray-900 shadow-2xl">
-                <div className="flex items-center justify-center bg-gray-900 py-2">
-                  <div className="h-1 w-16 rounded-full bg-gray-700" />
-                </div>
-                <div className="h-[720px] overflow-y-auto bg-white">
-                  <PublicMenuLayout
-                    {...previewProps}
-                    previewInteractive={{
-                      enabled: true,
-                      activeHotspot,
-                      onHotspotClick: handleHotspotClick,
-                    }}
-                  />
-                </div>
-                <div className="flex items-center justify-center bg-gray-900 py-3">
-                  <div className="h-1 w-28 rounded-full bg-gray-700" />
-                </div>
-              </div>
+              <MenuPhonePreview
+                label="Live Preview — tap a palette dot to edit colours in context"
+                previewTheme={resolvedTheme}
+                previewCanvas
+                className="border-0 bg-transparent p-0"
+              >
+                <PublicMenuLayout
+                  {...previewProps}
+                  previewInteractive={{
+                    enabled: true,
+                    activeHotspot,
+                    onHotspotClick: handleHotspotClick,
+                  }}
+                />
+              </MenuPhonePreview>
 
               {colorPopover && (
                 <HotspotColorPopover
-                  label={HOTSPOT_LABELS[colorPopover.hotspot]}
-                  color={getHotspotColor(colorPopover.hotspot)}
-                  fallback="#ffffff"
+                  title={HOTSPOT_LABELS[colorPopover.hotspot]}
+                  fields={activePopoverFields}
                   position={colorPopover.position}
-                  onPreviewChange={(value) => setHotspotColor(colorPopover.hotspot, value)}
                   onApply={handlePopoverClose}
                   onClose={handlePopoverClose}
                 />

@@ -1,6 +1,8 @@
 "use client";
 
 import { contrastingTextColor } from "@/lib/contrast";
+import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
+import { pv } from "@/lib/preview-theme-vars";
 import type { PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 
 interface FlatCategoryNavProps {
@@ -34,7 +36,8 @@ export function FlatCategoryNav({
   activeCategoryId,
   onCategoryChange,
 }: FlatCategoryNavProps) {
-  const stripTextColor = contrastingTextColor(stripBackgroundColor);
+  const isPreview = usePreviewCanvas();
+  const stripTextColor = isPreview ? pv("inactiveTabText") : contrastingTextColor(stripBackgroundColor);
   const categoryTypeStyle = {
     fontFamily: categoryFont,
     fontWeight: categoryFontWeight ?? 400,

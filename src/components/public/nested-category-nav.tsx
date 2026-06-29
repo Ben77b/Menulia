@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo } from "react";
 import { contrastingTextColor, subtleDividerColor } from "@/lib/contrast";
+import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
+import { pv } from "@/lib/preview-theme-vars";
 import type { PublicMenuParentCategory } from "@/lib/menu-hierarchy";
 
 interface NestedCategoryNavProps {
@@ -53,7 +55,8 @@ export function NestedCategoryNav({
   onParentChange,
   onSubcategoryChange,
 }: NestedCategoryNavProps) {
-  const tier2Text = contrastingTextColor(stripBackgroundColor);
+  const isPreview = usePreviewCanvas();
+  const tier2Text = isPreview ? pv("inactiveTabText") : contrastingTextColor(stripBackgroundColor);
   const categoryTypeStyle = {
     fontFamily: categoryFont,
     fontWeight: categoryFontWeight ?? 400,
@@ -78,7 +81,9 @@ export function NestedCategoryNav({
 
   if (menu.length === 0) return null;
 
-  const tierDividerColor = subtleDividerColor(stripBackgroundColor);
+  const tierDividerColor = isPreview
+    ? "var(--preview-divider, rgba(0, 0, 0, 0.1))"
+    : subtleDividerColor(stripBackgroundColor);
 
   return (
     <div

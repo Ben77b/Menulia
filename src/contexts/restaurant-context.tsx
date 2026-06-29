@@ -14,6 +14,7 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { buildUserProfile, syncUserProfileRecord, type UserProfile } from "@/lib/auth/profile";
 import { logAuthDiagnostic } from "@/lib/auth/messages";
+import { parseCustomLinks, type RestaurantLink } from "@/lib/restaurant-links";
 
 export interface RestaurantSummary {
   id: string;
@@ -22,6 +23,11 @@ export interface RestaurantSummary {
   logo?: string | null;
   font_pack_id?: string;
   user_id?: string;
+  location: string;
+  hours: string;
+  contact_info: string;
+  footer_slogan: string;
+  custom_links: RestaurantLink[];
 }
 
 interface RestaurantContextType {
@@ -47,6 +53,11 @@ function toSummary(restaurant: Record<string, unknown>): RestaurantSummary {
     logo: (restaurant.logo as string | null) ?? (restaurant.logo_url as string | null) ?? null,
     font_pack_id: restaurant.font_pack_id as string | undefined,
     user_id: restaurant.user_id as string | undefined,
+    location: typeof restaurant.location === "string" ? restaurant.location : "",
+    hours: typeof restaurant.hours === "string" ? restaurant.hours : "",
+    contact_info: typeof restaurant.contact_info === "string" ? restaurant.contact_info : "",
+    footer_slogan: typeof restaurant.footer_slogan === "string" ? restaurant.footer_slogan : "",
+    custom_links: parseCustomLinks(restaurant.custom_links),
   };
 }
 

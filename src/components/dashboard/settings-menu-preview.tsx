@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { MenuPhonePreview } from "@/components/dashboard/menu-phone-preview";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { useRestaurant } from "@/contexts/restaurant-context";
+import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import {
   parseCustomLinks,
@@ -67,6 +68,11 @@ interface PreviewFonts {
 }
 
 export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewProps) {
+  const { currentRestaurant } = useRestaurant();
+  const contextProfile = useMemo(
+    () => restaurantPreviewProfileFromSummary(currentRestaurant),
+    [currentRestaurant]
+  );
   const [loading, setLoading] = useState(true);
   const [logo, setLogo] = useState<string | null>(null);
   const [menu, setMenu] = useState<PublicMenuParentCategory[]>([]);
@@ -156,10 +162,12 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
     const links =
       live.links.some((l) => l.label.trim() || l.url.trim())
         ? normalizeLinkInputs(live.links)
-        : savedLinks;
+        : savedLinks.length > 0
+          ? savedLinks
+          : contextProfile.links;
 
     return {
-      restaurantName: live.restaurantName || "Your Restaurant",
+      restaurantName: live.restaurantName || contextProfile.restaurantName || "Your Restaurant",
       logo,
       location: live.location,
       hours,
@@ -181,7 +189,7 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
       links,
       display,
     };
-  }, [live, logo, theme, fonts, menu, flatCategories, hasNestedStructure, savedLinks, display]);
+  }, [live, logo, theme, fonts, menu, flatCategories, hasNestedStructure, savedLinks, display, contextProfile]);
 
   return (
     <MenuPhonePreview

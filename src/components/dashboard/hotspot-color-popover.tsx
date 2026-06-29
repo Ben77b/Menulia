@@ -5,28 +5,42 @@ import { X } from "lucide-react";
 import { normalizeHexColor } from "@/lib/theme-colors";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { ThemePickerField } from "@/lib/advanced-theme";
+import type { BasicColorField } from "@/lib/theme-color-fields";
 
-interface HotspotColorPopoverProps {
+const BASIC_FIELD_LABELS: Record<BasicColorField, string> = {
+  headerNavBg: "Header & Navigation Background",
+  headerBackgroundColor: "Header Background",
+  categoryStripBackgroundColor: "Category Bar Background",
+  categoryAccentColor: "Category Accent",
+  mainContentBackgroundColor: "Main Content Background",
+  footerBackgroundColor: "Footer Background",
+};
+
+interface HotspotColorField {
+  id: string;
   label: string;
   color: string;
   fallback: string;
+  onChange: (color: string) => void;
+}
+
+interface HotspotColorPopoverProps {
+  title: string;
+  fields: HotspotColorField[];
   position: { top: number; left: number };
-  onPreviewChange: (color: string) => void;
   onApply: () => void;
   onClose: () => void;
 }
 
 export function HotspotColorPopover({
-  label,
-  color,
-  fallback,
+  title,
+  fields,
   position,
-  onPreviewChange,
   onApply,
   onClose,
 }: HotspotColorPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
-  const safeColor = normalizeHexColor(color, fallback);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -43,7 +57,7 @@ export function HotspotColorPopover({
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-50 w-56 rounded-xl border border-gray-200 bg-white p-4 shadow-xl",
+        "absolute z-50 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-xl",
         "animate-in fade-in zoom-in-95 duration-150"
       )}
       style={{
@@ -51,12 +65,12 @@ export function HotspotColorPopover({
         left: position.left,
       }}
       role="dialog"
-      aria-label={`Edit ${label} color`}
+      aria-label={`Edit ${title} colours`}
     >
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Edit colour</p>
-          <p className="text-sm font-semibold text-gray-900">{label}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Edit colours</p>
+          <p className="text-sm font-semibold text-gray-900">{title}</p>
         </div>
         <button
           type="button"
@@ -68,32 +82,71 @@ export function HotspotColorPopover({
         </button>
       </div>
 
-      <div className="mb-3 flex items-center gap-3">
-        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-          <input
-            type="color"
-            value={safeColor}
-            onChange={(e) => onPreviewChange(e.target.value)}
-            className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
-          />
-        </div>
-        <input
-          type="text"
-          value={safeColor}
-          onChange={(e) => {
-            const next = e.target.value.trim();
-            if (/^#[0-9A-Fa-f]{0,6}$/.test(next)) {
-              onPreviewChange(next.length === 7 ? next : safeColor);
-            }
-          }}
-          className="h-10 flex-1 rounded-lg border border-gray-200 px-3 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          spellCheck={false}
-        />
+      <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
+        {fields.map((field) => {
+          const safeColor = normalizeHexColor(field.color, field.fallback);
+          return (
+            <div key={field.id}>
+              <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
+              <div className="flex items-center gap-2">
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                  <input
+                    type="color"
+                    value={safeColor}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={safeColor}
+                  onChange={(e) => {
+                    const next = e.target.value.trim();
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(next)) {
+                      field.onChange(next.length === 7 ? next : safeColor);
+                    }
+                  }}
+                  className="h-9 flex-1 rounded-lg border border-gray-200 px-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  spellCheck={false}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <Button size="sm" className="w-full" onClick={onApply}>
+      <Button size="sm" className="mt-4 w-full" onClick={onApply}>
         Apply
       </Button>
     </div>
   );
+}
+
+export function buildAdvancedHotspotFields(
+  pickerFields: ThemePickerField[],
+  getColor: (id: ThemePickerField["id"]) => string,
+  setColor: (id: ThemePickerField["id"], value: string) => void,
+  getFallback: (field: ThemePickerField) => string
+): HotspotColorField[] {
+  return pickerFields.map((field) => ({
+    id: field.id,
+    label: field.label,
+    color: getColor(field.id),
+    fallback: getFallback(field),
+    onChange: (value) => setColor(field.id, value),
+  }));
+}
+
+export function buildBasicHotspotFields(
+  fieldIds: BasicColorField[],
+  getColor: (id: BasicColorField) => string,
+  setColor: (id: BasicColorField, value: string) => void
+): HotspotColorField[] {
+  return fieldIds.map((id) => ({
+    id,
+    label: BASIC_FIELD_LABELS[id],
+    color: getColor(id),
+    fallback: "#ffffff",
+    onChange: (value) => setColor(id, value),
+  }));
 }

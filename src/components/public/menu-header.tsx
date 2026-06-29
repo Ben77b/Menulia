@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
+import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
+import { pv } from "@/lib/preview-theme-vars";
 import type { RestaurantLink } from "@/lib/restaurant-links";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
@@ -34,7 +36,10 @@ export function MenuHeader({
   onLocaleChange,
 }: MenuHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const textColor = headerTextColor ?? contrastingTextColor(headerBackgroundColor);
+  const isPreview = usePreviewCanvas();
+  const textColor = isPreview
+    ? headerTextColor ?? pv("headerText")
+    : headerTextColor ?? contrastingTextColor(headerBackgroundColor);
   const hasLinks = links.length > 0;
 
   return (

@@ -56,6 +56,12 @@ export const HOTSPOT_LABELS: Record<ThemeHotspotId, string> = {
   filters: "Filter Area Background",
 };
 
+export interface ThemePickerField {
+  id: keyof AdvancedTheme | "headerNavBg" | "mainContentBg";
+  label: string;
+  fallbackKey?: keyof MenuThemeColors;
+}
+
 /** First picker id in each hotspot group — used for scroll-to on preview click */
 export const HOTSPOT_PRIMARY_PICKER: Record<ThemeHotspotId, keyof AdvancedTheme | "headerNavBg" | "mainContentBg"> = {
   header: "logoAreaBg",
@@ -66,11 +72,39 @@ export const HOTSPOT_PRIMARY_PICKER: Record<ThemeHotspotId, keyof AdvancedTheme 
   filters: "filterAreaBg",
 };
 
-export interface ThemePickerField {
-  id: keyof AdvancedTheme | "headerNavBg" | "mainContentBg";
-  label: string;
-  fallbackKey?: keyof MenuThemeColors;
-}
+/** Fields editable from each preview hotspot popover (advanced layer) */
+export const HOTSPOT_POPOVER_FIELDS: Record<ThemeHotspotId, ThemePickerField[]> = {
+  header: [{ id: "logoAreaBg", label: "Logo Area BG", fallbackKey: "headerBackgroundColor" }],
+  categoryBar: [
+    { id: "categoryBarBg", label: "Category Bar BG", fallbackKey: "categoryStripBackgroundColor" },
+    { id: "tier2ActiveBg", label: "Active Tab BG", fallbackKey: "categoryAccentColor" },
+    { id: "tier2ActiveText", label: "Active Tab Text" },
+    { id: "tier2ActiveBorder", label: "Active Tab Border" },
+    { id: "tier2InactiveText", label: "Inactive Tab Text" },
+    { id: "tier2InactiveBorder", label: "Inactive Tab Border" },
+  ],
+  menuItem: [
+    { id: "menuBackground", label: "Menu Background", fallbackKey: "mainContentBackgroundColor" },
+    { id: "itemTitleText", label: "Item Title Text" },
+    { id: "itemDescriptionText", label: "Item Description Text" },
+    { id: "priceTextColor", label: "Price Text Color", fallbackKey: "categoryAccentColor" },
+  ],
+  carousel: [
+    { id: "carouselArrowBg", label: "Navigation Arrow Circles", fallbackKey: "categoryAccentColor" },
+    { id: "carouselArrowIcon", label: "Navigation Arrow Icon" },
+    { id: "carouselActiveIndicator", label: "Active Indicator Pill", fallbackKey: "categoryAccentColor" },
+    { id: "carouselInactiveDots", label: "Inactive Dots" },
+  ],
+  footer: [
+    { id: "footerBackground", label: "Footer Background", fallbackKey: "footerBackgroundColor" },
+    { id: "footerTextIcon", label: "Footer Text / Icon Color" },
+  ],
+  filters: [
+    { id: "filterAreaBg", label: "Filter Area Background", fallbackKey: "footerBackgroundColor" },
+    { id: "filterText", label: "Filter Text Color" },
+    { id: "filterBorder", label: "Filter Border Color" },
+  ],
+};
 
 export interface ThemePickerSection {
   title: string;

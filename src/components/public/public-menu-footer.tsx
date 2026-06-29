@@ -1,6 +1,8 @@
 "use client";
 
 import { contrastingTextColor } from "@/lib/contrast";
+import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
+import { pv } from "@/lib/preview-theme-vars";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
 
@@ -41,7 +43,10 @@ export function PublicMenuFooter({
   bodyFontStyle,
   locale,
 }: PublicMenuFooterProps) {
-  const footerText = footerTextColor ?? contrastingTextColor(footerBackgroundColor);
+  const isPreview = usePreviewCanvas();
+  const footerText = isPreview
+    ? footerTextColor ?? pv("footerText")
+    : footerTextColor ?? contrastingTextColor(footerBackgroundColor);
 
   return (
     <footer

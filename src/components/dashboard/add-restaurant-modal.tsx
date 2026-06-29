@@ -131,6 +131,11 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
         logo: restaurant.logo ?? null,
         user_id: restaurant.user_id,
         font_pack_id: restaurant.font_pack_id,
+        location: "",
+        hours: "",
+        contact_info: "",
+        footer_slogan: "",
+        custom_links: [],
       });
 
       handleClose();

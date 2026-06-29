@@ -20,6 +20,8 @@ import { DishCard } from "./dish-card";
 import { PublicMenuFooter } from "./public-menu-footer";
 import { PublicMenuFilterBar } from "./public-menu-filter-bar";
 import { PreviewHotspot } from "./preview-hotspot";
+import { themedColor } from "@/lib/preview-theme-vars";
+import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 
 export interface PreviewInteractiveConfig {
   enabled: boolean;
@@ -55,6 +57,7 @@ interface PublicMenuLayoutProps {
 function DishSection({
   subcategory,
   theme,
+  isPreview,
   titleFont,
   bodyFont,
   titleFontWeight,
@@ -68,6 +71,7 @@ function DishSection({
 }: {
   subcategory: PublicMenuSubcategory;
   theme: ResolvedMenuTheme;
+  isPreview: boolean;
   titleFont: string;
   bodyFont: string;
   titleFontWeight?: number;
@@ -104,9 +108,9 @@ function DishSection({
       >
         <DishCarousel
           dishes={filteredDishes}
-          accentColor={theme.carouselArrowBg}
-          arrowIconColor={theme.carouselArrowIcon}
-          mainTextColor={theme.itemTitleText}
+          accentColor={themedColor(isPreview, "carouselArrowBg", theme.carouselArrowBg)}
+          arrowIconColor={themedColor(isPreview, "carouselArrowIcon", theme.carouselArrowIcon)}
+          mainTextColor={themedColor(isPreview, "itemTitle", theme.itemTitleText)}
           titleFont={titleFont}
           bodyFont={bodyFont}
           titleFontWeight={titleFontWeight}
@@ -114,9 +118,9 @@ function DishSection({
           bodyFontWeight={bodyFontWeight}
           bodyFontStyle={bodyFontStyle}
           display={display}
-          titleColor={theme.itemTitleText}
-          descriptionColor={theme.itemDescriptionText}
-          priceColor={theme.priceTextColor}
+          titleColor={themedColor(isPreview, "itemTitle", theme.itemTitleText)}
+          descriptionColor={themedColor(isPreview, "itemDescription", theme.itemDescriptionText)}
+          priceColor={themedColor(isPreview, "itemPrice", theme.priceTextColor)}
           emptyMessage={emptyMessage}
         />
       </PreviewHotspot>
@@ -142,17 +146,17 @@ function DishSection({
             titleFontStyle={titleFontStyle}
             bodyFontWeight={bodyFontWeight}
             bodyFontStyle={bodyFontStyle}
-            textColor={theme.itemTitleText}
-            titleColor={theme.itemTitleText}
-            descriptionColor={theme.itemDescriptionText}
-            priceColor={theme.priceTextColor}
+            textColor={themedColor(isPreview, "itemTitle", theme.itemTitleText)}
+            titleColor={themedColor(isPreview, "itemTitle", theme.itemTitleText)}
+            descriptionColor={themedColor(isPreview, "itemDescription", theme.itemDescriptionText)}
+            priceColor={themedColor(isPreview, "itemPrice", theme.priceTextColor)}
             display={display}
             layout="stacked"
             imageClassName="w-full"
           />
         ))}
         {filteredDishes.length === 0 && (
-          <p className="text-center text-sm" style={{ color: theme.itemTitleText }}>
+          <p className="text-center text-sm" style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}>
             {emptyMessage}
           </p>
         )}
@@ -230,6 +234,7 @@ export function PublicMenuLayout({
   const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
   const hasMenu = hasNestedStructure ? menu.length > 0 : flatCategories.length > 0;
   const hotspotEnabled = previewInteractive?.enabled ?? false;
+  const isPreview = usePreviewCanvas();
 
   function handleParentChange(parentId: string) {
     setActiveParentId(parentId);
@@ -255,8 +260,8 @@ export function PublicMenuLayout({
     <div
       className="flex min-h-screen flex-col"
       style={{
-        backgroundColor: theme.menuBackground,
-        color: theme.itemTitleText,
+        backgroundColor: themedColor(isPreview, "menuBackground", theme.menuBackground),
+        color: themedColor(isPreview, "itemTitle", theme.itemTitleText),
         fontFamily: bodyFont,
         fontWeight: bodyFontWeight ?? 400,
         fontStyle: bodyFontStyle ?? "normal",
@@ -272,8 +277,8 @@ export function PublicMenuLayout({
         <MenuHeader
           restaurantName={restaurantName}
           logo={logo}
-          headerBackgroundColor={theme.logoAreaBg}
-          headerTextColor={theme.logoAreaText}
+          headerBackgroundColor={themedColor(isPreview, "headerBg", theme.logoAreaBg)}
+          headerTextColor={themedColor(isPreview, "headerText", theme.logoAreaText)}
           titleFont={titleFont}
           titleFontWeight={titleFontWeight}
           titleFontStyle={titleFontStyle}
@@ -293,19 +298,19 @@ export function PublicMenuLayout({
         {hasNestedStructure ? (
           <NestedCategoryNav
             menu={menu}
-            stripBackgroundColor={theme.categoryBarBg}
-            tier1ActiveBg={theme.tier1ActiveBg}
-            tier1ActiveText={theme.tier1ActiveText}
-            tier1ActiveBorder={theme.tier1ActiveBorder}
-            tier1InactiveBg={theme.tier1InactiveBg}
-            tier1InactiveText={theme.tier1InactiveText}
-            tier1InactiveBorder={theme.tier1InactiveBorder}
-            tier2ActiveBg={theme.tier2ActiveBg}
-            tier2ActiveText={theme.tier2ActiveText}
-            tier2ActiveBorder={theme.tier2ActiveBorder}
-            tier2InactiveBg={theme.tier2InactiveBg}
-            tier2InactiveText={theme.tier2InactiveText}
-            tier2InactiveBorder={theme.tier2InactiveBorder}
+            stripBackgroundColor={themedColor(isPreview, "navBg", theme.categoryBarBg)}
+            tier1ActiveBg={themedColor(isPreview, "tier1ActiveBg", theme.tier1ActiveBg)}
+            tier1ActiveText={themedColor(isPreview, "tier1ActiveText", theme.tier1ActiveText)}
+            tier1ActiveBorder={themedColor(isPreview, "tier1ActiveBorder", theme.tier1ActiveBorder)}
+            tier1InactiveBg={themedColor(isPreview, "tier1InactiveBg", theme.tier1InactiveBg)}
+            tier1InactiveText={themedColor(isPreview, "tier1InactiveText", theme.tier1InactiveText)}
+            tier1InactiveBorder={themedColor(isPreview, "tier1InactiveBorder", theme.tier1InactiveBorder)}
+            tier2ActiveBg={themedColor(isPreview, "activeTabBg", theme.tier2ActiveBg)}
+            tier2ActiveText={themedColor(isPreview, "activeTabText", theme.tier2ActiveText)}
+            tier2ActiveBorder={themedColor(isPreview, "activeTabBorder", theme.tier2ActiveBorder)}
+            tier2InactiveBg={themedColor(isPreview, "inactiveTabBg", theme.tier2InactiveBg)}
+            tier2InactiveText={themedColor(isPreview, "inactiveTabText", theme.tier2InactiveText)}
+            tier2InactiveBorder={themedColor(isPreview, "inactiveTabBorder", theme.tier2InactiveBorder)}
             categoryFont={categoryFont}
             categoryFontWeight={categoryFontWeight}
             categoryFontStyle={categoryFontStyle}
@@ -318,13 +323,13 @@ export function PublicMenuLayout({
         ) : (
           <FlatCategoryNav
             categories={flatCategories}
-            stripBackgroundColor={theme.categoryBarBg}
-            tier2ActiveBg={theme.tier2ActiveBg}
-            tier2ActiveText={theme.tier2ActiveText}
-            tier2ActiveBorder={theme.tier2ActiveBorder}
-            tier2InactiveBg={theme.tier2InactiveBg}
-            tier2InactiveText={theme.tier2InactiveText}
-            tier2InactiveBorder={theme.tier2InactiveBorder}
+            stripBackgroundColor={themedColor(isPreview, "navBg", theme.categoryBarBg)}
+            tier2ActiveBg={themedColor(isPreview, "activeTabBg", theme.tier2ActiveBg)}
+            tier2ActiveText={themedColor(isPreview, "activeTabText", theme.tier2ActiveText)}
+            tier2ActiveBorder={themedColor(isPreview, "activeTabBorder", theme.tier2ActiveBorder)}
+            tier2InactiveBg={themedColor(isPreview, "inactiveTabBg", theme.tier2InactiveBg)}
+            tier2InactiveText={themedColor(isPreview, "inactiveTabText", theme.tier2InactiveText)}
+            tier2InactiveBorder={themedColor(isPreview, "inactiveTabBorder", theme.tier2InactiveBorder)}
             categoryFont={categoryFont}
             categoryFontWeight={categoryFontWeight}
             categoryFontStyle={categoryFontStyle}
@@ -336,22 +341,22 @@ export function PublicMenuLayout({
 
       <main
         className="flex-1 px-4 py-8 sm:px-6"
-        style={{ borderTop: `1px solid ${theme.dividerLineColor}` }}
+        style={{ borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}` }}
       >
         {!hasMenu || !activeSubcategory ? (
-          <div className="py-16 text-center" style={{ color: theme.itemTitleText }}>
+          <div className="py-16 text-center" style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}>
             <p
               className="text-lg font-semibold uppercase tracking-wide"
               style={{
                 fontFamily: titleFont,
                 fontWeight: titleFontWeight ?? 400,
                 fontStyle: titleFontStyle ?? "normal",
-                color: theme.itemTitleText,
+                color: themedColor(isPreview, "itemTitle", theme.itemTitleText),
               }}
             >
               Menu coming soon!
             </p>
-            <p className="mt-2 text-sm" style={{ color: theme.itemDescriptionText }}>
+            <p className="mt-2 text-sm" style={{ color: themedColor(isPreview, "itemDescription", theme.itemDescriptionText) }}>
               This restaurant hasn&apos;t added any dishes yet.
             </p>
           </div>
@@ -360,6 +365,7 @@ export function PublicMenuLayout({
             <DishSection
               subcategory={activeSubcategory}
               theme={theme}
+              isPreview={isPreview}
               titleFont={titleFont}
               bodyFont={bodyFont}
               titleFontWeight={titleFontWeight}
@@ -384,9 +390,9 @@ export function PublicMenuLayout({
           indicatorPosition="top-left"
         >
           <PublicMenuFilterBar
-            backgroundColor={theme.filterAreaBg}
-            textColor={theme.filterText}
-            borderColor={theme.filterBorder}
+            backgroundColor={themedColor(isPreview, "filterBg", theme.filterAreaBg)}
+            textColor={themedColor(isPreview, "filterText", theme.filterText)}
+            borderColor={themedColor(isPreview, "filterBorder", theme.filterBorder)}
             titleFont={titleFont}
             bodyFont={bodyFont}
             titleFontWeight={titleFontWeight}
@@ -416,8 +422,8 @@ export function PublicMenuLayout({
           contactPhone={contactPhone}
           contactEmail={contactEmail}
           footerSlogan={footerSlogan}
-          footerBackgroundColor={theme.footerBackgroundColor}
-          footerTextColor={theme.footerTextIcon}
+          footerBackgroundColor={themedColor(isPreview, "footerBg", theme.footerBackgroundColor)}
+          footerTextColor={themedColor(isPreview, "footerText", theme.footerTextIcon)}
           titleFont={titleFont}
           bodyFont={bodyFont}
           titleFontWeight={titleFontWeight}

@@ -6,7 +6,9 @@ import { themeColorsFromDesign } from "./restaurant-design";
 import { normalizeHexColor } from "./theme-colors";
 import {
   HOTSPOT_PRIMARY_PICKER,
+  HOTSPOT_POPOVER_FIELDS,
   type ThemeHotspotId,
+  type ThemePickerField,
 } from "./advanced-theme";
 
 /** Basic-layer macro colour fields (stored in theme_colors / design state) */
@@ -112,3 +114,23 @@ export function writeThemeColorPatch(
 export function basicColorsFromDesign(design: RestaurantDesign): MenuThemeColors {
   return themeColorsFromDesign(design);
 }
+
+export const HOTSPOT_BASIC_POPOVER_FIELDS: Record<ThemeHotspotId, BasicColorField[]> = {
+  header: ["headerNavBg"],
+  categoryBar: ["categoryStripBackgroundColor", "categoryAccentColor"],
+  menuItem: ["mainContentBackgroundColor"],
+  carousel: ["headerNavBg"],
+  footer: ["footerBackgroundColor"],
+  filters: ["footerBackgroundColor"],
+};
+
+export function getHotspotPopoverFields(
+  hotspot: ThemeHotspotId,
+  mode: ThemeMode
+): ThemePickerField[] | BasicColorField[] {
+  return mode === "advanced"
+    ? HOTSPOT_POPOVER_FIELDS[hotspot]
+    : HOTSPOT_BASIC_POPOVER_FIELDS[hotspot];
+}
+
+export { HOTSPOT_POPOVER_FIELDS };

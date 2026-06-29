@@ -1,6 +1,8 @@
 "use client";
 
 import { contrastingTextColor } from "@/lib/contrast";
+import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
+import { pv } from "@/lib/preview-theme-vars";
 import { FOOTER_FILTER_TAGS, getTagMeta } from "@/lib/dietary-tags";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 
@@ -35,8 +37,19 @@ export function PublicMenuFilterBar({
   onToggleFilter,
   menuTags,
 }: PublicMenuFilterBarProps) {
-  const textColor = textColorProp ?? contrastingTextColor(backgroundColor);
-  const borderColor = borderColorProp ?? textColor;
+  const isPreview = usePreviewCanvas();
+  const textColor =
+    isPreview && textColorProp
+      ? textColorProp
+      : isPreview
+        ? pv("filterText")
+        : textColorProp ?? contrastingTextColor(backgroundColor);
+  const borderColor =
+    isPreview && borderColorProp
+      ? borderColorProp
+      : isPreview
+        ? pv("filterBorder")
+        : borderColorProp ?? textColor;
 
   if (menuTags.length === 0 && FOOTER_FILTER_TAGS.length === 0) {
     return null;

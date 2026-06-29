@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
+import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
+import { pv } from "@/lib/preview-theme-vars";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { DishCard, type PublicMenuDish } from "./dish-card";
 
@@ -46,7 +48,10 @@ export function DishCarousel({
   emptyMessage = "No dishes in this category.",
 }: DishCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const arrowColor = arrowIconColor ?? contrastingTextColor(accentColor);
+  const isPreview = usePreviewCanvas();
+  const arrowColor = isPreview
+    ? pv("carouselArrowIcon")
+    : arrowIconColor ?? contrastingTextColor(accentColor);
 
   useEffect(() => {
     setActiveIndex(0);
