@@ -4,7 +4,11 @@ import { ContactForm } from "@/components/marketing/contact-form";
 import { LandingDevicePreview } from "@/components/marketing/landing-device-preview";
 import { LandingFeaturesSticky } from "@/components/marketing/landing-features-sticky";
 import { LandingDemoCanvas } from "@/components/marketing/landing-demo-canvas";
-import { marketingPageMetadata } from "@/lib/marketing/seo";
+import { LandingTrustGrid } from "@/components/marketing/landing-trust-grid";
+import { LandingFaqAccordion } from "@/components/marketing/landing-faq-accordion";
+import { JsonLd } from "@/components/marketing/json-ld";
+import { faqPageJsonLd, marketingPageMetadata } from "@/lib/marketing/seo";
+import { LANDING_FAQ_ITEMS } from "@/lib/marketing/faq";
 import { Check } from "lucide-react";
 
 export const metadata = marketingPageMetadata({
@@ -46,6 +50,7 @@ const PLANS = [
 export default function LandingPage() {
   return (
     <>
+      <JsonLd data={faqPageJsonLd(LANDING_FAQ_ITEMS)} />
       {/* Inverted floating hero capsule */}
       <section
         id="top"
@@ -62,7 +67,7 @@ export default function LandingPage() {
                 className="text-5xl font-extrabold tracking-tighter text-white md:text-6xl lg:text-7xl lg:leading-[1.02]"
               >
                 Menus with main{" "}
-                <span className="air-display-serif font-serif">character</span> energy
+                <span className="air-display-serif">character</span> energy
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70 md:mt-8 md:text-xl">
                 Replace the PDF with a mobile-first menu your guests actually enjoy — built,
@@ -86,6 +91,7 @@ export default function LandingPage() {
       </section>
 
       <LandingFeaturesSticky />
+      <LandingTrustGrid />
       <LandingDemoCanvas />
 
       {/* Pricing */}
@@ -103,7 +109,7 @@ export default function LandingPage() {
               id="pricing-heading"
               className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl"
             >
-              Simple launch <span className="air-display-serif font-serif">tiers</span>
+              Simple launch <span className="air-display-serif">tiers</span>
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
               Start free. Upgrade when your restaurant is ready for more.
@@ -154,6 +160,9 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <LandingFaqAccordion />
+
       {/* Contact */}
       <section id="contact" aria-labelledby="contact-heading" className="bg-white py-28 md:py-32">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
@@ -165,7 +174,7 @@ export default function LandingPage() {
               id="contact-heading"
               className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl"
             >
-              Get in <span className="air-display-serif font-serif">touch</span>
+              Get in <span className="air-display-serif">touch</span>
             </h2>
             <p className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
               Questions about onboarding or Premium? We typically reply within 24 hours.

@@ -48,7 +48,7 @@ export function LandingDemoCanvas() {
               id="demo-heading"
               className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl"
             >
-              Build once. <span className="air-display-serif font-serif">Preview</span> instantly.
+              Build once. <span className="air-display-serif">Preview</span> instantly.
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
               A tactile three-step canvas from draft to live menu — designed to feel as intuitive

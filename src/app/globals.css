@@ -30,6 +30,7 @@
 
   --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair-display), "Playfair Display", ui-serif, Georgia, serif;
+  --font-display: var(--font-instrument-serif), "Instrument Serif", ui-serif, Georgia, serif;
   --font-air: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --shadow-air-ambient: 0 4px 30px rgba(0, 0, 0, 0.02);
@@ -232,9 +233,10 @@
   }
 
   .air-display-serif {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-style: italic;
-    font-weight: 500;
+    font-weight: 400;
+    letter-spacing: -0.03em;
   }
 }
 

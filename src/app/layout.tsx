@@ -1,11 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter, Montserrat, Playfair_Display, Poppins, Roboto, Open_Sans, Lato, Merriweather, Oswald, Raleway, Source_Sans_3, Ubuntu } from "next/font/google";
+import { Cormorant_Garamond, Inter, Instrument_Serif, Montserrat, Playfair_Display, Poppins, Roboto, Open_Sans, Lato, Merriweather, Oswald, Raleway, Source_Sans_3, Ubuntu } from "next/font/google";
 import "./globals.css";
 import { RestaurantProvider } from "@/contexts/restaurant-context";
 
 const cormorantGaramond = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-cormorant-garamond" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["italic"],
+  variable: "--font-instrument-serif",
+});
 const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
   style: ["normal", "italic"],
@@ -55,7 +61,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${montserrat.variable} ${playfairDisplay.variable} ${poppins.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${merriweather.variable} ${oswald.variable} ${raleway.variable} ${sourceSans.variable} ${ubuntu.variable} ${cormorantGaramond.variable}`}>
+      <body className={`${inter.variable} ${instrumentSerif.variable} ${montserrat.variable} ${playfairDisplay.variable} ${poppins.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${merriweather.variable} ${oswald.variable} ${raleway.variable} ${sourceSans.variable} ${ubuntu.variable} ${cormorantGaramond.variable}`}>
         <RestaurantProvider>{children}</RestaurantProvider>
       </body>
     </html>

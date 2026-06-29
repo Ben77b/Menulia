@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "#features", label: "Features" },
+  { href: "#trust", label: "Trust" },
   { href: "#demo", label: "Demo" },
   { href: "#pricing", label: "Pricing" },
+  { href: "#faq", label: "FAQ" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -26,10 +28,8 @@ export function MarketingHeader() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 h-16 border-b transition-all duration-200",
-        scrolled
-          ? "border-border bg-white/90 shadow-[var(--shadow-air-ambient)] backdrop-blur-md"
-          : "border-transparent bg-white/80 backdrop-blur-sm"
+        "fixed inset-x-0 top-0 z-50 h-16 border-b border-slate-100 bg-white/70 backdrop-blur-md transition-all duration-300",
+        scrolled && "shadow-[0_4px_30px_rgba(0,0,0,0.04)]"
       )}
     >
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -40,7 +40,7 @@ export function MarketingHeader() {
           <span className="text-sm font-semibold tracking-tight text-slate-900">menulia.net</span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
           {NAV.map((item) => (
             <a
               key={item.href}
@@ -77,7 +77,7 @@ export function MarketingHeader() {
 
       <div
         className={cn(
-          "border-t border-border bg-white md:hidden",
+          "border-t border-slate-100 bg-white/90 backdrop-blur-md md:hidden",
           open ? "block" : "hidden"
         )}
       >

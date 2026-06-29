@@ -45,7 +45,7 @@ export function LandingFeaturesSticky() {
                 id="features-heading"
                 className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl md:leading-[1.1]"
               >
-                The Blueprint of <span className="air-display-serif font-serif">Taste</span>
+                The Blueprint of <span className="air-display-serif">Taste</span>
               </h2>
               <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
                 Structure, design, and preview — three pillars that turn your menu from a static
