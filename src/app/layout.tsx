@@ -6,7 +6,11 @@ import { RestaurantProvider } from "@/contexts/restaurant-context";
 const cormorantGaramond = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-cormorant-garamond" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat" });
-const playfairDisplay = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair-display" });
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair-display",
+});
 const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-poppins" });
 const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-roboto" });
 const openSans = Open_Sans({ subsets: ["latin"], variable: "--font-open-sans" });
