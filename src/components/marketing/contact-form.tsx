@@ -88,12 +88,12 @@ export function ContactForm() {
 
       {error && <p className="air-alert-error mt-4">{error}</p>}
       {success && (
-        <p className="mt-4 rounded-2xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-slate-800">
+        <p className="mt-4 rounded-2xl border border-border bg-muted px-4 py-3 text-sm text-slate-800">
           Thanks — we received your message and will reply within 24 hours.
         </p>
       )}
 
-      <Button type="submit" variant="primary" className="mt-6 w-full" disabled={submitting}>
+      <Button type="submit" variant="dark" className="mt-6 w-full" disabled={submitting}>
         {submitting ? "Sending..." : "Send message"}
       </Button>
     </form>

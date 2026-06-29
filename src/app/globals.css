@@ -60,9 +60,14 @@
   }
 
   .air-dashboard,
-  .auth-shell {
+  .auth-shell,
+  .air-landing {
     font-family: var(--font-air);
     @apply text-slate-900;
+  }
+
+  .air-landing {
+    background-color: #ffffff;
   }
 }
 

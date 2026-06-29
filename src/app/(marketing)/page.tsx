@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ContactForm } from "@/components/marketing/contact-form";
+import { LandingDevicePreview } from "@/components/marketing/landing-device-preview";
+import { ScrollReveal } from "@/components/marketing/scroll-reveal";
 import { marketingPageMetadata } from "@/lib/marketing/seo";
-import { Layers, Palette, Smartphone, Check, Sparkles, ArrowRight } from "lucide-react";
+import { Layers, Palette, Smartphone, Check } from "lucide-react";
 
 export const metadata = marketingPageMetadata({
   title: "Menus with Main Character Energy",
@@ -16,19 +18,19 @@ const FEATURES = [
     icon: Layers,
     title: "3-Tier Menu Builder",
     description:
-      "Structure sections, categories, and dishes in minutes. Rapid-add workflows keep your menu current without the PDF scramble.",
+      "Sections, categories, and dishes in a hierarchy that mirrors your kitchen. Rapid-add keeps updates fast.",
   },
   {
     icon: Palette,
     title: "Live Design Studio",
     description:
-      "Typography, colors, and layout accents with hotspot editing. Your brand looks intentional on every screen.",
+      "Typography and layout accents with hotspot editing. One calm workspace for every brand detail.",
   },
   {
     icon: Smartphone,
     title: "Real-time Previews",
     description:
-      "See exactly what guests experience on their phones before you publish. No guesswork, no pinch-zoom disasters.",
+      "See the guest experience on a real device frame before you publish. No PDF pinch-zoom.",
   },
 ];
 
@@ -37,12 +39,11 @@ const PLANS = [
     name: "Free",
     price: "€0",
     period: "forever",
-    description: "Launch a beautiful digital menu today.",
+    description: "Launch a polished digital menu today.",
     features: ["Menu builder", "Design studio", "Mobile preview", "28+ languages", "QR codes"],
     cta: "Start free",
     href: "/signup",
-    highlighted: false,
-    span: "lg:col-span-1",
+    featured: false,
   },
   {
     name: "Premium",
@@ -58,219 +59,235 @@ const PLANS = [
     ],
     cta: "Get Premium",
     href: "/signup",
-    highlighted: true,
-    span: "lg:col-span-2",
+    featured: true,
   },
+];
+
+const DEMO_POINTS = [
+  "Drag-and-drop menu structure",
+  "One-click design presets",
+  "Share via QR or direct link",
 ];
 
 export default function LandingPage() {
   return (
     <>
-      {/* Hero */}
+      {/* Hero — full viewport */}
       <section
         id="top"
-        className="relative overflow-hidden border-b border-border bg-background"
         aria-labelledby="hero-heading"
+        className="flex h-[100dvh] min-h-[100dvh] max-h-[100dvh] items-center overflow-hidden border-b border-border bg-white"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(0,0,0,0.03),_transparent_60%)]" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:py-28">
-          <div>
-            <p className="mb-4 inline-flex rounded-full border border-border bg-card px-3 py-1 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+        <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-8 px-4 pb-6 pt-20 sm:px-6 lg:grid-cols-2 lg:gap-12 lg:pb-8 lg:pt-24">
+          <div className="min-w-0">
+            <p className="air-badge mb-4 border border-border bg-muted text-muted-foreground">
               menulia.net
             </p>
-            <h1
-              id="hero-heading"
-              className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl"
-            >
-              Menus with{" "}
-              <span className="text-accent">main character energy</span>
+            <h1 id="hero-heading" className="air-page-title text-4xl sm:text-5xl lg:text-[3.25rem] lg:leading-[1.08]">
+              Menus with main character energy
             </h1>
-            <p className="mt-5 max-w-lg text-lg leading-relaxed text-muted-foreground">
-              Replace the PDF. Ship a mobile-first menu your guests actually enjoy — built,
-              styled, and previewed in one calm workspace.
+            <p className="air-page-subtitle mt-4 max-w-md text-base sm:text-lg">
+              Replace the PDF. Build, style, and preview a mobile-first menu in the same
+              workspace your team already trusts.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap gap-2">
               <Link href="/signup">
-                <Button variant="primary">
-                  Start free
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                </Button>
+                <Button variant="dark">Start free</Button>
               </Link>
               <a href="#demo">
-                <Button variant="light">See live demo</Button>
+                <Button variant="light">See how it works</Button>
               </a>
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-sm lg:max-w-none">
-            <div className="rounded-[2rem] border border-border bg-card p-2 shadow-[var(--shadow-air-ambient)]">
-              <div className="aspect-[9/19] overflow-hidden rounded-[1.6rem] bg-muted">
-                <iframe
-                  src="/menu/la-calle-tacos"
-                  title="Menulia menu preview"
-                  className="h-full w-full border-0"
-                />
-              </div>
-            </div>
-            <div className="absolute -right-2 -top-2 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white shadow-lg">
-              Live preview
-            </div>
+          <div className="flex min-h-0 items-center justify-center lg:justify-end">
+            <LandingDevicePreview />
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="border-b border-border bg-card py-20" aria-labelledby="features-heading">
+      <section
+        id="features"
+        aria-labelledby="features-heading"
+        className="border-b border-border bg-white py-24 md:py-28"
+      >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <header className="max-w-2xl">
-            <h2 id="features-heading" className="text-3xl font-bold tracking-tight text-slate-900">
-              Everything you need, nothing you don&apos;t
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              Three core pillars — structure, design, and preview — in one Apple-clean workflow.
-            </p>
-          </header>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {FEATURES.map((feature) => (
-              <article
-                key={feature.title}
-                className="rounded-2xl border border-border bg-background p-6 transition hover:shadow-[var(--shadow-air-ambient)]"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-border bg-card">
-                  <feature.icon className="h-5 w-5 text-slate-700" aria-hidden />
-                </div>
-                <h3 className="mt-4 text-lg font-semibold tracking-tight text-slate-900">
-                  {feature.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {feature.description}
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-end">
+            <ScrollReveal direction="left">
+              <header className="max-w-md lg:sticky lg:top-28">
+                <h2 id="features-heading" className="air-section-title text-3xl sm:text-4xl">
+                  Built like the dashboard you log into every day
+                </h2>
+                <p className="air-page-subtitle mt-3">
+                  Same typography scale, same card surfaces, same button physics — because your
+                  public menu should feel as considered as your back office.
                 </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+              </header>
+            </ScrollReveal>
 
-      {/* Demo */}
-      <section id="demo" className="border-b border-border bg-background py-20" aria-labelledby="demo-heading">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            <header>
-              <h2 id="demo-heading" className="text-3xl font-bold tracking-tight text-slate-900">
-                Build once. Preview instantly.
-              </h2>
-              <p className="mt-4 text-muted-foreground">
-                Edit your menu in the dashboard, then watch changes render on a real device frame.
-                Guests get swipeable dishes, dietary filters, and language switching — no app
-                download required.
-              </p>
-              <ul className="mt-6 space-y-3">
-                {[
-                  "Drag-and-drop menu structure",
-                  "One-click design presets",
-                  "Share via QR or direct link",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-slate-700">
-                    <Check className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </header>
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-air-ambient)]">
-              <div className="mb-4 flex items-center justify-between text-xs text-muted-foreground">
-                <span>Dashboard → Live preview</span>
-                <span className="rounded-full bg-muted px-2 py-0.5">Real-time</span>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border bg-muted/60 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Menu Builder
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-slate-900">Add sections & dishes</p>
-                </div>
-                <div className="rounded-xl border border-border bg-muted/60 p-4">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Design Studio
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-slate-900">Tune colors & fonts</p>
-                </div>
-                <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 sm:col-span-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-accent">
-                    Guest preview
-                  </p>
-                  <p className="mt-2 text-sm text-slate-700">
-                    Publish when it looks perfect — not when the PDF exports.
-                  </p>
-                </div>
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              {FEATURES.map((feature, index) => (
+                <ScrollReveal key={feature.title} delay={index * 90}>
+                  <article className="air-card air-card-pad flex gap-4 transition-all duration-200 hover:shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-border bg-white">
+                      <feature.icon className="h-5 w-5 text-slate-900" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                        {feature.title}
+                      </h3>
+                      <p className="air-helper mt-1.5 text-sm leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </article>
+                </ScrollReveal>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="border-b border-border bg-card py-20" aria-labelledby="pricing-heading">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <header className="text-center">
-            <h2 id="pricing-heading" className="text-3xl font-bold tracking-tight text-slate-900">
-              Simple launch tiers
-            </h2>
-            <p className="mt-3 text-muted-foreground">Start free. Upgrade when you need more.</p>
-          </header>
-          <div className="mt-12 grid gap-4 lg:grid-cols-3">
-            {PLANS.map((plan) => (
-              <article
-                key={plan.name}
-                className={`flex flex-col rounded-2xl border p-6 lg:p-8 ${
-                  plan.highlighted
-                    ? "border-accent/40 bg-gradient-to-br from-accent/5 via-card to-background shadow-[0_8px_40px_rgba(255,107,74,0.1)] lg:col-span-2"
-                    : "border-border bg-background"
-                }`}
-              >
-                {plan.highlighted && (
-                  <span className="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white">
-                    <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                    Most popular
-                  </span>
-                )}
-                <h3 className="text-xl font-semibold text-slate-900">{plan.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
-                <p className="mt-4">
-                  <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+      {/* Demo */}
+      <section
+        id="demo"
+        aria-labelledby="demo-heading"
+        className="border-b border-border bg-muted/40 py-24 md:py-28"
+      >
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <ScrollReveal>
+              <header>
+                <h2 id="demo-heading" className="air-section-title text-3xl sm:text-4xl">
+                  Build once. Preview instantly.
+                </h2>
+                <p className="air-page-subtitle mt-4 max-w-lg">
+                  Edit in the dashboard, validate on a phone frame, publish when it is right.
+                  Guests get swipeable dishes and language switching — no app download.
                 </p>
-                <ul className="mt-6 flex-1 space-y-2">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-slate-700">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
-                      {feature}
+                <ul className="mt-8 space-y-3">
+                  {DEMO_POINTS.map((item) => (
+                    <li key={item} className="flex items-center gap-3 text-sm text-slate-800">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900">
+                        <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden />
+                      </span>
+                      {item}
                     </li>
                   ))}
                 </ul>
-                <Link href={plan.href} className="mt-8 block">
-                  <Button className="w-full" variant={plan.highlighted ? "primary" : "light"}>
-                    {plan.cta}
+                <Link href="/menu/santo-sushi" target="_blank" rel="noopener noreferrer" className="mt-8 inline-block">
+                  <Button variant="light" isExternal>
+                    Open Santo Sushi demo
                   </Button>
                 </Link>
-              </article>
+              </header>
+            </ScrollReveal>
+
+            <ScrollReveal delay={120} direction="right">
+              <div className="air-card air-card-pad">
+                <p className="air-label mb-4">Workflow</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[12px] border border-border bg-white p-4">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      01 — Structure
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-900">Menu Builder</p>
+                  </div>
+                  <div className="rounded-[12px] border border-border bg-white p-4">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      02 — Design
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-slate-900">Design Studio</p>
+                  </div>
+                  <div className="rounded-[12px] border border-slate-900 bg-slate-900 p-4 sm:col-span-2">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-white/70">
+                      03 — Publish
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-white">
+                      Live guest preview on any device
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section
+        id="pricing"
+        aria-labelledby="pricing-heading"
+        className="border-b border-border bg-white py-24 md:py-28"
+      >
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <ScrollReveal>
+            <header className="mx-auto max-w-xl text-center">
+              <h2 id="pricing-heading" className="air-section-title text-3xl sm:text-4xl">
+                Simple launch tiers
+              </h2>
+              <p className="air-page-subtitle mt-3">Start free. Upgrade when you need more.</p>
+            </header>
+          </ScrollReveal>
+
+          <div className="mt-12 grid gap-4 lg:grid-cols-2">
+            {PLANS.map((plan, index) => (
+              <ScrollReveal key={plan.name} delay={index * 100}>
+                <article
+                  className={`air-card flex h-full flex-col p-6 md:p-8 ${
+                    plan.featured ? "border-slate-900 ring-1 ring-slate-900" : ""
+                  }`}
+                >
+                  {plan.featured && (
+                    <span className="mb-4 inline-flex w-fit rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-white">
+                      Most popular
+                    </span>
+                  )}
+                  <h3 className="text-xl font-semibold tracking-tight text-slate-900">{plan.name}</h3>
+                  <p className="air-helper mt-1">{plan.description}</p>
+                  <p className="mt-5">
+                    <span className="text-4xl font-bold tracking-tight text-slate-900">
+                      {plan.price}
+                    </span>
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  </p>
+                  <ul className="mt-6 flex-1 space-y-2.5">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2.5 text-sm text-slate-800">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-slate-900" aria-hidden />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={plan.href} className="mt-8 block">
+                    <Button className="w-full" variant={plan.featured ? "dark" : "light"}>
+                      {plan.cta}
+                    </Button>
+                  </Link>
+                </article>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Contact */}
-      <section id="contact" className="bg-background py-20" aria-labelledby="contact-heading">
+      <section id="contact" aria-labelledby="contact-heading" className="bg-white py-24 md:py-28">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
-          <header className="mb-8 text-center">
-            <h2 id="contact-heading" className="text-3xl font-bold tracking-tight text-slate-900">
-              Get in touch
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              Questions about onboarding or Premium? We typically reply within 24 hours.
-            </p>
-          </header>
-          <ContactForm />
+          <ScrollReveal>
+            <header className="mb-8 text-center">
+              <h2 id="contact-heading" className="air-section-title text-3xl sm:text-4xl">
+                Get in touch
+              </h2>
+              <p className="air-page-subtitle mt-3">
+                Questions about onboarding or Premium? We typically reply within 24 hours.
+              </p>
+            </header>
+          </ScrollReveal>
+          <ScrollReveal delay={80}>
+            <ContactForm />
+          </ScrollReveal>
         </div>
       </section>
     </>
