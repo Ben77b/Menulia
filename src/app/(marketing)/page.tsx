@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ContactForm } from "@/components/marketing/contact-form";
 import { LandingDevicePreview } from "@/components/marketing/landing-device-preview";
+import { LandingFeaturesSticky } from "@/components/marketing/landing-features-sticky";
+import { LandingDemoCanvas } from "@/components/marketing/landing-demo-canvas";
 import { ScrollReveal } from "@/components/marketing/scroll-reveal";
 import { marketingPageMetadata } from "@/lib/marketing/seo";
-import { Layers, Palette, Smartphone, Check } from "lucide-react";
+import { Check } from "lucide-react";
 
 export const metadata = marketingPageMetadata({
   title: "Menus with Main Character Energy",
@@ -12,27 +14,6 @@ export const metadata = marketingPageMetadata({
     "menulia.net — digital menus, live design studio, and real-time mobile previews for modern restaurants.",
   path: "/",
 });
-
-const FEATURES = [
-  {
-    icon: Layers,
-    title: "3-Tier Menu Builder",
-    description:
-      "Sections, categories, and dishes in a hierarchy that mirrors your kitchen. Rapid-add keeps updates fast.",
-  },
-  {
-    icon: Palette,
-    title: "Live Design Studio",
-    description:
-      "Typography and layout accents with hotspot editing. One calm workspace for every brand detail.",
-  },
-  {
-    icon: Smartphone,
-    title: "Real-time Previews",
-    description:
-      "See the guest experience on a real device frame before you publish. No PDF pinch-zoom.",
-  },
-];
 
 const PLANS = [
   {
@@ -63,34 +44,28 @@ const PLANS = [
   },
 ];
 
-const DEMO_POINTS = [
-  "Drag-and-drop menu structure",
-  "One-click design presets",
-  "Share via QR or direct link",
-];
-
 export default function LandingPage() {
   return (
     <>
-      {/* Hero — full viewport */}
+      {/* Hero — editorial, cinematic */}
       <section
         id="top"
         aria-labelledby="hero-heading"
-        className="flex h-[100dvh] min-h-[100dvh] max-h-[100dvh] items-center overflow-hidden border-b border-border bg-white"
+        className="border-b border-border bg-white pt-24 pb-20 md:pt-28 md:pb-28"
       >
-        <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-8 px-4 pb-6 pt-20 sm:px-6 lg:grid-cols-2 lg:gap-12 lg:pb-8 lg:pt-24">
-          <div className="min-w-0">
-            <p className="air-badge mb-4 border border-border bg-muted text-muted-foreground">
-              menulia.net
-            </p>
-            <h1 id="hero-heading" className="air-page-title text-4xl sm:text-5xl lg:text-[3.25rem] lg:leading-[1.08]">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mx-auto max-w-4xl text-center">
+            <h1
+              id="hero-heading"
+              className="text-5xl font-extrabold tracking-tighter text-slate-900 md:text-7xl md:leading-[1.02]"
+            >
               Menus with main character energy
             </h1>
-            <p className="air-page-subtitle mt-4 max-w-md text-base sm:text-lg">
-              Replace the PDF. Build, style, and preview a mobile-first menu in the same
-              workspace your team already trusts.
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:mt-8 md:text-xl">
+              Replace the PDF with a mobile-first menu your guests actually enjoy — built, styled,
+              and previewed in the same workspace your team trusts every day.
             </p>
-            <div className="mt-7 flex flex-wrap gap-2">
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-2 md:mt-10">
               <Link href="/signup">
                 <Button variant="dark">Start free</Button>
               </Link>
@@ -100,167 +75,73 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="flex min-h-0 items-center justify-center lg:justify-end">
+          <ScrollReveal delay={160} className="mt-14 md:mt-20">
             <LandingDevicePreview />
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
-      {/* Features */}
-      <section
-        id="features"
-        aria-labelledby="features-heading"
-        className="border-b border-border bg-white py-24 md:py-28"
-      >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-end">
-            <ScrollReveal direction="left">
-              <header className="max-w-md lg:sticky lg:top-28">
-                <h2 id="features-heading" className="air-section-title text-3xl sm:text-4xl">
-                  Built like the dashboard you log into every day
-                </h2>
-                <p className="air-page-subtitle mt-3">
-                  Same typography scale, same card surfaces, same button physics — because your
-                  public menu should feel as considered as your back office.
-                </p>
-              </header>
-            </ScrollReveal>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              {FEATURES.map((feature, index) => (
-                <ScrollReveal key={feature.title} delay={index * 90}>
-                  <article className="air-card air-card-pad flex gap-4 transition-all duration-200 hover:shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-border bg-white">
-                      <feature.icon className="h-5 w-5 text-slate-900" aria-hidden />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-base font-semibold tracking-tight text-slate-900">
-                        {feature.title}
-                      </h3>
-                      <p className="air-helper mt-1.5 text-sm leading-relaxed">
-                        {feature.description}
-                      </p>
-                    </div>
-                  </article>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Demo */}
-      <section
-        id="demo"
-        aria-labelledby="demo-heading"
-        className="border-b border-border bg-muted/40 py-24 md:py-28"
-      >
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <ScrollReveal>
-              <header>
-                <h2 id="demo-heading" className="air-section-title text-3xl sm:text-4xl">
-                  Build once. Preview instantly.
-                </h2>
-                <p className="air-page-subtitle mt-4 max-w-lg">
-                  Edit in the dashboard, validate on a phone frame, publish when it is right.
-                  Guests get swipeable dishes and language switching — no app download.
-                </p>
-                <ul className="mt-8 space-y-3">
-                  {DEMO_POINTS.map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-sm text-slate-800">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900">
-                        <Check className="h-3 w-3 text-white" strokeWidth={3} aria-hidden />
-                      </span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/menu/santo-sushi" target="_blank" rel="noopener noreferrer" className="mt-8 inline-block">
-                  <Button variant="light" isExternal>
-                    Open Santo Sushi demo
-                  </Button>
-                </Link>
-              </header>
-            </ScrollReveal>
-
-            <ScrollReveal delay={120} direction="right">
-              <div className="air-card air-card-pad">
-                <p className="air-label mb-4">Workflow</p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[12px] border border-border bg-white p-4">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      01 — Structure
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-900">Menu Builder</p>
-                  </div>
-                  <div className="rounded-[12px] border border-border bg-white p-4">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      02 — Design
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-900">Design Studio</p>
-                  </div>
-                  <div className="rounded-[12px] border border-slate-900 bg-slate-900 p-4 sm:col-span-2">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-white/70">
-                      03 — Publish
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-white">
-                      Live guest preview on any device
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
+      <LandingFeaturesSticky />
+      <LandingDemoCanvas />
 
       {/* Pricing */}
       <section
         id="pricing"
         aria-labelledby="pricing-heading"
-        className="border-b border-border bg-white py-24 md:py-28"
+        className="border-b border-border bg-white py-28 md:py-32"
       >
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
-            <header className="mx-auto max-w-xl text-center">
-              <h2 id="pricing-heading" className="air-section-title text-3xl sm:text-4xl">
+            <header className="mx-auto max-w-2xl text-center">
+              <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Pricing
+              </p>
+              <h2
+                id="pricing-heading"
+                className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl"
+              >
                 Simple launch tiers
               </h2>
-              <p className="air-page-subtitle mt-3">Start free. Upgrade when you need more.</p>
+              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+                Start free. Upgrade when your restaurant is ready for more.
+              </p>
             </header>
           </ScrollReveal>
 
-          <div className="mt-12 grid gap-4 lg:grid-cols-2">
+          <div className="mt-14 grid gap-6 lg:grid-cols-2">
             {PLANS.map((plan, index) => (
               <ScrollReveal key={plan.name} delay={index * 100}>
                 <article
-                  className={`air-card flex h-full flex-col p-6 md:p-8 ${
+                  className={`air-card flex h-full flex-col air-card-pad ${
                     plan.featured ? "border-slate-900 ring-1 ring-slate-900" : ""
                   }`}
                 >
                   {plan.featured && (
-                    <span className="mb-4 inline-flex w-fit rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-white">
+                    <span className="mb-5 inline-flex w-fit rounded-full bg-slate-900 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white">
                       Most popular
                     </span>
                   )}
-                  <h3 className="text-xl font-semibold tracking-tight text-slate-900">{plan.name}</h3>
-                  <p className="air-helper mt-1">{plan.description}</p>
-                  <p className="mt-5">
-                    <span className="text-4xl font-bold tracking-tight text-slate-900">
+                  <h3 className="text-2xl font-semibold tracking-tight text-slate-900">
+                    {plan.name}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {plan.description}
+                  </p>
+                  <p className="mt-6">
+                    <span className="text-5xl font-bold tracking-tight text-slate-900">
                       {plan.price}
                     </span>
                     <span className="text-muted-foreground">{plan.period}</span>
                   </p>
-                  <ul className="mt-6 flex-1 space-y-2.5">
+                  <ul className="mt-8 flex-1 space-y-3">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2.5 text-sm text-slate-800">
+                      <li key={feature} className="flex items-start gap-3 text-sm text-slate-800">
                         <Check className="mt-0.5 h-4 w-4 shrink-0 text-slate-900" aria-hidden />
                         {feature}
                       </li>
                     ))}
                   </ul>
-                  <Link href={plan.href} className="mt-8 block">
+                  <Link href={plan.href} className="mt-10 block">
                     <Button className="w-full" variant={plan.featured ? "dark" : "light"}>
                       {plan.cta}
                     </Button>
@@ -273,14 +154,20 @@ export default function LandingPage() {
       </section>
 
       {/* Contact */}
-      <section id="contact" aria-labelledby="contact-heading" className="bg-white py-24 md:py-28">
+      <section id="contact" aria-labelledby="contact-heading" className="bg-white py-28 md:py-32">
         <div className="mx-auto max-w-xl px-4 sm:px-6">
           <ScrollReveal>
-            <header className="mb-8 text-center">
-              <h2 id="contact-heading" className="air-section-title text-3xl sm:text-4xl">
+            <header className="mb-10 text-center">
+              <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Contact
+              </p>
+              <h2
+                id="contact-heading"
+                className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl"
+              >
                 Get in touch
               </h2>
-              <p className="air-page-subtitle mt-3">
+              <p className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
                 Questions about onboarding or Premium? We typically reply within 24 hours.
               </p>
             </header>
