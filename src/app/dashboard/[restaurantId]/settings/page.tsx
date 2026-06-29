@@ -6,6 +6,11 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { HoursScheduleBuilder } from "@/components/dashboard/hours-schedule-builder";
+import { SettingsSubNav } from "@/components/dashboard/settings-sub-nav";
+import {
+  SettingsMenuPreview,
+  type SettingsLivePreviewInput,
+} from "@/components/dashboard/settings-menu-preview";
 import {
   Clock,
   Link2,
@@ -40,9 +45,19 @@ interface CustomLink {
   url: string;
 }
 
+type SettingsTab = "general" | "hours-location" | "social-links" | "danger";
+
+const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
+  { id: "general", label: "General" },
+  { id: "hours-location", label: "Hours & Location" },
+  { id: "social-links", label: "Social & Links" },
+  { id: "danger", label: "Danger Zone" },
+];
+
 export default function SettingsPage() {
   const router = useRouter();
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [scheduleBlocks, setScheduleBlocks] = useState<HoursScheduleBlock[]>(defaultScheduleBlocks());
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
@@ -65,6 +80,27 @@ export default function SettingsPage() {
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
   const supabase = getSupabaseBrowserClient();
+
+  const livePreview: SettingsLivePreviewInput = useMemo(
+    () => ({
+      restaurantName,
+      location: restaurantLocation,
+      phone: restaurantPhone,
+      email: restaurantEmail,
+      scheduleBlocks,
+      footerSlogan,
+      links: customLinks,
+    }),
+    [
+      restaurantName,
+      restaurantLocation,
+      restaurantPhone,
+      restaurantEmail,
+      scheduleBlocks,
+      footerSlogan,
+      customLinks,
+    ]
+  );
 
   useEffect(() => {
     if (currentRestaurant) {
@@ -176,8 +212,7 @@ export default function SettingsPage() {
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
       console.error("[SettingsSave:Failed]", error);
-      const message = formatRestaurantSettingsError(error);
-      setSaveError(message);
+      setSaveError(formatRestaurantSettingsError(error));
     } finally {
       setSaving(false);
     }
@@ -239,254 +274,15 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex min-h-[calc(100vh-6rem)] flex-col">
+      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Restaurant Settings</h1>
           <p className="mt-1 text-sm text-gray-600">
             Manage profile, contact details, hours, and links for this restaurant
           </p>
         </div>
-        <Button
-          size="lg"
-          className="px-8"
-          onClick={saveChanges}
-          disabled={saving || !currentRestaurant?.id || Boolean(slugError)}
-        >
-          {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
-        </Button>
-      </div>
-
-      {loadError && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {loadError}
-        </div>
-      )}
-
-      {saveError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {saveError}
-        </div>
-      )}
-
-      <div className="space-y-6">
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <Building2 className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Restaurant Name & Tagline</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Restaurant Name</label>
-              <input
-                type="text"
-                value={restaurantName}
-                onChange={(e) => setRestaurantName(e.target.value)}
-                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Your Restaurant Name"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Tagline</label>
-              <input
-                type="text"
-                value={restaurantTagline}
-                onChange={(e) => setRestaurantTagline(e.target.value)}
-                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Fresh seasonal cuisine in the heart of the city"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Short description shown in search previews and metadata
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Public Menu URL</label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">menulia.net/menu/</span>
-                <input
-                  type="text"
-                  value={restaurantSlug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  className="h-10 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="your-restaurant-slug"
-                />
-              </div>
-              {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <Phone className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" />
-                  Physical Location
-                </span>
-              </label>
-              <input
-                type="text"
-                value={restaurantLocation}
-                onChange={(e) => setRestaurantLocation(e.target.value)}
-                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="123 Main Street, Dublin"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Phone Number</label>
-                <input
-                  type="tel"
-                  value={restaurantPhone}
-                  onChange={(e) => setRestaurantPhone(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="+1 234 567 890"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Contact Email</label>
-                <input
-                  type="email"
-                  value={restaurantEmail}
-                  onChange={(e) => setRestaurantEmail(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="hello@restaurant.com"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <Clock className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Opening Hours</h2>
-          </div>
-          <p className="mb-4 text-sm text-gray-600">
-            Set weekly schedules — saved as your public menu hours line.
-          </p>
-          <HoursScheduleBuilder blocks={scheduleBlocks} onChange={setScheduleBlocks} />
-        </div>
-
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <Link2 className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Links & Custom Footer Notes</h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div>
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addCustomLink}
-                  className="gap-1"
-                  disabled={customLinks.length >= MAX_CUSTOM_LINKS}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Link
-                </Button>
-              </div>
-
-              {customLinks.length === 0 ? (
-                <p className="text-xs italic text-gray-500">No custom links added yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {customLinks.map((link) => (
-                    <div key={link.id} className="flex items-start gap-2 rounded-lg border border-gray-200 p-3">
-                      <div className="flex-1 space-y-2">
-                        <input
-                          type="text"
-                          value={link.label}
-                          onChange={(e) =>
-                            updateCustomLink(link.id, "label", e.target.value.slice(0, MAX_LINK_LABEL_LENGTH))
-                          }
-                          maxLength={MAX_LINK_LABEL_LENGTH}
-                          placeholder="Link label (e.g., TripAdvisor)"
-                          className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <input
-                          type="url"
-                          value={link.url}
-                          onChange={(e) => updateCustomLink(link.id, "url", e.target.value)}
-                          placeholder="https://..."
-                          className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeCustomLink(link.id)}
-                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
-              <textarea
-                value={footerSlogan}
-                onChange={(e) => setFooterSlogan(e.target.value)}
-                placeholder="We recommend reservations after 12 PM"
-                rows={6}
-                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border-2 border-red-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
-          </div>
-          <p className="mb-4 text-sm text-gray-600">
-            Permanently delete this restaurant, its menu, and all associated data.
-          </p>
-
-          <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
-            <div>
-              <h3 className="text-sm font-medium text-red-900">Delete Restaurant</h3>
-              <p className="text-xs text-gray-600">
-                This action cannot be undone. All categories, dishes, and design settings will be
-                removed.
-              </p>
-            </div>
-            <Button
-              variant="danger"
-              className="gap-2 shrink-0"
-              onClick={() => {
-                setDeleteConfirmText("");
-                setDeleteError(null);
-                setDeleteModalOpen(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete Restaurant
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex justify-end border-t border-gray-100 pt-6">
+        {activeTab !== "danger" && (
           <Button
             size="lg"
             className="px-8"
@@ -495,7 +291,274 @@ export default function SettingsPage() {
           >
             {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
           </Button>
+        )}
+      </div>
+
+      {loadError && (
+        <div className="mb-4 shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {loadError}
         </div>
+      )}
+
+      {saveError && (
+        <div className="mb-4 shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {saveError}
+        </div>
+      )}
+
+      <div className="mb-4 shrink-0">
+        <SettingsSubNav items={SETTINGS_TABS} active={activeTab} onChange={setActiveTab} />
+      </div>
+
+      <div className="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-8">
+        <div className="min-w-0 space-y-6 pb-8">
+          {activeTab === "general" && (
+            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <Building2 className="h-5 w-5 text-gray-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Restaurant Name & Tagline</h2>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    Restaurant Name
+                  </label>
+                  <input
+                    type="text"
+                    value={restaurantName}
+                    onChange={(e) => setRestaurantName(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Your Restaurant Name"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">Tagline</label>
+                  <input
+                    type="text"
+                    value={restaurantTagline}
+                    onChange={(e) => setRestaurantTagline(e.target.value)}
+                    className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Fresh seasonal cuisine in the heart of the city"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Short description shown in search previews and metadata
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    Public Menu URL
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">menulia.net/menu/</span>
+                    <input
+                      type="text"
+                      value={restaurantSlug}
+                      onChange={(e) => handleSlugChange(e.target.value)}
+                      className="h-10 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="your-restaurant-slug"
+                    />
+                  </div>
+                  {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "hours-location" && (
+            <>
+              <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-gray-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        Physical Location
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={restaurantLocation}
+                      onChange={(e) => setRestaurantLocation(e.target.value)}
+                      className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="123 Main Street, Dublin"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={restaurantPhone}
+                        onChange={(e) => setRestaurantPhone(e.target.value)}
+                        className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="+1 234 567 890"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-gray-700">
+                        Contact Email
+                      </label>
+                      <input
+                        type="email"
+                        value={restaurantEmail}
+                        onChange={(e) => setRestaurantEmail(e.target.value)}
+                        className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="hello@restaurant.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-gray-600" />
+                  <h2 className="text-lg font-semibold text-gray-900">Opening Hours</h2>
+                </div>
+                <p className="mb-4 text-sm text-gray-600">
+                  Set weekly schedules — saved as your public menu hours line.
+                </p>
+                <HoursScheduleBuilder blocks={scheduleBlocks} onChange={setScheduleBlocks} />
+              </div>
+            </>
+          )}
+
+          {activeTab === "social-links" && (
+            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <Link2 className="h-5 w-5 text-gray-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Links & Custom Footer Notes</h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addCustomLink}
+                      className="gap-1"
+                      disabled={customLinks.length >= MAX_CUSTOM_LINKS}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Link
+                    </Button>
+                  </div>
+                  {customLinks.length === 0 ? (
+                    <p className="text-xs italic text-gray-500">No custom links added yet</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {customLinks.map((link) => (
+                        <div
+                          key={link.id}
+                          className="flex items-start gap-2 rounded-lg border border-gray-200 p-3"
+                        >
+                          <div className="flex-1 space-y-2">
+                            <input
+                              type="text"
+                              value={link.label}
+                              onChange={(e) =>
+                                updateCustomLink(
+                                  link.id,
+                                  "label",
+                                  e.target.value.slice(0, MAX_LINK_LABEL_LENGTH)
+                                )
+                              }
+                              maxLength={MAX_LINK_LABEL_LENGTH}
+                              placeholder="Link label (e.g., TripAdvisor)"
+                              className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                            <input
+                              type="url"
+                              value={link.url}
+                              onChange={(e) => updateCustomLink(link.id, "url", e.target.value)}
+                              placeholder="https://..."
+                              className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeCustomLink(link.id)}
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
+                  <textarea
+                    value={footerSlogan}
+                    onChange={(e) => setFooterSlogan(e.target.value)}
+                    placeholder="We recommend reservations after 12 PM"
+                    rows={6}
+                    className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "danger" && (
+            <div className="rounded-xl border-2 border-red-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
+              </div>
+              <p className="mb-4 text-sm text-gray-600">
+                Permanently delete this restaurant, its menu, and all associated data.
+              </p>
+              <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
+                <div>
+                  <h3 className="text-sm font-medium text-red-900">Delete Restaurant</h3>
+                  <p className="text-xs text-gray-600">
+                    This action cannot be undone. All categories, dishes, and design settings will
+                    be removed.
+                  </p>
+                </div>
+                <Button
+                  variant="danger"
+                  className="shrink-0 gap-2"
+                  onClick={() => {
+                    setDeleteConfirmText("");
+                    setDeleteError(null);
+                    setDeleteModalOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Restaurant
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {activeTab !== "danger" && (
+            <div className="flex justify-end border-t border-gray-100 pt-6 lg:hidden">
+              <Button
+                size="lg"
+                className="px-8"
+                onClick={saveChanges}
+                disabled={saving || !currentRestaurant?.id || Boolean(slugError)}
+              >
+                {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <SettingsMenuPreview restaurantId={currentRestaurant?.id} live={livePreview} />
       </div>
 
       {deleteModalOpen && currentRestaurant && (
@@ -513,9 +576,7 @@ export default function SettingsPage() {
               placeholder={currentRestaurant.name}
               className="mt-4 h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
-            {deleteError && (
-              <p className="mt-2 text-sm text-red-600">{deleteError}</p>
-            )}
+            {deleteError && <p className="mt-2 text-sm text-red-600">{deleteError}</p>}
             <div className="mt-6 flex justify-end gap-3">
               <Button
                 variant="outline"
@@ -528,8 +589,7 @@ export default function SettingsPage() {
                 variant="danger"
                 onClick={handleDeleteRestaurant}
                 disabled={
-                  deleting ||
-                  deleteConfirmText.trim() !== currentRestaurant.name.trim()
+                  deleting || deleteConfirmText.trim() !== currentRestaurant.name.trim()
                 }
               >
                 {deleting ? "Deleting..." : "Delete permanently"}

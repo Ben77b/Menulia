@@ -5,17 +5,7 @@ import { Upload, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { MenuBuilderDish } from "@/lib/menu-builder-types";
-
-const DIETARY_TAGS = ["Vegan", "Vegetarian", "Gluten-Free", "Spicy"] as const;
-
-const ALLERGEN_TAGS = [
-  "Contains Nuts",
-  "Contains Dairy",
-  "Contains Gluten",
-  "Contains Shellfish",
-  "Contains Soy",
-  "Contains Eggs",
-] as const;
+import { ALLERGEN_TAGS, DIETARY_TAGS } from "@/lib/dietary-tags";
 
 export interface DishDetailDraft {
   name: string;

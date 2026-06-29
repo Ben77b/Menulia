@@ -53,6 +53,13 @@ export function contrastingTextColor(backgroundHex: string): "#000000" | "#FFFFF
   return relativeLuminance(backgroundHex) > 0.5 ? BLACK : WHITE;
 }
 
+/** Subtle 1px divider between nav tiers — soft blend, never harsh pure black/white */
+export function subtleDividerColor(backgroundHex: string): string {
+  return relativeLuminance(backgroundHex) > 0.5
+    ? "rgba(0, 0, 0, 0.1)"
+    : "rgba(255, 255, 255, 0.15)";
+}
+
 /** Highest WCAG contrast ratio pick — used for accent-on-accent edge cases. */
 export function highestContrastTextColor(backgroundHex: string): "#000000" | "#FFFFFF" {
   const backgroundLuminance = relativeLuminance(backgroundHex);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { contrastingTextColor } from "@/lib/contrast";
+import { contrastingTextColor, subtleDividerColor } from "@/lib/contrast";
 import type { PublicMenuParentCategory } from "@/lib/menu-hierarchy";
 
 interface NestedCategoryNavProps {
@@ -78,8 +78,13 @@ export function NestedCategoryNav({
 
   if (menu.length === 0) return null;
 
+  const tierDividerColor = subtleDividerColor(stripBackgroundColor);
+
   return (
-    <div className="w-full" style={{ backgroundColor: stripBackgroundColor }}>
+    <div
+      className="w-full border-b border-black/5"
+      style={{ backgroundColor: stripBackgroundColor }}
+    >
       {showTier1 && (
         <nav
           className="flex w-full flex-wrap items-center justify-center gap-2 px-4 py-4"
@@ -122,9 +127,17 @@ export function NestedCategoryNav({
         </nav>
       )}
 
+      {showTier1 && showTier2 && (
+        <div
+          className="mx-4"
+          style={{ borderTop: `1px solid ${tierDividerColor}` }}
+          aria-hidden
+        />
+      )}
+
       {showTier2 && (
         <nav
-          className="flex w-full flex-wrap items-center justify-center gap-2 border-b border-black/5 px-4 py-3"
+          className="flex w-full flex-wrap items-center justify-center gap-2 px-4 py-3"
           style={{
             backgroundColor: stripBackgroundColor,
             color: tier2Text,
