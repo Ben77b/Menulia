@@ -12,12 +12,9 @@ import {
   Trash2,
   Plus,
   Building2,
-  User,
-  LogOut,
-  Lock,
-  Download,
   AlertTriangle,
-  CreditCard,
+  MapPin,
+  Phone,
 } from "lucide-react";
 import {
   defaultScheduleBlocks,
@@ -31,6 +28,7 @@ import {
   slugCollisionMessage,
 } from "@/lib/restaurant-slug";
 import {
+  deleteRestaurant,
   loadRestaurantSettings,
   saveFullRestaurantSettings,
 } from "@/lib/restaurant-settings";
@@ -49,18 +47,21 @@ export default function SettingsPage() {
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
   const [restaurantName, setRestaurantName] = useState("");
+  const [restaurantTagline, setRestaurantTagline] = useState("");
   const [restaurantLocation, setRestaurantLocation] = useState("");
   const [restaurantPhone, setRestaurantPhone] = useState("");
   const [restaurantEmail, setRestaurantEmail] = useState("");
   const [restaurantSlug, setRestaurantSlug] = useState("");
   const [originalSlug, setOriginalSlug] = useState("");
   const [slugError, setSlugError] = useState("");
-  const [userFullName, setUserFullName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
   const supabase = getSupabaseBrowserClient();
@@ -71,24 +72,6 @@ export default function SettingsPage() {
     }
   }, [currentRestaurant]);
 
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  async function loadUserData() {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email || "");
-        setUserFullName(user.user_metadata?.full_name || "");
-      }
-    } catch (error) {
-      console.error("Error loading user data:", error);
-    }
-  }
-
   async function loadRestaurantData() {
     if (!currentRestaurant) return;
 
@@ -98,6 +81,7 @@ export default function SettingsPage() {
       const data = await loadRestaurantSettings(supabase, currentRestaurant.id);
 
       setRestaurantName(data.name);
+      setRestaurantTagline(data.tagline);
       setRestaurantLocation(data.location);
       setRestaurantSlug(data.slug);
       setOriginalSlug(data.slug);
@@ -172,6 +156,7 @@ export default function SettingsPage() {
         name: restaurantName,
         slug: restaurantSlug,
         originalSlug,
+        tagline: restaurantTagline,
         location: restaurantLocation,
         phone: restaurantPhone,
         email: restaurantEmail,
@@ -184,13 +169,6 @@ export default function SettingsPage() {
         setOriginalSlug(result.normalizedSlug);
         setRestaurantSlug(result.normalizedSlug);
       }
-
-      await supabase.auth.updateUser({
-        data: { full_name: userFullName.trim() },
-        ...(userEmail.trim() && userEmail.trim() !== user.email
-          ? { email: userEmail.trim() }
-          : {}),
-      });
 
       await refreshRestaurants();
       await loadRestaurantData();
@@ -237,32 +215,26 @@ export default function SettingsPage() {
     );
   }
 
-  async function handleLogout() {
+  async function handleDeleteRestaurant() {
+    if (!currentRestaurant?.id) return;
+    if (deleteConfirmText.trim() !== currentRestaurant.name.trim()) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+
     try {
-      await supabase.auth.signOut();
-      router.push("/");
+      await deleteRestaurant(supabase, currentRestaurant.id);
+      localStorage.removeItem("menulia_current_restaurant");
+      const remaining = await refreshRestaurants();
+      setDeleteModalOpen(false);
+      router.push(remaining.length > 0 ? `/dashboard/${remaining[0].id}` : "/dashboard");
     } catch (error) {
-      console.error("Error logging out:", error);
-      alert("Failed to log out");
-    }
-  }
-
-  async function handleDownloadData() {
-    alert("Preparing data export... This feature will be available soon.");
-  }
-
-  async function handleDeleteAccount() {
-    const confirmed = confirm(
-      "Are you sure? This will permanently delete your restaurant, menu, and account data. This cannot be undone."
-    );
-    if (confirmed) {
-      try {
-        await supabase.auth.signOut();
-        router.push("/");
-      } catch (error) {
-        console.error("Error deleting account:", error);
-        alert("Failed to delete account");
-      }
+      console.error("[DeleteRestaurant:Failed]", error);
+      setDeleteError(
+        error instanceof Error ? error.message : "Failed to delete restaurant."
+      );
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -270,9 +242,9 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Restaurant Settings</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Update your restaurant profile, hours, links, and account details — then use Save Changes
+            Manage profile, contact details, hours, and links for this restaurant
           </p>
         </div>
         <Button
@@ -301,11 +273,8 @@ export default function SettingsPage() {
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
             <Building2 className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Restaurant Profile</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Restaurant Name & Tagline</h2>
           </div>
-          <p className="mb-4 text-sm text-gray-600">
-            Profile details saved directly to your restaurant record
-          </p>
 
           <div className="space-y-4">
             <div>
@@ -320,7 +289,50 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">Location</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Tagline</label>
+              <input
+                type="text"
+                value={restaurantTagline}
+                onChange={(e) => setRestaurantTagline(e.target.value)}
+                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Fresh seasonal cuisine in the heart of the city"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Short description shown in search previews and metadata
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Public Menu URL</label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">menulia.net/menu/</span>
+                <input
+                  type="text"
+                  value={restaurantSlug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  className="h-10 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="your-restaurant-slug"
+                />
+              </div>
+              {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
+            <Phone className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Physical Location
+                </span>
+              </label>
               <input
                 type="text"
                 value={restaurantLocation}
@@ -342,9 +354,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Public Contact Email
-                </label>
+                <label className="mb-2 block text-sm font-medium text-gray-700">Contact Email</label>
                 <input
                   type="email"
                   value={restaurantEmail}
@@ -354,51 +364,27 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">URL Slug</label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">menulia.net/menu/</span>
-                <input
-                  type="text"
-                  value={restaurantSlug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  className="h-10 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="your-restaurant-slug"
-                />
-              </div>
-              {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
-              <p className="mt-1 text-xs text-gray-500">
-                Use only lowercase letters, numbers, and hyphens. No spaces.
-              </p>
-            </div>
           </div>
         </div>
 
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
             <Clock className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Operating Hours</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Opening Hours</h2>
           </div>
           <p className="mb-4 text-sm text-gray-600">
-            Pick start and end times, then check the days each schedule applies to. Saved as a single
-            hours line on your public menu.
+            Set weekly schedules — saved as your public menu hours line.
           </p>
-
           <HoursScheduleBuilder blocks={scheduleBlocks} onChange={setScheduleBlocks} />
         </div>
 
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
             <Link2 className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Public Page Footer & Links Settings</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Links & Custom Footer Notes</h2>
           </div>
-          <p className="mb-4 text-sm text-gray-600">
-            Links appear in the hamburger menu on your public page. Add a label and URL for each
-            link, then click Save Changes. Up to {MAX_CUSTOM_LINKS} links.
-          </p>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
@@ -456,8 +442,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Slogan / Note</h3>
-              <p className="mb-3 text-xs text-gray-500">Add a custom note to display in your menu footer</p>
+              <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
               <textarea
                 value={footerSlogan}
                 onChange={(e) => setFooterSlogan(e.target.value)}
@@ -469,103 +454,35 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-3">
-            <User className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Account Management</h2>
-          </div>
-          <p className="mb-4 text-sm text-gray-600">
-            Manage your personal SaaS account details and security settings
-          </p>
-
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-700">Personal Details</h3>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Full Name</label>
-                <input
-                  type="text"
-                  value={userFullName}
-                  onChange={(e) => setUserFullName(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Your full name"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">Account Email</label>
-                <input
-                  type="email"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="your@email.com"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Account name and email are saved together with the Save Changes button at the top
-                  or bottom of this page. Email changes may require verification.
-                </p>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="mb-4 text-sm font-medium text-gray-700">Subscription</h3>
-              <Button variant="outline" className="gap-2">
-                <CreditCard className="h-4 w-4" />
-                Manage Billing
-              </Button>
-            </div>
-
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="mb-4 text-sm font-medium text-gray-700">Session & Security</h3>
-              <div className="flex gap-3">
-                <Button variant="outline" className="gap-2">
-                  <Lock className="h-4 w-4" />
-                  Change Password
-                </Button>
-                <Button variant="danger" className="gap-2" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                  Log Out
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-2 border-red-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border-2 border-red-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-red-600" />
             <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
           </div>
           <p className="mb-4 text-sm text-gray-600">
-            Irreversible and destructive actions for your account and data
+            Permanently delete this restaurant, its menu, and all associated data.
           </p>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Download My Data</h3>
-                <p className="text-xs text-gray-600">
-                  Export all your restaurant and account data (GDPR/CCPA compliance)
-                </p>
-              </div>
-              <Button variant="outline" className="gap-2" onClick={handleDownloadData}>
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
+          <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
+            <div>
+              <h3 className="text-sm font-medium text-red-900">Delete Restaurant</h3>
+              <p className="text-xs text-gray-600">
+                This action cannot be undone. All categories, dishes, and design settings will be
+                removed.
+              </p>
             </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
-              <div>
-                <h3 className="text-sm font-medium text-red-900">Delete Account</h3>
-                <p className="text-xs text-gray-600">
-                  Permanently delete your restaurant, menu, and account data
-                </p>
-              </div>
-              <Button variant="danger" className="gap-2" onClick={handleDeleteAccount}>
-                <Trash2 className="h-4 w-4" />
-                Delete Account
-              </Button>
-            </div>
+            <Button
+              variant="danger"
+              className="gap-2 shrink-0"
+              onClick={() => {
+                setDeleteConfirmText("");
+                setDeleteError(null);
+                setDeleteModalOpen(true);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Restaurant
+            </Button>
           </div>
         </div>
 
@@ -580,6 +497,47 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      {deleteModalOpen && currentRestaurant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900">Delete Restaurant</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              This will permanently delete <strong>{currentRestaurant.name}</strong> and all menu
+              data. Type the restaurant name to confirm.
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={currentRestaurant.name}
+              className="mt-4 h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            {deleteError && (
+              <p className="mt-2 text-sm text-red-600">{deleteError}</p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDeleteRestaurant}
+                disabled={
+                  deleting ||
+                  deleteConfirmText.trim() !== currentRestaurant.name.trim()
+                }
+              >
+                {deleting ? "Deleting..." : "Delete permanently"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

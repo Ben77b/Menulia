@@ -144,7 +144,7 @@ export function applyComputedContrast(design: RestaurantDesign): RestaurantDesig
     buttonColor: design.categoryAccentColor,
     categoryColor: design.categoryAccentColor,
     categoryTextColor: accentText,
-    priceColor: design.categoryAccentColor,
+    priceColor: mainText,
     titleColor: mainText,
     textColor: mainText,
   };

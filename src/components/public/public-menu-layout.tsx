@@ -293,7 +293,6 @@ export function PublicMenuLayout({
         {hasNestedStructure ? (
           <NestedCategoryNav
             menu={menu}
-            headerBackgroundColor={theme.logoAreaBg}
             stripBackgroundColor={theme.categoryBarBg}
             tier1ActiveBg={theme.tier1ActiveBg}
             tier1ActiveText={theme.tier1ActiveText}

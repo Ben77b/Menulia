@@ -30,7 +30,6 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const restaurantId = params.restaurantId as string | undefined;
   const [restaurantOpen, setRestaurantOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const {
     currentRestaurant,
@@ -39,7 +38,13 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     switchRestaurant,
     loading,
     user,
+    userProfile,
   } = useRestaurant();
+
+  const profileName =
+    user?.user_metadata?.full_name || userProfile?.displayName || user?.email?.split("@")[0] || "Account";
+  const profileSubtitle = user?.email ?? "Account settings";
+  const isAccountPage = pathname === "/dashboard/account";
 
   const activeRestaurantId = hasRestaurants
     ? currentRestaurant?.id ?? restaurants[0]?.id
@@ -208,41 +213,24 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           </nav>
 
           <div className="border-t border-gray-100 pt-6">
-            <div className="relative">
-              <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex w-full items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-                  <User className="h-4 w-4 text-gray-600" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-gray-900">Account</p>
-                  <p className="text-xs text-gray-500">Sign out</p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-gray-400" />
-              </button>
-
-              {profileOpen && (
-                <div className="absolute bottom-full left-0 right-0 z-10 mb-2 rounded-lg border border-gray-200 bg-white p-2 shadow-xl">
-                  {hasRestaurants && activeRestaurantId && (
-                    <Link
-                      href={`/dashboard/${activeRestaurantId}/settings`}
-                      onClick={() => setProfileOpen(false)}
-                      className="block rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      Profile Settings
-                    </Link>
-                  )}
-                  <Link
-                    href="/logout"
-                    className="block rounded-lg px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    Sign Out
-                  </Link>
-                </div>
-              )}
-            </div>
+            <Link
+              href="/dashboard/account"
+              onClick={onToggle}
+              className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                isAccountPage
+                  ? "border-indigo-200 bg-indigo-50"
+                  : "border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+                <User className="h-4 w-4 text-gray-600" />
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-medium text-gray-900">{profileName}</p>
+                <p className="truncate text-xs text-gray-500">{profileSubtitle}</p>
+              </div>
+              <ChevronDown className="-rotate-90 h-4 w-4 shrink-0 text-gray-400" />
+            </Link>
           </div>
 
           <button

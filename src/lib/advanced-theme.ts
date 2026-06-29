@@ -218,8 +218,8 @@ export const ADVANCED_FIELD_DEFAULTS: Record<keyof AdvancedTheme, string> = {
   priceTextColor: DEFAULT_MENU_THEME.categoryAccentColor,
   carouselActiveIndicator: DEFAULT_MENU_THEME.categoryAccentColor,
   carouselInactiveDots: "#00000033",
-  carouselArrowBg: DEFAULT_MENU_THEME.categoryAccentColor,
-  carouselArrowIcon: "#ffffff",
+  carouselArrowBg: DEFAULT_MENU_THEME.headerBackgroundColor,
+  carouselArrowIcon: "#111827",
   footerBackground: DEFAULT_MENU_THEME.footerBackgroundColor,
   footerTextIcon: "#111827",
   filterAreaBg: DEFAULT_MENU_THEME.footerBackgroundColor,
@@ -255,6 +255,16 @@ export function resolveAdvancedMenuTheme(advanced: Partial<AdvancedTheme>): Reso
   const menuBackground = readAdvancedColor(advanced, "menuBackground");
   const footerBackground = readAdvancedColor(advanced, "footerBackground");
   const tier2ActiveBg = readAdvancedColor(advanced, "tier2ActiveBg");
+  const tier2ActiveText = readAdvancedColor(advanced, "tier2ActiveText");
+  const tier2ActiveBorder = readAdvancedColor(advanced, "tier2ActiveBorder");
+  const tier2InactiveBg = readAdvancedColor(advanced, "tier2InactiveBg");
+  const tier2InactiveText = readAdvancedColor(advanced, "tier2InactiveText");
+  const tier2InactiveBorder = readAdvancedColor(advanced, "tier2InactiveBorder");
+  const carouselArrowBgDefault = readAdvancedColor(advanced, "carouselArrowBg");
+  const carouselArrowBg =
+    advanced.carouselArrowBg?.trim()
+      ? carouselArrowBgDefault
+      : logoAreaBg;
 
   return {
     headerBackgroundColor: logoAreaBg,
@@ -270,19 +280,19 @@ export function resolveAdvancedMenuTheme(advanced: Partial<AdvancedTheme>): Reso
     logoAreaText: readAdvancedColor(advanced, "tier1InactiveText"),
     categoryBarBg,
 
-    tier1ActiveBg: readAdvancedColor(advanced, "tier1ActiveBg"),
-    tier1ActiveText: readAdvancedColor(advanced, "tier1ActiveText"),
-    tier1ActiveBorder: readAdvancedColor(advanced, "tier1ActiveBorder"),
-    tier1InactiveBg: readAdvancedColor(advanced, "tier1InactiveBg"),
-    tier1InactiveText: readAdvancedColor(advanced, "tier1InactiveText"),
-    tier1InactiveBorder: readAdvancedColor(advanced, "tier1InactiveBorder"),
+    tier1ActiveBg: tier2ActiveBg,
+    tier1ActiveText: tier2ActiveText,
+    tier1ActiveBorder: tier2ActiveBorder,
+    tier1InactiveBg: tier2InactiveBg,
+    tier1InactiveText: tier2InactiveText,
+    tier1InactiveBorder: tier2InactiveBorder,
 
     tier2ActiveBg,
-    tier2ActiveText: readAdvancedColor(advanced, "tier2ActiveText"),
-    tier2ActiveBorder: readAdvancedColor(advanced, "tier2ActiveBorder"),
-    tier2InactiveBg: readAdvancedColor(advanced, "tier2InactiveBg"),
-    tier2InactiveText: readAdvancedColor(advanced, "tier2InactiveText"),
-    tier2InactiveBorder: readAdvancedColor(advanced, "tier2InactiveBorder"),
+    tier2ActiveText,
+    tier2ActiveBorder,
+    tier2InactiveBg,
+    tier2InactiveText,
+    tier2InactiveBorder,
 
     itemTitleText: readAdvancedColor(advanced, "itemTitleText"),
     itemDescriptionText: readAdvancedColor(advanced, "itemDescriptionText"),
@@ -290,8 +300,11 @@ export function resolveAdvancedMenuTheme(advanced: Partial<AdvancedTheme>): Reso
 
     carouselActiveIndicator: readAdvancedColor(advanced, "carouselActiveIndicator"),
     carouselInactiveDots: readAdvancedColor(advanced, "carouselInactiveDots"),
-    carouselArrowBg: readAdvancedColor(advanced, "carouselArrowBg"),
-    carouselArrowIcon: readAdvancedColor(advanced, "carouselArrowIcon"),
+    carouselArrowBg,
+    carouselArrowIcon:
+      typeof advanced.carouselArrowIcon === "string" && advanced.carouselArrowIcon.trim()
+        ? normalizeHexColor(advanced.carouselArrowIcon, contrastingTextColor(carouselArrowBg))
+        : contrastingTextColor(carouselArrowBg),
 
     footerTextIcon: readAdvancedColor(advanced, "footerTextIcon"),
     filterAreaBg: readAdvancedColor(advanced, "filterAreaBg"),
@@ -332,9 +345,16 @@ export function resolveMenuTheme(
   const menuBackground = pickColor(advanced, "menuBackground", mainBg);
   const footerBackground = pickColor(advanced, "footerBackground", footerBg);
 
-  const tier1ActiveBgDefault = contrastingTextColor(logoAreaBg);
-  const tier1ActiveTextDefault = logoAreaBg;
   const tier2ActiveBgDefault = pickColor(advanced, "tier2ActiveBg", accent);
+  const tier2ActiveTextDefault = contrastingTextColor(tier2ActiveBgDefault);
+  const stripContrast = contrastingTextColor(categoryBarBg);
+  const menuTextContrast = contrastingTextColor(menuBackground);
+  const carouselArrowBgDefault = pickColor(advanced, "carouselArrowBg", logoAreaBg);
+  const carouselArrowIconDefault = pickColor(
+    advanced,
+    "carouselArrowIcon",
+    contrastingTextColor(carouselArrowBgDefault)
+  );
 
   return {
     headerBackgroundColor: logoAreaBg,
@@ -354,36 +374,36 @@ export function resolveMenuTheme(
     logoAreaText: contrastingTextColor(logoAreaBg),
     categoryBarBg,
 
-    tier1ActiveBg: pickColor(advanced, "tier1ActiveBg", tier1ActiveBgDefault),
-    tier1ActiveText: pickColor(advanced, "tier1ActiveText", tier1ActiveTextDefault),
-    tier1ActiveBorder: pickColor(advanced, "tier1ActiveBorder", tier1ActiveBgDefault),
+    tier1ActiveBg: pickColor(advanced, "tier1ActiveBg", tier2ActiveBgDefault),
+    tier1ActiveText: pickColor(advanced, "tier1ActiveText", tier2ActiveTextDefault),
+    tier1ActiveBorder: pickColor(advanced, "tier1ActiveBorder", tier2ActiveBgDefault),
     tier1InactiveBg: pickColor(advanced, "tier1InactiveBg", "transparent"),
-    tier1InactiveText: pickColor(advanced, "tier1InactiveText", contrastingTextColor(logoAreaBg)),
-    tier1InactiveBorder: pickColor(advanced, "tier1InactiveBorder", contrastingTextColor(logoAreaBg)),
+    tier1InactiveText: pickColor(advanced, "tier1InactiveText", stripContrast),
+    tier1InactiveBorder: pickColor(advanced, "tier1InactiveBorder", stripContrast),
 
     tier2ActiveBg: tier2ActiveBgDefault,
-    tier2ActiveText: pickColor(advanced, "tier2ActiveText", contrastingTextColor(tier2ActiveBgDefault)),
+    tier2ActiveText: pickColor(advanced, "tier2ActiveText", tier2ActiveTextDefault),
     tier2ActiveBorder: pickColor(advanced, "tier2ActiveBorder", tier2ActiveBgDefault),
     tier2InactiveBg: pickColor(advanced, "tier2InactiveBg", "transparent"),
-    tier2InactiveText: pickColor(advanced, "tier2InactiveText", contrastingTextColor(categoryBarBg)),
-    tier2InactiveBorder: pickColor(advanced, "tier2InactiveBorder", contrastingTextColor(categoryBarBg)),
+    tier2InactiveText: pickColor(advanced, "tier2InactiveText", stripContrast),
+    tier2InactiveBorder: pickColor(advanced, "tier2InactiveBorder", stripContrast),
 
-    itemTitleText: pickColor(advanced, "itemTitleText", contrastingTextColor(menuBackground)),
+    itemTitleText: pickColor(advanced, "itemTitleText", menuTextContrast),
     itemDescriptionText: pickColor(
       advanced,
       "itemDescriptionText",
-      contrastingTextColor(menuBackground)
+      menuTextContrast
     ),
-    priceTextColor: pickColor(advanced, "priceTextColor", accent),
+    priceTextColor: pickColor(advanced, "priceTextColor", menuTextContrast),
 
     carouselActiveIndicator: pickColor(advanced, "carouselActiveIndicator", accent),
     carouselInactiveDots: pickColor(
       advanced,
       "carouselInactiveDots",
-      contrastingTextColor(menuBackground) === "#000000" ? "#00000033" : "#ffffff44"
+      menuTextContrast === "#000000" ? "#00000033" : "#ffffff44"
     ),
-    carouselArrowBg: pickColor(advanced, "carouselArrowBg", accent),
-    carouselArrowIcon: pickColor(advanced, "carouselArrowIcon", contrastingTextColor(accent)),
+    carouselArrowBg: carouselArrowBgDefault,
+    carouselArrowIcon: carouselArrowIconDefault,
 
     footerTextIcon: pickColor(advanced, "footerTextIcon", contrastingTextColor(footerBackground)),
     filterAreaBg: pickColor(advanced, "filterAreaBg", footerBackground),

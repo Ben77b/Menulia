@@ -13,6 +13,7 @@ export interface RestaurantSettingsForm {
   name: string;
   slug: string;
   originalSlug: string;
+  tagline: string;
   location: string;
   phone: string;
   email: string;
@@ -24,6 +25,7 @@ export interface RestaurantSettingsForm {
 export interface RestaurantSettingsRecord {
   name: string;
   slug: string;
+  tagline: string;
   location: string;
   hours: string;
   contact_info: string;
@@ -32,7 +34,7 @@ export interface RestaurantSettingsRecord {
 }
 
 const EXTENDED_PROFILE_COLUMNS =
-  "id, name, slug, location, hours, contact_info, footer_slogan, custom_links" as const;
+  "id, name, slug, meta_description, location, hours, contact_info, footer_slogan, custom_links" as const;
 
 const CORE_PROFILE_COLUMNS = "id, name, slug, location, hours, contact_info" as const;
 
@@ -104,6 +106,7 @@ export async function loadRestaurantSettings(
       return {
         name: coreData.name ?? "",
         slug: typeof coreData.slug === "string" ? coreData.slug : "",
+        tagline: "",
         location: coreData.location ?? "",
         hours: coreData.hours ?? "",
         contact_info: coreData.contact_info ?? "",
@@ -122,6 +125,7 @@ export async function loadRestaurantSettings(
   return {
     name: data.name ?? "",
     slug: typeof data.slug === "string" ? data.slug : "",
+    tagline: data.meta_description ?? "",
     location: data.location ?? "",
     hours: data.hours ?? "",
     contact_info: data.contact_info ?? "",
@@ -132,6 +136,7 @@ export async function loadRestaurantSettings(
 
 export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
   name: string;
+  meta_description: string;
   location: string;
   hours: string;
   contact_info: string;
@@ -145,6 +150,7 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
 
   const payload: {
     name: string;
+    meta_description: string;
     location: string;
     hours: string;
     contact_info: string;
@@ -154,6 +160,7 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
     slug?: string;
   } = {
     name: form.name.trim(),
+    meta_description: form.tagline.trim(),
     location: form.location.trim(),
     hours: compileHoursSchedule(form.scheduleBlocks),
     contact_info: formatContactInfo(form.phone, form.email),
@@ -200,4 +207,15 @@ export async function saveFullRestaurantSettings(
     normalizedSlug: slugUnchanged ? undefined : normalizedSlug,
     slugUnchanged,
   };
+}
+
+export async function deleteRestaurant(
+  supabase: SupabaseClient,
+  restaurantId: string
+): Promise<void> {
+  const { error } = await supabase.from("restaurants").delete().eq("id", restaurantId);
+
+  if (error) {
+    throw new Error(formatSchemaError(error));
+  }
 }

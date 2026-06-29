@@ -6,7 +6,6 @@ import type { PublicMenuParentCategory } from "@/lib/menu-hierarchy";
 
 interface NestedCategoryNavProps {
   menu: PublicMenuParentCategory[];
-  headerBackgroundColor: string;
   stripBackgroundColor: string;
   tier1ActiveBg: string;
   tier1ActiveText: string;
@@ -32,7 +31,6 @@ interface NestedCategoryNavProps {
 
 export function NestedCategoryNav({
   menu,
-  headerBackgroundColor,
   stripBackgroundColor,
   tier1ActiveBg,
   tier1ActiveText,
@@ -55,7 +53,6 @@ export function NestedCategoryNav({
   onParentChange,
   onSubcategoryChange,
 }: NestedCategoryNavProps) {
-  const tier1Text = contrastingTextColor(headerBackgroundColor);
   const tier2Text = contrastingTextColor(stripBackgroundColor);
   const categoryTypeStyle = {
     fontFamily: categoryFont,
@@ -82,13 +79,13 @@ export function NestedCategoryNav({
   if (menu.length === 0) return null;
 
   return (
-    <div className="w-full">
+    <div className="w-full" style={{ backgroundColor: stripBackgroundColor }}>
       {showTier1 && (
         <nav
           className="flex w-full flex-wrap items-center justify-center gap-2 px-4 py-4"
           style={{
-            backgroundColor: headerBackgroundColor,
-            color: tier1Text,
+            backgroundColor: stripBackgroundColor,
+            color: tier2Text,
             justifyContent: "center",
           }}
         >
@@ -127,7 +124,7 @@ export function NestedCategoryNav({
 
       {showTier2 && (
         <nav
-          className="flex w-full flex-wrap items-center justify-center gap-2 border-b border-black/5 px-4 py-4"
+          className="flex w-full flex-wrap items-center justify-center gap-2 border-b border-black/5 px-4 py-3"
           style={{
             backgroundColor: stripBackgroundColor,
             color: tier2Text,
