@@ -219,7 +219,8 @@ export function MenuBuilder() {
         draft.description,
         parseFloat(draft.price) || 0,
         draft.image_url,
-        draft.tags
+        draft.filterableTags,
+        draft.allergens
       );
       setSelectedDish(null);
       await loadMenu();

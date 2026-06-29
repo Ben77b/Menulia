@@ -36,7 +36,7 @@ export function LandingDemoCanvas() {
     <section
       id="demo"
       aria-labelledby="demo-heading"
-      className="border-b border-border bg-[#FAFAFA] py-28 md:py-32"
+      className="border-b border-border bg-[#FAFAFA] py-28 max-md:text-center md:py-32"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <ScrollReveal>
@@ -79,14 +79,14 @@ export function LandingDemoCanvas() {
 
             <div className="relative min-h-[220px] overflow-hidden rounded-2xl border border-border bg-white p-8 md:min-h-[260px] md:p-10">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(0,0,0,0.02),_transparent_55%)]" />
-              <div className="relative">
+              <div className="relative max-md:mx-auto max-md:text-center">
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
                   Active module
                 </p>
                 <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
                   {activeStep.title}
                 </h3>
-                <p className="mt-3 max-w-lg text-base leading-relaxed text-muted-foreground">
+                <p className="mx-auto mt-3 max-w-lg text-base leading-relaxed text-muted-foreground md:mx-0">
                   {activeStep.description}
                 </p>
               </div>

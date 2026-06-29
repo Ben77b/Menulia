@@ -1,42 +1,95 @@
-/** Canonical dietary badge / filter tags — single source for builder UI and public footer legend */
+/** Two-tier tag engine — filterable dietary tags vs informational allergens */
 
-export const DIETARY_TAG_OPTIONS = [
+export const FILTERABLE_TAG_OPTIONS = [
   { tag: "Vegan", icon: "🌱", label: "Vegan" },
   { tag: "Vegetarian", icon: "🥬", label: "Vegetarian" },
-  { tag: "Gluten-Free", icon: "🌾", label: "Gluten-Free" },
-  { tag: "Dairy-Free", icon: "🥛", label: "Dairy-Free" },
-  { tag: "Nut-Free", icon: "🥜", label: "Nut-Free" },
   { tag: "Spicy", icon: "🌶️", label: "Spicy" },
+  { tag: "Gluten-Free", icon: "🌾", label: "Gluten-Free" },
 ] as const;
 
 export const ALLERGEN_TAG_OPTIONS = [
   { tag: "Nuts", icon: "🥜", label: "Contains nuts" },
   { tag: "Dairy", icon: "🥛", label: "Contains dairy" },
-  { tag: "Gluten", icon: "🌾", label: "Contains gluten" },
   { tag: "Eggs", icon: "🥚", label: "Contains eggs" },
-  { tag: "Shellfish", icon: "🦐", label: "Contains shellfish" },
   { tag: "Soy", icon: "🫘", label: "Contains soy" },
+  { tag: "Shellfish", icon: "🦐", label: "Contains shellfish" },
   { tag: "Fish", icon: "🐟", label: "Contains fish" },
+  { tag: "Gluten", icon: "🌾", label: "Contains gluten" },
 ] as const;
 
-export type DietaryTag = (typeof DIETARY_TAG_OPTIONS)[number]["tag"];
+export type FilterableTag = (typeof FILTERABLE_TAG_OPTIONS)[number]["tag"];
 export type AllergenTag = (typeof ALLERGEN_TAG_OPTIONS)[number]["tag"];
-export type MenuTag = DietaryTag | AllergenTag;
 
-/** Tag strings for dish builder pickers */
-export const DIETARY_TAGS: readonly DietaryTag[] = DIETARY_TAG_OPTIONS.map((o) => o.tag);
+export const FILTERABLE_TAGS: readonly FilterableTag[] = FILTERABLE_TAG_OPTIONS.map((o) => o.tag);
 export const ALLERGEN_TAGS: readonly AllergenTag[] = ALLERGEN_TAG_OPTIONS.map((o) => o.tag);
 
-/** Legacy aliases used by filter bar */
-export const DIETARY_FILTERS = DIETARY_TAG_OPTIONS;
-export const ALLERGEN_FILTERS = ALLERGEN_TAG_OPTIONS;
+/** Public menu footer / filter bar — filterable tags only */
+export const FOOTER_FILTER_TAGS = FILTERABLE_TAG_OPTIONS;
 
-export const FOOTER_FILTER_TAGS = [...DIETARY_TAG_OPTIONS, ...ALLERGEN_TAG_OPTIONS];
+/** @deprecated Use FILTERABLE_TAG_OPTIONS */
+export const DIETARY_FILTERS = FILTERABLE_TAG_OPTIONS;
 
-export const DIETARY_ICONS: Record<string, { icon: string; label: string }> = Object.fromEntries(
-  FOOTER_FILTER_TAGS.map((entry) => [entry.tag, { icon: entry.icon, label: entry.label }])
+const FILTERABLE_SET = new Set<string>(FILTERABLE_TAGS);
+const ALLERGEN_SET = new Set<string>(ALLERGEN_TAGS);
+
+const FILTERABLE_META = Object.fromEntries(
+  FILTERABLE_TAG_OPTIONS.map((entry) => [entry.tag, { icon: entry.icon, label: entry.label }])
 );
 
+const ALLERGEN_META = Object.fromEntries(
+  ALLERGEN_TAG_OPTIONS.map((entry) => [entry.tag, { icon: entry.icon, label: entry.label }])
+);
+
+/** @deprecated Use FILTERABLE_TAGS */
+export const DIETARY_TAGS = FILTERABLE_TAGS;
+
+/** @deprecated Use FILTERABLE_TAG_OPTIONS */
+export const DIETARY_TAG_OPTIONS = FILTERABLE_TAG_OPTIONS;
+
+export function isFilterableTag(tag: string): tag is FilterableTag {
+  return FILTERABLE_SET.has(tag);
+}
+
+export function isAllergenTag(tag: string): tag is AllergenTag {
+  return ALLERGEN_SET.has(tag);
+}
+
+export function getFilterableTagMeta(tag: string): { icon: string; label: string } {
+  return FILTERABLE_META[tag] ?? { icon: "🏷️", label: tag };
+}
+
+export function getAllergenTagMeta(tag: string): { icon: string; label: string } {
+  return ALLERGEN_META[tag] ?? { icon: "⚠️", label: tag };
+}
+
 export function getTagMeta(tag: string): { icon: string; label: string } {
-  return DIETARY_ICONS[tag] ?? { icon: "🏷️", label: tag };
+  if (isFilterableTag(tag)) return getFilterableTagMeta(tag);
+  if (isAllergenTag(tag)) return getAllergenTagMeta(tag);
+  return { icon: "🏷️", label: tag };
+}
+
+/** Split legacy combined `tags` arrays and merge with stored allergens */
+export function normalizeDishTagFields(
+  rawTags: string[] | null | undefined,
+  rawAllergens: string[] | null | undefined = []
+): { tags: FilterableTag[]; allergens: AllergenTag[] } {
+  const tags = new Set<FilterableTag>();
+  const allergens = new Set<AllergenTag>();
+
+  for (const tag of rawAllergens ?? []) {
+    if (isAllergenTag(tag)) allergens.add(tag);
+  }
+
+  for (const tag of rawTags ?? []) {
+    if (isFilterableTag(tag)) {
+      tags.add(tag);
+    } else if (isAllergenTag(tag)) {
+      allergens.add(tag);
+    }
+  }
+
+  return {
+    tags: FILTERABLE_TAGS.filter((tag) => tags.has(tag)),
+    allergens: ALLERGEN_TAGS.filter((tag) => allergens.has(tag)),
+  };
 }

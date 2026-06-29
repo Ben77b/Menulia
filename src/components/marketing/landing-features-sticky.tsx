@@ -32,11 +32,11 @@ export function LandingFeaturesSticky() {
     <section
       id="features"
       aria-labelledby="features-heading"
-      className="border-b border-border bg-white"
-    >
-      <div className="mx-auto max-w-6xl px-4 py-28 sm:px-6 md:py-32">
-        <div className="grid gap-16 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] lg:gap-20">
-          <div className="lg:sticky lg:top-28 lg:self-start">
+        className="border-b border-border bg-white py-28 max-md:text-center md:py-32"
+      >
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid gap-16 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] lg:gap-20">
+          <div className="max-md:mx-auto max-md:text-center lg:sticky lg:top-28 lg:self-start">
             <ScrollReveal direction="fade">
               <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 Platform
@@ -47,7 +47,7 @@ export function LandingFeaturesSticky() {
               >
                 The Blueprint of <span className="air-display-serif">Taste</span>
               </h2>
-              <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
+              <p className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-muted-foreground md:mx-0">
                 Structure, design, and preview — three pillars that turn your menu from a static
                 document into a living guest experience.
               </p>
@@ -57,8 +57,8 @@ export function LandingFeaturesSticky() {
           <div className="flex flex-col gap-8 md:gap-12 lg:py-8">
             {FEATURES.map((feature, index) => (
               <ScrollReveal key={feature.title} delay={index * 100}>
-                <article className="air-card air-card-pad flex min-h-[240px] flex-col justify-center transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] md:min-h-[280px]">
-                  <div className="mb-6 flex items-center justify-between">
+                <article className="air-card air-card-pad flex min-h-[240px] flex-col justify-center transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] max-md:items-center max-md:text-center md:min-h-[280px]">
+                  <div className="mb-6 flex w-full items-center justify-between max-md:max-w-xs max-md:justify-center">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-white">
                       <feature.icon className="h-5 w-5 text-slate-900" aria-hidden />
                     </div>
@@ -69,7 +69,7 @@ export function LandingFeaturesSticky() {
                   <h3 className="text-xl font-semibold tracking-tight text-slate-900">
                     {feature.title}
                   </h3>
-                  <p className="mt-3 max-w-md text-base leading-relaxed text-muted-foreground">
+                  <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-muted-foreground md:mx-0">
                     {feature.description}
                   </p>
                 </article>

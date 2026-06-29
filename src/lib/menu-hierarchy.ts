@@ -21,6 +21,8 @@ export interface PublicMenuParentCategory {
   subcategories: PublicMenuSubcategory[];
 }
 
+import { normalizeDishTagFields } from "@/lib/dietary-tags";
+
 export function mapDishRow(dish: {
   id: string;
   name: string;
@@ -28,14 +30,17 @@ export function mapDishRow(dish: {
   price?: string | number | null;
   image?: string | null;
   tags?: string[] | null;
+  allergens?: string[] | null;
 }): PublicMenuDish {
+  const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
   return {
     id: dish.id,
     name: dish.name,
     description: dish.description || "",
     price: typeof dish.price === "number" ? dish.price : parseFloat(String(dish.price)) || 0,
     image: dish.image ?? null,
-    tags: Array.isArray(dish.tags) ? dish.tags : [],
+    tags: normalized.tags,
+    allergens: normalized.allergens,
   };
 }
 

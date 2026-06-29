@@ -21,8 +21,14 @@ function normalizeRestaurantSlug(rawSlug: string): string {
   return normalized;
 }
 
+import { normalizeDishTagFields } from "./dietary-tags";
+
 function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
   const price = dish.price;
+  const normalized = normalizeDishTagFields(
+    dish.tags as string[] | undefined,
+    dish.allergens as string[] | undefined
+  );
   return {
     id: dish.id as string,
     category_id: dish.category_id as string,
@@ -30,9 +36,9 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
     description: (dish.description as string) || "",
     price: typeof price === "number" ? price : parseFloat(String(price)) || 0,
     image_url: (dish.image as string) ?? null,
-    allergens: [],
+    allergens: normalized.allergens,
     is_available: true,
-    tags: (dish.tags as string[]) || [],
+    tags: normalized.tags,
     translations: [],
   };
 }

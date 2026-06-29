@@ -5,14 +5,19 @@ import { Upload, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { MenuBuilderDish } from "@/lib/menu-builder-types";
-import { ALLERGEN_TAGS, DIETARY_TAGS } from "@/lib/dietary-tags";
+import {
+  ALLERGEN_TAG_OPTIONS,
+  FILTERABLE_TAG_OPTIONS,
+  normalizeDishTagFields,
+} from "@/lib/dietary-tags";
 
 export interface DishDetailDraft {
   name: string;
   description: string;
   price: string;
   image_url: string | null;
-  tags: string[];
+  filterableTags: string[];
+  allergens: string[];
 }
 
 interface DishDetailSheetProps {
@@ -39,27 +44,39 @@ export function DishDetailSheet({
     description: "",
     price: "",
     image_url: null,
-    tags: [],
+    filterableTags: [],
+    allergens: [],
   });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open || !dish) return;
+    const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
     setDraft({
       name: dish.name,
       description: dish.description,
       price: String(dish.price),
       image_url: dish.image_url,
-      tags: dish.tags,
+      filterableTags: normalized.tags,
+      allergens: normalized.allergens,
     });
   }, [open, dish]);
 
-  function toggleTag(tag: string) {
+  function toggleFilterableTag(tag: string) {
     setDraft((prev) => ({
       ...prev,
-      tags: prev.tags.includes(tag)
-        ? prev.tags.filter((t) => t !== tag)
-        : [...prev.tags, tag],
+      filterableTags: prev.filterableTags.includes(tag)
+        ? prev.filterableTags.filter((t) => t !== tag)
+        : [...prev.filterableTags, tag],
+    }));
+  }
+
+  function toggleAllergen(tag: string) {
+    setDraft((prev) => ({
+      ...prev,
+      allergens: prev.allergens.includes(tag)
+        ? prev.allergens.filter((t) => t !== tag)
+        : [...prev.allergens, tag],
     }));
   }
 
@@ -174,16 +191,19 @@ export function DishDetailSheet({
           </div>
 
           <div>
-            <label className="air-label">Dietary tags</label>
+            <label className="air-label">Filterable tags</label>
+            <p className="air-helper mb-3">
+              Guests can filter the menu by these four options.
+            </p>
             <div className="flex flex-wrap gap-2">
-              {DIETARY_TAGS.map((tag) => (
+              {FILTERABLE_TAG_OPTIONS.map(({ tag }) => (
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => toggleTag(tag)}
+                  onClick={() => toggleFilterableTag(tag)}
                   className={cn(
                     "rounded-full border px-3 py-1 text-xs font-medium",
-                    draft.tags.includes(tag)
+                    draft.filterableTags.includes(tag)
                       ? "border-slate-300 bg-[#F5F5F7] text-slate-900"
                       : "border-[#E5E5EA] text-[#86868B]"
                   )}
@@ -196,20 +216,23 @@ export function DishDetailSheet({
 
           <div>
             <label className="air-label">Allergens</label>
+            <p className="air-helper mb-3">
+              Informational only — shown on dish cards, not used for menu filtering.
+            </p>
             <div className="flex flex-wrap gap-2">
-              {ALLERGEN_TAGS.map((tag) => (
+              {ALLERGEN_TAG_OPTIONS.map(({ tag, label }) => (
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => toggleTag(tag)}
+                  onClick={() => toggleAllergen(tag)}
                   className={cn(
                     "rounded-full border px-3 py-1 text-xs font-medium",
-                    draft.tags.includes(tag)
-                      ? "border-amber-200 bg-amber-50 text-amber-800"
+                    draft.allergens.includes(tag)
+                      ? "border-slate-300 bg-[#F5F5F7] text-slate-900"
                       : "border-border text-muted-foreground"
                   )}
                 >
-                  {tag}
+                  {label}
                 </button>
               ))}
             </div>

@@ -60,7 +60,7 @@ export default function LandingPage() {
           <div
             className="w-full rounded-[32px] bg-slate-900 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.14)] md:p-12 lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:p-14 xl:gap-16"
           >
-            <div className="flex flex-col justify-center text-left">
+            <div className="flex flex-col items-center justify-center text-center md:items-start md:text-left">
               <h1
                 id="hero-heading"
                 className="text-5xl font-extrabold tracking-tighter text-white md:text-6xl lg:text-7xl lg:leading-[1.02]"
@@ -68,11 +68,11 @@ export default function LandingPage() {
                 Menus with main{" "}
                 <span className="air-display-serif">character</span> energy
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70 md:mt-8 md:text-xl">
+              <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/70 md:mx-0 md:mt-8 md:text-xl">
                 Replace the PDF with a mobile-first menu your guests actually enjoy — built,
                 styled, and previewed in the same workspace your team trusts every day.
               </p>
-              <div className="mt-9 flex flex-wrap items-center gap-2 md:mt-10">
+              <div className="mt-9 flex flex-wrap items-center justify-center gap-2 md:mt-10 md:justify-start">
                 <Link href="/signup">
                   <Button variant="light">Start free</Button>
                 </Link>
@@ -96,7 +96,7 @@ export default function LandingPage() {
       <section
         id="pricing"
         aria-labelledby="pricing-heading"
-        className="border-b border-border bg-white py-28 md:py-32"
+        className="border-b border-border bg-white py-28 max-md:text-center md:py-32"
       >
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <header className="mx-auto max-w-2xl text-center">
@@ -123,7 +123,7 @@ export default function LandingPage() {
                 }`}
               >
                 {plan.featured && (
-                  <span className="mb-5 inline-flex w-fit rounded-full bg-slate-900 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white">
+                  <span className="mb-5 inline-flex w-fit rounded-full bg-slate-900 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white max-md:mx-auto">
                     Most popular
                   </span>
                 )}
@@ -141,7 +141,7 @@ export default function LandingPage() {
                 </p>
                 <ul className="mt-8 flex-1 space-y-3">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3 text-sm text-slate-800">
+                    <li key={feature} className="flex items-start justify-center gap-3 text-sm text-slate-800 md:justify-start">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-slate-900" aria-hidden />
                       {feature}
                     </li>

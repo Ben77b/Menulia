@@ -1,3 +1,4 @@
+import { normalizeDishTagFields } from "./dietary-tags";
 import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
 
@@ -17,6 +18,7 @@ export interface MenuDishRecord {
   price: number;
   image_url: string | null;
   tags: string[];
+  allergens: string[];
   is_available: boolean;
 }
 
@@ -55,15 +57,19 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
         layout_type: category.layout_type ?? "stacked",
         order_index: category.order_index ?? 0,
         parent_id: category.parent_id ?? null,
-        items: (dishes ?? []).map((dish) => ({
-          id: dish.id,
-          name: dish.name,
-          description: dish.description ?? "",
-          price: parseFloat(String(dish.price)) || 0,
-          image_url: dish.image ?? null,
-          tags: dish.tags ?? [],
-          is_available: true,
-        })),
+        items: (dishes ?? []).map((dish) => {
+          const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
+          return {
+            id: dish.id,
+            name: dish.name,
+            description: dish.description ?? "",
+            price: parseFloat(String(dish.price)) || 0,
+            image_url: dish.image ?? null,
+            tags: normalized.tags,
+            allergens: normalized.allergens,
+            is_available: true,
+          };
+        }),
       };
     })
   );
@@ -134,9 +140,11 @@ export async function createMenuDish(
   description: string,
   price: number,
   image: string | null = null,
-  tags: string[] = []
+  tags: string[] = [],
+  allergens: string[] = []
 ): Promise<MenuDishRecord> {
   const supabase = getSupabaseBrowserClient();
+  const normalized = normalizeDishTagFields(tags, allergens);
 
   const { data, error } = await supabase
     .from("dishes")
@@ -146,7 +154,8 @@ export async function createMenuDish(
       description: description.trim(),
       price: String(price),
       image,
-      tags,
+      tags: normalized.tags,
+      allergens: normalized.allergens,
     })
     .select("*")
     .single();
@@ -156,13 +165,16 @@ export async function createMenuDish(
     throw error ?? new Error("Dish insert failed.");
   }
 
+  const saved = normalizeDishTagFields(data.tags, data.allergens);
+
   return {
     id: data.id,
     name: data.name,
     description: data.description ?? "",
     price: parseFloat(String(data.price)) || 0,
     image_url: data.image ?? null,
-    tags: data.tags ?? [],
+    tags: saved.tags,
+    allergens: saved.allergens,
     is_available: true,
   };
 }
@@ -173,9 +185,11 @@ export async function updateMenuDish(
   description: string,
   price: number,
   image: string | null = null,
-  tags: string[] = []
+  tags: string[] = [],
+  allergens: string[] = []
 ): Promise<void> {
   const supabase = getSupabaseBrowserClient();
+  const normalized = normalizeDishTagFields(tags, allergens);
 
   const { error } = await supabase
     .from("dishes")
@@ -184,7 +198,8 @@ export async function updateMenuDish(
       description: description.trim(),
       price: String(price),
       image,
-      tags,
+      tags: normalized.tags,
+      allergens: normalized.allergens,
     })
     .eq("id", dishId);
 

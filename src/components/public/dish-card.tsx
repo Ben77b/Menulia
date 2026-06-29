@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
-import { getTagMeta } from "@/lib/dietary-tags";
+import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 
 export interface PublicMenuDish {
@@ -11,7 +11,10 @@ export interface PublicMenuDish {
   description: string;
   price: number;
   image: string | null;
+  /** Filterable dietary tags — used by public menu filters */
   tags: string[];
+  /** Informational allergen indicators — display only */
+  allergens: string[];
 }
 
 interface DishCardProps {
@@ -30,6 +33,40 @@ interface DishCardProps {
   layout?: "carousel" | "stacked";
   compact?: boolean;
   imageClassName?: string;
+}
+
+function TagBadge({
+  icon,
+  label,
+  textColor,
+  bodyFont,
+  bodyFontWeight,
+  bodyFontStyle,
+  subdued = false,
+}: {
+  icon: string;
+  label: string;
+  textColor: string;
+  bodyFont: string;
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
+  subdued?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${subdued ? "opacity-80" : ""}`}
+      style={{
+        color: textColor,
+        border: `1px solid ${textColor}`,
+        fontFamily: bodyFont,
+        fontWeight: bodyFontWeight ?? 400,
+        fontStyle: bodyFontStyle ?? "normal",
+      }}
+    >
+      {icon && <span>{icon}</span>}
+      {label}
+    </span>
+  );
 }
 
 export function DishCard({
@@ -94,25 +131,35 @@ export function DishCard({
           {dish.description}
         </p>
       )}
-      {display.showDietary && dish.tags.length > 0 && (
+      {display.showDietary && (dish.tags.length > 0 || dish.allergens.length > 0) && (
         <div className="flex flex-wrap justify-center gap-2">
           {dish.tags.map((tag) => {
-            const meta = getTagMeta(tag);
+            const meta = getFilterableTagMeta(tag);
             return (
-              <span
+              <TagBadge
                 key={tag}
-                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
-                style={{
-                  color: resolvedTitle,
-                  border: `1px solid ${resolvedTitle}`,
-                  fontFamily: bodyFont,
-                  fontWeight: bodyFontWeight ?? 400,
-                  fontStyle: bodyFontStyle ?? "normal",
-                }}
-              >
-                {meta.icon && <span>{meta.icon}</span>}
-                {meta.label}
-              </span>
+                icon={meta.icon}
+                label={meta.label}
+                textColor={resolvedTitle}
+                bodyFont={bodyFont}
+                bodyFontWeight={bodyFontWeight}
+                bodyFontStyle={bodyFontStyle}
+              />
+            );
+          })}
+          {dish.allergens.map((allergen) => {
+            const meta = getAllergenTagMeta(allergen);
+            return (
+              <TagBadge
+                key={allergen}
+                icon={meta.icon}
+                label={meta.label}
+                textColor={resolvedTitle}
+                bodyFont={bodyFont}
+                bodyFontWeight={bodyFontWeight}
+                bodyFontStyle={bodyFontStyle}
+                subdued
+              />
             );
           })}
         </div>

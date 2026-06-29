@@ -54,10 +54,11 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    background-color: #ffffff;
   }
 
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    @apply bg-white font-sans text-foreground antialiased;
   }
 
   .air-dashboard,
