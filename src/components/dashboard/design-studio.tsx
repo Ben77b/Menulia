@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useDesign } from "@/contexts/design-context";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -32,6 +31,7 @@ import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { cn } from "@/lib/utils";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
+import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
 
 type StudioTab = "menu" | "colours" | "fonts" | "display" | "logo-seo";
 
@@ -127,6 +127,13 @@ export function DesignStudio() {
   );
 
   useEffect(() => {
+    if (activeTab !== "menu") {
+      setColorPopover(null);
+      setActiveHotspot(null);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
     if (!currentRestaurant?.id) return;
 
     fetchPublicMenuData(currentRestaurant.id).then((data) => {
@@ -143,7 +150,7 @@ export function DesignStudio() {
     if (!container) return;
 
     const containerRect = container.getBoundingClientRect();
-    const popoverWidth = 224;
+    const popoverWidth = 320;
     const left = Math.min(
       Math.max(anchor.right - containerRect.left + 8, 8),
       containerRect.width - popoverWidth - 8
@@ -252,7 +259,9 @@ export function DesignStudio() {
     display: displayOptions,
   };
 
-  const publicMenuUrl = currentRestaurant?.slug ? `/menu/${currentRestaurant.slug}` : null;
+  const publicMenuUrl = currentRestaurant?.slug
+    ? publicMenuAbsoluteUrl(currentRestaurant.slug)
+    : null;
 
   const activePopoverGroup = colorPopover ? getHotspotGroup(colorPopover.hotspot) : null;
 
@@ -267,14 +276,14 @@ export function DesignStudio() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {publicMenuUrl && (
-            <Link
+            <a
               href={publicMenuUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
             >
               🔗 View Public Menu
-            </Link>
+            </a>
           )}
           <Button
             size="lg"

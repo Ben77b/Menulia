@@ -19,6 +19,15 @@ interface ThemeHotspotPopoverProps {
   onClose: () => void;
 }
 
+function isHotspotTrigger(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest('[class*="group/hotspot"]') ||
+      target.closest('[aria-label^="Edit "]') ||
+      target.closest('input[type="color"]')
+  );
+}
+
 export function ThemeHotspotPopover({
   group,
   parentColor,
@@ -33,15 +42,37 @@ export function ThemeHotspotPopover({
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
-    function handlePointerDown(event: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+    setAdvancedOpen(false);
+  }, [group.hotspot]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
         onClose();
       }
     }
 
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target;
+      if (popoverRef.current?.contains(target as Node)) return;
+      if (isHotspotTrigger(target)) return;
+      onClose();
+    }
+
+    document.addEventListener("click", handleClickOutside, true);
+    return () => document.removeEventListener("click", handleClickOutside, true);
+  }, [onClose]);
+
+  const handleDone = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    onClose();
+  };
 
   return (
     <div
@@ -52,18 +83,23 @@ export function ThemeHotspotPopover({
       )}
       style={{ top: position.top, left: position.left }}
       role="dialog"
+      aria-modal="true"
       aria-label={`Edit ${group.title} colours`}
+      onMouseDown={(event) => event.stopPropagation()}
     >
       <div className="flex items-start justify-between gap-2 border-b border-gray-100 px-4 py-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Edit colours</p>
           <p className="text-sm font-semibold text-gray-900">{group.title}</p>
+          <p className="mt-0.5 text-[11px] text-gray-500">
+            Changes apply instantly to the preview. Parent colour resets fine-tuned children.
+          </p>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Close"
+          aria-label="Close colour editor"
         >
           <X className="h-4 w-4" />
         </button>
@@ -117,7 +153,7 @@ export function ThemeHotspotPopover({
       )}
 
       <div className="px-4 py-3">
-        <Button size="sm" className="w-full" onClick={onClose}>
+        <Button type="button" size="sm" className="w-full" onClick={handleDone}>
           Done
         </Button>
       </div>

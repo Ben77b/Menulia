@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  ReactNode,
+} from "react";
 import {
   DEFAULT_DESIGN,
   designFromRestaurant,
@@ -18,7 +26,7 @@ import {
 } from "@/lib/theme-color-fields";
 import {
   clearChildOverride,
-  clearGroupChildOverrides,
+  clearGroupsSharingParentField,
   getEffectiveChildColor,
   getGroupParentColor,
   getHotspotGroup,
@@ -61,12 +69,36 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const [themeOverrides, setThemeOverridesState] = useState<Set<string>>(new Set());
   const { currentRestaurant } = useRestaurant();
 
+  const advancedThemeRef = useRef(advancedTheme);
+  const themeOverridesRef = useRef(themeOverrides);
+  advancedThemeRef.current = advancedTheme;
+  themeOverridesRef.current = themeOverrides;
+
+  const commitThemeLayers = useCallback(
+    (next: {
+      advanced?: Partial<AdvancedTheme>;
+      overrides?: Set<string>;
+    }) => {
+      if (next.advanced !== undefined) {
+        advancedThemeRef.current = next.advanced;
+        setAdvancedThemeState(next.advanced);
+      }
+      if (next.overrides !== undefined) {
+        themeOverridesRef.current = next.overrides;
+        setThemeOverridesState(next.overrides);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
     const restaurantId = currentRestaurant?.id;
     if (!restaurantId) {
       setDesignState(DEFAULT_DESIGN);
       setAdvancedThemeState({});
       setThemeOverridesState(new Set());
+      advancedThemeRef.current = {};
+      themeOverridesRef.current = new Set();
       return;
     }
 
@@ -102,11 +134,15 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         try {
           setDesignState(designFromRestaurant(data));
           const { theme, overrides } = splitAdvancedThemeStorage(data.advanced_theme);
+          advancedThemeRef.current = theme;
+          themeOverridesRef.current = overrides;
           setAdvancedThemeState(theme);
           setThemeOverridesState(overrides);
         } catch (loadError) {
           console.error("Failed to parse restaurant design:", loadError);
           setDesignState(DEFAULT_DESIGN);
+          advancedThemeRef.current = {};
+          themeOverridesRef.current = new Set();
           setAdvancedThemeState({});
           setThemeOverridesState(new Set());
         }
@@ -121,7 +157,11 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateAdvancedTheme = useCallback((updates: Partial<AdvancedTheme>) => {
-    setAdvancedThemeState((prev) => ({ ...prev, ...updates }));
+    setAdvancedThemeState((prev) => {
+      const next = { ...prev, ...updates };
+      advancedThemeRef.current = next;
+      return next;
+    });
   }, []);
 
   const basicColors = themeColorsFromDesign(design);
@@ -150,19 +190,23 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       const affectedGroups = groupsForBasicField(fieldId);
       if (affectedGroups.length === 0) return;
 
-      let nextAdvanced = { ...advancedTheme };
-      let nextOverrides = new Set(themeOverrides);
+      const parentFields = new Set(affectedGroups.map((group) => group.parentBasicField));
+      let nextAdvanced = { ...advancedThemeRef.current };
+      let nextOverrides = new Set(themeOverridesRef.current);
 
-      for (const group of affectedGroups) {
-        const cleared = clearGroupChildOverrides(group, nextAdvanced, nextOverrides);
+      for (const parentField of parentFields) {
+        const cleared = clearGroupsSharingParentField(
+          parentField,
+          nextAdvanced,
+          nextOverrides
+        );
         nextAdvanced = cleared.advanced;
         nextOverrides = cleared.overrides;
       }
 
-      setAdvancedThemeState(nextAdvanced);
-      setThemeOverridesState(nextOverrides);
+      commitThemeLayers({ advanced: nextAdvanced, overrides: nextOverrides });
     },
-    [advancedTheme, themeOverrides, updateDesign]
+    [commitThemeLayers, updateDesign]
   );
 
   const setColorValue = useCallback(
@@ -175,13 +219,12 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       const result = setChildOverride(
         fieldId,
         value,
-        advancedTheme,
-        themeOverrides
+        advancedThemeRef.current,
+        themeOverridesRef.current
       );
-      setAdvancedThemeState(result.advanced);
-      setThemeOverridesState(result.overrides);
+      commitThemeLayers({ advanced: result.advanced, overrides: result.overrides });
     },
-    [advancedTheme, themeOverrides, applyBasicColorWithInheritance]
+    [applyBasicColorWithInheritance, commitThemeLayers]
   );
 
   const getHotspotGroupFn = useCallback((hotspot: ThemeHotspotId) => {
@@ -198,12 +241,16 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const setGroupParentColorFn = useCallback(
     (hotspot: ThemeHotspotId, color: string) => {
       const group = getHotspotGroup(hotspot);
-      const result = setGroupParentColor(group, color, advancedTheme, themeOverrides);
+      const result = setGroupParentColor(
+        group,
+        color,
+        advancedThemeRef.current,
+        themeOverridesRef.current
+      );
       updateDesign(result.designPatch);
-      setAdvancedThemeState(result.advanced);
-      setThemeOverridesState(result.overrides);
+      commitThemeLayers({ advanced: result.advanced, overrides: result.overrides });
     },
-    [advancedTheme, themeOverrides, updateDesign]
+    [commitThemeLayers, updateDesign]
   );
 
   const getChildColorFn = useCallback(
@@ -215,11 +262,15 @@ export function DesignProvider({ children }: { children: ReactNode }) {
 
   const setChildColorFn = useCallback(
     (fieldId: keyof AdvancedTheme, color: string) => {
-      const result = setChildOverride(fieldId, color, advancedTheme, themeOverrides);
-      setAdvancedThemeState(result.advanced);
-      setThemeOverridesState(result.overrides);
+      const result = setChildOverride(
+        fieldId,
+        color,
+        advancedThemeRef.current,
+        themeOverridesRef.current
+      );
+      commitThemeLayers({ advanced: result.advanced, overrides: result.overrides });
     },
-    [advancedTheme, themeOverrides]
+    [commitThemeLayers]
   );
 
   const isChildOverriddenFn = useCallback(
@@ -229,11 +280,14 @@ export function DesignProvider({ children }: { children: ReactNode }) {
 
   const clearChildOverrideFn = useCallback(
     (fieldId: keyof AdvancedTheme) => {
-      const result = clearChildOverride(fieldId, advancedTheme, themeOverrides);
-      setAdvancedThemeState(result.advanced);
-      setThemeOverridesState(result.overrides);
+      const result = clearChildOverride(
+        fieldId,
+        advancedThemeRef.current,
+        themeOverridesRef.current
+      );
+      commitThemeLayers({ advanced: result.advanced, overrides: result.overrides });
     },
-    [advancedTheme, themeOverrides]
+    [commitThemeLayers]
   );
 
   const setDesign = useCallback((newDesign: RestaurantDesign) => {
@@ -241,10 +295,12 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setAdvancedTheme = useCallback((theme: Partial<AdvancedTheme>) => {
+    advancedThemeRef.current = theme;
     setAdvancedThemeState(theme);
   }, []);
 
   const setThemeOverrides = useCallback((overrides: Set<string>) => {
+    themeOverridesRef.current = overrides;
     setThemeOverridesState(overrides);
   }, []);
 

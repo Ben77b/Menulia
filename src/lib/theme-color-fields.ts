@@ -48,7 +48,12 @@ export function hotspotFieldForMode(
   hotspot: ThemeHotspotId,
   mode: ThemeMode
 ): ThemeColorFieldId {
-  return mode === "advanced" ? HOTSPOT_PRIMARY_PICKER[hotspot] : HOTSPOT_BASIC_PICKER[hotspot];
+  const field =
+    mode === "advanced" ? HOTSPOT_PRIMARY_PICKER[hotspot] : HOTSPOT_BASIC_PICKER[hotspot];
+  if (field === "mainContentBg") {
+    return "mainContentBackgroundColor";
+  }
+  return field as ThemeColorFieldId;
 }
 
 export function readBasicColor(design: RestaurantDesign, field: BasicColorField): string {
@@ -76,8 +81,9 @@ export function writeBasicColorPatch(
   const normalized = normalizeHexColor(value, "#ffffff");
   switch (field) {
     case "headerNavBg":
-    case "headerBackgroundColor":
       return { headerBackgroundColor: normalized, footerBackgroundColor: normalized };
+    case "headerBackgroundColor":
+      return { headerBackgroundColor: normalized };
     case "categoryStripBackgroundColor":
       return { categoryStripBackgroundColor: normalized };
     case "categoryAccentColor":

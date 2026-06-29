@@ -303,6 +303,24 @@ export function groupsForBasicField(field: BasicColorField): ThemeHotspotGroup[]
   return THEME_HOTSPOT_GROUPS.filter((group) => hotspotIds.includes(group.hotspot));
 }
 
+export function clearGroupsSharingParentField(
+  parentField: BasicColorField,
+  advanced: Partial<AdvancedTheme>,
+  overrides: Set<string>
+): { advanced: Partial<AdvancedTheme>; overrides: Set<string> } {
+  let nextAdvanced = { ...advanced };
+  let nextOverrides = new Set(overrides);
+
+  for (const group of THEME_HOTSPOT_GROUPS) {
+    if (group.parentBasicField !== parentField) continue;
+    const cleared = clearGroupChildOverrides(group, nextAdvanced, nextOverrides);
+    nextAdvanced = cleared.advanced;
+    nextOverrides = cleared.overrides;
+  }
+
+  return { advanced: nextAdvanced, overrides: nextOverrides };
+}
+
 export function clearGroupChildOverrides(
   group: ThemeHotspotGroup,
   advanced: Partial<AdvancedTheme>,
@@ -346,7 +364,7 @@ export function setGroupParentColor(
 } {
   const normalized = normalizeHexColor(color, "#ffffff");
   const designPatch = writeBasicColorPatch(group.parentBasicField, normalized);
-  const cleared = clearGroupChildOverrides(group, advanced, overrides);
+  const cleared = clearGroupsSharingParentField(group.parentBasicField, advanced, overrides);
 
   return {
     designPatch,

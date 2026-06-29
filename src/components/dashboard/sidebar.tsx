@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
+import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -201,7 +202,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
             {currentRestaurant?.slug && (
               <a
-                href={`https://menulia.net/menu/${currentRestaurant.slug}`}
+                href={publicMenuAbsoluteUrl(currentRestaurant.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"

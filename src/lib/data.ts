@@ -1,7 +1,7 @@
 import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
 import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { RestaurantCreationError, logSupabaseFailure } from "./auth/errors";
+import { RestaurantCreationError, formatSupabaseError, logSupabaseFailure } from "./auth/errors";
 import { ensureUserProfileReady } from "./auth/session";
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
@@ -39,7 +39,7 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
 
 function normalizeRestaurantRow(row: Record<string, unknown>): Restaurant {
   return {
-    ...(row as Restaurant),
+    ...(row as unknown as Restaurant),
     logo: (row.logo as string | null) ?? (row.logo_url as string | null) ?? null,
   };
 }
@@ -236,7 +236,7 @@ export async function createRestaurant(input: CreateRestaurantInput): Promise<Cr
 
     if (userError) {
       console.dir(userError, { depth: null });
-      throw new RestaurantCreationError(userError, "auth");
+      throw new Error(formatSupabaseError(userError));
     }
 
     if (!user?.id) {
