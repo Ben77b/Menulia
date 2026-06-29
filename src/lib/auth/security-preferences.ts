@@ -14,7 +14,7 @@ const EMAIL_VERIFICATION_BANNER =
 export { EMAIL_VERIFICATION_BANNER };
 
 function isMissingSchemaError(code: string | undefined): boolean {
-  return code === "42P01" || code === "42703";
+  return code === "42P01" || code === "42703" || code === "PGRST204";
 }
 
 export function normalizeSecurityPreferences(value: unknown): SecurityPreferences {

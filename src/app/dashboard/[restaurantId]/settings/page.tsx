@@ -38,6 +38,7 @@ import {
   saveFullRestaurantSettings,
 } from "@/lib/restaurant-settings";
 import { MAX_CUSTOM_LINKS, MAX_LINK_LABEL_LENGTH } from "@/lib/menu-limits";
+import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 
 interface CustomLink {
   id: string;
@@ -56,7 +57,7 @@ const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const { currentRestaurant, refreshRestaurants, loading: restaurantsLoading } = useRestaurant();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [scheduleBlocks, setScheduleBlocks] = useState<HoursScheduleBlock[]>(defaultScheduleBlocks());
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
@@ -132,10 +133,10 @@ export default function SettingsPage() {
       setFooterSlogan(data.footer_slogan);
 
       setCustomLinks(
-        data.custom_links.map((link) => ({
+        (data.custom_links ?? []).map((link) => ({
           id: link.id,
-          label: link.label,
-          url: link.url,
+          label: link.label ?? "",
+          url: link.url ?? "",
         }))
       );
     } catch (error) {
@@ -271,6 +272,22 @@ export default function SettingsPage() {
     } finally {
       setDeleting(false);
     }
+  }
+
+  if (restaurantsLoading) {
+    return (
+      <div className="air-page mx-auto max-w-3xl py-12 text-center text-muted-foreground">
+        Loading settings…
+      </div>
+    );
+  }
+
+  if (!currentRestaurant?.id) {
+    return (
+      <div className="air-page mx-auto max-w-3xl py-12 text-center text-muted-foreground">
+        Select a restaurant to manage settings.
+      </div>
+    );
   }
 
   return (
@@ -556,7 +573,9 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <SettingsMenuPreview restaurantId={currentRestaurant?.id} live={livePreview} />
+        <ClientErrorBoundary title="Preview failed to load">
+          <SettingsMenuPreview restaurantId={currentRestaurant.id} live={livePreview} />
+        </ClientErrorBoundary>
       </div>
 
       {deleteModalOpen && currentRestaurant && (

@@ -137,9 +137,9 @@ export function DishCard({
           {dish.description}
         </p>
       )}
-      {display.showDietary && dish.tags.length > 0 && (
+      {display.showDietary && (dish.tags ?? []).length > 0 && (
         <div className="flex flex-wrap justify-center gap-2">
-          {dish.tags.map((tag) => {
+          {(dish.tags ?? []).map((tag) => {
             const meta = getFilterableTagMeta(tag);
             return (
               <TagBadge
@@ -155,9 +155,9 @@ export function DishCard({
           })}
         </div>
       )}
-      {display.showDietary && dish.allergens.length > 0 && (
+      {display.showDietary && (dish.allergens ?? []).length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5">
-          {dish.allergens.map((allergen) => {
+          {(dish.allergens ?? []).map((allergen) => {
             const meta = getAllergenTagMeta(allergen);
             return (
               <TagBadge

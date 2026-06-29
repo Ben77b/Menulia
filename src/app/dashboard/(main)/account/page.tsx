@@ -209,8 +209,8 @@ export default function AccountSettingsPage() {
     setSaving2fa(true);
     setSecurityError(null);
 
-    const previous = securityPrefs;
-    const nextPrefs = { ...securityPrefs, two_factor_enabled: enabled };
+    const previous = securityPrefs ?? { two_factor_enabled: false };
+    const nextPrefs = { two_factor_enabled: enabled };
     setSecurityPrefs(nextPrefs);
 
     try {
@@ -442,7 +442,7 @@ export default function AccountSettingsPage() {
             <ToggleSwitch
               label="Enable Two-Factor Authentication"
               description="Adds an extra verification step at sign-in. Full verification flow coming soon."
-              checked={securityPrefs.two_factor_enabled}
+              checked={securityPrefs?.two_factor_enabled ?? false}
               onChange={handleTwoFactorToggle}
             />
             {saving2fa && <p className="air-helper mt-2">Saving preference...</p>}

@@ -18,6 +18,7 @@ import {
 } from "@/lib/theme-inheritance";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
+import { sanitizePublicMenuTree } from "@/lib/public-menu-utils";
 import { Button } from "@/components/ui/button";
 import { ThemeHotspotPopover } from "@/components/dashboard/theme-hotspot-popover";
 import { ThemeColorGroupSection } from "@/components/dashboard/theme-color-group-section";
@@ -56,6 +57,7 @@ const MOCK_FLAT: PublicMenuSubcategory[] = [
         price: 12,
         image: null,
         tags: ["Vegetarian"],
+        allergens: [],
       },
       {
         id: "d2",
@@ -64,6 +66,7 @@ const MOCK_FLAT: PublicMenuSubcategory[] = [
         price: 9,
         image: null,
         tags: ["Vegan", "Gluten-Free"],
+        allergens: [],
       },
     ],
   },
@@ -79,6 +82,7 @@ const MOCK_FLAT: PublicMenuSubcategory[] = [
         price: 24,
         image: null,
         tags: ["Gluten-Free"],
+        allergens: ["Fish"],
       },
     ],
   },
@@ -136,13 +140,23 @@ export function DesignStudio() {
   useEffect(() => {
     if (!currentRestaurant?.id) return;
 
-    fetchPublicMenuData(currentRestaurant.id).then((data) => {
-      if (data.flatCategories.length > 0 || data.menu.length > 0) {
-        setMenu(data.menu);
-        setFlatCategories(data.flatCategories.length > 0 ? data.flatCategories : MOCK_FLAT);
+    fetchPublicMenuData(currentRestaurant.id)
+      .then((data) => {
+        const sanitized = sanitizePublicMenuTree(
+          data.menu ?? [],
+          data.flatCategories.length > 0 ? data.flatCategories : MOCK_FLAT
+        );
+        setMenu(sanitized.menu);
+        setFlatCategories(sanitized.flatCategories);
         setHasNestedStructure(data.hasNestedStructure);
-      }
-    });
+      })
+      .catch((error) => {
+        console.error("[DesignStudio:menuPreview]", error);
+        const fallback = sanitizePublicMenuTree([], MOCK_FLAT);
+        setMenu(fallback.menu);
+        setFlatCategories(fallback.flatCategories);
+        setHasNestedStructure(false);
+      });
   }, [currentRestaurant?.id]);
 
   const handleHotspotClick = (hotspot: ThemeHotspotId, anchor: DOMRect) => {

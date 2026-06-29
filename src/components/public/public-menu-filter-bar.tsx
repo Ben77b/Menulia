@@ -43,10 +43,6 @@ export function PublicMenuFilterBar({
         ? pv("filterBorder")
         : borderColorProp ?? textColor;
 
-  if (FOOTER_FILTER_TAGS.length === 0) {
-    return null;
-  }
-
   return (
     <section
       className="border-t border-black/5 px-6 py-10"

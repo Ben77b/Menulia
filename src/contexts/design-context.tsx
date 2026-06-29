@@ -133,7 +133,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       if (data) {
         try {
           setDesignState(designFromRestaurant(data));
-          const { theme, overrides } = splitAdvancedThemeStorage(data.advanced_theme);
+          const { theme, overrides } = splitAdvancedThemeStorage(data?.advanced_theme);
           advancedThemeRef.current = theme;
           themeOverridesRef.current = overrides;
           setAdvancedThemeState(theme);

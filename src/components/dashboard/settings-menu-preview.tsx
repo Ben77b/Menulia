@@ -6,6 +6,7 @@ import { MenuPhonePreview } from "@/components/dashboard/menu-phone-preview";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
+import { sanitizePublicMenuTree } from "@/lib/public-menu-utils";
 import {
   parseCustomLinks,
   normalizeLinkInputs,
@@ -53,6 +54,7 @@ const MOCK_FLAT: PublicMenuSubcategory[] = [
         price: 9,
         image: null,
         tags: ["Vegetarian"],
+        allergens: [],
       },
     ],
   },
@@ -116,40 +118,53 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
           fetchPublicMenuData(id),
         ]);
 
-        if (cancelled || !restaurant) return;
+        if (cancelled) return;
 
-        setLogo((restaurant.logo as string | null) ?? null);
-        setMenu(menuData.menu);
-        setFlatCategories(
-          menuData.flatCategories.length > 0 ? menuData.flatCategories : MOCK_FLAT
-        );
-        setHasNestedStructure(menuData.hasNestedStructure);
-        setSavedLinks(parseCustomLinks(restaurant.custom_links));
+        if (restaurant) {
+          setLogo((restaurant.logo as string | null) ?? null);
+          setSavedLinks(parseCustomLinks(restaurant.custom_links));
 
-        const basicTheme = parseMenuThemeColors(restaurant.theme_colors);
-        const { theme: advancedTheme, overrides } = splitAdvancedThemeStorage(
-          restaurant.advanced_theme
-        );
-        setTheme(resolveUnifiedMenuTheme(basicTheme, advancedTheme, overrides));
+          const basicTheme = parseMenuThemeColors(restaurant.theme_colors);
+          const { theme: advancedTheme, overrides } = splitAdvancedThemeStorage(
+            restaurant.advanced_theme
+          );
+          setTheme(resolveUnifiedMenuTheme(basicTheme, advancedTheme, overrides));
 
-        const typography = parseTypography(
-          restaurant.typography && typeof restaurant.typography === "object"
-            ? (restaurant.typography as Record<string, unknown>)
-            : undefined
+          const typography = parseTypography(
+            restaurant.typography && typeof restaurant.typography === "object"
+              ? (restaurant.typography as Record<string, unknown>)
+              : undefined
+          );
+          const category = resolveCategoryTypography(typography);
+          setFonts({
+            titleFont: typography.titleFont,
+            textFont: typography.textFont,
+            titleFontWeight: typography.titleFontWeight,
+            titleFontStyle: typography.titleFontStyle,
+            categoryFont: category.categoryFont,
+            categoryFontWeight: category.categoryFontWeight,
+            categoryFontStyle: category.categoryFontStyle,
+            textFontWeight: typography.textFontWeight,
+            textFontStyle: typography.textFontStyle,
+          });
+          setDisplay(parseDisplayOptions(restaurant));
+        }
+
+        const sanitized = sanitizePublicMenuTree(
+          menuData?.menu ?? [],
+          menuData?.flatCategories?.length ? menuData.flatCategories : MOCK_FLAT
         );
-        const category = resolveCategoryTypography(typography);
-        setFonts({
-          titleFont: typography.titleFont,
-          textFont: typography.textFont,
-          titleFontWeight: typography.titleFontWeight,
-          titleFontStyle: typography.titleFontStyle,
-          categoryFont: category.categoryFont,
-          categoryFontWeight: category.categoryFontWeight,
-          categoryFontStyle: category.categoryFontStyle,
-          textFontWeight: typography.textFontWeight,
-          textFontStyle: typography.textFontStyle,
-        });
-        setDisplay(parseDisplayOptions(restaurant));
+        setMenu(sanitized.menu);
+        setFlatCategories(sanitized.flatCategories);
+        setHasNestedStructure(menuData?.hasNestedStructure ?? false);
+      } catch (error) {
+        console.error("[SettingsMenuPreview:load]", error);
+        if (!cancelled) {
+          const fallback = sanitizePublicMenuTree([], MOCK_FLAT);
+          setMenu(fallback.menu);
+          setFlatCategories(fallback.flatCategories);
+          setHasNestedStructure(false);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -201,7 +216,7 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
       label={loading ? "Loading preview…" : "Live Preview — updates as you edit"}
       className="sticky top-6 hidden lg:flex"
     >
-      <PublicMenuLayout {...previewProps} />
+      {!loading && <PublicMenuLayout {...previewProps} />}
     </MenuPhonePreview>
   );
 }

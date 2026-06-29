@@ -10,6 +10,7 @@ import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import {
   collectAllDishes,
   filterDishesByTags,
+  sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
@@ -188,54 +189,62 @@ export function PublicMenuLayout({
   display,
   previewInteractive,
 }: PublicMenuLayoutProps) {
+  const { menu: safeMenu, flatCategories: safeFlatCategories } = useMemo(
+    () => sanitizePublicMenuTree(menu ?? [], flatCategories ?? []),
+    [menu, flatCategories]
+  );
+
   const [locale, setLocale] = useState<PublicMenuLocale>("en");
-  const [activeParentId, setActiveParentId] = useState(menu[0]?.id ?? "");
+  const [activeParentId, setActiveParentId] = useState(safeMenu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
-    menu[0]?.subcategories[0]?.id ?? flatCategories[0]?.id ?? ""
+    safeMenu[0]?.subcategories[0]?.id ?? safeFlatCategories[0]?.id ?? ""
   );
   const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (hasNestedStructure) {
-      if (menu.length === 0) return;
-      if (!menu.some((parent) => parent.id === activeParentId)) {
-        setActiveParentId(menu[0].id);
-        setActiveSubcategoryId(menu[0].subcategories[0]?.id ?? "");
+      if (safeMenu.length === 0) return;
+      if (!safeMenu.some((parent) => parent.id === activeParentId)) {
+        setActiveParentId(safeMenu[0].id);
+        setActiveSubcategoryId(safeMenu[0].subcategories[0]?.id ?? "");
       }
       return;
     }
 
-    if (flatCategories.length === 0) return;
-    if (!flatCategories.some((category) => category.id === activeSubcategoryId)) {
-      setActiveSubcategoryId(flatCategories[0].id);
+    if (safeFlatCategories.length === 0) return;
+    if (!safeFlatCategories.some((category) => category.id === activeSubcategoryId)) {
+      setActiveSubcategoryId(safeFlatCategories[0].id);
     }
-  }, [menu, flatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
+  }, [safeMenu, safeFlatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
 
   const activeSubcategory = useMemo(() => {
     if (!hasNestedStructure) {
-      return flatCategories.find((category) => category.id === activeSubcategoryId) ?? flatCategories[0];
+      return (
+        safeFlatCategories.find((category) => category.id === activeSubcategoryId) ??
+        safeFlatCategories[0]
+      );
     }
 
-    const parent = menu.find((item) => item.id === activeParentId) ?? menu[0];
+    const parent = safeMenu.find((item) => item.id === activeParentId) ?? safeMenu[0];
     return (
       parent?.subcategories.find((sub) => sub.id === activeSubcategoryId) ??
       parent?.subcategories[0]
     );
-  }, [menu, flatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
+  }, [safeMenu, safeFlatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
 
   const allDishes = useMemo(
-    () => collectAllDishes(menu, flatCategories, hasNestedStructure),
-    [menu, flatCategories, hasNestedStructure]
+    () => collectAllDishes(safeMenu, safeFlatCategories, hasNestedStructure),
+    [safeMenu, safeFlatCategories, hasNestedStructure]
   );
 
   const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
-  const hasMenu = hasNestedStructure ? menu.length > 0 : flatCategories.length > 0;
+  const hasMenu = hasNestedStructure ? safeMenu.length > 0 : safeFlatCategories.length > 0;
   const hotspotEnabled = previewInteractive?.enabled ?? false;
   const isPreview = usePreviewCanvas();
 
   function handleParentChange(parentId: string) {
     setActiveParentId(parentId);
-    const parent = menu.find((item) => item.id === parentId);
+    const parent = safeMenu.find((item) => item.id === parentId);
     if (parent?.subcategories[0]) {
       setActiveSubcategoryId(parent.subcategories[0].id);
     }
@@ -279,7 +288,7 @@ export function PublicMenuLayout({
           titleFont={titleFont}
           titleFontWeight={titleFontWeight}
           titleFontStyle={titleFontStyle}
-          links={links}
+          links={links ?? []}
           locale={locale}
           onLocaleChange={setLocale}
         />
@@ -294,7 +303,7 @@ export function PublicMenuLayout({
       >
         {hasNestedStructure ? (
           <NestedCategoryNav
-            menu={menu}
+            menu={safeMenu}
             stripBackgroundColor={themedColor(isPreview, "navBg", theme.categoryBarBg)}
             tier1ActiveBg={themedColor(isPreview, "tier1ActiveBg", theme.tier1ActiveBg)}
             tier1ActiveText={themedColor(isPreview, "tier1ActiveText", theme.tier1ActiveText)}
@@ -319,7 +328,7 @@ export function PublicMenuLayout({
           />
         ) : (
           <FlatCategoryNav
-            categories={flatCategories}
+            categories={safeFlatCategories}
             stripBackgroundColor={themedColor(isPreview, "navBg", theme.categoryBarBg)}
             tier2ActiveBg={themedColor(isPreview, "activeTabBg", theme.tier2ActiveBg)}
             tier2ActiveText={themedColor(isPreview, "activeTabText", theme.tier2ActiveText)}
