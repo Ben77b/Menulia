@@ -88,7 +88,7 @@ export function ContactForm() {
 
       {error && <p className="air-alert-error mt-4">{error}</p>}
       {success && (
-        <p className="mt-4 rounded-2xl border border-emerald-brand/30 bg-emerald-brand-light/40 px-4 py-3 text-sm text-emerald-brand-dark">
+        <p className="mt-4 rounded-2xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-slate-800">
           Thanks — we received your message and will reply within 24 hours.
         </p>
       )}

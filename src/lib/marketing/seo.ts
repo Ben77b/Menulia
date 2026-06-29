@@ -23,32 +23,6 @@ export function softwareApplicationJsonLd() {
   };
 }
 
-export function articleJsonLd(post: {
-  title: string;
-  excerpt: string;
-  date: string;
-  slug: string;
-  author: string;
-}) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: post.title,
-    description: post.excerpt,
-    datePublished: new Date(post.date).toISOString(),
-    author: {
-      "@type": "Organization",
-      name: post.author,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "Menulia",
-      url: SITE_URL,
-    },
-    mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
-  };
-}
-
 export function marketingPageMetadata({
   title,
   description,

@@ -11,6 +11,7 @@ import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import {
   fetchSecurityPreferences,
   saveSecurityPreferences,
+  EMAIL_VERIFICATION_BANNER,
   type SecurityPreferences,
 } from "@/lib/auth/security-preferences";
 import {
@@ -54,6 +55,7 @@ export default function AccountSettingsPage() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordToastVisible, setPasswordToastVisible] = useState(false);
 
   const [securityPrefs, setSecurityPrefs] = useState<SecurityPreferences>({
     two_factor_enabled: false,
@@ -78,7 +80,13 @@ export default function AccountSettingsPage() {
       .catch((error) => {
         console.error("[Account:SecurityPrefsLoad]", error);
       });
-  }, [user?.id, supabase]);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!passwordToastVisible) return;
+    const timer = window.setTimeout(() => setPasswordToastVisible(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [passwordToastVisible]);
 
   async function saveAccountDetails() {
     setSavingProfile(true);
@@ -186,6 +194,7 @@ export default function AccountSettingsPage() {
       setNewPassword("");
       setConfirmPassword("");
       setPasswordSuccess(true);
+      setPasswordToastVisible(true);
       setTimeout(() => setPasswordSuccess(false), 3000);
     } catch (error) {
       setPasswordError(error instanceof Error ? error.message : "Failed to update password.");
@@ -195,17 +204,19 @@ export default function AccountSettingsPage() {
   }
 
   async function handleTwoFactorToggle(enabled: boolean) {
-    if (!user?.id) return;
+    if (!user?.id || !user.email) return;
 
     setSaving2fa(true);
     setSecurityError(null);
 
+    const previous = securityPrefs;
     const nextPrefs = { ...securityPrefs, two_factor_enabled: enabled };
+    setSecurityPrefs(nextPrefs);
 
     try {
-      await saveSecurityPreferences(supabase, user.id, nextPrefs);
-      setSecurityPrefs(nextPrefs);
+      await saveSecurityPreferences(supabase, user.id, user.email, nextPrefs);
     } catch (error) {
+      setSecurityPrefs(previous);
       setSecurityError(error instanceof Error ? error.message : "Failed to update security settings.");
     } finally {
       setSaving2fa(false);
@@ -332,9 +343,11 @@ export default function AccountSettingsPage() {
                 />
               </div>
               {emailPendingVerification && (
-                <div className="air-alert-warning" role="status">
-                  Verification links have been sent to your current and new email addresses.
-                  Confirm both to complete the change.
+                <div
+                  className="rounded-2xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-slate-800"
+                  role="status"
+                >
+                  {EMAIL_VERIFICATION_BANNER}
                 </div>
               )}
               {emailError && (
@@ -402,7 +415,7 @@ export default function AccountSettingsPage() {
               </div>
               {passwordSuccess && (
                 <div
-                  className="rounded-2xl border border-emerald-brand/30 bg-emerald-brand-light/40 px-4 py-3 text-sm text-emerald-brand-dark"
+                  className="rounded-2xl border border-border bg-muted px-4 py-3 text-sm text-slate-800"
                   role="status"
                 >
                   Password updated successfully.
@@ -493,6 +506,15 @@ export default function AccountSettingsPage() {
             Manage Billing
           </Button>
         </section>
+      )}
+      {passwordToastVisible && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-50 rounded-2xl border border-border bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-xl"
+        >
+          Password updated successfully.
+        </div>
       )}
     </div>
   );

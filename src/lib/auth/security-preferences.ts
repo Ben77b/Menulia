@@ -8,13 +8,16 @@ export const DEFAULT_SECURITY_PREFERENCES: SecurityPreferences = {
   two_factor_enabled: false,
 };
 
+const EMAIL_VERIFICATION_BANNER =
+  "Verification links sent to both your old and new email addresses. Please check both inboxes to complete the update.";
+
+export { EMAIL_VERIFICATION_BANNER };
+
 function isMissingSchemaError(code: string | undefined): boolean {
   return code === "42P01" || code === "42703";
 }
 
-export function normalizeSecurityPreferences(
-  value: unknown
-): SecurityPreferences {
+export function normalizeSecurityPreferences(value: unknown): SecurityPreferences {
   if (!value || typeof value !== "object") {
     return DEFAULT_SECURITY_PREFERENCES;
   }
@@ -48,12 +51,17 @@ export async function fetchSecurityPreferences(
 export async function saveSecurityPreferences(
   supabase: SupabaseClient,
   userId: string,
+  email: string,
   preferences: SecurityPreferences
 ): Promise<void> {
-  const { error } = await supabase
-    .from("profiles")
-    .update({ security_preferences: preferences })
-    .eq("id", userId);
+  const { error } = await supabase.from("profiles").upsert(
+    {
+      id: userId,
+      email,
+      security_preferences: preferences,
+    },
+    { onConflict: "id" }
+  );
 
   if (error) {
     if (isMissingSchemaError(error.code)) {

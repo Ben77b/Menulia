@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/services", label: "Services" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/blog", label: "Blog" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "#features", label: "Features" },
+  { href: "#demo", label: "Demo" },
+  { href: "#pricing", label: "Pricing" },
+  { href: "#contact", label: "Contact" },
 ];
 
 export function MarketingHeader() {
@@ -29,34 +28,34 @@ export function MarketingHeader() {
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         scrolled
-          ? "border-b border-border bg-surface-elevated/95 shadow-sm backdrop-blur-md"
-          : "bg-transparent"
+          ? "border-b border-border bg-card/95 shadow-sm backdrop-blur-md"
+          : "bg-background/80 backdrop-blur-sm"
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="group flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-brand text-sm font-bold text-white transition group-hover:scale-105">
+        <Link href="/#top" className="group flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-slate-900 text-sm font-bold text-white">
             M
           </span>
-          <span className="text-lg font-semibold tracking-tight">
-            menulia<span className="text-emerald-brand">.io</span>
+          <span className="text-lg font-semibold tracking-tight text-slate-900">
+            menulia<span className="text-accent">.net</span>
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
           {NAV.map((item) => (
-            <Link
+            <a
               key={item.href}
               href={item.href}
-              className="relative text-sm text-text-secondary transition hover:text-emerald-brand after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-0 after:bg-emerald-brand after:transition-all hover:after:w-full"
+              className="text-sm text-muted-foreground transition hover:text-slate-900"
             >
               {item.label}
-            </Link>
+            </a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/dashboard">
+          <Link href="/login">
             <Button variant="ghost" size="sm">
               Sign in
             </Button>
@@ -73,20 +72,22 @@ export function MarketingHeader() {
         </button>
       </div>
 
-      <div className={cn("border-t border-border bg-surface-elevated md:hidden", open ? "block" : "hidden")}>
-        <nav className="flex flex-col gap-1 px-4 py-4">
+      <div className={cn("border-t border-border bg-card md:hidden", open ? "block" : "hidden")}>
+        <nav className="flex flex-col gap-1 px-4 py-4" aria-label="Mobile">
           {NAV.map((item) => (
-            <Link
+            <a
               key={item.href}
               href={item.href}
               className="rounded-lg px-3 py-2 text-sm hover:bg-muted"
               onClick={() => setOpen(false)}
             >
               {item.label}
-            </Link>
+            </a>
           ))}
           <Link href="/signup" className="mt-2">
-            <Button variant="primary" className="w-full">Start free</Button>
+            <Button variant="primary" className="w-full">
+              Start free
+            </Button>
           </Link>
         </nav>
       </div>
