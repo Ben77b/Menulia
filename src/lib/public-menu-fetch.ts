@@ -73,7 +73,7 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
     leafCategoryIds.map(async (categoryId) => {
       const { data: dishes } = await supabase
         .from("dishes")
-        .select("id, name, description, price, image, tags, allergens")
+        .select("id, name, description, price, image, tags")
         .eq("category_id", categoryId)
         .order("created_at", { ascending: true });
 

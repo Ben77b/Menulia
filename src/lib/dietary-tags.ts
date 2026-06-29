@@ -93,3 +93,20 @@ export function normalizeDishTagFields(
     allergens: ALLERGEN_TAGS.filter((tag) => allergens.has(tag)),
   };
 }
+
+/** Write path: store both tiers in dishes.tags until allergens column is migrated */
+export function serializeDishTagsForDb(
+  tags: readonly string[],
+  allergens: readonly string[]
+): string[] {
+  const normalized = normalizeDishTagFields([...tags], [...allergens]);
+  return [...normalized.tags, ...normalized.allergens];
+}
+
+/** Read path: split filterable tags and allergens from DB row */
+export function parseDishTagsFromDb(row: {
+  tags?: string[] | null;
+  allergens?: string[] | null;
+}): { tags: FilterableTag[]; allergens: AllergenTag[] } {
+  return normalizeDishTagFields(row.tags, row.allergens);
+}

@@ -21,7 +21,7 @@ export interface PublicMenuParentCategory {
   subcategories: PublicMenuSubcategory[];
 }
 
-import { normalizeDishTagFields } from "@/lib/dietary-tags";
+import { parseDishTagsFromDb } from "@/lib/dietary-tags";
 
 export function mapDishRow(dish: {
   id: string;
@@ -32,7 +32,7 @@ export function mapDishRow(dish: {
   tags?: string[] | null;
   allergens?: string[] | null;
 }): PublicMenuDish {
-  const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
+  const normalized = parseDishTagsFromDb(dish);
   return {
     id: dish.id,
     name: dish.name,

@@ -1,4 +1,4 @@
-import { normalizeDishTagFields } from "./dietary-tags";
+import { parseDishTagsFromDb, serializeDishTagsForDb } from "./dietary-tags";
 import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
 
@@ -58,7 +58,7 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
         order_index: category.order_index ?? 0,
         parent_id: category.parent_id ?? null,
         items: (dishes ?? []).map((dish) => {
-          const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
+          const normalized = parseDishTagsFromDb(dish);
           return {
             id: dish.id,
             name: dish.name,
@@ -144,7 +144,7 @@ export async function createMenuDish(
   allergens: string[] = []
 ): Promise<MenuDishRecord> {
   const supabase = getSupabaseBrowserClient();
-  const normalized = normalizeDishTagFields(tags, allergens);
+  const tagsForDb = serializeDishTagsForDb(tags, allergens);
 
   const { data, error } = await supabase
     .from("dishes")
@@ -154,8 +154,7 @@ export async function createMenuDish(
       description: description.trim(),
       price: String(price),
       image,
-      tags: normalized.tags,
-      allergens: normalized.allergens,
+      tags: tagsForDb,
     })
     .select("*")
     .single();
@@ -165,7 +164,7 @@ export async function createMenuDish(
     throw error ?? new Error("Dish insert failed.");
   }
 
-  const saved = normalizeDishTagFields(data.tags, data.allergens);
+  const saved = parseDishTagsFromDb(data);
 
   return {
     id: data.id,
@@ -189,7 +188,7 @@ export async function updateMenuDish(
   allergens: string[] = []
 ): Promise<void> {
   const supabase = getSupabaseBrowserClient();
-  const normalized = normalizeDishTagFields(tags, allergens);
+  const tagsForDb = serializeDishTagsForDb(tags, allergens);
 
   const { error } = await supabase
     .from("dishes")
@@ -198,8 +197,7 @@ export async function updateMenuDish(
       description: description.trim(),
       price: String(price),
       image,
-      tags: normalized.tags,
-      allergens: normalized.allergens,
+      tags: tagsForDb,
     })
     .eq("id", dishId);
 
