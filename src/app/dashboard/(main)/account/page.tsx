@@ -124,7 +124,7 @@ export default function AccountSettingsPage() {
       </div>
 
       {saveError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="air-alert-error">
           {saveError}
         </div>
       )}
@@ -149,7 +149,7 @@ export default function AccountSettingsPage() {
                 type="text"
                 value={userFullName}
                 onChange={(e) => setUserFullName(e.target.value)}
-                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="air-input"
                 placeholder="Your full name"
               />
             </div>
@@ -159,7 +159,7 @@ export default function AccountSettingsPage() {
                 type="email"
                 value={userEmail}
                 onChange={(e) => setUserEmail(e.target.value)}
-                className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="air-input"
                 placeholder="your@email.com"
               />
               <p className="mt-1 text-xs text-gray-500">
@@ -186,7 +186,7 @@ export default function AccountSettingsPage() {
             </div>
             <p className="mt-3 text-xs text-gray-500">
               Or use{" "}
-              <Link href="/logout" className="text-indigo-600 hover:underline">
+              <Link href="/logout" className="air-link">
                 Sign out
               </Link>{" "}
               from any device.
@@ -199,7 +199,7 @@ export default function AccountSettingsPage() {
               <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
+              <div className="air-card flex items-center justify-between border-red-100 bg-red-50 p-4">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900">Download My Data</h3>
                   <p className="text-xs text-gray-600">Export all account and restaurant data (GDPR)</p>
@@ -209,7 +209,7 @@ export default function AccountSettingsPage() {
                   Download
                 </Button>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
+              <div className="air-card flex items-center justify-between border-red-100 bg-red-50 p-4">
                 <div>
                   <h3 className="text-sm font-medium text-red-900">Delete My Account</h3>
                   <p className="text-xs text-gray-600">

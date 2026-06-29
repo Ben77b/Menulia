@@ -48,20 +48,20 @@ export function HoursScheduleBuilder({ blocks, onChange }: HoursScheduleBuilderP
   return (
     <div className="space-y-4">
       {blocks.map((block) => (
-        <div key={block.id} className="rounded-lg border border-gray-200 p-4">
+        <div key={block.id} className="air-card p-4">
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <input
               type="time"
               value={block.startTime}
               onChange={(e) => updateBlock(block.id, { startTime: e.target.value })}
-              className="h-10 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="air-input w-auto"
             />
-            <span className="text-sm text-gray-500">to</span>
+            <span className="text-sm text-muted-foreground">to</span>
             <input
               type="time"
               value={block.endTime}
               onChange={(e) => updateBlock(block.id, { endTime: e.target.value })}
-              className="h-10 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="air-input w-auto"
             />
             {blocks.length > 1 && (
               <Button
@@ -84,15 +84,15 @@ export function HoursScheduleBuilder({ blocks, onChange }: HoursScheduleBuilderP
                   key={day}
                   className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                     selected
-                      ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                      ? "border-slate-300 bg-muted text-slate-800"
+                      : "border-border bg-card text-muted-foreground hover:border-slate-300"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={selected}
                     onChange={() => toggleDay(block.id, day)}
-                    className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-3.5 w-3.5 rounded border-border text-slate-900 focus:ring-slate-400"
                   />
                   {day}
                 </label>
@@ -108,9 +108,9 @@ export function HoursScheduleBuilder({ blocks, onChange }: HoursScheduleBuilderP
       </Button>
 
       {preview && (
-        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Preview</p>
-          <p className="mt-1 text-sm text-gray-800">{preview}</p>
+        <div className="rounded-[10px] border border-dashed border-border bg-muted px-3 py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Preview</p>
+          <p className="mt-1 text-sm text-slate-800">{preview}</p>
         </div>
       )}
     </div>

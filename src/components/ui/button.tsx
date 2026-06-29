@@ -2,19 +2,20 @@ import { cn } from "@/lib/utils";
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger" | "outline" | "air";
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "outline" | "air" | "link";
   size?: "sm" | "md" | "lg";
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", children, ...props }, ref) => {
+  ({ className, variant = "air", size = "md", children, ...props }, ref) => {
     const variants = {
+      air: "bg-slate-900 hover:bg-slate-800 text-white shadow-[0_2px_12px_rgba(0,0,0,0.12)]",
       primary: "bg-coral-cta hover:bg-coral-cta-dark text-white shadow-sm",
       secondary: "bg-emerald-brand hover:bg-emerald-brand-dark text-white",
-      air: "bg-slate-900 hover:bg-slate-800 text-white shadow-[0_2px_12px_rgba(0,0,0,0.12)]",
-      ghost: "hover:bg-[#F5F5F7] text-text-primary",
+      ghost: "hover:bg-muted text-slate-800",
+      link: "text-slate-700 underline-offset-4 hover:text-slate-900 hover:underline shadow-none",
       danger: "bg-red-500 hover:bg-red-600 text-white",
-      outline: "border border-[#E5E5EA] bg-white hover:bg-[#FAFAFA] text-slate-800",
+      outline: "border border-border bg-card hover:bg-[#FAFAFA] text-slate-800",
     };
     const sizes = {
       sm: "px-3 py-1.5 text-sm rounded-[10px]",
@@ -26,7 +27,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none",
+          "inline-flex items-center justify-center font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+          variant !== "link" && "shadow-sm",
           variants[variant],
           sizes[size],
           className

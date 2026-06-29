@@ -62,7 +62,7 @@ export function MarketingHeader() {
             </Button>
           </Link>
           <Link href="/signup">
-            <Button size="sm" className="transition hover:scale-105">
+            <Button variant="primary" size="sm" className="transition hover:scale-105">
               Start free
             </Button>
           </Link>
@@ -86,7 +86,7 @@ export function MarketingHeader() {
             </Link>
           ))}
           <Link href="/signup" className="mt-2">
-            <Button className="w-full">Start free</Button>
+            <Button variant="primary" className="w-full">Start free</Button>
           </Link>
         </nav>
       </div>

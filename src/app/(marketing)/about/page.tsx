@@ -48,7 +48,7 @@ export default function AboutPage() {
           <ScrollReveal delay={300}>
             <div className="mt-12 text-center">
               <Link href="/signup">
-                <Button size="lg">Join us — start free</Button>
+                <Button variant="primary" size="lg">Join us — start free</Button>
               </Link>
             </div>
           </ScrollReveal>

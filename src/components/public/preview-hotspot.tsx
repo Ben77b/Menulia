@@ -43,13 +43,12 @@ export function PreviewHotspot({
     <div
       className={cn(
         "group/hotspot relative",
-        active && "z-10 ring-2 ring-indigo-500 ring-offset-2",
+        active && "z-10 ring-2 ring-slate-900 ring-offset-2",
         className
       )}
     >
       {children}
 
-      {/* Menuo-style circular click target */}
       <button
         type="button"
         aria-label={`Edit ${id} colors`}
@@ -59,23 +58,22 @@ export function PreviewHotspot({
         }}
         className={cn(
           "absolute z-20 flex h-8 w-8 items-center justify-center rounded-full",
-          "border-2 border-white bg-indigo-500 text-white shadow-lg",
-          "transition-transform hover:scale-110 hover:bg-indigo-600",
+          "border-2 border-white bg-slate-900 text-white shadow-lg",
+          "transition-transform hover:scale-110 hover:bg-slate-800",
           "animate-pulse group-hover/hotspot:animate-none",
-          active && "scale-110 bg-indigo-600 ring-2 ring-indigo-300",
+          active && "scale-110 bg-slate-800 ring-2 ring-slate-300",
           INDICATOR_POSITION[indicatorPosition]
         )}
       >
         <Palette className="h-3.5 w-3.5" strokeWidth={2.5} />
       </button>
 
-      {/* Subtle hover outline */}
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-0 rounded-sm border-2 border-dashed border-indigo-400/0",
-          "transition-colors group-hover/hotspot:border-indigo-400/60",
-          active && "border-indigo-500/80"
+          "pointer-events-none absolute inset-0 rounded-sm border-2 border-dashed border-slate-400/0",
+          "transition-colors group-hover/hotspot:border-slate-400/60",
+          active && "border-slate-600/80"
         )}
       />
     </div>

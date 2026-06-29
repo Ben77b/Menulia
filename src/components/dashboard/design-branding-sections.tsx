@@ -42,21 +42,19 @@ function FontModifierControls({
   onStyleChange: (style: FontStyle) => void;
 }) {
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
-      <p className="text-xs font-medium text-gray-600">{label} modifiers</p>
+    <div className="mt-3 space-y-3 rounded-[10px] border border-border bg-muted p-3">
+      <p className="text-xs font-medium text-muted-foreground">{label} modifiers</p>
       <div>
-        <p className="mb-2 text-xs text-gray-500">Weight</p>
-        <div className="flex gap-2">
+        <p className="mb-2 text-xs text-muted-foreground">Weight</p>
+        <div className="air-pill-toggle">
           {([400, 700] as FontWeight[]).map((value) => (
             <button
               key={value}
               type="button"
               onClick={() => onWeightChange(value)}
               className={cn(
-                "flex-1 rounded-lg border px-3 py-2 text-sm transition-colors",
-                weight === value
-                  ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                "air-pill-toggle-item flex-1 px-3 py-2 text-sm",
+                weight === value && "air-pill-toggle-item-active font-semibold"
               )}
             >
               {value === 400 ? "Regular (400)" : "Bold (700)"}
@@ -65,18 +63,16 @@ function FontModifierControls({
         </div>
       </div>
       <div>
-        <p className="mb-2 text-xs text-gray-500">Style</p>
-        <div className="flex gap-2">
+        <p className="mb-2 text-xs text-muted-foreground">Style</p>
+        <div className="air-pill-toggle">
           {(["normal", "italic"] as FontStyle[]).map((value) => (
             <button
               key={value}
               type="button"
               onClick={() => onStyleChange(value)}
               className={cn(
-                "flex-1 rounded-lg border px-3 py-2 text-sm capitalize transition-colors",
-                style === value
-                  ? "border-indigo-500 bg-indigo-50 font-semibold text-indigo-700"
-                  : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+                "air-pill-toggle-item flex-1 px-3 py-2 text-sm capitalize",
+                style === value && "air-pill-toggle-item-active font-semibold",
                 value === "italic" && "italic"
               )}
             >
@@ -254,7 +250,7 @@ export function DesignLogoSeoSection({ showHeading = true }: { showHeading?: boo
           placeholder="e.g., Best Pizza in New York"
           value={design.metaTitle ?? ""}
           onChange={(e) => updateDesign({ metaTitle: e.target.value })}
-          className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="air-input"
         />
         <p className="mt-1 text-xs text-gray-500">Recommended: 50–60 characters</p>
       </div>
@@ -266,7 +262,7 @@ export function DesignLogoSeoSection({ showHeading = true }: { showHeading?: boo
           value={design.metaDescription ?? ""}
           onChange={(e) => updateDesign({ metaDescription: e.target.value })}
           rows={3}
-          className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="air-textarea"
         />
         <p className="mt-1 text-xs text-gray-500">Recommended: 150–160 characters</p>
       </div>
@@ -335,8 +331,8 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
               className={cn(
                 "rounded-xl border p-4 text-left transition-all hover:shadow-md",
                 activePresetId === preset.id
-                  ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                  ? "border-slate-400 bg-muted ring-2 ring-slate-200"
+                  : "border-border bg-card hover:border-slate-300"
               )}
             >
               <p className="text-sm font-semibold text-gray-900">{preset.name}</p>
@@ -378,7 +374,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                   value={titleFontSearch}
                   onChange={(e) => setTitleFontSearch(e.target.value)}
                   onFocus={() => setShowTitleFontDropdown(true)}
-                  className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="air-input h-11 pl-10"
                 />
                 {showTitleFontDropdown && (
                   <>
@@ -386,7 +382,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                       className="fixed inset-0 z-40"
                       onClick={() => setShowTitleFontDropdown(false)}
                     />
-                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                    <div className="air-dropdown">
                       {filteredTitleFonts.map((font) => (
                         <button
                           key={font.value}
@@ -396,7 +392,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                             setShowTitleFontDropdown(false);
                             setTitleFontSearch("");
                           }}
-                          className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                          className={cn("air-dropdown-item", font.className)}
                         >
                           {font.label}
                         </button>
@@ -419,7 +415,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
               <div className="mb-2 flex items-center justify-between gap-2">
                 <label className="text-sm font-medium text-gray-700">Category Font</label>
                 {design.categoryFontLinkedToTitle && (
-                  <span className="text-xs text-indigo-600">Linked to title font</span>
+                  <span className="text-xs text-slate-600">Linked to title font</span>
                 )}
               </div>
               <div className="relative">
@@ -430,7 +426,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                   value={categoryFontSearch}
                   onChange={(e) => setCategoryFontSearch(e.target.value)}
                   onFocus={() => setShowCategoryFontDropdown(true)}
-                  className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="air-input h-11 pl-10"
                 />
                 {showCategoryFontDropdown && (
                   <>
@@ -438,7 +434,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                       className="fixed inset-0 z-40"
                       onClick={() => setShowCategoryFontDropdown(false)}
                     />
-                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                    <div className="air-dropdown">
                       {filteredCategoryFonts.map((font) => (
                         <button
                           key={font.value}
@@ -453,7 +449,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                             setShowCategoryFontDropdown(false);
                             setCategoryFontSearch("");
                           }}
-                          className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                          className={cn("air-dropdown-item", font.className)}
                         >
                           {font.label}
                         </button>
@@ -502,7 +498,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                   value={bodyFontSearch}
                   onChange={(e) => setBodyFontSearch(e.target.value)}
                   onFocus={() => setShowBodyFontDropdown(true)}
-                  className="h-11 w-full rounded-lg border border-gray-200 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="air-input h-11 pl-10"
                 />
                 {showBodyFontDropdown && (
                   <>
@@ -510,7 +506,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                       className="fixed inset-0 z-40"
                       onClick={() => setShowBodyFontDropdown(false)}
                     />
-                    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1 shadow-xl">
+                    <div className="air-dropdown">
                       {filteredBodyFonts.map((font) => (
                         <button
                           key={font.value}
@@ -520,7 +516,7 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
                             setShowBodyFontDropdown(false);
                             setBodyFontSearch("");
                           }}
-                          className={`flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 ${font.className}`}
+                          className={cn("air-dropdown-item", font.className)}
                         >
                           {font.label}
                         </button>

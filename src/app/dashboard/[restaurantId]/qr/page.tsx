@@ -15,12 +15,12 @@ export default function QrCodePage() {
   function downloadQrCode() {
     if (!qrRef.current) return;
 
-    const svgElement = qrRef.current.querySelector('svg');
+    const svgElement = qrRef.current.querySelector("svg");
     if (!svgElement) return;
 
     const svgData = new XMLSerializer().serializeToString(svgElement);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const img = new Image();
@@ -29,15 +29,15 @@ export default function QrCodePage() {
       canvas.height = 300;
       ctx.drawImage(img, 0, 0);
 
-      const pngUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
+      const pngUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
       link.href = pngUrl;
-      link.download = `qr-code-${currentRestaurant?.slug || 'restaurant'}.png`;
+      link.download = `qr-code-${currentRestaurant?.slug || "restaurant"}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     };
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   }
 
   const restaurantUrl = currentRestaurant
@@ -45,24 +45,24 @@ export default function QrCodePage() {
     : getPublicMenuUrl("demo");
 
   return (
-    <div className="space-y-6">
+    <div className="air-page">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">QR Code Generator</h1>
-        <p className="mt-1 text-sm text-gray-600">Generate a QR code for your restaurant menu</p>
+        <h1 className="air-page-title">QR Code Generator</h1>
+        <p className="air-page-subtitle">Generate a QR code for your restaurant menu</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <QrCode className="h-5 w-5 text-gray-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Menu QR Code</h2>
+      <div className="air-card air-card-pad">
+        <div className="mb-4 flex items-center gap-3">
+          <QrCode className="h-5 w-5 text-muted-foreground" />
+          <h2 className="air-section-title">Menu QR Code</h2>
         </div>
-        <p className="text-sm text-gray-600 mb-6">
-          This QR code links to your restaurant's public menu page.
-          Print it and place it on your tables, menus, or marketing materials.
+        <p className="mb-6 text-sm text-muted-foreground">
+          This QR code links to your restaurant&apos;s public menu page. Print it and place it on
+          your tables, menus, or marketing materials.
         </p>
 
-        <div className="flex items-start gap-8">
-          <div className="p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
+        <div className="flex flex-col items-start gap-8 lg:flex-row">
+          <div className="air-card p-6">
             <div ref={qrRef}>
               <QRCode
                 value={restaurantUrl}
@@ -75,32 +75,28 @@ export default function QrCodePage() {
           </div>
           <div className="flex-1 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                QR Code Color
-              </label>
+              <label className="air-label">QR Code Color</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
                   value={qrColor}
                   onChange={(e) => setQrColor(e.target.value)}
-                  className="h-10 w-16 rounded border border-gray-200 cursor-pointer"
+                  className="h-10 w-16 cursor-pointer rounded-[10px] border border-input"
                 />
-                <span className="text-sm text-gray-600">{qrColor}</span>
+                <span className="text-sm text-muted-foreground">{qrColor}</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Menu URL
-              </label>
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                <code className="text-sm text-gray-700 break-all">{restaurantUrl}</code>
+              <label className="air-label">Menu URL</label>
+              <div className="rounded-[10px] border border-border bg-muted p-3">
+                <code className="break-all text-sm text-slate-700">{restaurantUrl}</code>
               </div>
             </div>
 
-            <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-indigo-900 mb-2">How to use</h3>
-              <ul className="text-xs text-indigo-700 space-y-1">
+            <div className="rounded-2xl border border-border bg-muted p-4">
+              <h3 className="mb-2 text-sm font-medium text-slate-900">How to use</h3>
+              <ul className="space-y-1 text-xs text-muted-foreground">
                 <li>• Print this QR code and place it on your tables</li>
                 <li>• Customers scan to view your menu on their phones</li>
                 <li>• The QR code has a transparent background</li>

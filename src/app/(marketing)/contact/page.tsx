@@ -43,7 +43,7 @@ export default function ContactPage() {
                   <input type="email" placeholder="Email" className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none transition focus:border-emerald-brand focus:ring-2 focus:ring-emerald-brand/20" />
                   <textarea placeholder="How can we help?" rows={5} className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none transition focus:border-emerald-brand focus:ring-2 focus:ring-emerald-brand/20" />
                 </div>
-                <Button className="mt-6 w-full" size="lg">Send message</Button>
+                <Button variant="primary" className="mt-6 w-full" size="lg">Send message</Button>
               </form>
             </ScrollReveal>
           </div>

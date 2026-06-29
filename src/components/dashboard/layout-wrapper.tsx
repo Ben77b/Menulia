@@ -15,11 +15,11 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
 
   return (
     <DashboardAuthGuard>
-      <div className="air-dashboard flex min-h-screen bg-[#F5F5F7]">
+      <div className="air-dashboard flex min-h-screen bg-background">
         <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className="min-h-screen flex-1 overflow-y-auto md:pl-64">
-          <header className="fixed left-0 right-0 top-0 z-30 border-b border-[#E5E5EA] bg-white/90 px-4 py-3 backdrop-blur-md md:hidden">
+        <div className="min-h-screen flex-1 overflow-y-auto bg-background md:pl-64">
+          <header className="fixed left-0 right-0 top-0 z-30 border-b border-border bg-card/90 px-4 py-3 backdrop-blur-md md:hidden">
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)}>
                 <MenuIcon className="h-6 w-6" />

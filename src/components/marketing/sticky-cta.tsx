@@ -23,7 +23,7 @@ export function StickyCta() {
         Ready to digitize your menu? <span className="text-emerald-brand">Start free.</span>
       </p>
       <Link href="/signup">
-        <Button size="sm">Get started</Button>
+        <Button variant="primary" size="sm">Get started</Button>
       </Link>
       <button
         onClick={() => setDismissed(true)}

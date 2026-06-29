@@ -118,7 +118,7 @@ export function DishDetailSheet({
                   </button>
                 </div>
               ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50">
+                <div className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted">
                   <Camera className="h-7 w-7 text-gray-400" />
                 </div>
               )}
@@ -206,7 +206,7 @@ export function DishDetailSheet({
                     "rounded-full border px-3 py-1 text-xs font-medium",
                     draft.tags.includes(tag)
                       ? "border-amber-200 bg-amber-50 text-amber-800"
-                      : "border-gray-200 text-gray-600"
+                      : "border-border text-muted-foreground"
                   )}
                 >
                   {tag}

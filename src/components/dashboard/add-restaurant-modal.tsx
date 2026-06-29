@@ -157,7 +157,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-xl">
+      <div className="relative w-full max-w-md air-card air-card-pad shadow-xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
@@ -189,7 +189,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
               value={name}
               onChange={(event) => handleNameChange(event.target.value)}
               placeholder="e.g. La Calle Tacos"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="air-input"
             />
           </div>
 
@@ -197,7 +197,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
             <label htmlFor="restaurant-slug" className="mb-1.5 block text-sm font-medium text-gray-700">
               URL Slug
             </label>
-            <div className="flex items-center rounded-lg border border-gray-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100">
+            <div className="flex items-center rounded-[10px] border border-input bg-card focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-black/5">
               <span className="pl-3 text-sm text-gray-400">menulia.net/menu/</span>
               <input
                 id="restaurant-slug"
@@ -213,7 +213,7 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">Logo</label>
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted">
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo preview" className="h-full w-full object-cover" />
                 ) : (

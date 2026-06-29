@@ -114,7 +114,7 @@ export function CreateFirstRestaurantForm() {
           value={name}
           onChange={(event) => handleNameChange(event.target.value)}
           placeholder="e.g. La Calle Tacos"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          className="air-input"
         />
       </div>
 
@@ -122,7 +122,7 @@ export function CreateFirstRestaurantForm() {
         <label htmlFor="first-restaurant-slug" className="mb-1.5 block text-sm font-medium text-gray-700">
           URL Slug
         </label>
-        <div className="flex items-center rounded-lg border border-gray-200 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100">
+        <div className="flex items-center rounded-[10px] border border-input bg-card focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-black/5">
           <span className="pl-3 text-sm text-gray-400">menulia.net/menu/</span>
           <input
             id="first-restaurant-slug"

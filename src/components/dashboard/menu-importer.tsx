@@ -67,12 +67,12 @@ export function MenuImporter() {
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 transition-colors ${
-          dragging ? "border-emerald-brand bg-emerald-brand-light" : "border-border bg-white"
+          dragging ? "border-slate-400 bg-muted" : "border-border bg-card"
         }`}
       >
         {processing ? (
           <>
-            <Loader2 className="h-10 w-10 animate-spin text-emerald-brand" />
+            <Loader2 className="h-10 w-10 animate-spin text-slate-700" />
             <p className="mt-4 text-sm font-medium">Analyzing menu layout…</p>
             <p className="mt-1 text-xs text-text-secondary">
               Reading structure, extracting items and prices
@@ -91,7 +91,7 @@ export function MenuImporter() {
       </div>
 
       {items.length > 0 && (
-        <div className="rounded-2xl border border-border bg-white">
+        <div className="air-card overflow-hidden">
           <div className="border-b border-border px-6 py-4">
             <h3 className="font-semibold">Staging — Review before saving</h3>
             <p className="text-sm text-text-secondary">
@@ -115,7 +115,7 @@ export function MenuImporter() {
                       <input
                         value={item.name}
                         onChange={(e) => updateItem(item.id, "name", e.target.value)}
-                        className="w-full rounded-lg border border-border px-2 py-1"
+                        className="air-input h-8 px-2 py-1"
                       />
                     </td>
                     <td className="px-6 py-3">
@@ -124,14 +124,14 @@ export function MenuImporter() {
                         step="0.5"
                         value={item.price}
                         onChange={(e) => updateItem(item.id, "price", parseFloat(e.target.value))}
-                        className="w-20 rounded-lg border border-border px-2 py-1"
+                        className="air-input h-8 w-20 px-2 py-1"
                       />
                     </td>
                     <td className="px-6 py-3">
                       <input
                         value={item.description}
                         onChange={(e) => updateItem(item.id, "description", e.target.value)}
-                        className="w-full rounded-lg border border-border px-2 py-1"
+                        className="air-input h-8 px-2 py-1"
                       />
                     </td>
                     <td className="px-6 py-3">
@@ -139,7 +139,7 @@ export function MenuImporter() {
                         onClick={() => toggleConfirm(item.id)}
                         className={`flex h-8 w-8 items-center justify-center rounded-full ${
                           item.confirmed
-                            ? "bg-emerald-brand text-white"
+                            ? "bg-slate-900 text-white"
                             : "border border-border"
                         }`}
                       >

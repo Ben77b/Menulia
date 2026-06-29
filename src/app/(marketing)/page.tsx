@@ -43,7 +43,7 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/signup">
-                <Button size="lg" className="group transition hover:scale-105">
+                <Button variant="primary" size="lg" className="group transition hover:scale-105">
                   Start free
                   <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                 </Button>

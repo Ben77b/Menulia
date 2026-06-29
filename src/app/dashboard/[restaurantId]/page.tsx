@@ -162,8 +162,8 @@ export default function DashboardPage() {
               href={step.href}
               className="flex items-center gap-4 rounded-2xl border border-[#E5E5EA] p-4 transition-colors hover:border-slate-300 hover:bg-[#FAFAFA]"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
-                <step.icon className="h-5 w-5 text-indigo-600" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                <step.icon className="h-5 w-5 text-slate-700" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">

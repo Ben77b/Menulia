@@ -28,7 +28,7 @@ export function MenuPhonePreview({
 
   return (
     <div
-      className={`flex flex-col items-center justify-start rounded-xl border border-gray-200 bg-gradient-to-b from-gray-100 to-gray-200 p-4 lg:p-6 ${className}`}
+      className={`flex flex-col items-center justify-start rounded-xl border border-border bg-gradient-to-b from-muted to-background p-4 lg:p-6 ${className}`}
     >
       <p className="mb-4 text-center text-xs font-medium uppercase tracking-wide text-gray-500">
         {label}

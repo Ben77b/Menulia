@@ -57,7 +57,7 @@ export function HotspotColorPopover({
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-50 w-64 rounded-xl border border-gray-200 bg-white p-4 shadow-xl",
+        "absolute z-50 w-64 air-card p-4 shadow-xl",
         "animate-in fade-in zoom-in-95 duration-150"
       )}
       style={{
@@ -89,7 +89,7 @@ export function HotspotColorPopover({
             <div key={field.id}>
               <label className="mb-1.5 block text-xs font-medium text-gray-700">{field.label}</label>
               <div className="flex items-center gap-2">
-                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-[10px] border border-border shadow-sm">
                   <input
                     type="color"
                     value={safeColor}
@@ -106,7 +106,7 @@ export function HotspotColorPopover({
                       field.onChange(next.length === 7 ? next : safeColor);
                     }
                   }}
-                  className="h-9 flex-1 rounded-lg border border-gray-200 px-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="air-input h-9 flex-1 px-2 font-mono text-xs"
                   spellCheck={false}
                 />
               </div>

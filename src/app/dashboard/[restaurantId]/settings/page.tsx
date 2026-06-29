@@ -295,13 +295,13 @@ export default function SettingsPage() {
       </div>
 
       {loadError && (
-        <div className="mb-4 shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-4 shrink-0 air-alert-warning">
           {loadError}
         </div>
       )}
 
       {saveError && (
-        <div className="mb-4 shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mb-4 shrink-0 air-alert-error">
           {saveError}
         </div>
       )}
@@ -327,7 +327,7 @@ export default function SettingsPage() {
                     type="text"
                     value={restaurantName}
                     onChange={(e) => setRestaurantName(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="air-input"
                     placeholder="Your Restaurant Name"
                   />
                 </div>
@@ -337,7 +337,7 @@ export default function SettingsPage() {
                     type="text"
                     value={restaurantTagline}
                     onChange={(e) => setRestaurantTagline(e.target.value)}
-                    className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="air-input"
                     placeholder="Fresh seasonal cuisine in the heart of the city"
                   />
                   <p className="mt-1 text-xs text-gray-500">
@@ -354,7 +354,7 @@ export default function SettingsPage() {
                       type="text"
                       value={restaurantSlug}
                       onChange={(e) => handleSlugChange(e.target.value)}
-                      className="h-10 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="air-input flex-1"
                       placeholder="your-restaurant-slug"
                     />
                   </div>
@@ -383,7 +383,7 @@ export default function SettingsPage() {
                       type="text"
                       value={restaurantLocation}
                       onChange={(e) => setRestaurantLocation(e.target.value)}
-                      className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="air-input"
                       placeholder="123 Main Street, Dublin"
                     />
                   </div>
@@ -396,7 +396,7 @@ export default function SettingsPage() {
                         type="tel"
                         value={restaurantPhone}
                         onChange={(e) => setRestaurantPhone(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="air-input"
                         placeholder="+1 234 567 890"
                       />
                     </div>
@@ -408,7 +408,7 @@ export default function SettingsPage() {
                         type="email"
                         value={restaurantEmail}
                         onChange={(e) => setRestaurantEmail(e.target.value)}
-                        className="h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="air-input"
                         placeholder="hello@restaurant.com"
                       />
                     </div>
@@ -458,7 +458,7 @@ export default function SettingsPage() {
                       {customLinks.map((link) => (
                         <div
                           key={link.id}
-                          className="flex items-start gap-2 rounded-lg border border-gray-200 p-3"
+                          className="air-card flex items-start gap-2 p-3"
                         >
                           <div className="flex-1 space-y-2">
                             <input
@@ -473,14 +473,14 @@ export default function SettingsPage() {
                               }
                               maxLength={MAX_LINK_LABEL_LENGTH}
                               placeholder="Link label (e.g., TripAdvisor)"
-                              className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="air-input h-9"
                             />
                             <input
                               type="url"
                               value={link.url}
                               onChange={(e) => updateCustomLink(link.id, "url", e.target.value)}
                               placeholder="https://..."
-                              className="h-9 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="air-input h-9"
                             />
                           </div>
                           <Button
@@ -504,7 +504,7 @@ export default function SettingsPage() {
                     onChange={(e) => setFooterSlogan(e.target.value)}
                     placeholder="We recommend reservations after 12 PM"
                     rows={6}
-                    className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="air-textarea"
                   />
                 </div>
               </div>
@@ -520,7 +520,7 @@ export default function SettingsPage() {
               <p className="mb-4 text-sm text-gray-600">
                 Permanently delete this restaurant, its menu, and all associated data.
               </p>
-              <div className="flex items-center justify-between rounded-lg border border-red-100 bg-red-50 p-4">
+              <div className="air-card flex items-center justify-between border-red-100 bg-red-50 p-4">
                 <div>
                   <h3 className="text-sm font-medium text-red-900">Delete Restaurant</h3>
                   <p className="text-xs text-gray-600">
@@ -574,7 +574,7 @@ export default function SettingsPage() {
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder={currentRestaurant.name}
-              className="mt-4 h-10 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="air-input mt-4 focus:ring-red-500/20"
             />
             {deleteError && <p className="mt-2 text-sm text-red-600">{deleteError}</p>}
             <div className="mt-6 flex justify-end gap-3">

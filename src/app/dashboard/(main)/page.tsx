@@ -29,7 +29,7 @@ export default function DashboardIndexPage() {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6">
-      <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+      <div className="air-card w-full max-w-lg p-8 text-center">
         <h1 className="text-2xl font-bold text-gray-900">
           Create your first restaurant to unlock your dashboard
         </h1>
