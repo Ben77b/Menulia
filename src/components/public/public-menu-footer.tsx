@@ -5,6 +5,7 @@ import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
+import { PublicMenuAllergenLegend } from "@/components/public/public-menu-allergen-legend";
 
 interface PublicMenuFooterProps {
   restaurantName: string;
@@ -145,6 +146,17 @@ export function PublicMenuFooter({
             </div>
           </div>
         )}
+
+        <PublicMenuAllergenLegend
+          textColor={footerText}
+          titleFont={titleFont}
+          bodyFont={bodyFont}
+          titleFontWeight={titleFontWeight}
+          titleFontStyle={titleFontStyle}
+          bodyFontWeight={bodyFontWeight}
+          bodyFontStyle={bodyFontStyle}
+          locale={locale}
+        />
 
         {/* 5. Powered by — bottom */}
         <p

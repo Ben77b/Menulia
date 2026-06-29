@@ -432,13 +432,19 @@ function CategoryBlock({
   busy: boolean;
   rapidDraft: { name: string; price: string };
   onRapidDraftChange: (draft: { name: string; price: string }) => void;
-  onRapidAdd: () => void;
+  onRapidAdd: () => Promise<void>;
   onDeleteCategory: () => void;
   onDeleteDish: (dish: MenuBuilderDish) => void;
   onOpenDish: (dish: MenuBuilderDish) => void;
   onLayoutChange: (layout: "stacked" | "carousel") => void;
 }) {
+  const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
+
+  async function handleQuickAdd() {
+    await onRapidAdd();
+    nameRef.current?.focus();
+  }
 
   return (
     <div className="air-card overflow-hidden">
@@ -491,8 +497,10 @@ function CategoryBlock({
             )}
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-slate-900">{dish.name}</p>
-              {dish.description && (
+              {dish.description ? (
                 <p className="truncate text-xs text-[#86868B]">{dish.description}</p>
+              ) : (
+                <p className="text-xs text-[#86868B]">Tap to add photo, description, and tags</p>
               )}
             </div>
             <p className="font-semibold text-slate-900">€{dish.price.toFixed(2)}</p>
@@ -510,38 +518,58 @@ function CategoryBlock({
           </div>
         ))}
 
-        <div className="flex items-center gap-2 px-5 py-3">
-          <Plus className="h-4 w-4 shrink-0 text-[#C7C7CC]" />
-          <input
-            placeholder="Dish title"
-            value={rapidDraft.name}
-            disabled={busy}
-            onChange={(e) => onRapidDraftChange({ ...rapidDraft, name: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === "Tab") {
-                e.preventDefault();
-                priceRef.current?.focus();
-              }
-            }}
-            className="air-input-ghost min-w-0 flex-1"
-          />
-          <input
-            ref={priceRef}
-            placeholder="Price"
-            value={rapidDraft.price}
-            disabled={busy}
-            onChange={(e) => onRapidDraftChange({ ...rapidDraft, price: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                onRapidAdd();
-              }
-            }}
-            className="air-input-ghost w-24"
-          />
-          <Button size="sm" variant="outline" disabled={busy || !rapidDraft.name.trim()} onClick={onRapidAdd}>
-            Add
-          </Button>
+        <div className="space-y-3 px-5 py-4">
+          <p className="text-xs leading-relaxed text-[#86868B]">
+            Quick add with name and price. Tap any dish above to edit full details.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="min-w-0 flex-1">
+              <label className="mb-1 block text-xs font-medium text-slate-700">Name</label>
+              <input
+                ref={nameRef}
+                placeholder="e.g. Margherita"
+                value={rapidDraft.name}
+                disabled={busy}
+                onChange={(e) => onRapidDraftChange({ ...rapidDraft, name: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    priceRef.current?.focus();
+                  }
+                }}
+                className="air-input"
+              />
+            </div>
+            <div className="w-full sm:w-28">
+              <label className="mb-1 block text-xs font-medium text-slate-700">Price (€)</label>
+              <input
+                ref={priceRef}
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={rapidDraft.price}
+                disabled={busy}
+                onChange={(e) => onRapidDraftChange({ ...rapidDraft, price: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void handleQuickAdd();
+                  }
+                }}
+                className="air-input"
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="dark"
+              className="w-full sm:w-auto"
+              disabled={busy || !rapidDraft.name.trim()}
+              onClick={() => void handleQuickAdd()}
+            >
+              Add dish
+            </Button>
+          </div>
         </div>
       </div>
     </div>

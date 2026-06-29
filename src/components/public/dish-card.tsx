@@ -42,7 +42,7 @@ function TagBadge({
   bodyFont,
   bodyFontWeight,
   bodyFontStyle,
-  subdued = false,
+  iconOnly = false,
 }: {
   icon: string;
   label: string;
@@ -50,21 +50,27 @@ function TagBadge({
   bodyFont: string;
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
-  subdued?: boolean;
+  iconOnly?: boolean;
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${subdued ? "opacity-80" : ""}`}
-      style={{
-        color: textColor,
-        border: `1px solid ${textColor}`,
-        fontFamily: bodyFont,
-        fontWeight: bodyFontWeight ?? 400,
-        fontStyle: bodyFontStyle ?? "normal",
-      }}
+      className={`inline-flex items-center ${iconOnly ? "justify-center px-1.5 py-1 text-base" : "gap-1 rounded-full px-2.5 py-1 text-xs font-medium"}`}
+      title={iconOnly ? label : undefined}
+      aria-label={iconOnly ? label : undefined}
+      style={
+        iconOnly
+          ? undefined
+          : {
+              color: textColor,
+              border: `1px solid ${textColor}`,
+              fontFamily: bodyFont,
+              fontWeight: bodyFontWeight ?? 400,
+              fontStyle: bodyFontStyle ?? "normal",
+            }
+      }
     >
       {icon && <span>{icon}</span>}
-      {label}
+      {!iconOnly && label}
     </span>
   );
 }
@@ -131,7 +137,7 @@ export function DishCard({
           {dish.description}
         </p>
       )}
-      {display.showDietary && (dish.tags.length > 0 || dish.allergens.length > 0) && (
+      {display.showDietary && dish.tags.length > 0 && (
         <div className="flex flex-wrap justify-center gap-2">
           {dish.tags.map((tag) => {
             const meta = getFilterableTagMeta(tag);
@@ -147,6 +153,10 @@ export function DishCard({
               />
             );
           })}
+        </div>
+      )}
+      {display.showDietary && dish.allergens.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-1.5">
           {dish.allergens.map((allergen) => {
             const meta = getAllergenTagMeta(allergen);
             return (
@@ -158,7 +168,7 @@ export function DishCard({
                 bodyFont={bodyFont}
                 bodyFontWeight={bodyFontWeight}
                 bodyFontStyle={bodyFontStyle}
-                subdued
+                iconOnly
               />
             );
           })}
