@@ -22,16 +22,16 @@ import { Button } from "@/components/ui/button";
 import { ThemeHotspotPopover } from "@/components/dashboard/theme-hotspot-popover";
 import { ThemeColorGroupSection } from "@/components/dashboard/theme-color-group-section";
 import { MenuPhonePreview } from "@/components/dashboard/menu-phone-preview";
+import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import {
   DesignDisplaySection,
   DesignLogoSeoSection,
   DesignTypographySection,
 } from "@/components/dashboard/design-branding-sections";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
-import { cn } from "@/lib/utils";
-import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
 import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
+import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 
 type StudioTab = "menu" | "colours" | "fonts" | "display" | "logo-seo";
 
@@ -267,10 +267,10 @@ export function DesignStudio() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
-      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Design Studio</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="air-page-title">Design Studio</h1>
+          <p className="air-page-subtitle">
             Parent colours control each region — fine-tune individual elements in the advanced accordion.
           </p>
         </div>
@@ -280,12 +280,13 @@ export function DesignStudio() {
               href={publicMenuUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+              className="inline-flex items-center gap-2 rounded-[10px] border border-[#E5E5EA] bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-[var(--shadow-air-ambient)] transition-colors hover:bg-[#FAFAFA]"
             >
-              🔗 View Public Menu
+              View Public Menu
             </a>
           )}
           <Button
+            variant="air"
             size="lg"
             className="px-8"
             onClick={handleSaveDesign}
@@ -297,34 +298,23 @@ export function DesignStudio() {
       </div>
 
       {saveError && (
-        <div className="mb-4 shrink-0 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-4 shrink-0 rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {saveError}
         </div>
       )}
 
-      <div className="mb-4 shrink-0 border-b border-gray-200">
-        <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Design studio sections">
-          {STUDIO_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors",
-                activeTab === tab.id
-                  ? "border-indigo-600 text-indigo-600"
-                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      <div className="mb-6 shrink-0">
+        <CapsuleNav
+          items={STUDIO_TABS}
+          active={activeTab}
+          onChange={setActiveTab}
+          ariaLabel="Design studio sections"
+        />
       </div>
 
       <div className="min-h-0 flex-1">
         {activeTab === "menu" && (
-          <div className="flex h-full min-h-[640px] flex-col items-center justify-start rounded-xl border border-gray-200 bg-gradient-to-b from-gray-100 to-gray-200 p-6 lg:p-10">
+          <div className="air-card air-card-lg flex h-full min-h-[640px] flex-col items-center justify-start p-6 lg:p-10">
             <div ref={previewContainerRef} className="relative w-full max-w-[390px] shrink-0">
               <MenuPhonePreview
                 label="Live Preview — tap a palette dot to edit colours in context"
@@ -359,10 +349,10 @@ export function DesignStudio() {
         )}
 
         {activeTab === "colours" && (
-          <div className="mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+          <div className="air-card air-card-pad mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Colours</h2>
-              <p className="mt-1 text-sm text-gray-600">
+              <h2 className="air-section-title">Colours</h2>
+              <p className="air-page-subtitle">
                 Each section has a parent colour that controls the whole region. Expand advanced
                 controls to override individual elements — changes sync instantly with the preview.
               </p>
@@ -385,20 +375,20 @@ export function DesignStudio() {
         )}
 
         {activeTab === "fonts" && (
-          <div className="mx-auto max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="air-card air-card-pad mx-auto max-w-2xl">
             <DesignTypographySection showHeading={false} />
           </div>
         )}
 
         {activeTab === "display" && (
-          <div className="mx-auto max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-lg font-semibold text-gray-900">Display Options</h2>
+          <div className="air-card air-card-pad mx-auto max-w-2xl">
+            <h2 className="air-section-title mb-2">Display Options</h2>
             <DesignDisplaySection />
           </div>
         )}
 
         {activeTab === "logo-seo" && (
-          <div className="mx-auto max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="air-card air-card-pad mx-auto max-w-2xl">
             <DesignLogoSeoSection showHeading={false} />
           </div>
         )}

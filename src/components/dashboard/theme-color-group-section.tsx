@@ -29,12 +29,13 @@ export function ThemeColorGroupSection({
   const [advancedOpen, setAdvancedOpen] = useState(defaultExpanded);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-100 bg-gray-50/80 px-4 py-3">
-        <h3 className="text-sm font-semibold text-gray-900">{group.title}</h3>
+    <section className="air-card overflow-hidden">
+      <div className="border-b border-[#F5F5F7] px-5 py-4">
+        <h3 className="text-sm font-semibold tracking-tight text-slate-900">{group.title}</h3>
+        <p className="mt-0.5 text-xs text-[#86868B]">{group.parentDescription}</p>
       </div>
 
-      <div className="border-b border-gray-100 p-4">
+      <div className="border-b border-[#F5F5F7] p-4">
         <ThemeColorFieldCard
           label={group.parentLabel}
           description={group.parentDescription}
@@ -50,20 +51,20 @@ export function ThemeColorGroupSection({
           <button
             type="button"
             onClick={() => setAdvancedOpen((open) => !open)}
-            className="flex w-full items-center justify-between border-b border-gray-100 px-4 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="flex w-full items-center justify-between border-b border-[#F5F5F7] px-5 py-3.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-[#FAFAFA]"
             aria-expanded={advancedOpen}
           >
             <span>Advanced / Fine-tune Section</span>
             <ChevronDown
               className={cn(
-                "h-4 w-4 text-gray-400 transition-transform",
+                "h-4 w-4 text-[#86868B] transition-transform",
                 advancedOpen && "rotate-180"
               )}
             />
           </button>
 
           {advancedOpen && (
-            <div className="space-y-3 bg-gray-50/50 p-4">
+            <div className="divide-y divide-[#F5F5F7] bg-[#FAFAFA]/80 p-4">
               {group.childFields.map((child) => (
                 <ThemeColorFieldCard
                   key={child.id}

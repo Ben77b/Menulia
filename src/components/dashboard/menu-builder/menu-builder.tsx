@@ -20,6 +20,7 @@ import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/m
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
+import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 
 export function MenuBuilder() {
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
@@ -266,12 +267,13 @@ export function MenuBuilder() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Menu Builder</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="air-page-title">Menu Builder</h1>
+          <p className="air-page-subtitle">
             Sections → Categories → Dishes. Tab to price, Enter to save.
           </p>
         </div>
         <Button
+          variant="air"
           size="sm"
           className="gap-2"
           onClick={() => setAddingSection(true)}
@@ -283,13 +285,13 @@ export function MenuBuilder() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {addingSection && (
-        <div className="flex gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="air-card air-card-pad flex gap-2">
           <input
             autoFocus
             placeholder="Section name (e.g. Food, Drinks)"
@@ -297,9 +299,9 @@ export function MenuBuilder() {
             maxLength={MAX_CATEGORY_NAME_LENGTH}
             onChange={(e) => setNewSectionName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddSection()}
-            className="h-10 flex-1 rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="air-input flex-1"
           />
-          <Button onClick={handleAddSection} disabled={!newSectionName.trim() || busy}>
+          <Button variant="air" onClick={handleAddSection} disabled={!newSectionName.trim() || busy}>
             Save
           </Button>
           <Button variant="outline" onClick={() => setAddingSection(false)}>
@@ -309,36 +311,26 @@ export function MenuBuilder() {
       )}
 
       {tree.sections.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-200 bg-white py-16 text-center">
-          <Layers className="mx-auto mb-3 h-10 w-10 text-gray-300" />
-          <p className="text-gray-600">Create your first section to start building the menu tree.</p>
+        <div className="air-card air-card-pad py-16 text-center">
+          <Layers className="mx-auto mb-3 h-10 w-10 text-[#C7C7CC]" />
+          <p className="text-[#86868B]">Create your first section to start building the menu tree.</p>
         </div>
       ) : (
         <>
-          {/* Tier 1 — Section tabs */}
-          <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-3">
-            {tree.sections.map((section) => (
-              <button
-                key={section.id}
-                type="button"
-                onClick={() => setActiveSectionId(section.id)}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
-                  activeSection?.id === section.id
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
-                )}
-              >
-                {section.name}
-                <span className="text-xs opacity-80">({section.categories.length})</span>
-              </button>
-            ))}
-          </div>
+          <CapsuleNav
+            items={tree.sections.map((section) => ({
+              id: section.id,
+              label: `${section.name} (${section.categories.length})`,
+            }))}
+            active={activeSection?.id ?? tree.sections[0].id}
+            onChange={setActiveSectionId}
+            ariaLabel="Menu sections"
+          />
 
           {activeSection && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">{activeSection.name}</h2>
+                <h2 className="air-section-title">{activeSection.name}</h2>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -352,7 +344,7 @@ export function MenuBuilder() {
               </div>
 
               {activeSection.categories.length === 0 ? (
-                <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+                <div className="air-card air-card-pad py-10 text-center text-sm text-[#86868B]">
                   No categories yet. Add Starters, Mains, Desserts…
                 </div>
               ) : (
@@ -375,7 +367,7 @@ export function MenuBuilder() {
               )}
 
               {addingCategoryForSection === activeSection.id ? (
-                <div className="flex gap-2 rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+                <div className="air-card air-card-pad flex gap-2">
                   <input
                     autoFocus
                     placeholder="Category name (e.g. Starters)"
@@ -383,9 +375,10 @@ export function MenuBuilder() {
                     maxLength={MAX_CATEGORY_NAME_LENGTH}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAddCategory(activeSection.id)}
-                    className="h-10 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="air-input flex-1"
                   />
                   <Button
+                    variant="air"
                     onClick={() => handleAddCategory(activeSection.id)}
                     disabled={!newCategoryName.trim() || busy}
                   >
@@ -399,7 +392,7 @@ export function MenuBuilder() {
                 <button
                   type="button"
                   onClick={() => setAddingCategoryForSection(activeSection.id)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/50"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#E5E5EA] py-3.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-white"
                 >
                   <Plus className="h-4 w-4" />
                   Add Category
@@ -447,25 +440,23 @@ function CategoryBlock({
   const priceRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/80 px-4 py-3">
+    <div className="air-card overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F5F7] px-5 py-4">
         <div className="flex items-center gap-2">
-          <LayoutGrid className="h-4 w-4 text-indigo-500" />
-          <h3 className="font-semibold text-gray-900">{category.name}</h3>
-          <span className="text-xs text-gray-500">{category.dishes.length} dishes</span>
+          <LayoutGrid className="h-4 w-4 text-slate-500" />
+          <h3 className="font-semibold text-slate-900">{category.name}</h3>
+          <span className="text-xs text-[#86868B]">{category.dishes.length} dishes</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-gray-200 bg-white p-0.5 text-xs">
+          <div className="air-capsule-nav !w-auto p-0.5">
             {(["stacked", "carousel"] as const).map((layout) => (
               <button
                 key={layout}
                 type="button"
                 onClick={() => onLayoutChange(layout)}
                 className={cn(
-                  "rounded-md px-2 py-1 capitalize",
-                  category.layout_type === layout
-                    ? "bg-indigo-100 font-medium text-indigo-700"
-                    : "text-gray-600"
+                  "air-capsule-nav-item !px-3 !py-1.5 text-xs capitalize",
+                  category.layout_type === layout && "air-capsule-nav-item-active"
                 )}
               >
                 {layout}
@@ -478,7 +469,7 @@ function CategoryBlock({
         </div>
       </div>
 
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-[#F5F5F7]">
         {category.dishes.map((dish) => (
           <div
             key={dish.id}
@@ -486,41 +477,40 @@ function CategoryBlock({
             tabIndex={0}
             onClick={() => onOpenDish(dish)}
             onKeyDown={(e) => (e.key === "Enter" ? onOpenDish(dish) : undefined)}
-            className="group flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-indigo-50/40"
+            className="group flex cursor-pointer items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[#FAFAFA]"
           >
             {dish.image_url ? (
               <img
                 src={dish.image_url}
                 alt=""
-                className="h-10 w-10 rounded-lg object-cover"
+                className="h-10 w-10 rounded-[10px] object-cover"
               />
             ) : (
-              <div className="h-10 w-10 rounded-lg bg-gray-100" />
+              <div className="h-10 w-10 rounded-[10px] bg-[#F5F5F7]" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-gray-900">{dish.name}</p>
+              <p className="truncate font-medium text-slate-900">{dish.name}</p>
               {dish.description && (
-                <p className="truncate text-xs text-gray-500">{dish.description}</p>
+                <p className="truncate text-xs text-[#86868B]">{dish.description}</p>
               )}
             </div>
-            <p className="font-semibold text-gray-900">€{dish.price.toFixed(2)}</p>
-            <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-indigo-400" />
+            <p className="font-semibold text-slate-900">€{dish.price.toFixed(2)}</p>
+            <ChevronRight className="h-4 w-4 text-[#C7C7CC] group-hover:text-slate-500" />
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteDish(dish);
               }}
-              className="rounded p-1 text-gray-400 opacity-0 hover:text-red-500 group-hover:opacity-100"
+              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-red-500 group-hover:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         ))}
 
-        {/* Rapid-add row */}
-        <div className="flex items-center gap-2 bg-indigo-50/30 px-4 py-3">
-          <Plus className="h-4 w-4 shrink-0 text-indigo-400" />
+        <div className="flex items-center gap-2 px-5 py-3">
+          <Plus className="h-4 w-4 shrink-0 text-[#C7C7CC]" />
           <input
             placeholder="Dish title"
             value={rapidDraft.name}
@@ -532,7 +522,7 @@ function CategoryBlock({
                 priceRef.current?.focus();
               }
             }}
-            className="h-9 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="air-input-ghost min-w-0 flex-1"
           />
           <input
             ref={priceRef}
@@ -546,7 +536,7 @@ function CategoryBlock({
                 onRapidAdd();
               }
             }}
-            className="h-9 w-24 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="air-input-ghost w-24"
           />
           <Button size="sm" variant="outline" disabled={busy || !rapidDraft.name.trim()} onClick={onRapidAdd}>
             Add

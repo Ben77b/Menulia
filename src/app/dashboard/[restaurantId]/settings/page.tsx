@@ -277,7 +277,7 @@ export default function SettingsPage() {
     <div className="flex min-h-[calc(100vh-6rem)] flex-col">
       <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Restaurant Settings</h1>
+          <h1 className="air-page-title">Restaurant Settings</h1>
           <p className="mt-1 text-sm text-gray-600">
             Manage profile, contact details, hours, and links for this restaurant
           </p>
@@ -313,7 +313,7 @@ export default function SettingsPage() {
       <div className="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-8">
         <div className="min-w-0 space-y-6 pb-8">
           {activeTab === "general" && (
-            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="air-card air-card-pad">
               <div className="mb-4 flex items-center gap-3">
                 <Building2 className="h-5 w-5 text-gray-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Restaurant Name & Tagline</h2>
@@ -366,7 +366,7 @@ export default function SettingsPage() {
 
           {activeTab === "hours-location" && (
             <>
-              <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="air-card air-card-pad">
                 <div className="mb-4 flex items-center gap-3">
                   <Phone className="h-5 w-5 text-gray-600" />
                   <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
@@ -416,7 +416,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+              <div className="air-card air-card-pad">
                 <div className="mb-4 flex items-center gap-3">
                   <Clock className="h-5 w-5 text-gray-600" />
                   <h2 className="text-lg font-semibold text-gray-900">Opening Hours</h2>
@@ -430,7 +430,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === "social-links" && (
-            <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+            <div className="air-card air-card-pad">
               <div className="mb-4 flex items-center gap-3">
                 <Link2 className="h-5 w-5 text-gray-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Links & Custom Footer Notes</h2>

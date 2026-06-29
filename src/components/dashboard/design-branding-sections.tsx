@@ -136,9 +136,9 @@ function SectionColorPicker({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-gray-700">{label}</label>
+      <label className="air-label">{label}</label>
       <div className="flex items-center gap-3">
-        <div className="relative h-10 w-10 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+        <div className="relative h-10 w-10 overflow-hidden rounded-[10px] border border-[#E5E5EA]">
           <input
             type="color"
             value={safeValue}

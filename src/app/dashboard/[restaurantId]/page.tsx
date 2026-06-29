@@ -117,13 +117,14 @@ export default function DashboardPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Managing <span className="font-medium text-gray-900">{displayName}</span>
+          <h1 className="air-page-title">Welcome back</h1>
+          <p className="air-page-subtitle">
+            Managing <span className="font-medium text-slate-900">{displayName}</span>
           </p>
         </div>
         {showViewLiveSite && currentRestaurant && (
           <Button
+            variant="air"
             onClick={() => window.open(getPublicMenuUrl(currentRestaurant.slug), "_blank")}
             className="gap-2"
           >
@@ -135,32 +136,31 @@ export default function DashboardPage() {
 
       {/* Quick Stats */}
       <div className="grid gap-4 sm:grid-cols-3 mb-8">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5">
-          <UtensilsCrossed className="h-5 w-5 text-indigo-600" />
-          <p className="mt-3 text-2xl font-bold text-gray-900">{stats?.totalCategories ?? 0}</p>
-          <p className="text-sm text-gray-600">Total Menu Categories</p>
+        <div className="air-card p-5">
+          <UtensilsCrossed className="h-5 w-5 text-slate-600" />
+          <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalCategories ?? 0}</p>
+          <p className="text-sm text-[#86868B]">Total Menu Categories</p>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5">
-          <LayoutTemplate className="h-5 w-5 text-indigo-600" />
-          <p className="mt-3 text-2xl font-bold text-gray-900">{stats?.totalDishes ?? 0}</p>
-          <p className="text-sm text-gray-600">Total Active Dishes</p>
+        <div className="air-card p-5">
+          <LayoutTemplate className="h-5 w-5 text-slate-600" />
+          <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalDishes ?? 0}</p>
+          <p className="text-sm text-[#86868B]">Total Active Dishes</p>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5">
-          <QrCode className="h-5 w-5 text-indigo-600" />
-          <p className="mt-3 text-2xl font-bold text-gray-900">{stats?.totalLinks ?? 0}</p>
-          <p className="text-sm text-gray-600">Dynamic Link Count</p>
+        <div className="air-card p-5">
+          <QrCode className="h-5 w-5 text-slate-600" />
+          <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalLinks ?? 0}</p>
+          <p className="text-sm text-[#86868B]">Dynamic Link Count</p>
         </div>
       </div>
 
-      {/* Get Started / Quick Steps */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Get Started</h2>
+      <div className="air-card air-card-pad">
+        <h2 className="air-section-title mb-4">Get Started</h2>
         <div className="space-y-4">
           {quickSteps.map((step, index) => (
             <Link
               key={step.href}
               href={step.href}
-              className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-colors"
+              className="flex items-center gap-4 rounded-2xl border border-[#E5E5EA] p-4 transition-colors hover:border-slate-300 hover:bg-[#FAFAFA]"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
                 <step.icon className="h-5 w-5 text-indigo-600" />

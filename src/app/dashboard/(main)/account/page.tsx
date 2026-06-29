@@ -111,7 +111,7 @@ export default function AccountSettingsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
+          <h1 className="air-page-title">Account Settings</h1>
           <p className="mt-1 text-sm text-gray-600">
             Manage your personal profile, security, and billing
           </p>
@@ -137,7 +137,7 @@ export default function AccountSettingsPage() {
       />
 
       {activeTab === "profile" && (
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="air-card air-card-pad">
           <div className="mb-4 flex items-center gap-3">
             <User className="h-5 w-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-900">Personal Details</h2>
@@ -172,7 +172,7 @@ export default function AccountSettingsPage() {
 
       {activeTab === "security" && (
         <>
-          <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="air-card air-card-pad">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Session & Security</h2>
             <div className="flex flex-wrap gap-3">
               <Button variant="outline" className="gap-2">
@@ -227,7 +227,7 @@ export default function AccountSettingsPage() {
       )}
 
       {activeTab === "billing" && (
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="air-card air-card-pad">
           <h2 className="mb-2 text-lg font-semibold text-gray-900">Subscription & Billing</h2>
           <p className="mb-4 text-sm text-gray-600">
             Manage your Menulia plan and payment methods.

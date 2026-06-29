@@ -15,20 +15,20 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
 
   return (
     <DashboardAuthGuard>
-      <div className="flex min-h-screen">
+      <div className="air-dashboard flex min-h-screen bg-[#F5F5F7]">
         <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className="min-h-screen flex-1 overflow-y-auto bg-gray-50/50 md:pl-64">
-          <header className="fixed left-0 right-0 top-0 z-30 border-b border-gray-100 bg-white px-4 py-3 md:hidden">
+        <div className="min-h-screen flex-1 overflow-y-auto md:pl-64">
+          <header className="fixed left-0 right-0 top-0 z-30 border-b border-[#E5E5EA] bg-white/90 px-4 py-3 backdrop-blur-md md:hidden">
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)}>
                 <MenuIcon className="h-6 w-6" />
               </Button>
-              <h1 className="text-lg font-bold text-gray-900">Menulia</h1>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900">Menulia</h1>
             </div>
           </header>
 
-          <main className="p-6 pt-20 md:pt-6">{children}</main>
+          <main className="p-6 pt-20 md:p-8 md:pt-8">{children}</main>
         </div>
       </div>
     </DashboardAuthGuard>

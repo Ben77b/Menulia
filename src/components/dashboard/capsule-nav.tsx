@@ -1,0 +1,42 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+
+export interface CapsuleNavItem<T extends string> {
+  id: T;
+  label: string;
+}
+
+interface CapsuleNavProps<T extends string> {
+  items: CapsuleNavItem<T>[];
+  active: T;
+  onChange: (id: T) => void;
+  ariaLabel?: string;
+  className?: string;
+}
+
+export function CapsuleNav<T extends string>({
+  items,
+  active,
+  onChange,
+  ariaLabel = "Sections",
+  className,
+}: CapsuleNavProps<T>) {
+  return (
+    <nav className={cn("air-capsule-nav", className)} aria-label={ariaLabel}>
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => onChange(item.id)}
+          className={cn(
+            "air-capsule-nav-item",
+            active === item.id && "air-capsule-nav-item-active"
+          )}
+        >
+          {item.label}
+        </button>
+      ))}
+    </nav>
+  );
+}

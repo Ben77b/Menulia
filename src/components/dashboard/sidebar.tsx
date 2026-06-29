@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
 import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -87,86 +88,90 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={onToggle} />
+        <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:hidden" onClick={onToggle} />
       )}
 
       <aside
-        className={`
-          fixed md:fixed top-0 left-0 z-50 h-full
-          bg-white border-r border-gray-100
-          transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:w-64
-          ${isOpen ? "w-72" : ""}
-        `}
+        className={cn(
+          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-[#E5E5EA] bg-white transition-transform duration-300 ease-out",
+          isOpen ? "translate-x-0 w-72" : "-translate-x-full w-72",
+          "md:translate-x-0 md:w-64"
+        )}
       >
-        <div className="flex h-full flex-col p-5">
-          <div className="mb-4">
-            <h1 className="text-xl font-bold text-gray-900">Menulia</h1>
+        <div className="flex h-full flex-col px-4 py-6">
+          <div className="mb-8 px-2">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">Menulia</h1>
+            <p className="mt-0.5 text-xs text-[#86868B]">Restaurant workspace</p>
           </div>
 
           {hasRestaurants ? (
-            <div className="mb-6 border-b border-gray-100 pb-6">
+            <div className="mb-6 px-1">
               <div className="relative">
                 <button
                   onClick={() => setRestaurantOpen(!restaurantOpen)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 transition-colors hover:bg-gray-50"
+                  className="air-card flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors hover:bg-[#FAFAFA]"
                 >
                   {currentRestaurant?.logo ? (
                     <img
                       src={currentRestaurant.logo}
                       alt=""
-                      className="h-8 w-8 rounded-lg object-cover"
+                      className="h-9 w-9 rounded-xl object-cover"
                     />
                   ) : (
-                    <Building2 className="h-5 w-5 text-gray-600" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F5F5F7]">
+                      <Building2 className="h-4 w-4 text-slate-500" />
+                    </div>
                   )}
-                  <div className="min-w-0 flex-1 text-left">
-                    <p className="truncate text-sm font-medium text-gray-900">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900">
                       {currentRestaurant?.name || "Select Restaurant"}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-[#86868B]">
                       {loading
                         ? "Loading..."
                         : `${restaurants.length} restaurant${restaurants.length === 1 ? "" : "s"}`}
                     </p>
                   </div>
                   <ChevronDown
-                    className={`h-4 w-4 text-gray-400 transition-transform ${restaurantOpen ? "rotate-180" : ""}`}
+                    className={cn(
+                      "h-4 w-4 text-[#86868B] transition-transform",
+                      restaurantOpen && "rotate-180"
+                    )}
                   />
                 </button>
 
                 {restaurantOpen && (
-                  <div className="absolute left-0 right-0 top-full z-10 mt-2 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-xl">
+                  <div className="absolute left-0 right-0 top-full z-10 mt-2 max-h-64 overflow-y-auto rounded-2xl border border-[#E5E5EA] bg-white p-2 shadow-[0_8px_40px_rgba(0,0,0,0.08)]">
                     {restaurants.map((restaurant) => {
                       const isActive = restaurant.id === activeRestaurantId;
                       return (
                         <button
                           key={restaurant.id}
                           onClick={() => handleRestaurantSwitch(restaurant.id)}
-                          className={`flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm transition-colors ${
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
                             isActive
-                              ? "bg-indigo-50 text-indigo-700"
-                              : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                              ? "bg-[#F5F5F7] font-medium text-slate-900"
+                              : "text-slate-600 hover:bg-[#FAFAFA]"
+                          )}
                         >
                           {restaurant.logo ? (
                             <img
                               src={restaurant.logo}
                               alt=""
-                              className="h-6 w-6 rounded object-cover"
+                              className="h-6 w-6 rounded-lg object-cover"
                             />
                           ) : (
-                            <Building2 className="h-4 w-4 shrink-0" />
+                            <Building2 className="h-4 w-4 shrink-0 text-slate-400" />
                           )}
                           <span className="flex-1 truncate text-left">{restaurant.name}</span>
-                          {isActive && <Check className="h-4 w-4 shrink-0" />}
+                          {isActive && <Check className="h-4 w-4 shrink-0 text-slate-600" />}
                         </button>
                       );
                     })}
                     <button
                       onClick={handleAddRestaurant}
-                      className="mt-1 w-full rounded-lg border-t border-gray-100 px-4 py-2 text-left text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50"
+                      className="mt-1 w-full rounded-xl border-t border-[#F5F5F7] px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-[#FAFAFA]"
                     >
                       ＋ Add New Restaurant
                     </button>
@@ -175,12 +180,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               </div>
             </div>
           ) : (
-            <div className="mb-6 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+            <div className="mb-6 rounded-2xl border border-dashed border-[#E5E5EA] bg-[#FAFAFA] px-4 py-4 text-sm text-[#86868B]">
               Dashboard locked until your first restaurant is created.
             </div>
           )}
 
-          <nav className="flex-1 space-y-1">
+          <nav className="flex-1 space-y-1 px-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -188,14 +193,10 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={onToggle}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
-                    isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={cn("air-sidebar-link", isActive && "air-sidebar-link-active")}
                 >
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <item.icon className="h-5 w-5 shrink-0 text-slate-500" />
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
@@ -205,40 +206,36 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 href={publicMenuAbsoluteUrl(currentRestaurant.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100"
+                className="air-sidebar-link mt-3 border border-[#E5E5EA] bg-[#FAFAFA]"
               >
-                <ExternalLink className="h-5 w-5" />
-                <span>🌐 View Live Menu</span>
+                <ExternalLink className="h-5 w-5 shrink-0 text-slate-500" />
+                <span>View Live Menu</span>
               </a>
             )}
           </nav>
 
-          <div className="border-t border-gray-100 pt-6">
+          <div className="mt-6 px-1 pt-2">
             <Link
               href="/dashboard/account"
               onClick={onToggle}
-              className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
-                isAccountPage
-                  ? "border-indigo-200 bg-indigo-50"
-                  : "border-gray-200 hover:bg-gray-50"
-              }`}
+              className={cn("air-profile-card", isAccountPage && "air-profile-card-active")}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200">
-                <User className="h-4 w-4 text-gray-600" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5F5F7]">
+                <User className="h-4 w-4 text-slate-600" />
               </div>
               <div className="min-w-0 flex-1 text-left">
-                <p className="truncate text-sm font-medium text-gray-900">{profileName}</p>
-                <p className="truncate text-xs text-gray-500">{profileSubtitle}</p>
+                <p className="truncate text-sm font-semibold text-slate-900">{profileName}</p>
+                <p className="truncate text-xs text-[#86868B]">{profileSubtitle}</p>
               </div>
-              <ChevronDown className="-rotate-90 h-4 w-4 shrink-0 text-gray-400" />
+              <ChevronDown className="-rotate-90 h-4 w-4 shrink-0 text-[#86868B]" />
             </Link>
           </div>
 
           <button
             onClick={onToggle}
-            className="absolute right-5 top-5 rounded-lg p-2 transition-colors hover:bg-gray-100 md:hidden"
+            className="absolute right-4 top-5 rounded-xl p-2 transition-colors hover:bg-[#F5F5F7] md:hidden"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            <X className="h-5 w-5 text-slate-500" />
           </button>
         </div>
       </aside>

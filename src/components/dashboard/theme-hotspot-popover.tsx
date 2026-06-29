@@ -78,7 +78,7 @@ export function ThemeHotspotPopover({
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-50 w-80 rounded-xl border border-gray-200 bg-white shadow-xl",
+        "absolute z-50 w-80 rounded-2xl border border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)]",
         "animate-in fade-in zoom-in-95 duration-150"
       )}
       style={{ top: position.top, left: position.left }}
@@ -87,12 +87,12 @@ export function ThemeHotspotPopover({
       aria-label={`Edit ${group.title} colours`}
       onMouseDown={(event) => event.stopPropagation()}
     >
-      <div className="flex items-start justify-between gap-2 border-b border-gray-100 px-4 py-3">
+      <div className="flex items-start justify-between gap-2 border-b border-[#F5F5F7] px-4 py-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Edit colours</p>
-          <p className="text-sm font-semibold text-gray-900">{group.title}</p>
-          <p className="mt-0.5 text-[11px] text-gray-500">
-            Changes apply instantly to the preview. Parent colour resets fine-tuned children.
+          <p className="text-xs font-medium uppercase tracking-wide text-[#86868B]">Edit colours</p>
+          <p className="text-sm font-semibold text-slate-900">{group.title}</p>
+          <p className="mt-0.5 text-[11px] leading-snug text-[#86868B]">
+            Changes apply instantly. Parent colour resets fine-tuned children.
           </p>
         </div>
         <button
@@ -134,7 +134,7 @@ export function ThemeHotspotPopover({
           </button>
 
           {advancedOpen && (
-            <div className="max-h-64 space-y-2 overflow-y-auto border-t border-gray-100 bg-gray-50/70 px-4 py-3">
+            <div className="max-h-64 divide-y divide-[#F5F5F7] overflow-y-auto border-t border-[#F5F5F7] bg-[#FAFAFA]/80 px-4 py-2">
               {group.childFields.map((child) => (
                 <ThemeColorFieldCard
                   key={child.id}

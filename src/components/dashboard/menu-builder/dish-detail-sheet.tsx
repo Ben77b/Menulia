@@ -82,13 +82,13 @@ export function DishDetailSheet({
       />
       <aside
         className={cn(
-          "fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-gray-200 bg-white shadow-2xl transition-transform duration-300",
+          "fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)] transition-transform duration-300",
           open ? "translate-x-0" : "translate-x-full"
         )}
         aria-hidden={!open}
       >
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <h2 className="text-lg font-semibold text-gray-900">Edit Dish</h2>
+        <div className="flex items-center justify-between border-b border-[#F5F5F7] px-5 py-4">
+          <h2 className="air-section-title text-lg">Edit Dish</h2>
           <button
             type="button"
             onClick={onClose}
@@ -100,7 +100,7 @@ export function DishDetailSheet({
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Photo</label>
+            <label className="air-label">Photo</label>
             <div className="flex items-center gap-4">
               {draft.image_url ? (
                 <div className="relative">
@@ -144,37 +144,37 @@ export function DishDetailSheet({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Name</label>
+            <label className="air-label">Name</label>
             <input
               value={draft.name}
               onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
-              className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="air-input"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Price (€)</label>
+            <label className="air-label">Price (€)</label>
             <input
               type="number"
               step="0.01"
               value={draft.price}
               onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))}
-              className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="air-input"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
+            <label className="air-label">Description</label>
             <textarea
               rows={4}
               value={draft.description}
               onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
-              className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="air-input min-h-[100px] resize-none py-2"
             />
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Dietary tags</label>
+            <label className="air-label">Dietary tags</label>
             <div className="flex flex-wrap gap-2">
               {DIETARY_TAGS.map((tag) => (
                 <button
@@ -184,8 +184,8 @@ export function DishDetailSheet({
                   className={cn(
                     "rounded-full border px-3 py-1 text-xs font-medium",
                     draft.tags.includes(tag)
-                      ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                      : "border-gray-200 text-gray-600"
+                      ? "border-slate-300 bg-[#F5F5F7] text-slate-900"
+                      : "border-[#E5E5EA] text-[#86868B]"
                   )}
                 >
                   {tag}
@@ -195,7 +195,7 @@ export function DishDetailSheet({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Allergens</label>
+            <label className="air-label">Allergens</label>
             <div className="flex flex-wrap gap-2">
               {ALLERGEN_TAGS.map((tag) => (
                 <button
@@ -216,11 +216,11 @@ export function DishDetailSheet({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-gray-100 px-5 py-4">
+        <div className="flex justify-end gap-3 border-t border-[#F5F5F7] px-5 py-4">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button disabled={saving || !draft.name.trim()} onClick={() => onSave(draft)}>
+          <Button variant="air" disabled={saving || !draft.name.trim()} onClick={() => onSave(draft)}>
             {saving ? "Saving…" : "Save Dish"}
           </Button>
         </div>

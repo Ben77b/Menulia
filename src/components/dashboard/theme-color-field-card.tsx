@@ -28,29 +28,26 @@ export function ThemeColorFieldCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-gray-200 bg-white",
-        isPopover ? "p-3 shadow-sm" : "p-4"
+        "rounded-2xl border border-[#F5F5F7] bg-white",
+        isPopover ? "p-3" : "p-4 air-row-divider"
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className={cn("font-medium text-gray-900", isPopover ? "text-xs" : "text-sm")}>
+          <p className={cn("font-medium text-slate-900", isPopover ? "text-xs" : "text-sm")}>
             {label}
           </p>
-          <p className={cn("mt-0.5 text-gray-500", isPopover ? "text-[11px] leading-snug" : "text-xs leading-relaxed")}>
+          <p
+            className={cn(
+              "mt-0.5 text-[#86868B]",
+              isPopover ? "text-[11px] leading-snug" : "text-xs leading-relaxed"
+            )}
+          >
             {description}
           </p>
         </div>
         {inherited !== undefined && (
-          <span
-            className={cn(
-              "shrink-0 rounded-full font-medium uppercase tracking-wide",
-              isPopover ? "text-[10px]" : "px-2 py-0.5 text-[10px]",
-              inherited
-                ? "bg-gray-100 text-gray-500"
-                : "bg-indigo-50 text-indigo-700"
-            )}
-          >
+          <span className={cn("air-badge shrink-0", !inherited && "air-badge-active")}>
             {inherited ? "Inherited" : "Custom"}
           </span>
         )}
@@ -59,7 +56,7 @@ export function ThemeColorFieldCard({
       <div className="flex items-center gap-3">
         <div
           className={cn(
-            "relative shrink-0 overflow-hidden rounded-lg border border-gray-200 shadow-sm",
+            "relative shrink-0 overflow-hidden rounded-[10px] border border-[#E5E5EA]",
             isPopover ? "h-9 w-9" : "h-10 w-10"
           )}
         >
@@ -82,12 +79,12 @@ export function ThemeColorFieldCard({
                 onChange(next.length === 7 ? next : safeColor);
               }
             }}
-            className="h-9 flex-1 rounded-lg border border-gray-200 px-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="air-input h-9 flex-1 font-mono text-xs"
             spellCheck={false}
             aria-label={`${label} hex value`}
           />
         ) : (
-          <span className="font-mono text-xs text-gray-600">{safeColor}</span>
+          <span className="font-mono text-xs text-[#86868B]">{safeColor}</span>
         )}
       </div>
     </div>
