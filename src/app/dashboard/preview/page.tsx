@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getPublicMenuUrl } from "@/lib/site-url";
 import { Button } from "@/components/ui/button";
@@ -35,12 +35,17 @@ export default function PreviewPage() {
         <span className="text-sm text-zinc-400">
           Preview — <strong className="text-white">{currentRestaurant.name}</strong>
         </span>
-        <Link href={menuUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="border-zinc-600 text-white hover:bg-zinc-800">
-            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-            Open full screen
-          </Button>
-        </Link>
+        <Button
+          href={menuUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="light"
+          size="sm"
+          isExternal
+          className="border-zinc-600 bg-zinc-800 text-white hover:bg-zinc-700"
+        >
+          Open full screen
+        </Button>
       </div>
 
       <div className="flex flex-1 items-center justify-center overflow-hidden bg-zinc-950 p-4">

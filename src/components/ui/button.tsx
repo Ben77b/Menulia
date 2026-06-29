@@ -1,41 +1,139 @@
+import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ButtonHTMLAttributes, forwardRef } from "react";
+import { forwardRef } from "react";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger" | "outline" | "air" | "link";
-  size?: "sm" | "md" | "lg";
+export type ButtonVariant =
+  | "dark"
+  | "light"
+  | "ghost"
+  | "danger"
+  | "link"
+  | "primary"
+  | "secondary"
+  /** @deprecated Use `dark` */
+  | "air"
+  /** @deprecated Use `light` */
+  | "outline";
+
+export type ButtonSize = "sm" | "md" | "lg";
+
+type ResolvedVariant = "dark" | "light" | "ghost" | "danger" | "link" | "primary" | "secondary";
+
+type CommonProps = {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  isExternal?: boolean;
+  className?: string;
+  children?: React.ReactNode;
+  href?: string;
+  target?: React.HTMLAttributeAnchorTarget;
+  rel?: string;
+};
+
+export type ButtonProps = CommonProps &
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof CommonProps>;
+
+const INTERACTION =
+  "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100";
+
+const VARIANT_STYLES: Record<ResolvedVariant, string> = {
+  dark: "bg-slate-900 text-white border border-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.12)] hover:bg-slate-800 hover:opacity-95 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.14)]",
+  light:
+    "bg-white text-black border border-border shadow-[var(--shadow-air-ambient)] hover:bg-neutral-50 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]",
+  ghost: "bg-transparent text-slate-800 shadow-none hover:bg-muted hover:-translate-y-px",
+  link: "bg-transparent text-slate-700 underline-offset-4 shadow-none hover:text-slate-900 hover:underline active:scale-100",
+  danger: "bg-red-500 text-white border border-red-500 shadow-sm hover:bg-red-600 hover:opacity-95 hover:-translate-y-px",
+  primary:
+    "bg-coral-cta text-white border border-coral-cta shadow-sm hover:bg-coral-cta-dark hover:opacity-95 hover:-translate-y-px",
+  secondary:
+    "bg-emerald-brand text-white border border-emerald-brand shadow-sm hover:bg-emerald-brand-dark hover:opacity-95 hover:-translate-y-px",
+};
+
+const SIZE_STYLES: Record<ButtonSize, string> = {
+  sm: "h-8 px-3 text-sm rounded-[var(--radius)]",
+  md: "h-10 px-4 text-sm rounded-[var(--radius)]",
+  lg: "h-12 px-6 text-base rounded-[12px]",
+};
+
+function resolveVariant(variant: ButtonVariant): ResolvedVariant {
+  if (variant === "air") return "dark";
+  if (variant === "outline") return "light";
+  return variant;
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "air", size = "md", children, ...props }, ref) => {
-    const variants = {
-      air: "bg-slate-900 hover:bg-slate-800 text-white shadow-[0_2px_12px_rgba(0,0,0,0.12)]",
-      primary: "bg-coral-cta hover:bg-coral-cta-dark text-white shadow-sm",
-      secondary: "bg-emerald-brand hover:bg-emerald-brand-dark text-white",
-      ghost: "hover:bg-muted text-slate-800",
-      link: "text-slate-700 underline-offset-4 hover:text-slate-900 hover:underline shadow-none",
-      danger: "bg-red-500 hover:bg-red-600 text-white",
-      outline: "border border-border bg-card hover:bg-[#FAFAFA] text-slate-800",
-    };
-    const sizes = {
-      sm: "px-3 py-1.5 text-sm rounded-[10px]",
-      md: "px-4 py-2 text-sm rounded-[10px]",
-      lg: "px-6 py-3 text-base rounded-[12px]",
-    };
+function shouldShowExternalIcon(
+  isExternal: boolean | undefined,
+  target: string | undefined,
+  href: string | undefined
+): boolean {
+  if (isExternal === true) return true;
+  if (isExternal === false) return false;
+  return target === "_blank" || Boolean(href?.startsWith("http"));
+}
+
+export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = "dark",
+      size = "md",
+      isExternal,
+      children,
+      href,
+      target,
+      rel,
+      ...props
+    },
+    ref
+  ) => {
+    const resolved = resolveVariant(variant);
+    const showExternal = shouldShowExternalIcon(isExternal, target, href);
+    const externalRel =
+      target === "_blank" ? rel ?? "noopener noreferrer" : rel;
+
+    const classes = cn(
+      INTERACTION,
+      VARIANT_STYLES[resolved],
+      resolved !== "link" && resolved !== "ghost" && "shadow-sm",
+      SIZE_STYLES[size],
+      className
+    );
+
+    const content = (
+      <>
+        {children}
+        {showExternal && (
+          <ArrowUpRight
+            className="h-3.5 w-3.5 shrink-0 opacity-80"
+            strokeWidth={2}
+            aria-hidden
+          />
+        )}
+      </>
+    );
+
+    if (href) {
+      return (
+        <a
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href}
+          target={target}
+          rel={externalRel}
+          className={classes}
+          {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {content}
+        </a>
+      );
+    }
 
     return (
       <button
-        ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
-          variant !== "link" && "shadow-sm",
-          variants[variant],
-          sizes[size],
-          className
-        )}
+        ref={ref as React.Ref<HTMLButtonElement>}
+        className={classes}
         {...props}
       >
-        {children}
+        {content}
       </button>
     );
   }

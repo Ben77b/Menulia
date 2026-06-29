@@ -273,7 +273,7 @@ export function MenuBuilder() {
           </p>
         </div>
         <Button
-          variant="air"
+          variant="dark"
           size="sm"
           className="gap-2"
           onClick={() => setAddingSection(true)}
@@ -301,7 +301,7 @@ export function MenuBuilder() {
             onKeyDown={(e) => e.key === "Enter" && handleAddSection()}
             className="air-input flex-1"
           />
-          <Button variant="air" onClick={handleAddSection} disabled={!newSectionName.trim() || busy}>
+          <Button variant="dark" onClick={handleAddSection} disabled={!newSectionName.trim() || busy}>
             Save
           </Button>
           <Button variant="outline" onClick={() => setAddingSection(false)}>
@@ -378,7 +378,7 @@ export function MenuBuilder() {
                     className="air-input flex-1"
                   />
                   <Button
-                    variant="air"
+                    variant="dark"
                     onClick={() => handleAddCategory(activeSection.id)}
                     disabled={!newCategoryName.trim() || busy}
                   >

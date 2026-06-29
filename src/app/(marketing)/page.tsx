@@ -43,13 +43,13 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/signup">
-                <Button variant="primary" size="lg" className="group transition hover:scale-105">
+                <Button variant="primary" size="lg" className="group">
                   Start free
                   <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                 </Button>
               </Link>
               <Link href="/la-calle-tacos">
-                <Button variant="outline" size="lg" className="transition hover:scale-105">
+                <Button variant="light" size="lg">
                   View live demo
                 </Button>
               </Link>

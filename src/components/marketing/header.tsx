@@ -62,7 +62,7 @@ export function MarketingHeader() {
             </Button>
           </Link>
           <Link href="/signup">
-            <Button variant="primary" size="sm" className="transition hover:scale-105">
+            <Button variant="primary" size="sm">
               Start free
             </Button>
           </Link>

@@ -4,12 +4,12 @@ export const metadata = { title: "Sign up" };
 
 export default function SignupPage() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-surface p-6">
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-white p-8 shadow-sm">
+    <div className="auth-shell flex min-h-dvh items-center justify-center bg-background p-6">
+      <div className="air-card w-full max-w-lg air-card-pad">
         <div className="mb-8 text-center">
-          <p className="text-sm font-semibold text-emerald-brand">menulia.net</p>
-          <h1 className="mt-2 text-2xl font-bold">Create your account</h1>
-          <p className="mt-1 text-sm text-text-secondary">
+          <p className="text-sm font-semibold tracking-tight text-slate-900">menulia.net</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">Create your account</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Sign up with your name, email, and password. You can add your restaurant after.
           </p>
         </div>

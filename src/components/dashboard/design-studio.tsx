@@ -276,19 +276,19 @@ export function DesignStudio() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {publicMenuUrl && (
-            <a
+            <Button
+              variant="light"
               href={publicMenuUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-[10px] border border-[#E5E5EA] bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-[var(--shadow-air-ambient)] transition-colors hover:bg-[#FAFAFA]"
+              isExternal
             >
               View Public Menu
-            </a>
+            </Button>
           )}
           <Button
-            variant="air"
+            variant="dark"
             size="lg"
-            className="px-8"
             onClick={handleSaveDesign}
             disabled={saving || !currentRestaurant?.id}
           >

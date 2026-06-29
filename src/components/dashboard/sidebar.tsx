@@ -11,11 +11,11 @@ import {
   Building2,
   X,
   QrCode,
-  ExternalLink,
   Check,
   Settings,
 } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
 import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
@@ -202,15 +202,16 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             })}
 
             {currentRestaurant?.slug && (
-              <a
+              <Button
+                variant="light"
                 href={publicMenuAbsoluteUrl(currentRestaurant.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="air-sidebar-link mt-3 border border-[#E5E5EA] bg-[#FAFAFA]"
+                isExternal
+                className="mt-3 h-auto w-full justify-start px-4 py-3"
               >
-                <ExternalLink className="h-5 w-5 shrink-0 text-slate-500" />
-                <span>View Live Menu</span>
-              </a>
+                View Live Menu
+              </Button>
             )}
           </nav>
 

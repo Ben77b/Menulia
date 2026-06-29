@@ -36,6 +36,17 @@
   --radius-xl: 1.25rem;
 }
 
+:root {
+  --background: #f5f5f7;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --border: #e5e5ea;
+  --input: #e5e5ea;
+  --muted: #f5f5f7;
+  --muted-foreground: #86868b;
+  --radius: 10px;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -43,10 +54,11 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans);
+    font-family: var(--font-air);
   }
 
-  .air-dashboard {
+  .air-dashboard,
+  .auth-shell {
     font-family: var(--font-air);
     @apply text-slate-900;
   }

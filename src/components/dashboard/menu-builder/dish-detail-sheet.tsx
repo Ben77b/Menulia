@@ -220,7 +220,7 @@ export function DishDetailSheet({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="air" disabled={saving || !draft.name.trim()} onClick={() => onSave(draft)}>
+          <Button variant="dark" disabled={saving || !draft.name.trim()} onClick={() => onSave(draft)}>
             {saving ? "Saving…" : "Save Dish"}
           </Button>
         </div>

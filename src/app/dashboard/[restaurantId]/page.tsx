@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { UtensilsCrossed, LayoutTemplate, Palette, QrCode, ArrowRight, CheckCircle2, ExternalLink } from "lucide-react";
+import { UtensilsCrossed, LayoutTemplate, Palette, QrCode, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { getPublicMenuUrl } from "@/lib/site-url";
 
@@ -124,11 +124,12 @@ export default function DashboardPage() {
         </div>
         {showViewLiveSite && currentRestaurant && (
           <Button
-            variant="air"
-            onClick={() => window.open(getPublicMenuUrl(currentRestaurant.slug), "_blank")}
-            className="gap-2"
+            variant="light"
+            href={getPublicMenuUrl(currentRestaurant.slug)}
+            target="_blank"
+            rel="noopener noreferrer"
+            isExternal
           >
-            <ExternalLink className="h-4 w-4" />
             View Live Site
           </Button>
         )}

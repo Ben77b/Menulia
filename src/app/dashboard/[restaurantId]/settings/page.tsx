@@ -285,7 +285,6 @@ export default function SettingsPage() {
         {activeTab !== "danger" && (
           <Button
             size="lg"
-            className="px-8"
             onClick={saveChanges}
             disabled={saving || !currentRestaurant?.id || Boolean(slugError)}
           >
@@ -548,7 +547,6 @@ export default function SettingsPage() {
             <div className="flex justify-end border-t border-gray-100 pt-6 lg:hidden">
               <Button
                 size="lg"
-                className="px-8"
                 onClick={saveChanges}
                 disabled={saving || !currentRestaurant?.id || Boolean(slugError)}
               >

@@ -117,7 +117,7 @@ export default function AccountSettingsPage() {
           </p>
         </div>
         {activeTab === "profile" && (
-          <Button size="lg" className="px-8" onClick={saveAccountDetails} disabled={saving}>
+          <Button size="lg" onClick={saveAccountDetails} disabled={saving}>
             {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
           </Button>
         )}

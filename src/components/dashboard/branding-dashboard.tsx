@@ -175,7 +175,6 @@ export function BrandingDashboard() {
         </div>
         <Button
           size="lg"
-          className="px-8"
           onClick={handleSaveChanges}
           disabled={saving || !currentRestaurant?.id}
         >
