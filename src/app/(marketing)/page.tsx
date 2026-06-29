@@ -4,7 +4,6 @@ import { ContactForm } from "@/components/marketing/contact-form";
 import { LandingDevicePreview } from "@/components/marketing/landing-device-preview";
 import { LandingFeaturesSticky } from "@/components/marketing/landing-features-sticky";
 import { LandingDemoCanvas } from "@/components/marketing/landing-demo-canvas";
-import { LandingTrustGrid } from "@/components/marketing/landing-trust-grid";
 import { LandingFaqAccordion } from "@/components/marketing/landing-faq-accordion";
 import { JsonLd } from "@/components/marketing/json-ld";
 import { faqPageJsonLd, marketingPageMetadata } from "@/lib/marketing/seo";
@@ -91,7 +90,6 @@ export default function LandingPage() {
       </section>
 
       <LandingFeaturesSticky />
-      <LandingTrustGrid />
       <LandingDemoCanvas />
 
       {/* Pricing */}

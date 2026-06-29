@@ -2,7 +2,6 @@ import Link from "next/link";
 
 const ANCHORS = [
   { href: "#features", label: "Features" },
-  { href: "#trust", label: "Trust" },
   { href: "#demo", label: "Demo" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },

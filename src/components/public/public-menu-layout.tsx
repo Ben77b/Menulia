@@ -9,7 +9,6 @@ import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import {
   collectAllDishes,
-  collectMenuTags,
   filterDishesByTags,
 } from "@/lib/public-menu-utils";
 import { MenuHeader } from "./menu-header";
@@ -229,8 +228,6 @@ export function PublicMenuLayout({
     [menu, flatCategories, hasNestedStructure]
   );
 
-  const menuTags = useMemo(() => collectMenuTags(allDishes), [allDishes]);
-
   const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
   const hasMenu = hasNestedStructure ? menu.length > 0 : flatCategories.length > 0;
   const hotspotEnabled = previewInteractive?.enabled ?? false;
@@ -394,15 +391,11 @@ export function PublicMenuLayout({
             textColor={themedColor(isPreview, "filterText", theme.filterText)}
             borderColor={themedColor(isPreview, "filterBorder", theme.filterBorder)}
             titleFont={titleFont}
-            bodyFont={bodyFont}
             titleFontWeight={titleFontWeight}
             titleFontStyle={titleFontStyle}
-            bodyFontWeight={bodyFontWeight}
-            bodyFontStyle={bodyFontStyle}
             locale={locale}
             activeFilters={activeFilters}
             onToggleFilter={toggleFilter}
-            menuTags={menuTags}
           />
         </PreviewHotspot>
       )}

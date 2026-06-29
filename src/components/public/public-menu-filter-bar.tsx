@@ -3,7 +3,7 @@
 import { contrastingTextColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
-import { FOOTER_FILTER_TAGS, getTagMeta } from "@/lib/dietary-tags";
+import { FOOTER_FILTER_TAGS } from "@/lib/dietary-tags";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 
 interface PublicMenuFilterBarProps {
@@ -11,15 +11,11 @@ interface PublicMenuFilterBarProps {
   textColor?: string;
   borderColor?: string;
   titleFont: string;
-  bodyFont: string;
   titleFontWeight?: number;
   titleFontStyle?: "normal" | "italic";
-  bodyFontWeight?: number;
-  bodyFontStyle?: "normal" | "italic";
   locale: PublicMenuLocale;
   activeFilters: Set<string>;
   onToggleFilter: (tag: string) => void;
-  menuTags: string[];
 }
 
 export function PublicMenuFilterBar({
@@ -27,15 +23,11 @@ export function PublicMenuFilterBar({
   textColor: textColorProp,
   borderColor: borderColorProp,
   titleFont,
-  bodyFont,
   titleFontWeight,
   titleFontStyle,
-  bodyFontWeight,
-  bodyFontStyle,
   locale,
   activeFilters,
   onToggleFilter,
-  menuTags,
 }: PublicMenuFilterBarProps) {
   const isPreview = usePreviewCanvas();
   const textColor =
@@ -51,7 +43,7 @@ export function PublicMenuFilterBar({
         ? pv("filterBorder")
         : borderColorProp ?? textColor;
 
-  if (menuTags.length === 0 && FOOTER_FILTER_TAGS.length === 0) {
+  if (FOOTER_FILTER_TAGS.length === 0) {
     return null;
   }
 
@@ -105,44 +97,6 @@ export function PublicMenuFilterBar({
             })}
           </div>
         </div>
-
-        {menuTags.length > 0 && (
-          <div className="mt-8 w-full space-y-3">
-            <h3
-              className="text-sm font-bold uppercase tracking-[0.2em]"
-              style={{
-              fontFamily: titleFont,
-              fontWeight: titleFontWeight ?? 400,
-              fontStyle: titleFontStyle ?? "normal",
-              color: textColor,
-              textAlign: "center",
-            }}
-            >
-              {menuUiString(locale, "tagLegend")}
-            </h3>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {menuTags.map((tag) => {
-                const meta = getTagMeta(tag);
-                return (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"
-                    style={{
-                      color: textColor,
-                      border: `1px solid ${borderColor}`,
-                      fontFamily: bodyFont,
-                      fontWeight: bodyFontWeight ?? 400,
-                      fontStyle: bodyFontStyle ?? "normal",
-                    }}
-                  >
-                    <span>{meta.icon}</span>
-                    <span>{meta.label}</span>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );
