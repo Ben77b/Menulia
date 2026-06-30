@@ -21,6 +21,7 @@ import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/m
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { MenuBuilderSkeleton } from "@/components/ui/skeleton";
+import { parsePriceInput } from "@/lib/price-input";
 import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
@@ -199,7 +200,7 @@ export function MenuBuilder() {
         categoryId,
         draft.name.trim(),
         "",
-        parseFloat(draft.price) || 0,
+        parsePriceInput(draft.price),
         null,
         []
       );
@@ -224,7 +225,7 @@ export function MenuBuilder() {
         selectedDish.dish.id,
         draft.name,
         draft.description,
-        parseFloat(draft.price) || 0,
+        parsePriceInput(draft.price),
         draft.image_url,
         draft.filterableTags,
         draft.allergens,
@@ -581,10 +582,9 @@ function CategoryBlock({
               <label className="mb-1 block text-xs font-medium text-slate-700">Price (€)</label>
               <input
                 ref={priceRef}
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
+                type="text"
+                inputMode="decimal"
+                placeholder="12,50"
                 value={rapidDraft.price}
                 disabled={busy}
                 onChange={(e) => onRapidDraftChange({ ...rapidDraft, price: e.target.value })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
@@ -48,41 +48,77 @@ export function DishCarousel({
   emptyMessage = "No dishes in this category.",
 }: DishCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
   const isPreview = usePreviewCanvas();
   const arrowColor = isPreview
     ? pv("carouselArrowIcon")
     : arrowIconColor ?? contrastingTextColor(accentColor);
 
+  const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
+    slideRefs.current[index]?.scrollIntoView({
+      behavior,
+      inline: "center",
+      block: "nearest",
+    });
+    setActiveIndex(index);
+  }, []);
+
   useEffect(() => {
     setActiveIndex(0);
-  }, [dishes]);
+    slideRefs.current = [];
+    requestAnimationFrame(() => {
+      scrollToIndex(0, "instant");
+    });
+  }, [dishes, scrollToIndex]);
 
-  const slots = useMemo(() => {
-    if (dishes.length === 0) return [];
-    if (dishes.length === 1) {
-      return [{ dish: dishes[0], position: "center" as const, key: dishes[0].id }];
-    }
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || dishes.length <= 1) return;
 
-    const prevIndex = mod(activeIndex - 1, dishes.length);
-    const nextIndex = mod(activeIndex + 1, dishes.length);
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const center = el.scrollLeft + el.clientWidth / 2;
+        let closest = 0;
+        let minDistance = Number.POSITIVE_INFINITY;
 
-    return [
-      { dish: dishes[prevIndex], position: "left" as const, key: `${dishes[prevIndex].id}-left` },
-      { dish: dishes[activeIndex], position: "center" as const, key: `${dishes[activeIndex].id}-center` },
-      { dish: dishes[nextIndex], position: "right" as const, key: `${dishes[nextIndex].id}-right` },
-    ];
-  }, [activeIndex, dishes]);
+        slideRefs.current.forEach((slide, index) => {
+          if (!slide) return;
+          const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+          const distance = Math.abs(center - slideCenter);
+          if (distance < minDistance) {
+            minDistance = distance;
+            closest = index;
+          }
+        });
+
+        setActiveIndex(closest);
+      });
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [dishes.length]);
 
   if (dishes.length === 0) {
-    return <p className="text-center text-sm" style={{ color: mainTextColor }}>{emptyMessage}</p>;
+    return (
+      <p className="text-center text-sm" style={{ color: mainTextColor }}>
+        {emptyMessage}
+      </p>
+    );
   }
 
   function goPrevious() {
-    setActiveIndex((current) => mod(current - 1, dishes.length));
+    scrollToIndex(mod(activeIndex - 1, dishes.length));
   }
 
   function goNext() {
-    setActiveIndex((current) => mod(current + 1, dishes.length));
+    scrollToIndex(mod(activeIndex + 1, dishes.length));
   }
 
   return (
@@ -93,7 +129,7 @@ export function DishCarousel({
             type="button"
             aria-label="Previous dish"
             onClick={goPrevious}
-            className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform hover:scale-105"
+            className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
@@ -102,7 +138,7 @@ export function DishCarousel({
             type="button"
             aria-label="Next dish"
             onClick={goNext}
-            className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform hover:scale-105"
+            className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
@@ -110,57 +146,42 @@ export function DishCarousel({
         </>
       )}
 
-      {dishes.length === 1 ? (
-        <div className="mx-auto w-full max-w-[320px]">
-          <DishCard
-            dish={dishes[0]}
-            titleFont={titleFont}
-            bodyFont={bodyFont}
-            titleFontWeight={titleFontWeight}
-            titleFontStyle={titleFontStyle}
-            bodyFontWeight={bodyFontWeight}
-            bodyFontStyle={bodyFontStyle}
-            textColor={mainTextColor}
-            display={display}
-            titleColor={titleColor}
-            descriptionColor={descriptionColor}
-            priceColor={priceColor}
-            layout="carousel"
-            imageClassName="w-full"
-          />
-        </div>
-      ) : (
-        <div className="flex items-center justify-center gap-3 sm:gap-6">
-          {slots.map((slot) => (
-            <div
-              key={slot.key}
-              className={`shrink-0 transition-all duration-500 ease-out ${
-                slot.position === "center"
-                  ? "w-[min(78vw,320px)] scale-100 opacity-100"
-                  : "hidden w-[min(34vw,200px)] scale-[0.82] opacity-55 sm:block"
-              }`}
-            >
-              <DishCard
-                dish={slot.dish}
-                titleFont={titleFont}
-                bodyFont={bodyFont}
-                titleFontWeight={titleFontWeight}
-                titleFontStyle={titleFontStyle}
-                bodyFontWeight={bodyFontWeight}
-                bodyFontStyle={bodyFontStyle}
-                textColor={mainTextColor}
-                display={display}
-                titleColor={titleColor}
-                descriptionColor={descriptionColor}
-                priceColor={priceColor}
-                layout="carousel"
-                compact={slot.position !== "center"}
-                imageClassName="w-full"
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      <div
+        ref={scrollerRef}
+        className="air-carousel-track flex gap-5 overflow-x-auto px-[max(0.5rem,calc(50%-min(39vw,160px)))] pb-2 scrollbar-hide sm:gap-6"
+      >
+        {dishes.map((dish, index) => (
+          <div
+            key={dish.id}
+            ref={(node) => {
+              slideRefs.current[index] = node;
+            }}
+            className="w-[min(78vw,320px)] shrink-0 snap-center snap-always transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{
+              opacity: index === activeIndex ? 1 : 0.5,
+              transform: index === activeIndex ? "scale(1)" : "scale(0.94)",
+            }}
+          >
+            <DishCard
+              dish={dish}
+              titleFont={titleFont}
+              bodyFont={bodyFont}
+              titleFontWeight={titleFontWeight}
+              titleFontStyle={titleFontStyle}
+              bodyFontWeight={bodyFontWeight}
+              bodyFontStyle={bodyFontStyle}
+              textColor={mainTextColor}
+              display={display}
+              titleColor={titleColor}
+              descriptionColor={descriptionColor}
+              priceColor={priceColor}
+              layout="carousel"
+              compact={index !== activeIndex}
+              imageClassName="w-full"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

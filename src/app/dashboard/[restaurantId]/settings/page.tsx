@@ -451,7 +451,17 @@ export default function SettingsPage() {
                 <Link2 className="h-5 w-5 text-gray-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Links & Custom Footer Notes</h2>
               </div>
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="flex flex-col gap-8">
+                <div>
+                  <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
+                  <textarea
+                    value={footerSlogan}
+                    onChange={(e) => setFooterSlogan(e.target.value)}
+                    placeholder="We recommend reservations after 12 PM"
+                    rows={6}
+                    className="air-textarea"
+                  />
+                </div>
                 <div>
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
@@ -512,16 +522,6 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   )}
-                </div>
-                <div>
-                  <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
-                  <textarea
-                    value={footerSlogan}
-                    onChange={(e) => setFooterSlogan(e.target.value)}
-                    placeholder="We recommend reservations after 12 PM"
-                    rows={6}
-                    className="air-textarea"
-                  />
                 </div>
               </div>
             </div>

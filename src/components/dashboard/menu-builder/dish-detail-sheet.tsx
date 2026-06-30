@@ -12,6 +12,7 @@ import {
   FILTERABLE_TAG_OPTIONS,
   normalizeDishTagFields,
 } from "@/lib/dietary-tags";
+import { parsePriceInput } from "@/lib/price-input";
 
 export interface DishDetailDraft {
   name: string;
@@ -198,10 +199,17 @@ export function DishDetailSheet({
           <div>
             <label className="air-label">Price (€)</label>
             <input
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               value={draft.price}
               onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))}
+              onBlur={() =>
+                setDraft((p) => {
+                  if (!p.price.trim()) return p;
+                  return { ...p, price: parsePriceInput(p.price).toFixed(2) };
+                })
+              }
+              placeholder="12.50"
               className="air-input"
             />
           </div>
