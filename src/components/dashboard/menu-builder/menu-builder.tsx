@@ -19,12 +19,15 @@ import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-
 import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
 import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
+import { MenuBuilderSkeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 
 export function MenuBuilder() {
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const toast = useToast();
   const [tree, setTree] = useState(flatRecordsToMenuTree([]));
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -203,8 +206,11 @@ export function MenuBuilder() {
       setRapidDrafts((prev) => ({ ...prev, [categoryId]: { name: "", price: "" } }));
       await loadMenu();
       await refreshRestaurants();
+      toast.success("✨ Dish added");
     } catch (err) {
-      setError(formatSupabaseError(err));
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -227,8 +233,11 @@ export function MenuBuilder() {
       setSelectedDish(null);
       await loadMenu();
       await refreshRestaurants();
+      toast.success("✨ Dish updated successfully");
     } catch (err) {
-      setError(formatSupabaseError(err));
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -243,8 +252,11 @@ export function MenuBuilder() {
       );
       await loadMenu();
       await refreshRestaurants();
+      toast.success(isAvailable ? "Dish is now visible on your menu" : "Dish hidden from public menu");
     } catch (err) {
-      setError(formatSupabaseError(err));
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
       throw err;
     }
   }
@@ -257,8 +269,11 @@ export function MenuBuilder() {
       if (selectedDish?.dish.id === dish.id) setSelectedDish(null);
       await loadMenu();
       await refreshRestaurants();
+      toast.success("Dish deleted");
     } catch (err) {
-      setError(formatSupabaseError(err));
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -274,15 +289,11 @@ export function MenuBuilder() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-[320px] items-center justify-center text-sm text-gray-500">
-        Loading menu…
-      </div>
-    );
+    return <MenuBuilderSkeleton />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="air-page">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="air-page-title">Menu Builder</h1>
@@ -466,7 +477,7 @@ function CategoryBlock({
 
   return (
     <div className="air-card overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F5F7] px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F5F7]/80 px-6 py-5">
         <div className="flex items-center gap-2">
           <LayoutGrid className="h-4 w-4 text-slate-500" />
           <h3 className="font-semibold text-slate-900">{category.name}</h3>
@@ -503,7 +514,7 @@ function CategoryBlock({
             onClick={() => onOpenDish(dish)}
             onKeyDown={(e) => (e.key === "Enter" ? onOpenDish(dish) : undefined)}
             className={cn(
-              "group flex cursor-pointer items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[#FAFAFA]",
+              "air-list-row group flex cursor-pointer items-center gap-3 px-5 py-4",
               !dish.is_available && "opacity-60"
             )}
           >

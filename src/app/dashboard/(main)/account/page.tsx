@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { SettingsSubNav } from "@/components/dashboard/settings-sub-nav";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
+import { useToast } from "@/components/ui/toast";
 import {
   fetchSecurityPreferences,
   saveSecurityPreferences,
@@ -37,6 +38,7 @@ const ACCOUNT_TABS: { id: AccountTab; label: string }[] = [
 export default function AccountSettingsPage() {
   const router = useRouter();
   const { user, userProfile } = useRestaurant();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<AccountTab>("profile");
 
   const [userFullName, setUserFullName] = useState("");
@@ -229,12 +231,12 @@ export default function AccountSettingsPage() {
       router.push("/");
     } catch (error) {
       console.error("Error logging out:", error);
-      alert("Failed to log out");
+      toast.error("Failed to log out");
     }
   }
 
   async function handleDownloadData() {
-    alert("Preparing data export... This feature will be available soon.");
+    toast.info("Preparing data export… This feature will be available soon.");
   }
 
   async function handleDeleteAccount() {
@@ -248,7 +250,7 @@ export default function AccountSettingsPage() {
       router.push("/");
     } catch (error) {
       console.error("Error deleting account:", error);
-      alert("Failed to delete account");
+      toast.error("Failed to delete account");
     }
   }
 

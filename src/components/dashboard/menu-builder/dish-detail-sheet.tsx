@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StickyActionBar } from "@/components/dashboard/sticky-action-bar";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import type { MenuBuilderDish } from "@/lib/menu-builder-types";
@@ -52,7 +53,6 @@ export function DishDetailSheet({
     allergens: [],
     is_available: true,
   });
-  const [togglingAvailability, setTogglingAvailability] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -73,13 +73,11 @@ export function DishDetailSheet({
     setDraft((prev) => ({ ...prev, is_available: checked }));
     if (!onAvailabilityChange) return;
 
-    setTogglingAvailability(true);
     try {
       await onAvailabilityChange(checked);
     } catch {
       setDraft((prev) => ({ ...prev, is_available: !checked }));
-    } finally {
-      setTogglingAvailability(false);
+      throw new Error("Failed to update dish visibility");
     }
   }
 
@@ -143,9 +141,6 @@ export function DishDetailSheet({
             checked={draft.is_available}
             onChange={handleAvailabilityToggle}
           />
-          {togglingAvailability && (
-            <p className="text-xs text-muted-foreground">Updating visibility…</p>
-          )}
 
           <div>
             <label className="air-label">Photo</label>
@@ -270,14 +265,18 @@ export function DishDetailSheet({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-[#F5F5F7] px-5 py-4">
+        <StickyActionBar>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="dark" disabled={saving || !draft.name.trim()} onClick={() => onSave(draft)}>
+          <Button
+            variant="dark"
+            disabled={saving || !draft.name.trim()}
+            onClick={() => onSave(draft)}
+          >
             {saving ? "Saving…" : "Save Dish"}
           </Button>
-        </div>
+        </StickyActionBar>
       </aside>
     </>
   );
