@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2 } from "lucide-react";
+import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, Pencil, Check, X } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
@@ -18,7 +18,7 @@ import {
   duplicateMenuCategory,
 } from "@/lib/menu-db";
 import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-tree";
-import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
+import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection, MenuBuilderTree } from "@/lib/menu-builder-types";
 import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -27,6 +27,126 @@ import { parsePriceInput } from "@/lib/price-input";
 import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
+
+function renameCategoryInTree(tree: MenuBuilderTree, id: string, name: string): MenuBuilderTree {
+  return {
+    sections: tree.sections.map((section) =>
+      section.id === id
+        ? { ...section, name }
+        : {
+            ...section,
+            categories: section.categories.map((category) =>
+              category.id === id ? { ...category, name } : category
+            ),
+          }
+    ),
+    orphanCategories: tree.orphanCategories.map((category) =>
+      category.id === id ? { ...category, name } : category
+    ),
+  };
+}
+
+interface EditableCategoryNameProps {
+  name: string;
+  disabled?: boolean;
+  titleClassName?: string;
+  onRename: (nextName: string) => Promise<boolean>;
+}
+
+function EditableCategoryName({
+  name,
+  disabled = false,
+  titleClassName,
+  onRename,
+}: EditableCategoryNameProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) setDraft(name);
+  }, [name, editing]);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  function cancelEdit() {
+    setDraft(name);
+    setEditing(false);
+  }
+
+  async function saveEdit() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const saved = await onRename(draft);
+      if (saved) setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <input
+          ref={inputRef}
+          value={draft}
+          maxLength={MAX_CATEGORY_NAME_LENGTH}
+          disabled={disabled || saving}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void saveEdit();
+            }
+            if (e.key === "Escape") cancelEdit();
+          }}
+          className="air-input min-w-0 flex-1 py-1.5 text-sm"
+        />
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="shrink-0 text-emerald-600 hover:text-emerald-700"
+          onClick={() => void saveEdit()}
+          disabled={disabled || saving}
+          aria-label="Save name"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="shrink-0 text-slate-500 hover:text-slate-700"
+          onClick={cancelEdit}
+          disabled={saving}
+          aria-label="Cancel rename"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <span className={cn("truncate", titleClassName)}>{name}</span>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        disabled={disabled}
+        aria-label={`Rename ${name}`}
+        className="rounded-lg p-1 text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-40"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 export function MenuBuilder() {
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
@@ -346,6 +466,33 @@ export function MenuBuilder() {
     }
   }
 
+  async function handleRenameCategory(id: string, currentName: string, nextName: string): Promise<boolean> {
+    const trimmed = nextName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
+    if (!trimmed) {
+      toast.error("Category name cannot be empty");
+      return false;
+    }
+    if (trimmed === currentName.trim()) {
+      return true;
+    }
+
+    const previousTree = tree;
+    setTree((prev) => renameCategoryInTree(prev, id, trimmed));
+
+    try {
+      await updateMenuCategory(id, { name: trimmed });
+      await refreshRestaurants();
+      toast.success("✨ Section renamed successfully!");
+      return true;
+    } catch (err) {
+      setTree(previousTree);
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
+      return false;
+    }
+  }
+
   if (loading) {
     return <MenuBuilderSkeleton />;
   }
@@ -416,8 +563,15 @@ export function MenuBuilder() {
 
           {activeSection && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="air-section-title">{activeSection.name}</h2>
+              <div className="flex items-center justify-between gap-3">
+                <EditableCategoryName
+                  name={activeSection.name}
+                  titleClassName="air-section-title"
+                  disabled={busy}
+                  onRename={(nextName) =>
+                    handleRenameCategory(activeSection.id, activeSection.name, nextName)
+                  }
+                />
                 <Button
                   size="sm"
                   variant="ghost"
@@ -453,6 +607,7 @@ export function MenuBuilder() {
                     onOpenDish={(dish) => setSelectedDish({ dish, categoryId: category.id })}
                     onLayoutChange={(layout) => handleLayoutChange(category, layout)}
                     onNoteChange={(note) => handleCategoryNoteChange(category.id, note)}
+                    onRename={(nextName) => handleRenameCategory(category.id, category.name, nextName)}
                   />
                 ))
               )}
@@ -522,6 +677,7 @@ function CategoryBlock({
   onOpenDish,
   onLayoutChange,
   onNoteChange,
+  onRename,
 }: {
   category: MenuBuilderCategory;
   busy: boolean;
@@ -536,6 +692,7 @@ function CategoryBlock({
   onOpenDish: (dish: MenuBuilderDish) => void;
   onLayoutChange: (layout: "stacked" | "carousel") => void;
   onNoteChange: (note: string) => void;
+  onRename: (nextName: string) => Promise<boolean>;
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
@@ -553,10 +710,15 @@ function CategoryBlock({
   return (
     <div className="air-card overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F5F7]/80 px-6 py-5">
-        <div className="flex items-center gap-2">
-          <LayoutGrid className="h-4 w-4 text-slate-500" />
-          <h3 className="font-semibold text-slate-900">{category.name}</h3>
-          <span className="text-xs text-[#86868B]">{category.dishes.length} dishes</span>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <LayoutGrid className="h-4 w-4 shrink-0 text-slate-500" />
+          <EditableCategoryName
+            name={category.name}
+            titleClassName="font-semibold text-slate-900"
+            disabled={busy || duplicating}
+            onRename={onRename}
+          />
+          <span className="shrink-0 text-xs text-[#86868B]">{category.dishes.length} dishes</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="air-capsule-nav !w-auto p-0.5">
