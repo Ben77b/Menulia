@@ -19,6 +19,7 @@ export function sanitizePublicMenuSubcategory(
 ): PublicMenuSubcategory {
   return {
     ...subcategory,
+    description: subcategory.description ?? null,
     dishes: (subcategory.dishes ?? []).map(sanitizePublicMenuDish),
   };
 }

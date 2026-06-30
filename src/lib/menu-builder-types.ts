@@ -7,6 +7,7 @@ export type MenuBuilderDish = MenuDishRecord;
 export interface MenuBuilderCategory {
   id: string;
   name: string;
+  description: string | null;
   layout_type: "stacked" | "carousel";
   order_index: number;
   parent_id: string;
@@ -17,6 +18,7 @@ export interface MenuBuilderCategory {
 export interface MenuBuilderSection {
   id: string;
   name: string;
+  description: string | null;
   order_index: number;
   categories: MenuBuilderCategory[];
 }

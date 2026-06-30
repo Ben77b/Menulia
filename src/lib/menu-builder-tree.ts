@@ -9,6 +9,7 @@ export function flatRecordsToMenuTree(records: MenuCategoryRecord[]): MenuBuilde
     .map((row) => ({
       id: row.id,
       name: row.name,
+      description: row.description ?? null,
       order_index: row.order_index ?? 0,
       categories: [],
     }));
@@ -22,6 +23,7 @@ export function flatRecordsToMenuTree(records: MenuCategoryRecord[]): MenuBuilde
     const category: MenuBuilderCategory = {
       id: row.id,
       name: row.name,
+      description: row.description ?? null,
       layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
       order_index: row.order_index ?? 0,
       parent_id: row.parent_id,

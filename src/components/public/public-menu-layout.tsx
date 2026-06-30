@@ -17,6 +17,7 @@ import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
 import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
+import { CategorySectionHeader } from "./category-section-header";
 import { PublicMenuFooter } from "./public-menu-footer";
 import { PublicMenuFilterBar } from "./public-menu-filter-bar";
 import { PreviewHotspot } from "./preview-hotspot";
@@ -96,6 +97,23 @@ function DishSection({
       : menuUiString(locale, "noFilterMatch");
 
   const hotspotEnabled = previewInteractive?.enabled ?? false;
+  const sectionTitleColor = themedColor(isPreview, "itemTitle", theme.itemTitleText);
+  const sectionNoteColor = themedColor(isPreview, "itemDescription", theme.itemDescriptionText);
+
+  const sectionHeader = (
+    <CategorySectionHeader
+      name={subcategory.name}
+      note={subcategory.description}
+      titleFont={titleFont}
+      bodyFont={bodyFont}
+      titleFontWeight={titleFontWeight}
+      titleFontStyle={titleFontStyle}
+      bodyFontWeight={bodyFontWeight}
+      bodyFontStyle={bodyFontStyle}
+      titleColor={sectionTitleColor}
+      noteColor={sectionNoteColor}
+    />
+  );
 
   if (subcategory.layout_type === "carousel") {
     return (
@@ -106,6 +124,7 @@ function DishSection({
         onSelect={previewInteractive?.onHotspotClick}
         indicatorPosition="center-right"
       >
+        {sectionHeader}
         <DishCarousel
           dishes={filteredDishes}
           accentColor={themedColor(isPreview, "carouselArrowBg", theme.carouselArrowBg)}
@@ -135,6 +154,7 @@ function DishSection({
       onSelect={previewInteractive?.onHotspotClick}
       indicatorPosition="center-left"
     >
+      {sectionHeader}
       <div className="mx-auto max-w-3xl space-y-12">
         {filteredDishes.map((dish) => (
           <DishCard

@@ -3,6 +3,7 @@ import type { PublicMenuDish } from "@/components/public/dish-card";
 export interface CategoryRow {
   id: string;
   name: string;
+  description?: string | null;
   layout_type: string;
   order_index: number;
   parent_id: string | null;
@@ -11,6 +12,7 @@ export interface CategoryRow {
 export interface PublicMenuSubcategory {
   id: string;
   name: string;
+  description?: string | null;
   layout_type: "carousel" | "stacked";
   dishes: PublicMenuDish[];
 }
@@ -53,6 +55,7 @@ export function buildMenuHierarchy(
   const toSubcategory = (row: CategoryRow): PublicMenuSubcategory => ({
     id: row.id,
     name: row.name,
+    description: row.description ?? null,
     layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
     dishes: dishesByCategoryId[row.id] ?? [],
   });

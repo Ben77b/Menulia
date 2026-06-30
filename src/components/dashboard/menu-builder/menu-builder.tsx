@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, ChevronRight, LayoutGrid, Layers } from "lucide-react";
+import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
@@ -14,6 +14,8 @@ import {
   updateMenuDish,
   updateMenuDishAvailability,
   deleteMenuDish,
+  duplicateMenuDish,
+  duplicateMenuCategory,
 } from "@/lib/menu-db";
 import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-tree";
 import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
@@ -289,6 +291,58 @@ export function MenuBuilder() {
     }
   }
 
+  async function handleDuplicateCategory(category: MenuBuilderCategory) {
+    if (!currentRestaurant?.id) return;
+    if (totalCategories >= MAX_CATEGORIES_PER_RESTAURANT) {
+      const message = `Maximum ${MAX_CATEGORIES_PER_RESTAURANT} sections + categories reached.`;
+      setError(message);
+      toast.error(message);
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await duplicateMenuCategory(category.id, currentRestaurant.id);
+      await loadMenu();
+      await refreshRestaurants();
+      toast.success(`"${category.name}" duplicated`);
+    } catch (err) {
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDuplicateDish(dish: MenuBuilderDish) {
+    setBusy(true);
+    try {
+      await duplicateMenuDish(dish.id);
+      await loadMenu();
+      await refreshRestaurants();
+      toast.success(`"${dish.name}" duplicated`);
+    } catch (err) {
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCategoryNoteChange(categoryId: string, description: string) {
+    const trimmed = description.trim();
+    try {
+      await updateMenuCategory(categoryId, { description: trimmed || null });
+      await loadMenu();
+    } catch (err) {
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
+    }
+  }
+
   if (loading) {
     return <MenuBuilderSkeleton />;
   }
@@ -389,9 +443,12 @@ export function MenuBuilder() {
                     }
                     onRapidAdd={() => handleRapidAddDish(category.id)}
                     onDeleteCategory={() => handleDeleteCategory(category)}
+                    onDuplicateCategory={() => handleDuplicateCategory(category)}
                     onDeleteDish={(dish) => handleDeleteDish(dish, category.id)}
+                    onDuplicateDish={handleDuplicateDish}
                     onOpenDish={(dish) => setSelectedDish({ dish, categoryId: category.id })}
                     onLayoutChange={(layout) => handleLayoutChange(category, layout)}
+                    onNoteChange={(note) => handleCategoryNoteChange(category.id, note)}
                   />
                 ))
               )}
@@ -454,9 +511,12 @@ function CategoryBlock({
   onRapidDraftChange,
   onRapidAdd,
   onDeleteCategory,
+  onDuplicateCategory,
   onDeleteDish,
+  onDuplicateDish,
   onOpenDish,
   onLayoutChange,
+  onNoteChange,
 }: {
   category: MenuBuilderCategory;
   busy: boolean;
@@ -464,12 +524,20 @@ function CategoryBlock({
   onRapidDraftChange: (draft: { name: string; price: string }) => void;
   onRapidAdd: () => Promise<void>;
   onDeleteCategory: () => void;
+  onDuplicateCategory: () => void;
   onDeleteDish: (dish: MenuBuilderDish) => void;
+  onDuplicateDish: (dish: MenuBuilderDish) => void;
   onOpenDish: (dish: MenuBuilderDish) => void;
   onLayoutChange: (layout: "stacked" | "carousel") => void;
+  onNoteChange: (note: string) => void;
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
+  const [noteDraft, setNoteDraft] = useState(category.description ?? "");
+
+  useEffect(() => {
+    setNoteDraft(category.description ?? "");
+  }, [category.description]);
 
   async function handleQuickAdd() {
     await onRapidAdd();
@@ -500,10 +568,41 @@ function CategoryBlock({
               </button>
             ))}
           </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-slate-500 hover:text-slate-700"
+            onClick={onDuplicateCategory}
+            disabled={busy}
+            aria-label={`Duplicate ${category.name}`}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
           <Button size="sm" variant="ghost" className="text-red-500" onClick={onDeleteCategory}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
+      <div className="border-b border-[#F5F5F7]/80 px-6 py-4">
+        <label className="mb-1.5 block text-xs font-medium text-slate-700">
+          Section Note / Subtitle
+        </label>
+        <input
+          type="text"
+          value={noteDraft}
+          disabled={busy}
+          placeholder='e.g. "Optional flamed" or "Served with miso soup"'
+          onChange={(e) => setNoteDraft(e.target.value)}
+          onBlur={() => {
+            const trimmed = noteDraft.trim();
+            const saved = (category.description ?? "").trim();
+            if (trimmed !== saved) {
+              void onNoteChange(trimmed);
+            }
+          }}
+          className="air-input"
+        />
       </div>
 
       <div className="divide-y divide-[#F5F5F7]">
@@ -542,7 +641,18 @@ function CategoryBlock({
               )}
             </div>
             <p className="font-semibold text-slate-900">€{dish.price.toFixed(2)}</p>
-            <ChevronRight className="h-4 w-4 text-[#C7C7CC] group-hover:text-slate-500" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicateDish(dish);
+              }}
+              disabled={busy}
+              aria-label={`Duplicate ${dish.name}`}
+              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-slate-600 group-hover:opacity-100 disabled:opacity-40"
+            >
+              <Copy className="h-4 w-4" />
+            </button>
             <button
               type="button"
               onClick={(e) => {
@@ -553,6 +663,7 @@ function CategoryBlock({
             >
               <Trash2 className="h-4 w-4" />
             </button>
+            <ChevronRight className="h-4 w-4 text-[#C7C7CC] group-hover:text-slate-500" />
           </div>
         ))}
 

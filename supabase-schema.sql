@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS categories (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  description TEXT,
   order_index INTEGER DEFAULT 0,
   layout_type TEXT DEFAULT 'stacked' CHECK (layout_type IN ('stacked', 'carousel')),
   parent_id UUID REFERENCES categories(id) ON DELETE CASCADE,

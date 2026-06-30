@@ -44,6 +44,7 @@ async function updateDishRow(
 export interface MenuCategoryRecord {
   id: string;
   name: string;
+  description: string | null;
   layout_type: string;
   order_index: number;
   parent_id: string | null;
@@ -93,6 +94,7 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
       return {
         id: category.id,
         name: category.name,
+        description: (category.description as string | null) ?? null,
         layout_type: category.layout_type ?? "stacked",
         order_index: category.order_index ?? 0,
         parent_id: category.parent_id ?? null,
@@ -120,20 +122,28 @@ export async function createMenuCategory(
   options?: {
     layout_type?: "stacked" | "carousel";
     parent_id?: string | null;
+    description?: string | null;
   }
 ): Promise<MenuCategoryRecord> {
   const supabase = getSupabaseBrowserClient();
 
-  const { data, error } = await supabase
-    .from("categories")
-    .insert({
-      name: name.trim(),
-      restaurant_id: restaurantId,
-      layout_type: options?.layout_type ?? "stacked",
-      parent_id: options?.parent_id ?? null,
-    })
-    .select("*")
-    .single();
+  const payload: Record<string, unknown> = {
+    name: name.trim(),
+    restaurant_id: restaurantId,
+    layout_type: options?.layout_type ?? "stacked",
+    parent_id: options?.parent_id ?? null,
+  };
+
+  if (options?.description?.trim()) {
+    payload.description = options.description.trim();
+  }
+
+  let { data, error } = await supabase.from("categories").insert(payload).select("*").single();
+
+  if (error && isMissingColumnError(error) && "description" in payload) {
+    const { description: _ignored, ...withoutDescription } = payload;
+    ({ data, error } = await supabase.from("categories").insert(withoutDescription).select("*").single());
+  }
 
   if (error || !data) {
     logSupabaseFailure("menu.createCategory", error);
@@ -143,6 +153,7 @@ export async function createMenuCategory(
   return {
     id: data.id,
     name: data.name,
+    description: (data.description as string | null) ?? null,
     layout_type: data.layout_type ?? "stacked",
     order_index: data.order_index ?? 0,
     parent_id: data.parent_id ?? null,
@@ -152,10 +163,17 @@ export async function createMenuCategory(
 
 export async function updateMenuCategory(
   categoryId: string,
-  updates: Partial<Pick<MenuCategoryRecord, "name" | "layout_type" | "order_index" | "parent_id">>
+  updates: Partial<
+    Pick<MenuCategoryRecord, "name" | "description" | "layout_type" | "order_index" | "parent_id">
+  >
 ): Promise<void> {
   const supabase = getSupabaseBrowserClient();
-  const { error } = await supabase.from("categories").update(updates).eq("id", categoryId);
+  let { error } = await supabase.from("categories").update(updates).eq("id", categoryId);
+
+  if (error && isMissingColumnError(error) && "description" in updates) {
+    const { description: _ignored, ...withoutDescription } = updates;
+    ({ error } = await supabase.from("categories").update(withoutDescription).eq("id", categoryId));
+  }
 
   if (error) {
     logSupabaseFailure("menu.updateCategory", error);
@@ -278,4 +296,74 @@ export async function deleteMenuDish(dishId: string): Promise<void> {
     logSupabaseFailure("menu.deleteDish", error);
     throw error;
   }
+}
+
+function duplicateName(name: string): string {
+  const base = name.trim();
+  return base.endsWith("(Copy)") ? `${base} (Copy)` : `${base} (Copy)`;
+}
+
+export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord> {
+  const supabase = getSupabaseBrowserClient();
+  const { data: source, error } = await supabase.from("dishes").select("*").eq("id", dishId).single();
+
+  if (error || !source) {
+    logSupabaseFailure("menu.duplicateDish.fetch", error);
+    throw error ?? new Error("Dish not found.");
+  }
+
+  const normalized = parseDishTagsFromDb(source);
+  const tagsForDb = serializeDishTagsForDb(normalized.tags, normalized.allergens);
+
+  const { data, error: insertError } = await insertDishRow({
+    category_id: source.category_id,
+    name: duplicateName(source.name as string),
+    description: (source.description as string) ?? "",
+    price: String(source.price ?? "0"),
+    image: (source.image as string | null) ?? null,
+    tags: tagsForDb,
+    is_available: readIsAvailable(source as Record<string, unknown>),
+  });
+
+  if (insertError || !data) {
+    logSupabaseFailure("menu.duplicateDish.insert", insertError);
+    throw insertError ?? new Error("Dish duplicate failed.");
+  }
+
+  const saved = parseDishTagsFromDb(data);
+
+  return {
+    id: data.id as string,
+    name: data.name as string,
+    description: (data.description as string) ?? "",
+    price: parseFloat(String(data.price)) || 0,
+    image_url: (data.image as string) ?? null,
+    tags: saved.tags,
+    allergens: saved.allergens,
+    is_available: readIsAvailable(data),
+  };
+}
+
+export async function duplicateMenuCategory(
+  categoryId: string,
+  restaurantId: string
+): Promise<MenuCategoryRecord> {
+  const supabase = getSupabaseBrowserClient();
+  const { data: source, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("id", categoryId)
+    .eq("restaurant_id", restaurantId)
+    .single();
+
+  if (error || !source) {
+    logSupabaseFailure("menu.duplicateCategory.fetch", error);
+    throw error ?? new Error("Category not found.");
+  }
+
+  return createMenuCategory(duplicateName(source.name as string), restaurantId, {
+    layout_type: source.layout_type === "carousel" ? "carousel" : "stacked",
+    parent_id: (source.parent_id as string | null) ?? null,
+    description: (source.description as string | null) ?? null,
+  });
 }

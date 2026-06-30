@@ -20,6 +20,7 @@ function rowToSubcategory(
   return {
     id: row.id,
     name: row.name,
+    description: row.description ?? null,
     layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
     dishes: dishesByCategoryId[row.id] ?? [],
   };
@@ -80,17 +81,37 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
 
   const { data: categories, error: categoriesError } = await supabase
     .from("categories")
-    .select("id, name, layout_type, order_index, parent_id")
+    .select("id, name, description, layout_type, order_index, parent_id")
     .eq("restaurant_id", restaurantId)
     .order("order_index", { ascending: true });
 
-  if (categoriesError || !categories?.length) {
+  let categorySource: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    layout_type: string | null;
+    order_index: number | null;
+    parent_id: string | null;
+  }> | null = categories;
+
+  if (categoriesError && isMissingColumnError(categoriesError)) {
+    const fallback = await supabase
+      .from("categories")
+      .select("id, name, layout_type, order_index, parent_id")
+      .eq("restaurant_id", restaurantId)
+      .order("order_index", { ascending: true });
+    categorySource = fallback.data;
+    if (fallback.error || !categorySource?.length) {
+      return { menu: [], flatCategories: [], hasNestedStructure: false };
+    }
+  } else if (categoriesError || !categorySource?.length) {
     return { menu: [], flatCategories: [], hasNestedStructure: false };
   }
 
-  const categoryRows: CategoryRow[] = categories.map((category) => ({
+  const categoryRows: CategoryRow[] = categorySource.map((category) => ({
     id: category.id,
     name: category.name,
+    description: (category as { description?: string | null }).description ?? null,
     layout_type: category.layout_type ?? "stacked",
     order_index: category.order_index ?? 0,
     parent_id: category.parent_id ?? null,
