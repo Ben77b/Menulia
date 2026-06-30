@@ -5,14 +5,18 @@ import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
 import { FOOTER_FILTER_TAGS } from "@/lib/dietary-tags";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
+import { PublicMenuAllergenLegend } from "@/components/public/public-menu-allergen-legend";
 
 interface PublicMenuFilterBarProps {
   backgroundColor: string;
   textColor?: string;
   borderColor?: string;
   titleFont: string;
+  bodyFont: string;
   titleFontWeight?: number;
   titleFontStyle?: "normal" | "italic";
+  bodyFontWeight?: number;
+  bodyFontStyle?: "normal" | "italic";
   locale: PublicMenuLocale;
   activeFilters: Set<string>;
   onToggleFilter: (tag: string) => void;
@@ -23,8 +27,11 @@ export function PublicMenuFilterBar({
   textColor: textColorProp,
   borderColor: borderColorProp,
   titleFont,
+  bodyFont,
   titleFontWeight,
   titleFontStyle,
+  bodyFontWeight,
+  bodyFontStyle,
   locale,
   activeFilters,
   onToggleFilter,
@@ -92,6 +99,17 @@ export function PublicMenuFilterBar({
               );
             })}
           </div>
+          <PublicMenuAllergenLegend
+            textColor={textColor}
+            titleFont={titleFont}
+            bodyFont={bodyFont}
+            titleFontWeight={titleFontWeight}
+            titleFontStyle={titleFontStyle}
+            bodyFontWeight={bodyFontWeight}
+            bodyFontStyle={bodyFontStyle}
+            locale={locale}
+            className="mt-6"
+          />
         </div>
       </div>
     </section>

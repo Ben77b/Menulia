@@ -12,6 +12,7 @@ interface PublicMenuAllergenLegendProps {
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
   locale: PublicMenuLocale;
+  className?: string;
 }
 
 export function PublicMenuAllergenLegend({
@@ -23,9 +24,10 @@ export function PublicMenuAllergenLegend({
   bodyFontWeight,
   bodyFontStyle,
   locale,
+  className = "",
 }: PublicMenuAllergenLegendProps) {
   return (
-    <div className="mt-10 w-full" style={{ color: textColor, textAlign: "center" }}>
+    <div className={`w-full ${className}`.trim()} style={{ color: textColor, textAlign: "center" }}>
       <h3
         className="mb-3 text-xs font-bold uppercase tracking-[0.2em]"
         style={{

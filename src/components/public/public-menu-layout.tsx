@@ -400,8 +400,11 @@ export function PublicMenuLayout({
             textColor={themedColor(isPreview, "filterText", theme.filterText)}
             borderColor={themedColor(isPreview, "filterBorder", theme.filterBorder)}
             titleFont={titleFont}
+            bodyFont={bodyFont}
             titleFontWeight={titleFontWeight}
             titleFontStyle={titleFontStyle}
+            bodyFontWeight={bodyFontWeight}
+            bodyFontStyle={bodyFontStyle}
             locale={locale}
             activeFilters={activeFilters}
             onToggleFilter={toggleFilter}
