@@ -1,4 +1,5 @@
 import { createAnonClient } from "@/lib/supabase";
+import { isMissingColumnError } from "@/lib/restaurant-settings";
 import {
   buildMenuHierarchy,
   mapDishRow,
@@ -33,6 +34,41 @@ export function buildFlatCategories(
   );
 
   return leafRows.map((row) => rowToSubcategory(row, dishesByCategoryId));
+}
+
+const PUBLIC_DISH_COLUMNS = "id, name, description, price, image, tags";
+const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS}, is_available`;
+
+async function fetchActiveDishesForCategory(
+  supabase: ReturnType<typeof createAnonClient>,
+  categoryId: string
+): Promise<ReturnType<typeof mapDishRow>[]> {
+  const { data: withAvailability, error: availabilityError } = await supabase
+    .from("dishes")
+    .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY)
+    .eq("category_id", categoryId)
+    .eq("is_available", true)
+    .order("created_at", { ascending: true });
+
+  if (!availabilityError) {
+    return (withAvailability ?? []).map(mapDishRow);
+  }
+
+  if (!isMissingColumnError(availabilityError)) {
+    return [];
+  }
+
+  const { data: withoutAvailability, error: fallbackError } = await supabase
+    .from("dishes")
+    .select(PUBLIC_DISH_COLUMNS)
+    .eq("category_id", categoryId)
+    .order("created_at", { ascending: true });
+
+  if (fallbackError) {
+    return [];
+  }
+
+  return (withoutAvailability ?? []).map(mapDishRow);
 }
 
 export async function fetchPublicMenuData(restaurantId: string): Promise<{
@@ -71,14 +107,7 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
 
   await Promise.all(
     leafCategoryIds.map(async (categoryId) => {
-      const { data: dishes } = await supabase
-        .from("dishes")
-        .select("id, name, description, price, image, tags, is_available")
-        .eq("category_id", categoryId)
-        .eq("is_available", true)
-        .order("created_at", { ascending: true });
-
-      dishesByCategoryId[categoryId] = (dishes ?? []).map(mapDishRow);
+      dishesByCategoryId[categoryId] = await fetchActiveDishesForCategory(supabase, categoryId);
     })
   );
 

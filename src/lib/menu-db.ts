@@ -1,6 +1,45 @@
 import { parseDishTagsFromDb, serializeDishTagsForDb } from "./dietary-tags";
 import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
+import { isMissingColumnError } from "./restaurant-settings";
+
+function readIsAvailable(dish: Record<string, unknown>): boolean {
+  return dish.is_available !== false;
+}
+
+async function insertDishRow(
+  payload: Record<string, unknown>
+): Promise<{ data: Record<string, unknown> | null; error: unknown }> {
+  const supabase = getSupabaseBrowserClient();
+  const withAvailability = { ...payload, is_available: payload.is_available ?? true };
+
+  let result = await supabase.from("dishes").insert(withAvailability).select("*").single();
+  if (result.error && isMissingColumnError(result.error) && "is_available" in withAvailability) {
+    const { is_available: _ignored, ...withoutAvailability } = withAvailability;
+    result = await supabase.from("dishes").insert(withoutAvailability).select("*").single();
+  }
+
+  return result;
+}
+
+async function updateDishRow(
+  dishId: string,
+  payload: Record<string, unknown>
+): Promise<{ error: unknown; availabilityPersisted: boolean }> {
+  const supabase = getSupabaseBrowserClient();
+
+  let result = await supabase.from("dishes").update(payload).eq("id", dishId);
+  if (result.error && isMissingColumnError(result.error) && "is_available" in payload) {
+    const { is_available: _ignored, ...withoutAvailability } = payload;
+    result = await supabase.from("dishes").update(withoutAvailability).eq("id", dishId);
+    return { error: result.error, availabilityPersisted: false };
+  }
+
+  return {
+    error: result.error,
+    availabilityPersisted: !result.error && "is_available" in payload,
+  };
+}
 
 export interface MenuCategoryRecord {
   id: string;
@@ -67,7 +106,7 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
             image_url: dish.image ?? null,
             tags: normalized.tags,
             allergens: normalized.allergens,
-            is_available: dish.is_available !== false,
+            is_available: readIsAvailable(dish as Record<string, unknown>),
           };
         }),
       };
@@ -143,22 +182,17 @@ export async function createMenuDish(
   tags: string[] = [],
   allergens: string[] = []
 ): Promise<MenuDishRecord> {
-  const supabase = getSupabaseBrowserClient();
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
 
-  const { data, error } = await supabase
-    .from("dishes")
-    .insert({
-      category_id: categoryId,
-      name: name.trim(),
-      description: description.trim(),
-      price: String(price),
-      image,
-      tags: tagsForDb,
-      is_available: true,
-    })
-    .select("*")
-    .single();
+  const { data, error } = await insertDishRow({
+    category_id: categoryId,
+    name: name.trim(),
+    description: description.trim(),
+    price: String(price),
+    image,
+    tags: tagsForDb,
+    is_available: true,
+  });
 
   if (error || !data) {
     logSupabaseFailure("menu.createDish", error);
@@ -168,14 +202,14 @@ export async function createMenuDish(
   const saved = parseDishTagsFromDb(data);
 
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description ?? "",
+    id: data.id as string,
+    name: data.name as string,
+    description: (data.description as string) ?? "",
     price: parseFloat(String(data.price)) || 0,
-    image_url: data.image ?? null,
+    image_url: (data.image as string) ?? null,
     tags: saved.tags,
     allergens: saved.allergens,
-    is_available: data.is_available !== false,
+    is_available: readIsAvailable(data),
   };
 }
 
@@ -189,20 +223,16 @@ export async function updateMenuDish(
   allergens: string[] = [],
   isAvailable = true
 ): Promise<void> {
-  const supabase = getSupabaseBrowserClient();
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
 
-  const { error } = await supabase
-    .from("dishes")
-    .update({
-      name: name.trim(),
-      description: description.trim(),
-      price: String(price),
-      image,
-      tags: tagsForDb,
-      is_available: isAvailable,
-    })
-    .eq("id", dishId);
+  const { error } = await updateDishRow(dishId, {
+    name: name.trim(),
+    description: description.trim(),
+    price: String(price),
+    image,
+    tags: tagsForDb,
+    is_available: isAvailable,
+  });
 
   if (error) {
     logSupabaseFailure("menu.updateDish", error);
@@ -210,19 +240,33 @@ export async function updateMenuDish(
   }
 }
 
+export class DishAvailabilityUnsupportedError extends Error {
+  constructor() {
+    super(
+      "Dish visibility requires the is_available column on dishes. Run supabase/migrations/20250705000000_dish_is_available_column.sql in the Supabase SQL editor."
+    );
+    this.name = "DishAvailabilityUnsupportedError";
+  }
+}
+
 export async function updateMenuDishAvailability(
   dishId: string,
   isAvailable: boolean
 ): Promise<void> {
-  const supabase = getSupabaseBrowserClient();
-  const { error } = await supabase
-    .from("dishes")
-    .update({ is_available: isAvailable })
-    .eq("id", dishId);
+  const { error, availabilityPersisted } = await updateDishRow(dishId, {
+    is_available: isAvailable,
+  });
 
   if (error) {
     logSupabaseFailure("menu.updateDishAvailability", error);
+    if (isMissingColumnError(error)) {
+      throw new DishAvailabilityUnsupportedError();
+    }
     throw error;
+  }
+
+  if (!availabilityPersisted) {
+    throw new DishAvailabilityUnsupportedError();
   }
 }
 

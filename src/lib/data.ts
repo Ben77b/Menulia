@@ -37,7 +37,7 @@ function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
     price: typeof price === "number" ? price : parseFloat(String(price)) || 0,
     image_url: (dish.image as string) ?? null,
     allergens: normalized.allergens,
-    is_available: dish.is_available !== false,
+    is_available: (dish.is_available as boolean | undefined) !== false,
     tags: normalized.tags,
     translations: [],
   };
