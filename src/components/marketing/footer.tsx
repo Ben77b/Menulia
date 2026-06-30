@@ -52,9 +52,19 @@ export function MarketingFooter() {
             </ul>
           </div>
         </div>
-        <p className="mt-10 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} menulia.net
-        </p>
+        <div className="mt-10 border-t border-border pt-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+            <Link href="/privacy" className="air-link">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="air-link">
+              Terms of Service
+            </Link>
+          </div>
+          <p className="mt-5 text-center text-xs text-muted-foreground">
+            © {new Date().getFullYear()} menulia.net
+          </p>
+        </div>
       </div>
     </footer>
   );

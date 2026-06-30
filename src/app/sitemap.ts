@@ -5,7 +5,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net";
   const slugs = await fetchAllRestaurantSlugs();
 
-  const staticPages = ["", "/onboarding", "/signup", "/login"].map((path) => ({
+  const staticPages = ["", "/onboarding", "/signup", "/login", "/privacy", "/terms"].map((path) => ({
     url: `${base}${path}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
