@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy } from "lucide-react";
+import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2 } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
@@ -48,6 +48,7 @@ export function MenuBuilder() {
     categoryId: string;
   } | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
 
   const totalCategories = useMemo(() => {
     return (
@@ -300,17 +301,19 @@ export function MenuBuilder() {
       return;
     }
 
+    setDuplicatingCategoryId(category.id);
     setBusy(true);
     try {
       await duplicateMenuCategory(category.id, currentRestaurant.id);
       await loadMenu();
       await refreshRestaurants();
-      toast.success(`"${category.name}" duplicated`);
+      toast.success("✨ Category and all items duplicated successfully!");
     } catch (err) {
       const message = formatSupabaseError(err);
       setError(message);
       toast.error(message);
     } finally {
+      setDuplicatingCategoryId(null);
       setBusy(false);
     }
   }
@@ -437,6 +440,7 @@ export function MenuBuilder() {
                     key={category.id}
                     category={category}
                     busy={busy}
+                    duplicating={duplicatingCategoryId === category.id}
                     rapidDraft={rapidDrafts[category.id] ?? { name: "", price: "" }}
                     onRapidDraftChange={(draft) =>
                       setRapidDrafts((prev) => ({ ...prev, [category.id]: draft }))
@@ -507,6 +511,7 @@ export function MenuBuilder() {
 function CategoryBlock({
   category,
   busy,
+  duplicating,
   rapidDraft,
   onRapidDraftChange,
   onRapidAdd,
@@ -520,6 +525,7 @@ function CategoryBlock({
 }: {
   category: MenuBuilderCategory;
   busy: boolean;
+  duplicating: boolean;
   rapidDraft: { name: string; price: string };
   onRapidDraftChange: (draft: { name: string; price: string }) => void;
   onRapidAdd: () => Promise<void>;
@@ -573,10 +579,14 @@ function CategoryBlock({
             variant="ghost"
             className="text-slate-500 hover:text-slate-700"
             onClick={onDuplicateCategory}
-            disabled={busy}
+            disabled={busy || duplicating}
             aria-label={`Duplicate ${category.name}`}
           >
-            <Copy className="h-4 w-4" />
+            {duplicating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
           </Button>
           <Button size="sm" variant="ghost" className="text-red-500" onClick={onDeleteCategory}>
             <Trash2 className="h-4 w-4" />

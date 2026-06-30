@@ -303,6 +303,42 @@ function duplicateName(name: string): string {
   return base.endsWith("(Copy)") ? `${base} (Copy)` : `${base} (Copy)`;
 }
 
+async function cloneDishToCategory(
+  source: Record<string, unknown>,
+  categoryId: string
+): Promise<MenuDishRecord> {
+  const normalized = parseDishTagsFromDb(source);
+  const tagsForDb = serializeDishTagsForDb(normalized.tags, normalized.allergens);
+
+  const { data, error: insertError } = await insertDishRow({
+    category_id: categoryId,
+    name: (source.name as string) ?? "",
+    description: (source.description as string) ?? "",
+    price: String(source.price ?? "0"),
+    image: (source.image as string | null) ?? null,
+    tags: tagsForDb,
+    is_available: readIsAvailable(source),
+  });
+
+  if (insertError || !data) {
+    logSupabaseFailure("menu.cloneDishToCategory.insert", insertError);
+    throw insertError ?? new Error("Dish clone failed.");
+  }
+
+  const saved = parseDishTagsFromDb(data);
+
+  return {
+    id: data.id as string,
+    name: data.name as string,
+    description: (data.description as string) ?? "",
+    price: parseFloat(String(data.price)) || 0,
+    image_url: (data.image as string) ?? null,
+    tags: saved.tags,
+    allergens: saved.allergens,
+    is_available: readIsAvailable(data),
+  };
+}
+
 export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord> {
   const supabase = getSupabaseBrowserClient();
   const { data: source, error } = await supabase.from("dishes").select("*").eq("id", dishId).single();
@@ -361,9 +397,36 @@ export async function duplicateMenuCategory(
     throw error ?? new Error("Category not found.");
   }
 
-  return createMenuCategory(duplicateName(source.name as string), restaurantId, {
+  const created = await createMenuCategory(duplicateName(source.name as string), restaurantId, {
     layout_type: source.layout_type === "carousel" ? "carousel" : "stacked",
     parent_id: (source.parent_id as string | null) ?? null,
     description: (source.description as string | null) ?? null,
   });
+
+  try {
+    const { data: sourceDishes, error: dishesError } = await supabase
+      .from("dishes")
+      .select("*")
+      .eq("category_id", categoryId)
+      .order("created_at", { ascending: true });
+
+    if (dishesError) {
+      logSupabaseFailure("menu.duplicateCategory.fetchDishes", dishesError);
+      throw dishesError;
+    }
+
+    const clonedDishes: MenuDishRecord[] = [];
+    for (const dish of sourceDishes ?? []) {
+      clonedDishes.push(await cloneDishToCategory(dish as Record<string, unknown>, created.id));
+    }
+
+    return { ...created, items: clonedDishes };
+  } catch (cloneError) {
+    try {
+      await deleteMenuCategory(created.id);
+    } catch (rollbackError) {
+      logSupabaseFailure("menu.duplicateCategory.rollback", rollbackError);
+    }
+    throw cloneError;
+  }
 }
