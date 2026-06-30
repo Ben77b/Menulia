@@ -97,20 +97,14 @@ function DishSection({
       : menuUiString(locale, "noFilterMatch");
 
   const hotspotEnabled = previewInteractive?.enabled ?? false;
-  const sectionTitleColor = themedColor(isPreview, "itemTitle", theme.itemTitleText);
   const sectionNoteColor = themedColor(isPreview, "itemDescription", theme.itemDescriptionText);
 
-  const sectionHeader = (
+  const sectionNote = (
     <CategorySectionHeader
-      name={subcategory.name}
       note={subcategory.description}
-      titleFont={titleFont}
       bodyFont={bodyFont}
-      titleFontWeight={titleFontWeight}
-      titleFontStyle={titleFontStyle}
       bodyFontWeight={bodyFontWeight}
       bodyFontStyle={bodyFontStyle}
-      titleColor={sectionTitleColor}
       noteColor={sectionNoteColor}
     />
   );
@@ -124,7 +118,7 @@ function DishSection({
         onSelect={previewInteractive?.onHotspotClick}
         indicatorPosition="center-right"
       >
-        {sectionHeader}
+        {sectionNote}
         <DishCarousel
           dishes={filteredDishes}
           accentColor={themedColor(isPreview, "carouselArrowBg", theme.carouselArrowBg)}
@@ -154,7 +148,7 @@ function DishSection({
       onSelect={previewInteractive?.onHotspotClick}
       indicatorPosition="center-left"
     >
-      {sectionHeader}
+      {sectionNote}
       <div className="mx-auto max-w-3xl space-y-12">
         {filteredDishes.map((dish) => (
           <DishCard
