@@ -143,12 +143,6 @@
     @apply transition-all duration-200 ease-in-out hover:bg-[#FAFAFA];
   }
 
-  .air-carousel-track {
-    scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-
   .air-input {
     @apply h-10 w-full rounded-[10px] border border-input bg-card px-3 text-sm text-slate-900 transition-colors placeholder:text-muted-foreground focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-black/5;
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
@@ -26,8 +26,32 @@ interface DishCarouselProps {
   emptyMessage?: string;
 }
 
+const FOCUS_TRANSITION =
+  "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease";
+
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
+}
+
+function CarouselCardFrame({
+  isActive,
+  children,
+}: {
+  isActive: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="origin-center will-change-transform"
+      style={{
+        transform: isActive ? "scale(1.02)" : "scale(1)",
+        opacity: isActive ? 1 : 0.7,
+        transition: FOCUS_TRANSITION,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function DishCarousel({
@@ -48,62 +72,30 @@ export function DishCarousel({
   emptyMessage = "No dishes in this category.",
 }: DishCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
   const isPreview = usePreviewCanvas();
   const arrowColor = isPreview
     ? pv("carouselArrowIcon")
     : arrowIconColor ?? contrastingTextColor(accentColor);
 
-  const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
-    slideRefs.current[index]?.scrollIntoView({
-      behavior,
-      inline: "center",
-      block: "nearest",
-    });
-    setActiveIndex(index);
-  }, []);
-
   useEffect(() => {
     setActiveIndex(0);
-    slideRefs.current = [];
-    requestAnimationFrame(() => {
-      scrollToIndex(0, "instant");
-    });
-  }, [dishes, scrollToIndex]);
+  }, [dishes]);
 
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el || dishes.length <= 1) return;
+  const slots = useMemo(() => {
+    if (dishes.length === 0) return [];
+    if (dishes.length === 1) {
+      return [{ dish: dishes[0], position: "center" as const, key: dishes[0].id }];
+    }
 
-    let frame = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const center = el.scrollLeft + el.clientWidth / 2;
-        let closest = 0;
-        let minDistance = Number.POSITIVE_INFINITY;
+    const prevIndex = mod(activeIndex - 1, dishes.length);
+    const nextIndex = mod(activeIndex + 1, dishes.length);
 
-        slideRefs.current.forEach((slide, index) => {
-          if (!slide) return;
-          const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
-          const distance = Math.abs(center - slideCenter);
-          if (distance < minDistance) {
-            minDistance = distance;
-            closest = index;
-          }
-        });
-
-        setActiveIndex(closest);
-      });
-    };
-
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(frame);
-    };
-  }, [dishes.length]);
+    return [
+      { dish: dishes[prevIndex], position: "left" as const, key: `${dishes[prevIndex].id}-left` },
+      { dish: dishes[activeIndex], position: "center" as const, key: `${dishes[activeIndex].id}-center` },
+      { dish: dishes[nextIndex], position: "right" as const, key: `${dishes[nextIndex].id}-right` },
+    ];
+  }, [activeIndex, dishes]);
 
   if (dishes.length === 0) {
     return (
@@ -114,11 +106,11 @@ export function DishCarousel({
   }
 
   function goPrevious() {
-    scrollToIndex(mod(activeIndex - 1, dishes.length));
+    setActiveIndex((current) => mod(current - 1, dishes.length));
   }
 
   function goNext() {
-    scrollToIndex(mod(activeIndex + 1, dishes.length));
+    setActiveIndex((current) => mod(current + 1, dishes.length));
   }
 
   return (
@@ -146,24 +138,11 @@ export function DishCarousel({
         </>
       )}
 
-      <div
-        ref={scrollerRef}
-        className="air-carousel-track flex gap-5 overflow-x-auto px-[max(0.5rem,calc(50%-min(39vw,160px)))] pb-2 scrollbar-hide sm:gap-6"
-      >
-        {dishes.map((dish, index) => (
-          <div
-            key={dish.id}
-            ref={(node) => {
-              slideRefs.current[index] = node;
-            }}
-            className="w-[min(78vw,320px)] shrink-0 snap-center snap-always transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{
-              opacity: index === activeIndex ? 1 : 0.5,
-              transform: index === activeIndex ? "scale(1)" : "scale(0.94)",
-            }}
-          >
+      {dishes.length === 1 ? (
+        <div className="mx-auto w-full max-w-[320px]">
+          <CarouselCardFrame isActive>
             <DishCard
-              dish={dish}
+              dish={dishes[0]}
               titleFont={titleFont}
               bodyFont={bodyFont}
               titleFontWeight={titleFontWeight}
@@ -176,12 +155,48 @@ export function DishCarousel({
               descriptionColor={descriptionColor}
               priceColor={priceColor}
               layout="carousel"
-              compact={index !== activeIndex}
               imageClassName="w-full"
             />
-          </div>
-        ))}
-      </div>
+          </CarouselCardFrame>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-3 sm:gap-6">
+          {slots.map((slot) => {
+            const isActive = slot.position === "center";
+
+            return (
+              <div
+                key={slot.key}
+                className={
+                  isActive
+                    ? "w-[min(78vw,320px)] shrink-0"
+                    : "hidden w-[min(34vw,200px)] shrink-0 sm:block"
+                }
+              >
+                <CarouselCardFrame isActive={isActive}>
+                  <DishCard
+                    dish={slot.dish}
+                    titleFont={titleFont}
+                    bodyFont={bodyFont}
+                    titleFontWeight={titleFontWeight}
+                    titleFontStyle={titleFontStyle}
+                    bodyFontWeight={bodyFontWeight}
+                    bodyFontStyle={bodyFontStyle}
+                    textColor={mainTextColor}
+                    display={display}
+                    titleColor={titleColor}
+                    descriptionColor={descriptionColor}
+                    priceColor={priceColor}
+                    layout="carousel"
+                    compact={!isActive}
+                    imageClassName="w-full"
+                  />
+                </CarouselCardFrame>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
