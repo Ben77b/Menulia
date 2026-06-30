@@ -192,17 +192,19 @@ export function DishCard({
 
   if (layout === "stacked") {
     return (
-      <article className="flex flex-col items-center gap-4 text-center">
+      <article
+        className={`flex flex-col gap-4 text-center ${imageBlock ? "items-center" : "w-full items-stretch"}`}
+      >
         {imageBlock && <div className="w-full max-w-sm shrink-0">{imageBlock}</div>}
-        <div className="w-full max-w-xl flex-1">{textBlock}</div>
+        <div className={imageBlock ? "w-full max-w-xl flex-1" : "w-full flex-1"}>{textBlock}</div>
       </article>
     );
   }
 
   return (
-    <article className="flex flex-col">
+    <article className={`flex flex-col ${imageBlock ? "" : "w-full"}`}>
       {imageBlock}
-      <div className={imageBlock ? "mt-4" : undefined}>{textBlock}</div>
+      <div className={imageBlock ? "mt-4" : "w-full"}>{textBlock}</div>
     </article>
   );
 }

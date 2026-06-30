@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Upload, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import type { MenuBuilderDish } from "@/lib/menu-builder-types";
 import {
   ALLERGEN_TAG_OPTIONS,
@@ -18,6 +19,7 @@ export interface DishDetailDraft {
   image_url: string | null;
   filterableTags: string[];
   allergens: string[];
+  is_available: boolean;
 }
 
 interface DishDetailSheetProps {
@@ -28,6 +30,7 @@ interface DishDetailSheetProps {
   onClose: () => void;
   onSave: (draft: DishDetailDraft) => Promise<void>;
   onImageUpload: (file: File) => Promise<string | null>;
+  onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
 }
 
 export function DishDetailSheet({
@@ -38,6 +41,7 @@ export function DishDetailSheet({
   onClose,
   onSave,
   onImageUpload,
+  onAvailabilityChange,
 }: DishDetailSheetProps) {
   const [draft, setDraft] = useState<DishDetailDraft>({
     name: "",
@@ -46,7 +50,9 @@ export function DishDetailSheet({
     image_url: null,
     filterableTags: [],
     allergens: [],
+    is_available: true,
   });
+  const [togglingAvailability, setTogglingAvailability] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -59,8 +65,23 @@ export function DishDetailSheet({
       image_url: dish.image_url,
       filterableTags: normalized.tags,
       allergens: normalized.allergens,
+      is_available: dish.is_available !== false,
     });
   }, [open, dish]);
+
+  async function handleAvailabilityToggle(checked: boolean) {
+    setDraft((prev) => ({ ...prev, is_available: checked }));
+    if (!onAvailabilityChange) return;
+
+    setTogglingAvailability(true);
+    try {
+      await onAvailabilityChange(checked);
+    } catch {
+      setDraft((prev) => ({ ...prev, is_available: !checked }));
+    } finally {
+      setTogglingAvailability(false);
+    }
+  }
 
   function toggleFilterableTag(tag: string) {
     setDraft((prev) => ({
@@ -116,6 +137,16 @@ export function DishDetailSheet({
         </div>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+          <ToggleSwitch
+            label="Visible on Menu"
+            description="Turn off to hide this dish from your public menu when it is out of stock."
+            checked={draft.is_available}
+            onChange={handleAvailabilityToggle}
+          />
+          {togglingAvailability && (
+            <p className="text-xs text-muted-foreground">Updating visibility…</p>
+          )}
+
           <div>
             <label className="air-label">Photo</label>
             <div className="flex items-center gap-4">

@@ -73,8 +73,9 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
     leafCategoryIds.map(async (categoryId) => {
       const { data: dishes } = await supabase
         .from("dishes")
-        .select("id, name, description, price, image, tags")
+        .select("id, name, description, price, image, tags, is_available")
         .eq("category_id", categoryId)
+        .eq("is_available", true)
         .order("created_at", { ascending: true });
 
       dishesByCategoryId[categoryId] = (dishes ?? []).map(mapDishRow);

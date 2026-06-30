@@ -67,7 +67,7 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
             image_url: dish.image ?? null,
             tags: normalized.tags,
             allergens: normalized.allergens,
-            is_available: true,
+            is_available: dish.is_available !== false,
           };
         }),
       };
@@ -155,6 +155,7 @@ export async function createMenuDish(
       price: String(price),
       image,
       tags: tagsForDb,
+      is_available: true,
     })
     .select("*")
     .single();
@@ -174,7 +175,7 @@ export async function createMenuDish(
     image_url: data.image ?? null,
     tags: saved.tags,
     allergens: saved.allergens,
-    is_available: true,
+    is_available: data.is_available !== false,
   };
 }
 
@@ -185,7 +186,8 @@ export async function updateMenuDish(
   price: number,
   image: string | null = null,
   tags: string[] = [],
-  allergens: string[] = []
+  allergens: string[] = [],
+  isAvailable = true
 ): Promise<void> {
   const supabase = getSupabaseBrowserClient();
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
@@ -198,11 +200,28 @@ export async function updateMenuDish(
       price: String(price),
       image,
       tags: tagsForDb,
+      is_available: isAvailable,
     })
     .eq("id", dishId);
 
   if (error) {
     logSupabaseFailure("menu.updateDish", error);
+    throw error;
+  }
+}
+
+export async function updateMenuDishAvailability(
+  dishId: string,
+  isAvailable: boolean
+): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase
+    .from("dishes")
+    .update({ is_available: isAvailable })
+    .eq("id", dishId);
+
+  if (error) {
+    logSupabaseFailure("menu.updateDishAvailability", error);
     throw error;
   }
 }

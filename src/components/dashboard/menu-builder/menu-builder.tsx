@@ -12,6 +12,7 @@ import {
   deleteMenuCategory,
   createMenuDish,
   updateMenuDish,
+  updateMenuDishAvailability,
   deleteMenuDish,
 } from "@/lib/menu-db";
 import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-tree";
@@ -220,7 +221,8 @@ export function MenuBuilder() {
         parseFloat(draft.price) || 0,
         draft.image_url,
         draft.filterableTags,
-        draft.allergens
+        draft.allergens,
+        draft.is_available
       );
       setSelectedDish(null);
       await loadMenu();
@@ -229,6 +231,21 @@ export function MenuBuilder() {
       setError(formatSupabaseError(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleAvailabilityChange(isAvailable: boolean) {
+    if (!selectedDish) return;
+    try {
+      await updateMenuDishAvailability(selectedDish.dish.id, isAvailable);
+      setSelectedDish((prev) =>
+        prev ? { ...prev, dish: { ...prev.dish, is_available: isAvailable } } : null
+      );
+      await loadMenu();
+      await refreshRestaurants();
+    } catch (err) {
+      setError(formatSupabaseError(err));
+      throw err;
     }
   }
 
@@ -412,6 +429,7 @@ export function MenuBuilder() {
         onClose={() => setSelectedDish(null)}
         onSave={handleSaveDishDetail}
         onImageUpload={handleImageUpload}
+        onAvailabilityChange={handleAvailabilityChange}
       />
     </div>
   );
@@ -484,7 +502,10 @@ function CategoryBlock({
             tabIndex={0}
             onClick={() => onOpenDish(dish)}
             onKeyDown={(e) => (e.key === "Enter" ? onOpenDish(dish) : undefined)}
-            className="group flex cursor-pointer items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[#FAFAFA]"
+            className={cn(
+              "group flex cursor-pointer items-center gap-3 px-5 py-3.5 transition-colors hover:bg-[#FAFAFA]",
+              !dish.is_available && "opacity-60"
+            )}
           >
             {dish.image_url ? (
               <img
@@ -496,7 +517,12 @@ function CategoryBlock({
               <div className="h-10 w-10 rounded-[10px] bg-[#F5F5F7]" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-slate-900">{dish.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="truncate font-medium text-slate-900">{dish.name}</p>
+                {!dish.is_available && (
+                  <span className="air-badge shrink-0">Hidden</span>
+                )}
+              </div>
               {dish.description ? (
                 <p className="truncate text-xs text-[#86868B]">{dish.description}</p>
               ) : (
