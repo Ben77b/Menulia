@@ -27,7 +27,7 @@ export function flatRecordsToMenuTree(records: MenuCategoryRecord[]): MenuBuilde
       layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
       order_index: row.order_index ?? 0,
       parent_id: row.parent_id,
-      dishes: row.items,
+      dishes: [...row.items].sort((a, b) => a.display_order - b.display_order),
     };
 
     const parent = sectionById.get(row.parent_id);

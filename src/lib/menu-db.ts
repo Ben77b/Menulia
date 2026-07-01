@@ -11,15 +11,30 @@ async function insertDishRow(
   payload: Record<string, unknown>
 ): Promise<{ data: Record<string, unknown> | null; error: unknown }> {
   const supabase = getSupabaseBrowserClient();
-  const withAvailability = { ...payload, is_available: payload.is_available ?? true };
+  let current: Record<string, unknown> = { ...payload, is_available: payload.is_available ?? true };
 
-  let result = await supabase.from("dishes").insert(withAvailability).select("*").single();
-  if (result.error && isMissingColumnError(result.error) && "is_available" in withAvailability) {
-    const { is_available: _ignored, ...withoutAvailability } = withAvailability;
-    result = await supabase.from("dishes").insert(withoutAvailability).select("*").single();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = await supabase.from("dishes").insert(current).select("*").single();
+    if (!result.error || !isMissingColumnError(result.error)) {
+      return result;
+    }
+
+    if ("is_available" in current) {
+      const { is_available: _ignored, ...withoutAvailability } = current;
+      current = withoutAvailability;
+      continue;
+    }
+
+    if ("display_order" in current) {
+      const { display_order: _ignored, ...withoutOrder } = current;
+      current = withoutOrder;
+      continue;
+    }
+
+    return result;
   }
 
-  return result;
+  return { data: null, error: new Error("Dish insert failed after column fallbacks.") };
 }
 
 async function updateDishRow(
@@ -60,6 +75,99 @@ export interface MenuDishRecord {
   tags: string[];
   allergens: string[];
   is_available: boolean;
+  display_order: number;
+}
+
+function mapDishRecord(dish: Record<string, unknown>): MenuDishRecord {
+  const normalized = parseDishTagsFromDb(dish);
+  return {
+    id: dish.id as string,
+    name: dish.name as string,
+    description: (dish.description as string) ?? "",
+    price: parseFloat(String(dish.price)) || 0,
+    image_url: (dish.image as string) ?? null,
+    tags: normalized.tags,
+    allergens: normalized.allergens,
+    is_available: readIsAvailable(dish),
+    display_order: Number(dish.display_order ?? 0),
+  };
+}
+
+async function fetchDishesForCategory(categoryId: string): Promise<MenuDishRecord[]> {
+  const supabase = getSupabaseBrowserClient();
+
+  const { data: withOrder, error: orderError } = await supabase
+    .from("dishes")
+    .select("*")
+    .eq("category_id", categoryId)
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (!orderError) {
+    return (withOrder ?? []).map((dish) => mapDishRecord(dish as Record<string, unknown>));
+  }
+
+  if (!isMissingColumnError(orderError)) {
+    logSupabaseFailure("menu.fetchDishes", orderError);
+    throw orderError;
+  }
+
+  const { data: withoutOrder, error: fallbackError } = await supabase
+    .from("dishes")
+    .select("*")
+    .eq("category_id", categoryId)
+    .order("created_at", { ascending: true });
+
+  if (fallbackError) {
+    logSupabaseFailure("menu.fetchDishes", fallbackError);
+    throw fallbackError;
+  }
+
+  return (withoutOrder ?? []).map((dish, index) => ({
+    ...mapDishRecord(dish as Record<string, unknown>),
+    display_order: index,
+  }));
+}
+
+async function getNextCategoryOrderIndex(
+  restaurantId: string,
+  parentId: string | null
+): Promise<number> {
+  const supabase = getSupabaseBrowserClient();
+  let query = supabase
+    .from("categories")
+    .select("order_index")
+    .eq("restaurant_id", restaurantId)
+    .order("order_index", { ascending: false })
+    .limit(1);
+
+  query = parentId === null ? query.is("parent_id", null) : query.eq("parent_id", parentId);
+
+  const { data, error } = await query;
+  if (error || !data?.length) return 0;
+  return (data[0].order_index ?? 0) + 1;
+}
+
+async function getNextDishDisplayOrder(categoryId: string): Promise<number> {
+  const supabase = getSupabaseBrowserClient();
+
+  const { data, error } = await supabase
+    .from("dishes")
+    .select("display_order")
+    .eq("category_id", categoryId)
+    .order("display_order", { ascending: false })
+    .limit(1);
+
+  if (error && isMissingColumnError(error)) {
+    const { count } = await supabase
+      .from("dishes")
+      .select("id", { count: "exact", head: true })
+      .eq("category_id", categoryId);
+    return count ?? 0;
+  }
+
+  if (error || !data?.length) return 0;
+  return Number(data[0].display_order ?? 0) + 1;
 }
 
 export async function fetchMenuCategories(restaurantId: string): Promise<MenuCategoryRecord[]> {
@@ -80,16 +188,7 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
 
   return Promise.all(
     rows.map(async (category) => {
-      const { data: dishes, error: dishesError } = await supabase
-        .from("dishes")
-        .select("*")
-        .eq("category_id", category.id)
-        .order("created_at", { ascending: true });
-
-      if (dishesError) {
-        logSupabaseFailure("menu.fetchDishes", dishesError);
-        throw dishesError;
-      }
+      const items = await fetchDishesForCategory(category.id);
 
       return {
         id: category.id,
@@ -98,19 +197,7 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
         layout_type: category.layout_type ?? "stacked",
         order_index: category.order_index ?? 0,
         parent_id: category.parent_id ?? null,
-        items: (dishes ?? []).map((dish) => {
-          const normalized = parseDishTagsFromDb(dish);
-          return {
-            id: dish.id,
-            name: dish.name,
-            description: dish.description ?? "",
-            price: parseFloat(String(dish.price)) || 0,
-            image_url: dish.image ?? null,
-            tags: normalized.tags,
-            allergens: normalized.allergens,
-            is_available: readIsAvailable(dish as Record<string, unknown>),
-          };
-        }),
+        items,
       };
     })
   );
@@ -126,12 +213,15 @@ export async function createMenuCategory(
   }
 ): Promise<MenuCategoryRecord> {
   const supabase = getSupabaseBrowserClient();
+  const parentId = options?.parent_id ?? null;
+  const orderIndex = await getNextCategoryOrderIndex(restaurantId, parentId);
 
   const payload: Record<string, unknown> = {
     name: name.trim(),
     restaurant_id: restaurantId,
     layout_type: options?.layout_type ?? "stacked",
-    parent_id: options?.parent_id ?? null,
+    parent_id: parentId,
+    order_index: orderIndex,
   };
 
   if (options?.description?.trim()) {
@@ -201,6 +291,7 @@ export async function createMenuDish(
   allergens: string[] = []
 ): Promise<MenuDishRecord> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
+  const displayOrder = await getNextDishDisplayOrder(categoryId);
 
   const { data, error } = await insertDishRow({
     category_id: categoryId,
@@ -210,6 +301,7 @@ export async function createMenuDish(
     image,
     tags: tagsForDb,
     is_available: true,
+    display_order: displayOrder,
   });
 
   if (error || !data) {
@@ -217,18 +309,7 @@ export async function createMenuDish(
     throw error ?? new Error("Dish insert failed.");
   }
 
-  const saved = parseDishTagsFromDb(data);
-
-  return {
-    id: data.id as string,
-    name: data.name as string,
-    description: (data.description as string) ?? "",
-    price: parseFloat(String(data.price)) || 0,
-    image_url: (data.image as string) ?? null,
-    tags: saved.tags,
-    allergens: saved.allergens,
-    is_available: readIsAvailable(data),
-  };
+  return mapDishRecord(data);
 }
 
 export async function updateMenuDish(
@@ -318,6 +399,7 @@ async function cloneDishToCategory(
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
     is_available: readIsAvailable(source),
+    display_order: Number(source.display_order ?? 0),
   });
 
   if (insertError || !data) {
@@ -325,18 +407,7 @@ async function cloneDishToCategory(
     throw insertError ?? new Error("Dish clone failed.");
   }
 
-  const saved = parseDishTagsFromDb(data);
-
-  return {
-    id: data.id as string,
-    name: data.name as string,
-    description: (data.description as string) ?? "",
-    price: parseFloat(String(data.price)) || 0,
-    image_url: (data.image as string) ?? null,
-    tags: saved.tags,
-    allergens: saved.allergens,
-    is_available: readIsAvailable(data),
-  };
+  return mapDishRecord(data);
 }
 
 export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord> {
@@ -351,6 +422,8 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
   const normalized = parseDishTagsFromDb(source);
   const tagsForDb = serializeDishTagsForDb(normalized.tags, normalized.allergens);
 
+  const displayOrder = await getNextDishDisplayOrder(source.category_id as string);
+
   const { data, error: insertError } = await insertDishRow({
     category_id: source.category_id,
     name: duplicateName(source.name as string),
@@ -359,6 +432,7 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
     is_available: readIsAvailable(source as Record<string, unknown>),
+    display_order: displayOrder,
   });
 
   if (insertError || !data) {
@@ -366,18 +440,7 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     throw insertError ?? new Error("Dish duplicate failed.");
   }
 
-  const saved = parseDishTagsFromDb(data);
-
-  return {
-    id: data.id as string,
-    name: data.name as string,
-    description: (data.description as string) ?? "",
-    price: parseFloat(String(data.price)) || 0,
-    image_url: (data.image as string) ?? null,
-    tags: saved.tags,
-    allergens: saved.allergens,
-    is_available: readIsAvailable(data),
-  };
+  return mapDishRecord(data);
 }
 
 export async function duplicateMenuCategory(
@@ -404,20 +467,24 @@ export async function duplicateMenuCategory(
   });
 
   try {
-    const { data: sourceDishes, error: dishesError } = await supabase
-      .from("dishes")
-      .select("*")
-      .eq("category_id", categoryId)
-      .order("created_at", { ascending: true });
-
-    if (dishesError) {
-      logSupabaseFailure("menu.duplicateCategory.fetchDishes", dishesError);
-      throw dishesError;
-    }
+    const sourceDishes = await fetchDishesForCategory(categoryId);
 
     const clonedDishes: MenuDishRecord[] = [];
-    for (const dish of sourceDishes ?? []) {
-      clonedDishes.push(await cloneDishToCategory(dish as Record<string, unknown>, created.id));
+    for (const dish of sourceDishes) {
+      clonedDishes.push(
+        await cloneDishToCategory(
+          {
+            name: dish.name,
+            description: dish.description,
+            price: dish.price,
+            image: dish.image_url,
+            tags: serializeDishTagsForDb(dish.tags, dish.allergens),
+            is_available: dish.is_available,
+            display_order: dish.display_order,
+          },
+          created.id
+        )
+      );
     }
 
     return { ...created, items: clonedDishes };
@@ -429,4 +496,31 @@ export async function duplicateMenuCategory(
     }
     throw cloneError;
   }
+}
+
+export async function reorderMenuCategories(
+  updates: Array<{ id: string; order_index: number }>
+): Promise<void> {
+  await Promise.all(
+    updates.map(({ id, order_index }) => updateMenuCategory(id, { order_index }))
+  );
+}
+
+export async function reorderMenuDishes(
+  updates: Array<{ id: string; display_order: number }>
+): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+
+  await Promise.all(
+    updates.map(async ({ id, display_order }) => {
+      let { error } = await supabase.from("dishes").update({ display_order }).eq("id", id);
+      if (error && isMissingColumnError(error)) {
+        return;
+      }
+      if (error) {
+        logSupabaseFailure("menu.reorderDishes", error);
+        throw error;
+      }
+    })
+  );
 }

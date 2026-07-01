@@ -221,7 +221,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         sessionUser &&
         (event === "SIGNED_IN" ||
           event === "INITIAL_SESSION" ||
-          event === "TOKEN_REFRESHED" ||
           event === "USER_UPDATED")
       ) {
         setLoading(true);
@@ -237,6 +236,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
             setBootstrapped(true);
           }
         }
+        return;
+      }
+
+      if (event === "TOKEN_REFRESHED" && sessionUser?.id === userIdRef.current) {
+        return;
       }
     });
 

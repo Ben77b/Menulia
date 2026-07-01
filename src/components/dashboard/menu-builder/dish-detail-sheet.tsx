@@ -56,8 +56,17 @@ export function DishDetailSheet({
   });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  const dishIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!open || !dish) return;
+    if (!open) {
+      dishIdRef.current = null;
+      return;
+    }
+    if (!dish) return;
+    if (dishIdRef.current === dish.id) return;
+
+    dishIdRef.current = dish.id;
     const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
     setDraft({
       name: dish.name,

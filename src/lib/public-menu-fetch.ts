@@ -44,6 +44,22 @@ async function fetchActiveDishesForCategory(
   supabase: ReturnType<typeof createAnonClient>,
   categoryId: string
 ): Promise<ReturnType<typeof mapDishRow>[]> {
+  const { data: withOrder, error: orderError } = await supabase
+    .from("dishes")
+    .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY)
+    .eq("category_id", categoryId)
+    .eq("is_available", true)
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (!orderError) {
+    return (withOrder ?? []).map(mapDishRow);
+  }
+
+  if (!isMissingColumnError(orderError)) {
+    return [];
+  }
+
   const { data: withAvailability, error: availabilityError } = await supabase
     .from("dishes")
     .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY)

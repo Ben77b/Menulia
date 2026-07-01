@@ -16,9 +16,27 @@ import {
   deleteMenuDish,
   duplicateMenuDish,
   duplicateMenuCategory,
+  reorderMenuCategories,
+  reorderMenuDishes,
 } from "@/lib/menu-db";
 import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-tree";
-import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection, MenuBuilderTree } from "@/lib/menu-builder-types";
+import {
+  renameCategoryInTree,
+  addSectionToTree,
+  removeSectionFromTree,
+  addCategoryToSection,
+  removeCategoryFromSection,
+  addDishToCategory,
+  updateDishInCategory,
+  removeDishFromCategory,
+  reorderCategoriesInSection,
+  reorderDishesInCategory,
+  duplicateCategoryInSection,
+  patchCategoryInTree,
+  recordsToCategory,
+  recordsToSection,
+} from "@/lib/menu-builder-mutations";
+import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
 import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -27,24 +45,7 @@ import { parsePriceInput } from "@/lib/price-input";
 import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
-
-function renameCategoryInTree(tree: MenuBuilderTree, id: string, name: string): MenuBuilderTree {
-  return {
-    sections: tree.sections.map((section) =>
-      section.id === id
-        ? { ...section, name }
-        : {
-            ...section,
-            categories: section.categories.map((category) =>
-              category.id === id ? { ...category, name } : category
-            ),
-          }
-    ),
-    orphanCategories: tree.orphanCategories.map((category) =>
-      category.id === id ? { ...category, name } : category
-    ),
-  };
-}
+import { ReorderButtons, moveByIndex } from "./reorder-buttons";
 
 interface EditableCategoryNameProps {
   name: string;
@@ -149,7 +150,7 @@ function EditableCategoryName({
 }
 
 export function MenuBuilder() {
-  const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const { currentRestaurant } = useRestaurant();
   const toast = useToast();
   const [tree, setTree] = useState(flatRecordsToMenuTree([]));
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -183,9 +184,9 @@ export function MenuBuilder() {
     [tree, activeSectionId]
   );
 
-  const loadMenu = useCallback(async () => {
+  const loadMenu = useCallback(async (options?: { silent?: boolean }) => {
     if (!currentRestaurant?.id) return;
-    setLoading(true);
+    if (!options?.silent) setLoading(true);
     setError(null);
     try {
       const records = await fetchMenuCategories(currentRestaurant.id);
@@ -199,12 +200,12 @@ export function MenuBuilder() {
       console.error(err);
       setError(formatSupabaseError(err));
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, [currentRestaurant?.id]);
 
   useEffect(() => {
-    loadMenu();
+    void loadMenu();
   }, [loadMenu]);
 
   async function handleImageUpload(file: File): Promise<string | null> {
@@ -244,11 +245,10 @@ export function MenuBuilder() {
         currentRestaurant.id,
         { layout_type: "stacked", parent_id: null }
       );
-      await loadMenu();
+      setTree((prev) => addSectionToTree(prev, recordsToSection(created)));
       setActiveSectionId(created.id);
       setNewSectionName("");
       setAddingSection(false);
-      await refreshRestaurants();
     } catch (err) {
       setError(formatSupabaseError(err));
     } finally {
@@ -261,12 +261,13 @@ export function MenuBuilder() {
     const message = `Delete section "${section.name}" and all ${categories} categories with ${dishes} dishes? This cannot be undone.`;
     if (!confirm(message)) return;
 
+    const previousTree = tree;
+    setTree((prev) => removeSectionFromTree(prev, section.id));
     setBusy(true);
     try {
       await deleteMenuCategory(section.id);
-      await loadMenu();
-      await refreshRestaurants();
     } catch (err) {
+      setTree(previousTree);
       setError(formatSupabaseError(err));
     } finally {
       setBusy(false);
@@ -281,15 +282,16 @@ export function MenuBuilder() {
     }
     setBusy(true);
     try {
-      await createMenuCategory(
+      const created = await createMenuCategory(
         newCategoryName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH),
         currentRestaurant.id,
         { layout_type: "stacked", parent_id: sectionId }
       );
+      setTree((prev) =>
+        addCategoryToSection(prev, sectionId, recordsToCategory({ ...created, parent_id: sectionId }))
+      );
       setNewCategoryName("");
       setAddingCategoryForSection(null);
-      await loadMenu();
-      await refreshRestaurants();
     } catch (err) {
       setError(formatSupabaseError(err));
     } finally {
@@ -297,16 +299,17 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleDeleteCategory(category: MenuBuilderCategory) {
+  async function handleDeleteCategory(sectionId: string, category: MenuBuilderCategory) {
     const message = `Delete category "${category.name}" and its ${category.dishes.length} dishes?`;
     if (!confirm(message)) return;
 
+    const previousTree = tree;
+    setTree((prev) => removeCategoryFromSection(prev, sectionId, category.id));
     setBusy(true);
     try {
       await deleteMenuCategory(category.id);
-      await loadMenu();
-      await refreshRestaurants();
     } catch (err) {
+      setTree(previousTree);
       setError(formatSupabaseError(err));
     } finally {
       setBusy(false);
@@ -319,7 +322,7 @@ export function MenuBuilder() {
 
     setBusy(true);
     try {
-      await createMenuDish(
+      const created = await createMenuDish(
         categoryId,
         draft.name.trim(),
         "",
@@ -327,9 +330,8 @@ export function MenuBuilder() {
         null,
         []
       );
+      setTree((prev) => addDishToCategory(prev, categoryId, created));
       setRapidDrafts((prev) => ({ ...prev, [categoryId]: { name: "", price: "" } }));
-      await loadMenu();
-      await refreshRestaurants();
       toast.success("✨ Dish added");
     } catch (err) {
       const message = formatSupabaseError(err);
@@ -342,10 +344,26 @@ export function MenuBuilder() {
 
   async function handleSaveDishDetail(draft: DishDetailDraft) {
     if (!selectedDish) return;
+    const { dish, categoryId } = selectedDish;
+    const previousTree = tree;
+
+    const optimisticDish: MenuBuilderDish = {
+      ...dish,
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      price: parsePriceInput(draft.price),
+      image_url: draft.image_url,
+      tags: draft.filterableTags,
+      allergens: draft.allergens,
+      is_available: draft.is_available,
+    };
+
+    setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, optimisticDish));
+    setSelectedDish(null);
     setBusy(true);
     try {
       await updateMenuDish(
-        selectedDish.dish.id,
+        dish.id,
         draft.name,
         draft.description,
         parsePriceInput(draft.price),
@@ -354,11 +372,9 @@ export function MenuBuilder() {
         draft.allergens,
         draft.is_available
       );
-      setSelectedDish(null);
-      await loadMenu();
-      await refreshRestaurants();
       toast.success("✨ Dish updated successfully");
     } catch (err) {
+      setTree(previousTree);
       const message = formatSupabaseError(err);
       setError(message);
       toast.error(message);
@@ -369,15 +385,24 @@ export function MenuBuilder() {
 
   async function handleAvailabilityChange(isAvailable: boolean) {
     if (!selectedDish) return;
+    const { dish, categoryId } = selectedDish;
+    const previousTree = tree;
+
+    setSelectedDish((prev) =>
+      prev ? { ...prev, dish: { ...prev.dish, is_available: isAvailable } } : null
+    );
+    setTree((prev) =>
+      updateDishInCategory(prev, categoryId, dish.id, { is_available: isAvailable })
+    );
+
     try {
-      await updateMenuDishAvailability(selectedDish.dish.id, isAvailable);
-      setSelectedDish((prev) =>
-        prev ? { ...prev, dish: { ...prev.dish, is_available: isAvailable } } : null
-      );
-      await loadMenu();
-      await refreshRestaurants();
+      await updateMenuDishAvailability(dish.id, isAvailable);
       toast.success(isAvailable ? "Dish is now visible on your menu" : "Dish hidden from public menu");
     } catch (err) {
+      setTree(previousTree);
+      setSelectedDish((prev) =>
+        prev ? { ...prev, dish: { ...prev.dish, is_available: !isAvailable } } : null
+      );
       const message = formatSupabaseError(err);
       setError(message);
       toast.error(message);
@@ -387,14 +412,17 @@ export function MenuBuilder() {
 
   async function handleDeleteDish(dish: MenuBuilderDish, categoryId: string) {
     if (!confirm(`Delete "${dish.name}"?`)) return;
+
+    const previousTree = tree;
+    setTree((prev) => removeDishFromCategory(prev, categoryId, dish.id));
+    if (selectedDish?.dish.id === dish.id) setSelectedDish(null);
+
     setBusy(true);
     try {
       await deleteMenuDish(dish.id);
-      if (selectedDish?.dish.id === dish.id) setSelectedDish(null);
-      await loadMenu();
-      await refreshRestaurants();
       toast.success("Dish deleted");
     } catch (err) {
+      setTree(previousTree);
       const message = formatSupabaseError(err);
       setError(message);
       toast.error(message);
@@ -404,15 +432,17 @@ export function MenuBuilder() {
   }
 
   async function handleLayoutChange(category: MenuBuilderCategory, layout: "stacked" | "carousel") {
+    const previousTree = tree;
+    setTree((prev) => patchCategoryInTree(prev, category.id, { layout_type: layout }));
     try {
       await updateMenuCategory(category.id, { layout_type: layout });
-      await loadMenu();
     } catch (err) {
+      setTree(previousTree);
       setError(formatSupabaseError(err));
     }
   }
 
-  async function handleDuplicateCategory(category: MenuBuilderCategory) {
+  async function handleDuplicateCategory(sectionId: string, category: MenuBuilderCategory) {
     if (!currentRestaurant?.id) return;
     if (totalCategories >= MAX_CATEGORIES_PER_RESTAURANT) {
       const message = `Maximum ${MAX_CATEGORIES_PER_RESTAURANT} sections + categories reached.`;
@@ -424,9 +454,14 @@ export function MenuBuilder() {
     setDuplicatingCategoryId(category.id);
     setBusy(true);
     try {
-      await duplicateMenuCategory(category.id, currentRestaurant.id);
-      await loadMenu();
-      await refreshRestaurants();
+      const created = await duplicateMenuCategory(category.id, currentRestaurant.id);
+      setTree((prev) =>
+        duplicateCategoryInSection(
+          prev,
+          sectionId,
+          recordsToCategory({ ...created, parent_id: sectionId })
+        )
+      );
       toast.success("✨ Category and all items duplicated successfully!");
     } catch (err) {
       const message = formatSupabaseError(err);
@@ -438,12 +473,11 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleDuplicateDish(dish: MenuBuilderDish) {
+  async function handleDuplicateDish(dish: MenuBuilderDish, categoryId: string) {
     setBusy(true);
     try {
-      await duplicateMenuDish(dish.id);
-      await loadMenu();
-      await refreshRestaurants();
+      const created = await duplicateMenuDish(dish.id);
+      setTree((prev) => addDishToCategory(prev, categoryId, created));
       toast.success(`"${dish.name}" duplicated`);
     } catch (err) {
       const message = formatSupabaseError(err);
@@ -456,10 +490,12 @@ export function MenuBuilder() {
 
   async function handleCategoryNoteChange(categoryId: string, description: string) {
     const trimmed = description.trim();
+    const previousTree = tree;
+    setTree((prev) => patchCategoryInTree(prev, categoryId, { description: trimmed || null }));
     try {
       await updateMenuCategory(categoryId, { description: trimmed || null });
-      await loadMenu();
     } catch (err) {
+      setTree(previousTree);
       const message = formatSupabaseError(err);
       setError(message);
       toast.error(message);
@@ -481,7 +517,6 @@ export function MenuBuilder() {
 
     try {
       await updateMenuCategory(id, { name: trimmed });
-      await refreshRestaurants();
       toast.success("✨ Section renamed successfully!");
       return true;
     } catch (err) {
@@ -490,6 +525,60 @@ export function MenuBuilder() {
       setError(message);
       toast.error(message);
       return false;
+    }
+  }
+
+  async function handleReorderCategory(
+    sectionId: string,
+    categoryId: string,
+    direction: -1 | 1
+  ) {
+    const section = tree.sections.find((entry) => entry.id === sectionId);
+    if (!section) return;
+
+    const currentIndex = section.categories.findIndex((category) => category.id === categoryId);
+    if (currentIndex < 0) return;
+
+    const reordered = moveByIndex(section.categories, currentIndex, direction);
+    if (!reordered) return;
+
+    const orderedIds = reordered.map((category) => category.id);
+    const previousTree = tree;
+    setTree((prev) => reorderCategoriesInSection(prev, sectionId, orderedIds));
+
+    try {
+      await reorderMenuCategories(
+        orderedIds.map((id, order_index) => ({ id, order_index }))
+      );
+    } catch (err) {
+      setTree(previousTree);
+      toast.error(formatSupabaseError(err));
+    }
+  }
+
+  async function handleReorderDish(categoryId: string, dishId: string, direction: -1 | 1) {
+    const category = tree.sections
+      .flatMap((section) => section.categories)
+      .find((entry) => entry.id === categoryId);
+    if (!category) return;
+
+    const currentIndex = category.dishes.findIndex((dish) => dish.id === dishId);
+    if (currentIndex < 0) return;
+
+    const reordered = moveByIndex(category.dishes, currentIndex, direction);
+    if (!reordered) return;
+
+    const orderedIds = reordered.map((dish) => dish.id);
+    const previousTree = tree;
+    setTree((prev) => reorderDishesInCategory(prev, categoryId, orderedIds));
+
+    try {
+      await reorderMenuDishes(
+        orderedIds.map((id, display_order) => ({ id, display_order }))
+      );
+    } catch (err) {
+      setTree(previousTree);
+      toast.error(formatSupabaseError(err));
     }
   }
 
@@ -584,15 +673,55 @@ export function MenuBuilder() {
                 </Button>
               </div>
 
+              <div className="sticky top-0 z-10 -mx-1 rounded-2xl border border-[#F5F5F7]/90 bg-[#FAFAFA]/95 px-4 py-3 shadow-sm backdrop-blur-sm">
+                {addingCategoryForSection === activeSection.id ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      autoFocus
+                      placeholder="Category name (e.g. Starters)"
+                      value={newCategoryName}
+                      maxLength={MAX_CATEGORY_NAME_LENGTH}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddCategory(activeSection.id)}
+                      className="air-input flex-1"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="dark"
+                        onClick={() => handleAddCategory(activeSection.id)}
+                        disabled={!newCategoryName.trim() || busy}
+                      >
+                        Add
+                      </Button>
+                      <Button variant="outline" onClick={() => setAddingCategoryForSection(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setAddingCategoryForSection(activeSection.id)}
+                    disabled={busy || totalCategories >= MAX_CATEGORIES_PER_RESTAURANT}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#E5E5EA] bg-white py-3 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-white disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Category
+                  </button>
+                )}
+              </div>
+
               {activeSection.categories.length === 0 ? (
                 <div className="air-card air-card-pad py-10 text-center text-sm text-[#86868B]">
-                  No categories yet. Add Starters, Mains, Desserts…
+                  No categories yet. Use the button above to add Starters, Mains, Desserts…
                 </div>
               ) : (
-                activeSection.categories.map((category) => (
+                activeSection.categories.map((category, categoryIndex) => (
                   <CategoryBlock
                     key={category.id}
                     category={category}
+                    categoryIndex={categoryIndex}
+                    categoryCount={activeSection.categories.length}
                     busy={busy}
                     duplicating={duplicatingCategoryId === category.id}
                     rapidDraft={rapidDrafts[category.id] ?? { name: "", price: "" }}
@@ -600,49 +729,22 @@ export function MenuBuilder() {
                       setRapidDrafts((prev) => ({ ...prev, [category.id]: draft }))
                     }
                     onRapidAdd={() => handleRapidAddDish(category.id)}
-                    onDeleteCategory={() => handleDeleteCategory(category)}
-                    onDuplicateCategory={() => handleDuplicateCategory(category)}
+                    onDeleteCategory={() => handleDeleteCategory(activeSection.id, category)}
+                    onDuplicateCategory={() => handleDuplicateCategory(activeSection.id, category)}
                     onDeleteDish={(dish) => handleDeleteDish(dish, category.id)}
-                    onDuplicateDish={handleDuplicateDish}
+                    onDuplicateDish={(dish) => handleDuplicateDish(dish, category.id)}
                     onOpenDish={(dish) => setSelectedDish({ dish, categoryId: category.id })}
                     onLayoutChange={(layout) => handleLayoutChange(category, layout)}
                     onNoteChange={(note) => handleCategoryNoteChange(category.id, note)}
                     onRename={(nextName) => handleRenameCategory(category.id, category.name, nextName)}
+                    onMoveCategory={(direction) =>
+                      handleReorderCategory(activeSection.id, category.id, direction)
+                    }
+                    onMoveDish={(dishId, direction) =>
+                      handleReorderDish(category.id, dishId, direction)
+                    }
                   />
                 ))
-              )}
-
-              {addingCategoryForSection === activeSection.id ? (
-                <div className="air-card air-card-pad flex gap-2">
-                  <input
-                    autoFocus
-                    placeholder="Category name (e.g. Starters)"
-                    value={newCategoryName}
-                    maxLength={MAX_CATEGORY_NAME_LENGTH}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddCategory(activeSection.id)}
-                    className="air-input flex-1"
-                  />
-                  <Button
-                    variant="dark"
-                    onClick={() => handleAddCategory(activeSection.id)}
-                    disabled={!newCategoryName.trim() || busy}
-                  >
-                    Add
-                  </Button>
-                  <Button variant="outline" onClick={() => setAddingCategoryForSection(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAddingCategoryForSection(activeSection.id)}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[#E5E5EA] py-3.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-white"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Category
-                </button>
               )}
             </div>
           )}
@@ -665,6 +767,8 @@ export function MenuBuilder() {
 
 function CategoryBlock({
   category,
+  categoryIndex,
+  categoryCount,
   busy,
   duplicating,
   rapidDraft,
@@ -678,8 +782,12 @@ function CategoryBlock({
   onLayoutChange,
   onNoteChange,
   onRename,
+  onMoveCategory,
+  onMoveDish,
 }: {
   category: MenuBuilderCategory;
+  categoryIndex: number;
+  categoryCount: number;
   busy: boolean;
   duplicating: boolean;
   rapidDraft: { name: string; price: string };
@@ -693,6 +801,8 @@ function CategoryBlock({
   onLayoutChange: (layout: "stacked" | "carousel") => void;
   onNoteChange: (note: string) => void;
   onRename: (nextName: string) => Promise<boolean>;
+  onMoveCategory: (direction: -1 | 1) => void;
+  onMoveDish: (dishId: string, direction: -1 | 1) => void;
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
@@ -700,7 +810,7 @@ function CategoryBlock({
 
   useEffect(() => {
     setNoteDraft(category.description ?? "");
-  }, [category.description]);
+  }, [category.id]);
 
   async function handleQuickAdd() {
     await onRapidAdd();
@@ -711,6 +821,13 @@ function CategoryBlock({
     <div className="air-card overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F5F7]/80 px-6 py-5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
+          <ReorderButtons
+            onMoveUp={() => onMoveCategory(-1)}
+            onMoveDown={() => onMoveCategory(1)}
+            canMoveUp={categoryIndex > 0}
+            canMoveDown={categoryIndex < categoryCount - 1}
+            disabled={busy || duplicating}
+          />
           <LayoutGrid className="h-4 w-4 shrink-0 text-slate-500" />
           <EditableCategoryName
             name={category.name}
@@ -778,7 +895,7 @@ function CategoryBlock({
       </div>
 
       <div className="divide-y divide-[#F5F5F7]">
-        {category.dishes.map((dish) => (
+        {category.dishes.map((dish, dishIndex) => (
           <div
             key={dish.id}
             role="button"
@@ -790,6 +907,14 @@ function CategoryBlock({
               !dish.is_available && "opacity-60"
             )}
           >
+            <ReorderButtons
+              onMoveUp={() => onMoveDish(dish.id, -1)}
+              onMoveDown={() => onMoveDish(dish.id, 1)}
+              canMoveUp={dishIndex > 0}
+              canMoveDown={dishIndex < category.dishes.length - 1}
+              disabled={busy}
+              className="opacity-0 transition-opacity group-hover:opacity-100"
+            />
             {dish.image_url ? (
               <img
                 src={dish.image_url}
