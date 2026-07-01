@@ -23,7 +23,7 @@ export function CapsuleNav<T extends string>({
   className,
 }: CapsuleNavProps<T>) {
   return (
-    <nav className={cn("air-capsule-nav", className)} aria-label={ariaLabel}>
+    <nav className={cn("air-capsule-nav flex", className)} aria-label={ariaLabel}>
       {items.map((item) => (
         <button
           key={item.id}

@@ -32,6 +32,7 @@ import {
   updateDishInCategory,
   removeDishFromCategory,
   reorderCategoriesInSection,
+  reorderSectionsInTree,
   reorderDishesInCategory,
   duplicateCategoryInSection,
   patchCategoryInTree,
@@ -40,7 +41,7 @@ import {
   findCategory,
 } from "@/lib/menu-builder-mutations";
 import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
-import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
+import { MAX_CATEGORIES_PER_SECTION, MAX_SECTIONS, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { MenuBuilderSkeleton } from "@/components/ui/skeleton";
@@ -223,14 +224,6 @@ export function MenuBuilder() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
 
-  const totalCategories = useMemo(() => {
-    return (
-      tree.sections.length +
-      tree.sections.reduce((n, s) => n + s.categories.length, 0) +
-      tree.orphanCategories.length
-    );
-  }, [tree]);
-
   const selectedCategory = useMemo(
     () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
     [selectedDish, tree]
@@ -243,6 +236,11 @@ export function MenuBuilder() {
     }
     return tree.sections[0];
   }, [tree.sections, sectionParam]);
+
+  const activeSectionIndex = useMemo(
+    () => (activeSection ? tree.sections.findIndex((section) => section.id === activeSection.id) : -1),
+    [activeSection, tree.sections]
+  );
 
   const setActiveSectionId = useCallback(
     (sectionId: string) => {
@@ -306,8 +304,8 @@ export function MenuBuilder() {
 
   async function handleAddSection() {
     if (!currentRestaurant?.id || !newSectionName.trim()) return;
-    if (totalCategories >= MAX_CATEGORIES_PER_RESTAURANT) {
-      setError(`Maximum ${MAX_CATEGORIES_PER_RESTAURANT} sections + categories reached.`);
+    if (tree.sections.length >= MAX_SECTIONS) {
+      setError(`Maximum ${MAX_SECTIONS} sections reached.`);
       return;
     }
     setBusy(true);
@@ -348,8 +346,9 @@ export function MenuBuilder() {
 
   async function handleAddCategory(sectionId: string) {
     if (!currentRestaurant?.id || !newCategoryName.trim()) return;
-    if (totalCategories >= MAX_CATEGORIES_PER_RESTAURANT) {
-      setError(`Maximum ${MAX_CATEGORIES_PER_RESTAURANT} sections + categories reached.`);
+    const section = tree.sections.find((entry) => entry.id === sectionId);
+    if ((section?.categories.length ?? 0) >= MAX_CATEGORIES_PER_SECTION) {
+      setError(`Maximum ${MAX_CATEGORIES_PER_SECTION} categories per section reached.`);
       return;
     }
     setBusy(true);
@@ -516,8 +515,9 @@ export function MenuBuilder() {
 
   async function handleDuplicateCategory(sectionId: string, category: MenuBuilderCategory) {
     if (!currentRestaurant?.id) return;
-    if (totalCategories >= MAX_CATEGORIES_PER_RESTAURANT) {
-      const message = `Maximum ${MAX_CATEGORIES_PER_RESTAURANT} sections + categories reached.`;
+    const section = tree.sections.find((entry) => entry.id === sectionId);
+    if ((section?.categories.length ?? 0) >= MAX_CATEGORIES_PER_SECTION) {
+      const message = `Maximum ${MAX_CATEGORIES_PER_SECTION} categories per section reached.`;
       setError(message);
       toast.error(message);
       return;
@@ -600,6 +600,27 @@ export function MenuBuilder() {
     }
   }
 
+  async function handleReorderSection(sectionId: string, direction: -1 | 1) {
+    const currentIndex = tree.sections.findIndex((section) => section.id === sectionId);
+    if (currentIndex < 0) return;
+
+    const reordered = moveByIndex(tree.sections, currentIndex, direction);
+    if (!reordered) return;
+
+    const orderedIds = reordered.map((section) => section.id);
+    const previousTree = tree;
+    setTree((prev) => reorderSectionsInTree(prev, orderedIds));
+
+    try {
+      await reorderMenuCategories(
+        orderedIds.map((id, order_index) => ({ id, order_index }))
+      );
+    } catch (err) {
+      setTree(previousTree);
+      toast.error(formatSupabaseError(err));
+    }
+  }
+
   async function handleReorderCategory(
     sectionId: string,
     categoryId: string,
@@ -660,23 +681,11 @@ export function MenuBuilder() {
 
   return (
     <div className="air-page">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="air-page-title">Menu Builder</h1>
-          <p className="air-page-subtitle">
-            Sections → Categories → Dishes. Tab to price, Enter to save.
-          </p>
-        </div>
-        <Button
-          variant="dark"
-          size="sm"
-          className="gap-2"
-          onClick={() => setAddingSection(true)}
-          disabled={busy || totalCategories >= MAX_CATEGORIES_PER_RESTAURANT}
-        >
-          <Plus className="h-4 w-4" />
-          Add Section
-        </Button>
+      <div>
+        <h1 className="air-page-title">Menu Builder</h1>
+        <p className="air-page-subtitle">
+          Sections → Categories → Dishes. Tab to price, Enter to save.
+        </p>
       </div>
 
       {error && (
@@ -712,15 +721,37 @@ export function MenuBuilder() {
         </div>
       ) : (
         <>
-          <CapsuleNav
-            items={tree.sections.map((section) => ({
-              id: section.id,
-              label: `${section.name} (${section.categories.length})`,
-            }))}
-            active={activeSection?.id ?? tree.sections[0].id}
-            onChange={setActiveSectionId}
-            ariaLabel="Menu sections"
-          />
+          <div className="flex items-center gap-2">
+            <CapsuleNav
+              items={tree.sections.map((section) => ({
+                id: section.id,
+                label: `${section.name} (${section.categories.length})`,
+              }))}
+              active={activeSection?.id ?? tree.sections[0].id}
+              onChange={setActiveSectionId}
+              ariaLabel="Menu sections"
+              className="min-w-0 flex-1"
+            />
+            {tree.sections.length > 1 && activeSection && (
+              <ReorderButtons
+                onMoveUp={() => handleReorderSection(activeSection.id, -1)}
+                onMoveDown={() => handleReorderSection(activeSection.id, 1)}
+                canMoveUp={activeSectionIndex > 0}
+                canMoveDown={activeSectionIndex >= 0 && activeSectionIndex < tree.sections.length - 1}
+                disabled={busy}
+              />
+            )}
+            <Button
+              variant="dark"
+              size="sm"
+              className="shrink-0 gap-2"
+              onClick={() => setAddingSection(true)}
+              disabled={busy || tree.sections.length >= MAX_SECTIONS}
+            >
+              <Plus className="h-4 w-4" />
+              Add Section
+            </Button>
+          </div>
 
           {activeSection && (
             <div className="space-y-4">
@@ -774,7 +805,7 @@ export function MenuBuilder() {
                   <button
                     type="button"
                     onClick={() => setAddingCategoryForSection(activeSection.id)}
-                    disabled={busy || totalCategories >= MAX_CATEGORIES_PER_RESTAURANT}
+                    disabled={busy || activeSection.categories.length >= MAX_CATEGORIES_PER_SECTION}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#E5E5EA] bg-white py-3 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-white disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />

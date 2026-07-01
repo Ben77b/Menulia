@@ -106,6 +106,21 @@ export function duplicateCategoryInSection(
   return addCategoryToSection(tree, sectionId, category);
 }
 
+export function reorderSectionsInTree(
+  tree: MenuBuilderTree,
+  orderedIds: string[]
+): MenuBuilderTree {
+  const byId = new Map(tree.sections.map((section) => [section.id, section]));
+  const reordered = orderedIds
+    .map((id, index) => {
+      const section = byId.get(id);
+      return section ? { ...section, order_index: index } : null;
+    })
+    .filter((section): section is MenuBuilderSection => section !== null);
+
+  return { ...tree, sections: reordered };
+}
+
 export function reorderCategoriesInSection(
   tree: MenuBuilderTree,
   sectionId: string,
