@@ -37,6 +37,7 @@ import {
   patchCategoryInTree,
   recordsToCategory,
   recordsToSection,
+  findCategory,
 } from "@/lib/menu-builder-mutations";
 import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
 import { MAX_CATEGORIES_PER_RESTAURANT, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
@@ -229,6 +230,11 @@ export function MenuBuilder() {
       tree.orphanCategories.length
     );
   }, [tree]);
+
+  const selectedCategory = useMemo(
+    () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
+    [selectedDish, tree]
+  );
 
   const activeSection = useMemo(() => {
     if (!tree.sections.length) return null;
@@ -822,6 +828,8 @@ export function MenuBuilder() {
         dish={selectedDish?.dish ?? null}
         saving={busy}
         uploadingImage={uploadingImage}
+        restaurantName={currentRestaurant?.name ?? ""}
+        categoryName={selectedCategory?.name ?? ""}
         onClose={() => setSelectedDish(null)}
         onSave={handleSaveDishDetail}
         onImageUpload={handleImageUpload}

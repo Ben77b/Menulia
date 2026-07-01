@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Upload, Camera, X } from "lucide-react";
+import { Upload, Camera, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StickyActionBar } from "@/components/dashboard/sticky-action-bar";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import type { MenuBuilderDish } from "@/lib/menu-builder-types";
@@ -33,6 +34,8 @@ interface DishDetailSheetProps {
   onSave: (draft: DishDetailDraft) => Promise<void>;
   onImageUpload: (file: File) => Promise<string | null>;
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
+  restaurantName?: string;
+  categoryName?: string;
 }
 
 export function DishDetailSheet({
@@ -44,7 +47,11 @@ export function DishDetailSheet({
   onSave,
   onImageUpload,
   onAvailabilityChange,
+  restaurantName = "",
+  categoryName = "",
 }: DishDetailSheetProps) {
+  const toast = useToast();
+  const [generatingDescription, setGeneratingDescription] = useState(false);
   const [draft, setDraft] = useState<DishDetailDraft>({
     name: "",
     description: "",
@@ -114,6 +121,44 @@ export function DishDetailSheet({
     if (!file) return;
     const url = await onImageUpload(file);
     if (url) setDraft((prev) => ({ ...prev, image_url: url }));
+  }
+
+  async function handleGenerateDescription() {
+    const dishName = draft.name.trim();
+    if (!dishName) {
+      toast.error("Enter a dish name first");
+      return;
+    }
+
+    setGeneratingDescription(true);
+    try {
+      const response = await fetch("/api/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dishName,
+          categoryName: categoryName.trim() || undefined,
+          restaurantName: restaurantName.trim() || undefined,
+        }),
+      });
+
+      const data = (await response.json()) as { description?: string; error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Could not generate description");
+      }
+
+      if (!data.description?.trim()) {
+        throw new Error("No description was returned");
+      }
+
+      setDraft((prev) => ({ ...prev, description: data.description!.trim() }));
+      toast.success("Description generated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not generate description");
+    } finally {
+      setGeneratingDescription(false);
+    }
   }
 
   return (
@@ -224,13 +269,43 @@ export function DishDetailSheet({
           </div>
 
           <div>
-            <label className="air-label">Description</label>
-            <textarea
-              rows={4}
-              value={draft.description}
-              onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
-              className="air-input min-h-[100px] resize-none py-2"
-            />
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="air-label mb-0">Description</label>
+              <button
+                type="button"
+                onClick={() => void handleGenerateDescription()}
+                disabled={generatingDescription || saving}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-[#F5F5F7] hover:text-slate-900 disabled:opacity-50"
+                aria-label="Generate description with AI"
+              >
+                {generatingDescription ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                <span>{generatingDescription ? "Writing…" : "AI write"}</span>
+              </button>
+            </div>
+            <div className="relative">
+              <textarea
+                rows={4}
+                value={draft.description}
+                onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
+                disabled={generatingDescription}
+                placeholder={
+                  generatingDescription ? "Generating description…" : "Short sensory description for guests and search"
+                }
+                className={cn(
+                  "air-input min-h-[100px] resize-none py-2",
+                  generatingDescription && "text-[#86868B]"
+                )}
+              />
+              {generatingDescription && (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[10px] bg-white/60">
+                  <Loader2 className="h-5 w-5 animate-spin text-slate-500" />
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
