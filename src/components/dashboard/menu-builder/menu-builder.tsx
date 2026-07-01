@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, Pencil, Check, X } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
+import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
+import { useSessionPersistedState } from "@/hooks/use-session-persisted-state";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { formatSupabaseError } from "@/lib/auth/errors";
 import {
@@ -46,6 +48,22 @@ import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
+
+interface MenuBuilderFormDrafts {
+  rapidDrafts: Record<string, { name: string; price: string }>;
+  newSectionName: string;
+  newCategoryName: string;
+  addingSection: boolean;
+  addingCategoryForSection: string | null;
+}
+
+const EMPTY_FORM_DRAFTS: MenuBuilderFormDrafts = {
+  rapidDrafts: {},
+  newSectionName: "",
+  newCategoryName: "",
+  addingSection: false,
+  addingCategoryForSection: null,
+};
 
 interface EditableCategoryNameProps {
   name: string;
@@ -153,17 +171,50 @@ export function MenuBuilder() {
   const { currentRestaurant } = useRestaurant();
   const toast = useToast();
   const [tree, setTree] = useState(flatRecordsToMenuTree([]));
-  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [sectionParam, setSectionParam] = useDashboardSearchParam("section", null, "");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadedRestaurantRef = useRef<string | null>(null);
 
-  const [newSectionName, setNewSectionName] = useState("");
-  const [addingSection, setAddingSection] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [addingCategoryForSection, setAddingCategoryForSection] = useState<string | null>(null);
+  const draftStorageKey = currentRestaurant?.id
+    ? `menulia:menu-builder-drafts:${currentRestaurant.id}`
+    : null;
+  const [formDrafts, setFormDrafts] = useSessionPersistedState<MenuBuilderFormDrafts>(
+    draftStorageKey,
+    EMPTY_FORM_DRAFTS
+  );
 
-  const [rapidDrafts, setRapidDrafts] = useState<Record<string, { name: string; price: string }>>({});
+  const {
+    rapidDrafts,
+    newSectionName,
+    newCategoryName,
+    addingSection,
+    addingCategoryForSection,
+  } = formDrafts;
+
+  const setRapidDrafts = (
+    updater:
+      | Record<string, { name: string; price: string }>
+      | ((
+          prev: Record<string, { name: string; price: string }>
+        ) => Record<string, { name: string; price: string }>)
+  ) => {
+    setFormDrafts((prev) => ({
+      ...prev,
+      rapidDrafts: typeof updater === "function" ? updater(prev.rapidDrafts) : updater,
+    }));
+  };
+
+  const setNewSectionName = (value: string) =>
+    setFormDrafts((prev) => ({ ...prev, newSectionName: value }));
+  const setNewCategoryName = (value: string) =>
+    setFormDrafts((prev) => ({ ...prev, newCategoryName: value }));
+  const setAddingSection = (value: boolean) =>
+    setFormDrafts((prev) => ({ ...prev, addingSection: value }));
+  const setAddingCategoryForSection = (value: string | null) =>
+    setFormDrafts((prev) => ({ ...prev, addingCategoryForSection: value }));
+
   const [selectedDish, setSelectedDish] = useState<{
     dish: MenuBuilderDish;
     categoryId: string;
@@ -179,10 +230,27 @@ export function MenuBuilder() {
     );
   }, [tree]);
 
-  const activeSection = useMemo(
-    () => tree.sections.find((s) => s.id === activeSectionId) ?? tree.sections[0] ?? null,
-    [tree, activeSectionId]
+  const activeSection = useMemo(() => {
+    if (!tree.sections.length) return null;
+    if (sectionParam && tree.sections.some((section) => section.id === sectionParam)) {
+      return tree.sections.find((section) => section.id === sectionParam) ?? tree.sections[0];
+    }
+    return tree.sections[0];
+  }, [tree.sections, sectionParam]);
+
+  const setActiveSectionId = useCallback(
+    (sectionId: string) => {
+      setSectionParam(sectionId);
+    },
+    [setSectionParam]
   );
+
+  useEffect(() => {
+    if (loading || !activeSection) return;
+    if (sectionParam !== activeSection.id) {
+      setSectionParam(activeSection.id);
+    }
+  }, [loading, activeSection, sectionParam, setSectionParam]);
 
   const loadMenu = useCallback(async (options?: { silent?: boolean }) => {
     if (!currentRestaurant?.id) return;
@@ -190,12 +258,7 @@ export function MenuBuilder() {
     setError(null);
     try {
       const records = await fetchMenuCategories(currentRestaurant.id);
-      const nextTree = flatRecordsToMenuTree(records);
-      setTree(nextTree);
-      setActiveSectionId((prev) => {
-        if (prev && nextTree.sections.some((s) => s.id === prev)) return prev;
-        return nextTree.sections[0]?.id ?? null;
-      });
+      setTree(flatRecordsToMenuTree(records));
     } catch (err) {
       console.error(err);
       setError(formatSupabaseError(err));
@@ -205,8 +268,11 @@ export function MenuBuilder() {
   }, [currentRestaurant?.id]);
 
   useEffect(() => {
-    void loadMenu();
-  }, [loadMenu]);
+    if (!currentRestaurant?.id) return;
+    const isRepeatVisit = loadedRestaurantRef.current === currentRestaurant.id;
+    loadedRestaurantRef.current = currentRestaurant.id;
+    void loadMenu({ silent: isRepeatVisit });
+  }, [currentRestaurant?.id, loadMenu]);
 
   async function handleImageUpload(file: File): Promise<string | null> {
     if (!currentRestaurant?.id) return null;

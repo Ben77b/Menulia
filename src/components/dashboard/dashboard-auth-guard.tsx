@@ -12,17 +12,17 @@ interface DashboardAuthGuardProps {
 export function DashboardAuthGuard({ children }: DashboardAuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { bootstrapped, user, loading } = useRestaurant();
+  const { bootstrapped, user } = useRestaurant();
 
   useEffect(() => {
-    if (!bootstrapped || loading) return;
+    if (!bootstrapped) return;
 
     if (!user) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     }
-  }, [bootstrapped, user, loading, pathname, router]);
+  }, [bootstrapped, user, pathname, router]);
 
-  if (!bootstrapped || loading) {
+  if (!bootstrapped) {
     return <LoadingSpinner label="Preparing your dashboard..." />;
   }
 

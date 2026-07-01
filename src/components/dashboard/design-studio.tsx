@@ -33,8 +33,11 @@ import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
 import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
+import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 
 type StudioTab = "menu" | "colours" | "fonts" | "display" | "logo-seo";
+
+const STUDIO_TAB_IDS: StudioTab[] = ["menu", "colours", "fonts", "display", "logo-seo"];
 
 const STUDIO_TABS: { id: StudioTab; label: string }[] = [
   { id: "menu", label: "Menu" },
@@ -104,7 +107,11 @@ export function DesignStudio() {
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
-  const [activeTab, setActiveTab] = useState<StudioTab>("menu");
+  const [activeTab, setActiveTab] = useDashboardSearchParam(
+    "tab",
+    STUDIO_TAB_IDS,
+    "menu"
+  ) as [StudioTab, (tab: StudioTab) => void];
   const [activeHotspot, setActiveHotspot] = useState<ThemeHotspotId | null>(null);
   const [colorPopover, setColorPopover] = useState<{
     hotspot: ThemeHotspotId;
@@ -228,7 +235,7 @@ export function DesignStudio() {
 
       if (error) throw error;
 
-      await refreshRestaurants();
+      await refreshRestaurants({ silent: true });
 
       if (advancedColumnMissing) {
         setSaveError(

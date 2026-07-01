@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -39,6 +39,8 @@ import {
 } from "@/lib/restaurant-settings";
 import { MAX_CUSTOM_LINKS, MAX_LINK_LABEL_LENGTH } from "@/lib/menu-limits";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
+import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface CustomLink {
   id: string;
@@ -55,10 +57,16 @@ const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
   { id: "danger", label: "Danger Zone" },
 ];
 
-export default function SettingsPage() {
+const SETTINGS_TAB_IDS: SettingsTab[] = ["general", "hours-location", "social-links", "danger"];
+
+function SettingsPageContent() {
   const router = useRouter();
   const { currentRestaurant, refreshRestaurants, loading: restaurantsLoading } = useRestaurant();
-  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
+  const [activeTab, setActiveTab] = useDashboardSearchParam(
+    "tab",
+    SETTINGS_TAB_IDS,
+    "general"
+  ) as [SettingsTab, (tab: SettingsTab) => void];
   const [scheduleBlocks, setScheduleBlocks] = useState<HoursScheduleBlock[]>(defaultScheduleBlocks());
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
   const [footerSlogan, setFooterSlogan] = useState("");
@@ -207,7 +215,7 @@ export default function SettingsPage() {
         setRestaurantSlug(result.normalizedSlug);
       }
 
-      await refreshRestaurants();
+      await refreshRestaurants({ silent: true });
       await loadRestaurantData();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
@@ -261,7 +269,7 @@ export default function SettingsPage() {
     try {
       await deleteRestaurant(supabase, currentRestaurant.id);
       localStorage.removeItem("menulia_current_restaurant");
-      const remaining = await refreshRestaurants();
+      const remaining = await refreshRestaurants({ silent: true });
       setDeleteModalOpen(false);
       router.push(remaining.length > 0 ? `/dashboard/${remaining[0].id}` : "/dashboard");
     } catch (error) {
@@ -616,5 +624,13 @@ export default function SettingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner label="Loading settings..." />}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }

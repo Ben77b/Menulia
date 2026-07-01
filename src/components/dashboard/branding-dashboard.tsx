@@ -134,7 +134,7 @@ export function BrandingDashboard() {
 
       if (error) throw error;
 
-      await refreshRestaurants();
+      await refreshRestaurants({ silent: true });
 
       if (displayColumnsMissing) {
         setSaveError(

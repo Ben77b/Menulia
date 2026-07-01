@@ -38,7 +38,7 @@ interface RestaurantContextType {
   bootstrapped: boolean;
   user: User | null;
   userProfile: UserProfile | null;
-  refreshRestaurants: () => Promise<RestaurantSummary[]>;
+  refreshRestaurants: (options?: { silent?: boolean }) => Promise<RestaurantSummary[]>;
   switchRestaurant: (restaurantId: string) => void;
   activateRestaurant: (restaurantId: string, summary?: RestaurantSummary) => void;
 }
@@ -73,6 +73,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const userIdRef = useRef<string | null>(null);
+  const bootstrappedRef = useRef(false);
+
+  useEffect(() => {
+    bootstrappedRef.current = bootstrapped;
+  }, [bootstrapped]);
 
   const hasRestaurants = restaurants.length > 0;
 
@@ -117,13 +122,15 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     return summaries;
   }, []);
 
-  const refreshRestaurants = useCallback(async () => {
+  const refreshRestaurants = useCallback(async (options?: { silent?: boolean }) => {
     if (!userIdRef.current) {
       setRestaurants([]);
       return [];
     }
 
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
     try {
       return await loadRestaurantsForUser(userIdRef.current);
     } catch (error) {
@@ -131,7 +138,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       setRestaurants([]);
       return [];
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, [loadRestaurantsForUser]);
 
@@ -219,11 +228,12 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
       if (
         sessionUser &&
-        (event === "SIGNED_IN" ||
-          event === "INITIAL_SESSION" ||
-          event === "USER_UPDATED")
+        (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "USER_UPDATED")
       ) {
-        setLoading(true);
+        const isInitialBootstrap = !bootstrappedRef.current;
+        if (isInitialBootstrap) {
+          setLoading(true);
+        }
         try {
           await hydrateAuthenticatedUser(sessionUser);
           await loadRestaurantsForUser(sessionUser.id);
@@ -232,7 +242,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           setRestaurants([]);
         } finally {
           if (mounted) {
-            setLoading(false);
+            if (isInitialBootstrap) {
+              setLoading(false);
+            }
             setBootstrapped(true);
           }
         }
