@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { runtimeEnv } from "@/lib/runtime-env";
+
+export const dynamic = "force-dynamic";
 
 const requestSchema = z.object({
   dishName: z.string().min(1).max(200),
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in to use AI descriptions." }, { status: 401 });
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = runtimeEnv("OPENAI_API_KEY");
     if (!apiKey) {
       return NextResponse.json(
         { error: "AI descriptions are not configured. Add OPENAI_API_KEY to your environment." },
