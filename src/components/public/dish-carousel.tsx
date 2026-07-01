@@ -10,6 +10,7 @@ import { DishCard, type PublicMenuDish } from "./dish-card";
 
 interface DishCarouselProps {
   dishes: PublicMenuDish[];
+  restaurantName: string;
   accentColor: string;
   arrowIconColor?: string;
   mainTextColor: string;
@@ -56,6 +57,7 @@ function CarouselCardFrame({
 
 export function DishCarousel({
   dishes,
+  restaurantName,
   accentColor,
   arrowIconColor,
   mainTextColor,
@@ -143,6 +145,7 @@ export function DishCarousel({
           <CarouselCardFrame isActive>
             <DishCard
               dish={dishes[0]}
+              restaurantName={restaurantName}
               titleFont={titleFont}
               bodyFont={bodyFont}
               titleFontWeight={titleFontWeight}
@@ -176,6 +179,7 @@ export function DishCarousel({
                 <CarouselCardFrame isActive={isActive}>
                   <DishCard
                     dish={slot.dish}
+                    restaurantName={restaurantName}
                     titleFont={titleFont}
                     bodyFont={bodyFont}
                     titleFontWeight={titleFontWeight}

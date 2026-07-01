@@ -19,6 +19,7 @@ export interface PublicMenuDish {
 
 interface DishCardProps {
   dish: PublicMenuDish;
+  restaurantName: string;
   titleFont: string;
   bodyFont: string;
   titleFontWeight?: number;
@@ -77,6 +78,7 @@ function TagBadge({
 
 export function DishCard({
   dish,
+  restaurantName,
   titleFont,
   bodyFont,
   titleFontWeight,
@@ -98,15 +100,18 @@ export function DishCard({
   const resolvedDescription = descriptionColor ?? textColor;
   const resolvedPrice = priceColor ?? textColor;
 
+  const imageAlt = `${dish.name} at ${restaurantName}`;
+
   const imageBlock =
     showImage && dish.image ? (
       <div className={`relative aspect-square overflow-hidden rounded-2xl ${imageClassName}`}>
         <Image
           src={dish.image}
-          alt={dish.name}
+          alt={imageAlt}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 80vw, 320px"
+          loading="lazy"
         />
       </div>
     ) : null;

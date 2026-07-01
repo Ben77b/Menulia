@@ -8,7 +8,13 @@ import {
 } from "@/lib/theme-inheritance";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
+import { PublicMenuJsonLd } from "@/components/public/public-menu-json-ld";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
+import {
+  buildPublicMenuPageMetadata,
+  fetchPublicRestaurantBySlug,
+  type PublicRestaurantProfile,
+} from "@/lib/public-menu-seo";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { parseDisplayOptions } from "@/lib/display-options";
 import { parseTypography } from "@/lib/typography";
@@ -40,23 +46,16 @@ function resolveFonts(typography: Record<string, unknown> | null | undefined) {
 export async function generateMetadata({ params }: PageProps) {
   const resolvedParams = await params;
   const slugParam = resolvedParams["restaurant-slug"];
-
-  const supabase = createAnonClient();
-  const { data: restaurant } = await supabase
-    .from("restaurants")
-    .select("name, meta_title, meta_description")
-    .eq("slug", slugParam)
-    .single();
+  const restaurant = await fetchPublicRestaurantBySlug(slugParam);
 
   if (!restaurant) {
-    return { title: `Menu — ${slugParam}` };
+    return {
+      title: { absolute: `Menu — ${slugParam}` },
+      description: "Restaurant menu on menulia.net",
+    };
   }
 
-  return {
-    title: restaurant.meta_title || restaurant.name,
-    description:
-      restaurant.meta_description || `View the digital menu for ${restaurant.name}`,
-  };
+  return buildPublicMenuPageMetadata(restaurant);
 }
 
 export default async function PublicMenuPage({ params }: PageProps) {
@@ -74,6 +73,18 @@ export default async function PublicMenuPage({ params }: PageProps) {
     return <MenuAwaitingSync slugParam={slugParam} />;
   }
 
+  const profile: PublicRestaurantProfile = {
+    id: restaurant.id as string,
+    name: (restaurant.name as string) ?? "",
+    slug: (restaurant.slug as string) ?? slugParam,
+    location: (restaurant.location as string) ?? "",
+    contact_info: (restaurant.contact_info as string) ?? "",
+    meta_title: (restaurant.meta_title as string) ?? "",
+    meta_description: (restaurant.meta_description as string) ?? "",
+    logo: (restaurant.logo as string | null) ?? null,
+    footer_slogan: (restaurant.footer_slogan as string) ?? "",
+  };
+
   const { menu, flatCategories, hasNestedStructure } = await fetchPublicMenuData(
     restaurant.id
   );
@@ -90,30 +101,36 @@ export default async function PublicMenuPage({ params }: PageProps) {
 
   return (
     <>
+      <PublicMenuJsonLd
+        restaurant={profile}
+        menu={menu}
+        flatCategories={flatCategories}
+        hasNestedStructure={hasNestedStructure}
+      />
       <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
       <PublicMenuLayout
-      restaurantName={restaurant.name}
-      logo={(restaurant.logo as string | null) ?? null}
-      location={(restaurant.location as string | null) ?? ""}
-      hours={(restaurant.hours as string | null) ?? ""}
-      contactInfo={(restaurant.contact_info as string | null) ?? ""}
-      footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
-      theme={theme}
-      titleFont={fonts.titleFont}
-      bodyFont={fonts.textFont}
-      titleFontWeight={fonts.titleFontWeight}
-      titleFontStyle={fonts.titleFontStyle}
-      categoryFont={fonts.categoryFont}
-      categoryFontWeight={fonts.categoryFontWeight}
-      categoryFontStyle={fonts.categoryFontStyle}
-      bodyFontWeight={fonts.textFontWeight}
-      bodyFontStyle={fonts.textFontStyle}
-      menu={menu}
-      flatCategories={flatCategories}
-      hasNestedStructure={hasNestedStructure}
-      links={links}
-      display={display}
-    />
+        restaurantName={restaurant.name}
+        logo={(restaurant.logo as string | null) ?? null}
+        location={(restaurant.location as string | null) ?? ""}
+        hours={(restaurant.hours as string | null) ?? ""}
+        contactInfo={(restaurant.contact_info as string | null) ?? ""}
+        footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
+        theme={theme}
+        titleFont={fonts.titleFont}
+        bodyFont={fonts.textFont}
+        titleFontWeight={fonts.titleFontWeight}
+        titleFontStyle={fonts.titleFontStyle}
+        categoryFont={fonts.categoryFont}
+        categoryFontWeight={fonts.categoryFontWeight}
+        categoryFontStyle={fonts.categoryFontStyle}
+        bodyFontWeight={fonts.textFontWeight}
+        bodyFontStyle={fonts.textFontStyle}
+        menu={menu}
+        flatCategories={flatCategories}
+        hasNestedStructure={hasNestedStructure}
+        links={links}
+        display={display}
+      />
     </>
   );
 }

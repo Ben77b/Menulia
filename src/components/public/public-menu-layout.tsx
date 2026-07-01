@@ -57,6 +57,7 @@ interface PublicMenuLayoutProps {
 
 function DishSection({
   subcategory,
+  restaurantName,
   theme,
   isPreview,
   titleFont,
@@ -71,6 +72,7 @@ function DishSection({
   previewInteractive,
 }: {
   subcategory: PublicMenuSubcategory;
+  restaurantName: string;
   theme: ResolvedMenuTheme;
   isPreview: boolean;
   titleFont: string;
@@ -109,6 +111,10 @@ function DishSection({
     />
   );
 
+  const categoryHeading = (
+    <h2 className="sr-only">{subcategory.name}</h2>
+  );
+
   if (subcategory.layout_type === "carousel") {
     return (
       <PreviewHotspot
@@ -118,9 +124,11 @@ function DishSection({
         onSelect={previewInteractive?.onHotspotClick}
         indicatorPosition="center-right"
       >
+        {categoryHeading}
         {sectionNote}
         <DishCarousel
           dishes={filteredDishes}
+          restaurantName={restaurantName}
           accentColor={themedColor(isPreview, "carouselArrowBg", theme.carouselArrowBg)}
           arrowIconColor={themedColor(isPreview, "carouselArrowIcon", theme.carouselArrowIcon)}
           mainTextColor={themedColor(isPreview, "itemTitle", theme.itemTitleText)}
@@ -148,12 +156,14 @@ function DishSection({
       onSelect={previewInteractive?.onHotspotClick}
       indicatorPosition="center-left"
     >
+      {categoryHeading}
       {sectionNote}
       <div className="mx-auto max-w-3xl space-y-12">
         {filteredDishes.map((dish) => (
           <DishCard
             key={dish.id}
             dish={dish}
+            restaurantName={restaurantName}
             titleFont={titleFont}
             bodyFont={bodyFont}
             titleFontWeight={titleFontWeight}
@@ -384,6 +394,7 @@ export function PublicMenuLayout({
           <section className="mx-auto max-w-5xl">
             <DishSection
               subcategory={activeSubcategory}
+              restaurantName={restaurantName}
               theme={theme}
               isPreview={isPreview}
               titleFont={titleFont}

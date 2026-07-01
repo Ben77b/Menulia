@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
-import { fetchAllRestaurantSlugs } from "@/lib/data";
+import { fetchRestaurantSitemapEntries } from "@/lib/public-menu-seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net";
-  const slugs = await fetchAllRestaurantSlugs();
+  const restaurants = await fetchRestaurantSitemapEntries();
 
   const staticPages = ["", "/onboarding", "/signup", "/login", "/privacy", "/terms"].map((path) => ({
     url: `${base}${path}`,
@@ -12,9 +12,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "" ? 1 : 0.7,
   }));
 
-  const restaurantPages = slugs.map((slug) => ({
-    url: `${base}/menu/${slug}`,
-    lastModified: new Date(),
+  const restaurantPages = restaurants.map((entry) => ({
+    url: `${base}/menu/${entry.slug}`,
+    lastModified: entry.updatedAt,
     changeFrequency: "daily" as const,
     priority: 0.9,
   }));

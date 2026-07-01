@@ -66,26 +66,33 @@ export function MenuHeader({
           </div>
 
           <div className="flex justify-center">
+            <h1
+              className={
+                logo
+                  ? "sr-only"
+                  : "text-center text-lg font-bold uppercase tracking-[0.2em] sm:text-xl"
+              }
+              style={
+                logo
+                  ? undefined
+                  : {
+                      fontFamily: titleFont,
+                      fontWeight: titleFontWeight ?? 400,
+                      fontStyle: titleFontStyle ?? "normal",
+                      color: textColor,
+                    }
+              }
+            >
+              {restaurantName}
+            </h1>
             {logo ? (
               <RestaurantLogo
                 src={logo}
-                alt={restaurantName}
+                alt={`${restaurantName} logo`}
                 wrapperClassName="h-16 w-40 sm:h-20 sm:w-48"
                 className="h-full w-full"
               />
-            ) : (
-              <h1
-                className="text-center text-lg font-bold uppercase tracking-[0.2em] sm:text-xl"
-                style={{
-                  fontFamily: titleFont,
-                  fontWeight: titleFontWeight ?? 400,
-                  fontStyle: titleFontStyle ?? "normal",
-                  color: textColor,
-                }}
-              >
-                {restaurantName}
-              </h1>
-            )}
+            ) : null}
           </div>
 
           <div className="flex justify-end">

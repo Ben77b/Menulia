@@ -99,7 +99,7 @@ export function PublicMenuFooter({
         {/* 3. Open hours */}
         {hours && (
           <div className="mt-10 w-full" style={{ color: footerText, textAlign: "center" }}>
-            <h3
+            <p
               className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
               style={{
               fontFamily: titleFont,
@@ -110,7 +110,7 @@ export function PublicMenuFooter({
             }}
             >
               {menuUiString(locale, "openHours")}
-            </h3>
+            </p>
             <p
               className="whitespace-pre-line text-sm leading-relaxed"
               style={{ color: footerText, textAlign: "center" }}
@@ -123,7 +123,7 @@ export function PublicMenuFooter({
         {/* 4. Location & contact */}
         {(location || contactPhone || contactEmail) && (
           <div className="mt-8 w-full" style={{ color: footerText, textAlign: "center" }}>
-            <h3
+            <p
               className="mb-3 text-sm font-bold uppercase tracking-[0.2em]"
               style={{
               fontFamily: titleFont,
@@ -134,7 +134,7 @@ export function PublicMenuFooter({
             }}
             >
               {menuUiString(locale, "locationContact")}
-            </h3>
+            </p>
             <div
               className="space-y-1 text-sm leading-relaxed"
               style={{ color: footerText, textAlign: "center" }}
