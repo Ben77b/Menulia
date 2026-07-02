@@ -27,7 +27,9 @@ export function flatRecordsToMenuTree(records: MenuCategoryRecord[]): MenuBuilde
       layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
       order_index: row.order_index ?? 0,
       parent_id: row.parent_id,
-      dishes: [...row.items].sort((a, b) => a.display_order - b.display_order),
+      dishes: [...(row.items ?? [])].sort(
+        (a, b) => (a?.display_order ?? 0) - (b?.display_order ?? 0)
+      ),
     };
 
     const parent = sectionById.get(row.parent_id);
@@ -64,7 +66,10 @@ export function countSectionContents(section: MenuBuilderSection): {
   categories: number;
   dishes: number;
 } {
-  const categories = section.categories.length;
-  const dishes = section.categories.reduce((sum, cat) => sum + cat.dishes.length, 0);
+  const categories = section.categories?.length ?? 0;
+  const dishes = (section.categories ?? []).reduce(
+    (sum, cat) => sum + (cat?.dishes?.length ?? 0),
+    0
+  );
   return { categories, dishes };
 }

@@ -67,6 +67,29 @@ const EMPTY_FORM_DRAFTS: MenuBuilderFormDrafts = {
   addingCategoryForSection: null,
 };
 
+function normalizeMenuBuilderFormDrafts(value: unknown): MenuBuilderFormDrafts {
+  if (!value || typeof value !== "object") {
+    return EMPTY_FORM_DRAFTS;
+  }
+
+  const draft = value as Partial<MenuBuilderFormDrafts>;
+  const rapidDrafts =
+    draft.rapidDrafts && typeof draft.rapidDrafts === "object" ? draft.rapidDrafts : {};
+
+  return {
+    rapidDrafts,
+    newSectionName: typeof draft.newSectionName === "string" ? draft.newSectionName : "",
+    newCategoryName: typeof draft.newCategoryName === "string" ? draft.newCategoryName : "",
+    addingSection: Boolean(draft.addingSection),
+    addingCategoryForSection:
+      typeof draft.addingCategoryForSection === "string" ? draft.addingCategoryForSection : null,
+  };
+}
+
+function categoryCardId(categoryId: string): string {
+  return `category-card-${categoryId}`;
+}
+
 interface EditableCategoryNameProps {
   name: string;
   disabled?: boolean;
@@ -184,8 +207,10 @@ export function MenuBuilder() {
     : null;
   const [formDrafts, setFormDrafts] = useSessionPersistedState<MenuBuilderFormDrafts>(
     draftStorageKey,
-    EMPTY_FORM_DRAFTS
+    EMPTY_FORM_DRAFTS,
+    normalizeMenuBuilderFormDrafts
   );
+  const [scrollToCategoryId, setScrollToCategoryId] = useState<string | null>(null);
 
   const {
     rapidDrafts,
@@ -204,7 +229,8 @@ export function MenuBuilder() {
   ) => {
     setFormDrafts((prev) => ({
       ...prev,
-      rapidDrafts: typeof updater === "function" ? updater(prev.rapidDrafts) : updater,
+      rapidDrafts:
+        typeof updater === "function" ? updater(prev?.rapidDrafts ?? {}) : updater,
     }));
   };
 
@@ -230,15 +256,19 @@ export function MenuBuilder() {
   );
 
   const activeSection = useMemo(() => {
-    if (!tree.sections.length) return null;
-    if (sectionParam && tree.sections.some((section) => section.id === sectionParam)) {
-      return tree.sections.find((section) => section.id === sectionParam) ?? tree.sections[0];
+    const sections = tree.sections ?? [];
+    if (!sections.length) return null;
+    if (sectionParam && sections.some((section) => section?.id === sectionParam)) {
+      return sections.find((section) => section?.id === sectionParam) ?? sections[0] ?? null;
     }
-    return tree.sections[0];
+    return sections[0] ?? null;
   }, [tree.sections, sectionParam]);
 
   const activeSectionIndex = useMemo(
-    () => (activeSection ? tree.sections.findIndex((section) => section.id === activeSection.id) : -1),
+    () =>
+      activeSection?.id
+        ? (tree.sections ?? []).findIndex((section) => section?.id === activeSection.id)
+        : -1,
     [activeSection, tree.sections]
   );
 
@@ -250,11 +280,29 @@ export function MenuBuilder() {
   );
 
   useEffect(() => {
-    if (loading || !activeSection) return;
+    if (!scrollToCategoryId) return;
+    const element = document.getElementById(categoryCardId(scrollToCategoryId));
+    if (!element) return;
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    setScrollToCategoryId(null);
+  }, [scrollToCategoryId, tree]);
+
+  useEffect(() => {
+    if (loading || !activeSection?.id) return;
     if (sectionParam !== activeSection.id) {
       setSectionParam(activeSection.id);
     }
   }, [loading, activeSection, sectionParam, setSectionParam]);
+
+  useEffect(() => {
+    if (!addingCategoryForSection) return;
+    const sectionExists = (tree.sections ?? []).some(
+      (section) => section?.id === addingCategoryForSection
+    );
+    if (!sectionExists) {
+      setAddingCategoryForSection(null);
+    }
+  }, [addingCategoryForSection, tree.sections]);
 
   const loadMenu = useCallback(async (options?: { silent?: boolean }) => {
     if (!currentRestaurant?.id) return;
@@ -345,9 +393,9 @@ export function MenuBuilder() {
   }
 
   async function handleAddCategory(sectionId: string) {
-    if (!currentRestaurant?.id || !newCategoryName.trim()) return;
-    const section = tree.sections.find((entry) => entry.id === sectionId);
-    if ((section?.categories.length ?? 0) >= MAX_CATEGORIES_PER_SECTION) {
+    if (!currentRestaurant?.id || !sectionId || !newCategoryName.trim()) return;
+    const section = tree.sections?.find((entry) => entry?.id === sectionId);
+    if ((section?.categories?.length ?? 0) >= MAX_CATEGORIES_PER_SECTION) {
       setError(`Maximum ${MAX_CATEGORIES_PER_SECTION} categories per section reached.`);
       return;
     }
@@ -358,11 +406,15 @@ export function MenuBuilder() {
         currentRestaurant.id,
         { layout_type: "stacked", parent_id: sectionId }
       );
+      if (!created?.id) {
+        throw new Error("Category was created but no id was returned.");
+      }
       setTree((prev) =>
         addCategoryToSection(prev, sectionId, recordsToCategory({ ...created, parent_id: sectionId }))
       );
       setNewCategoryName("");
       setAddingCategoryForSection(null);
+      setScrollToCategoryId(created.id);
     } catch (err) {
       setError(formatSupabaseError(err));
     } finally {
@@ -600,14 +652,21 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleReorderSection(sectionId: string, direction: -1 | 1) {
-    const currentIndex = tree.sections.findIndex((section) => section.id === sectionId);
+  async function handleReorderSection(sectionId: string | null | undefined, direction: -1 | 1) {
+    if (!sectionId) return;
+
+    const sections = tree.sections ?? [];
+    const currentIndex = sections.findIndex((section) => section?.id === sectionId);
     if (currentIndex < 0) return;
 
-    const reordered = moveByIndex(tree.sections, currentIndex, direction);
+    const reordered = moveByIndex(sections, currentIndex, direction);
     if (!reordered) return;
 
-    const orderedIds = reordered.map((section) => section.id);
+    const orderedIds = reordered
+      .map((section) => section?.id)
+      .filter((id): id is string => Boolean(id));
+    if (orderedIds.length === 0) return;
+
     const previousTree = tree;
     setTree((prev) => reorderSectionsInTree(prev, orderedIds));
 
@@ -622,20 +681,25 @@ export function MenuBuilder() {
   }
 
   async function handleReorderCategory(
-    sectionId: string,
-    categoryId: string,
+    sectionId: string | null | undefined,
+    categoryId: string | null | undefined,
     direction: -1 | 1
   ) {
-    const section = tree.sections.find((entry) => entry.id === sectionId);
-    if (!section) return;
+    if (!sectionId || !categoryId) return;
 
-    const currentIndex = section.categories.findIndex((category) => category.id === categoryId);
+    const section = tree.sections?.find((entry) => entry?.id === sectionId);
+    const categories = section?.categories ?? [];
+    const currentIndex = categories.findIndex((category) => category?.id === categoryId);
     if (currentIndex < 0) return;
 
-    const reordered = moveByIndex(section.categories, currentIndex, direction);
+    const reordered = moveByIndex(categories, currentIndex, direction);
     if (!reordered) return;
 
-    const orderedIds = reordered.map((category) => category.id);
+    const orderedIds = reordered
+      .map((category) => category?.id)
+      .filter((id): id is string => Boolean(id));
+    if (orderedIds.length === 0) return;
+
     const previousTree = tree;
     setTree((prev) => reorderCategoriesInSection(prev, sectionId, orderedIds));
 
@@ -649,19 +713,28 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleReorderDish(categoryId: string, dishId: string, direction: -1 | 1) {
-    const category = tree.sections
-      .flatMap((section) => section.categories)
-      .find((entry) => entry.id === categoryId);
-    if (!category) return;
+  async function handleReorderDish(
+    categoryId: string | null | undefined,
+    dishId: string | null | undefined,
+    direction: -1 | 1
+  ) {
+    if (!categoryId || !dishId) return;
 
-    const currentIndex = category.dishes.findIndex((dish) => dish.id === dishId);
+    const category = (tree.sections ?? [])
+      .flatMap((section) => section?.categories ?? [])
+      .find((entry) => entry?.id === categoryId);
+    const dishes = category?.dishes ?? [];
+    const currentIndex = dishes.findIndex((dish) => dish?.id === dishId);
     if (currentIndex < 0) return;
 
-    const reordered = moveByIndex(category.dishes, currentIndex, direction);
+    const reordered = moveByIndex(dishes, currentIndex, direction);
     if (!reordered) return;
 
-    const orderedIds = reordered.map((dish) => dish.id);
+    const orderedIds = reordered
+      .map((dish) => dish?.id)
+      .filter((id): id is string => Boolean(id));
+    if (orderedIds.length === 0) return;
+
     const previousTree = tree;
     setTree((prev) => reorderDishesInCategory(prev, categoryId, orderedIds));
 
@@ -723,21 +796,27 @@ export function MenuBuilder() {
         <>
           <div className="flex items-center gap-2">
             <CapsuleNav
-              items={tree.sections.map((section) => ({
-                id: section.id,
-                label: `${section.name} (${section.categories.length})`,
-              }))}
-              active={activeSection?.id ?? tree.sections[0].id}
-              onChange={setActiveSectionId}
+              items={(tree.sections ?? [])
+                .filter((section): section is MenuBuilderSection => Boolean(section?.id))
+                .map((section) => ({
+                  id: section.id,
+                  label: `${section.name ?? "Section"} (${section.categories?.length ?? 0})`,
+                }))}
+              active={activeSection?.id ?? tree.sections?.[0]?.id ?? ""}
+              onChange={(sectionId) => {
+                if (sectionId) setActiveSectionId(sectionId);
+              }}
               ariaLabel="Menu sections"
               className="min-w-0 flex-1"
             />
-            {tree.sections.length > 1 && activeSection && (
+            {tree.sections.length > 1 && activeSection?.id && (
               <ReorderButtons
                 onMoveUp={() => handleReorderSection(activeSection.id, -1)}
                 onMoveDown={() => handleReorderSection(activeSection.id, 1)}
                 canMoveUp={activeSectionIndex > 0}
-                canMoveDown={activeSectionIndex >= 0 && activeSectionIndex < tree.sections.length - 1}
+                canMoveDown={
+                  activeSectionIndex >= 0 && activeSectionIndex < (tree.sections?.length ?? 0) - 1
+                }
                 disabled={busy}
               />
             )}
@@ -805,7 +884,7 @@ export function MenuBuilder() {
                   <button
                     type="button"
                     onClick={() => setAddingCategoryForSection(activeSection.id)}
-                    disabled={busy || activeSection.categories.length >= MAX_CATEGORIES_PER_SECTION}
+                    disabled={busy || (activeSection.categories?.length ?? 0) >= MAX_CATEGORIES_PER_SECTION}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#E5E5EA] bg-white py-3 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-white disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
@@ -814,17 +893,20 @@ export function MenuBuilder() {
                 )}
               </div>
 
-              {activeSection.categories.length === 0 ? (
+              {(activeSection.categories?.length ?? 0) === 0 ? (
                 <div className="air-card air-card-pad py-10 text-center text-sm text-[#86868B]">
                   No categories yet. Use the button above to add Starters, Mains, Desserts…
                 </div>
               ) : (
-                activeSection.categories.map((category, categoryIndex) => (
+                (activeSection.categories ?? [])
+                  .filter((category): category is MenuBuilderCategory => Boolean(category?.id))
+                  .map((category, categoryIndex) => (
                   <CategoryBlock
                     key={category.id}
+                    categoryId={category.id}
                     category={category}
                     categoryIndex={categoryIndex}
-                    categoryCount={activeSection.categories.length}
+                    categoryCount={activeSection.categories?.length ?? 0}
                     busy={busy}
                     duplicating={duplicatingCategoryId === category.id}
                     rapidDraft={rapidDrafts[category.id] ?? { name: "", price: "" }}
@@ -841,10 +923,10 @@ export function MenuBuilder() {
                     onNoteChange={(note) => handleCategoryNoteChange(category.id, note)}
                     onRename={(nextName) => handleRenameCategory(category.id, category.name, nextName)}
                     onMoveCategory={(direction) =>
-                      handleReorderCategory(activeSection.id, category.id, direction)
+                      handleReorderCategory(activeSection?.id, category?.id, direction)
                     }
                     onMoveDish={(dishId, direction) =>
-                      handleReorderDish(category.id, dishId, direction)
+                      handleReorderDish(category?.id, dishId, direction)
                     }
                   />
                 ))
@@ -871,6 +953,7 @@ export function MenuBuilder() {
 }
 
 function CategoryBlock({
+  categoryId,
   category,
   categoryIndex,
   categoryCount,
@@ -890,6 +973,7 @@ function CategoryBlock({
   onMoveCategory,
   onMoveDish,
 }: {
+  categoryId: string;
   category: MenuBuilderCategory;
   categoryIndex: number;
   categoryCount: number;
@@ -923,7 +1007,7 @@ function CategoryBlock({
   }
 
   return (
-    <div className="air-card overflow-hidden">
+    <div id={categoryCardId(categoryId)} className="air-card overflow-hidden scroll-mt-24">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F5F7]/80 px-6 py-5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <ReorderButtons
@@ -940,7 +1024,7 @@ function CategoryBlock({
             disabled={busy || duplicating}
             onRename={onRename}
           />
-          <span className="shrink-0 text-xs text-[#86868B]">{category.dishes.length} dishes</span>
+          <span className="shrink-0 text-xs text-[#86868B]">{category.dishes?.length ?? 0} dishes</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="air-capsule-nav !w-auto p-0.5">
@@ -1000,27 +1084,27 @@ function CategoryBlock({
       </div>
 
       <div className="divide-y divide-[#F5F5F7]">
-        {category.dishes.map((dish, dishIndex) => (
+        {(category.dishes ?? []).map((dish, dishIndex) => (
           <div
-            key={dish.id}
+            key={dish?.id ?? dishIndex}
             role="button"
             tabIndex={0}
-            onClick={() => onOpenDish(dish)}
-            onKeyDown={(e) => (e.key === "Enter" ? onOpenDish(dish) : undefined)}
+            onClick={() => dish && onOpenDish(dish)}
+            onKeyDown={(e) => (e.key === "Enter" && dish ? onOpenDish(dish) : undefined)}
             className={cn(
               "air-list-row group flex cursor-pointer items-center gap-3 px-5 py-4",
-              !dish.is_available && "opacity-60"
+              dish?.is_available === false && "opacity-60"
             )}
           >
             <ReorderButtons
-              onMoveUp={() => onMoveDish(dish.id, -1)}
-              onMoveDown={() => onMoveDish(dish.id, 1)}
+              onMoveUp={() => dish?.id && onMoveDish(dish.id, -1)}
+              onMoveDown={() => dish?.id && onMoveDish(dish.id, 1)}
               canMoveUp={dishIndex > 0}
-              canMoveDown={dishIndex < category.dishes.length - 1}
+              canMoveDown={dishIndex < (category.dishes?.length ?? 0) - 1}
               disabled={busy}
               className="opacity-0 transition-opacity group-hover:opacity-100"
             />
-            {dish.image_url ? (
+            {dish?.image_url ? (
               <img
                 src={dish.image_url}
                 alt=""
@@ -1031,26 +1115,26 @@ function CategoryBlock({
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="truncate font-medium text-slate-900">{dish.name}</p>
-                {!dish.is_available && (
+                <p className="truncate font-medium text-slate-900">{dish?.name ?? "Untitled dish"}</p>
+                {dish?.is_available === false && (
                   <span className="air-badge shrink-0">Hidden</span>
                 )}
               </div>
-              {dish.description ? (
+              {dish?.description ? (
                 <p className="truncate text-xs text-[#86868B]">{dish.description}</p>
               ) : (
                 <p className="text-xs text-[#86868B]">Tap to add photo, description, and tags</p>
               )}
             </div>
-            <p className="font-semibold text-slate-900">€{dish.price.toFixed(2)}</p>
+            <p className="font-semibold text-slate-900">€{(dish?.price ?? 0).toFixed(2)}</p>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onDuplicateDish(dish);
+                if (dish) onDuplicateDish(dish);
               }}
-              disabled={busy}
-              aria-label={`Duplicate ${dish.name}`}
+              disabled={busy || !dish}
+              aria-label={`Duplicate ${dish?.name ?? "dish"}`}
               className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-slate-600 group-hover:opacity-100 disabled:opacity-40"
             >
               <Copy className="h-4 w-4" />
@@ -1059,7 +1143,7 @@ function CategoryBlock({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onDeleteDish(dish);
+                if (dish) onDeleteDish(dish);
               }}
               className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-red-500 group-hover:opacity-100"
             >
