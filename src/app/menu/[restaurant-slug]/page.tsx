@@ -1,6 +1,5 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
-import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
 import {
   resolveUnifiedMenuTheme,
@@ -9,11 +8,14 @@ import {
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { PublicMenuJsonLd } from "@/components/public/public-menu-json-ld";
-import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
+import {
+  getCachedPublicMenuPayload,
+  getCachedPublicRestaurantRow,
+  restaurantRowToProfile,
+} from "@/lib/public-menu-cache";
 import {
   buildPublicMenuPageMetadata,
   fetchPublicRestaurantBySlug,
-  type PublicRestaurantProfile,
 } from "@/lib/public-menu-seo";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { parseDisplayOptions } from "@/lib/display-options";
@@ -62,32 +64,19 @@ export default async function PublicMenuPage({ params }: PageProps) {
   const resolvedParams = await params;
   const slugParam = resolvedParams["restaurant-slug"];
 
-  const supabase = createAnonClient();
-  const { data: restaurant, error } = await supabase
-    .from("restaurants")
-    .select("*")
-    .eq("slug", slugParam)
-    .single();
+  const restaurant = await getCachedPublicRestaurantRow(slugParam);
 
-  if (error || !restaurant) {
+  if (!restaurant) {
     return <MenuAwaitingSync slugParam={slugParam} />;
   }
 
-  const profile: PublicRestaurantProfile = {
-    id: restaurant.id as string,
-    name: (restaurant.name as string) ?? "",
-    slug: (restaurant.slug as string) ?? slugParam,
-    location: (restaurant.location as string) ?? "",
-    contact_info: (restaurant.contact_info as string) ?? "",
-    meta_title: (restaurant.meta_title as string) ?? "",
-    meta_description: (restaurant.meta_description as string) ?? "",
-    logo: (restaurant.logo as string | null) ?? null,
-    footer_slogan: (restaurant.footer_slogan as string) ?? "",
-  };
+  const profile = restaurantRowToProfile(restaurant, slugParam);
+  const restaurantId = profile.id;
 
-  const { menu, flatCategories, hasNestedStructure } = await fetchPublicMenuData(
-    restaurant.id
-  );
+  const [{ menu, flatCategories, hasNestedStructure }] = await Promise.all([
+    getCachedPublicMenuPayload(restaurantId),
+  ]);
+
   const links = parseCustomLinks(restaurant.custom_links);
   const display = parseDisplayOptions(restaurant);
   const basicTheme = parseMenuThemeColors(restaurant.theme_colors);
@@ -100,7 +89,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
   );
 
   return (
-    <>
+    <div className="public-menu-enter">
       <PublicMenuJsonLd
         restaurant={profile}
         menu={menu}
@@ -109,7 +98,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
       />
       <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
       <PublicMenuLayout
-        restaurantName={restaurant.name}
+        restaurantName={restaurant.name as string}
         logo={(restaurant.logo as string | null) ?? null}
         location={(restaurant.location as string | null) ?? ""}
         hours={(restaurant.hours as string | null) ?? ""}
@@ -131,6 +120,6 @@ export default async function PublicMenuPage({ params }: PageProps) {
         links={links}
         display={display}
       />
-    </>
+    </div>
   );
 }

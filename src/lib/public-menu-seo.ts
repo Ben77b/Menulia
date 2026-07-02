@@ -23,26 +23,12 @@ export interface PublicRestaurantProfile {
 export async function fetchPublicRestaurantBySlug(
   slug: string
 ): Promise<PublicRestaurantProfile | null> {
-  const supabase = createAnonClient();
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("id, name, slug, location, contact_info, meta_title, meta_description, logo, footer_slogan")
-    .eq("slug", slug)
-    .single();
-
-  if (error || !data) return null;
-
-  return {
-    id: data.id as string,
-    name: (data.name as string) ?? "",
-    slug: (data.slug as string) ?? slug,
-    location: (data.location as string) ?? "",
-    contact_info: (data.contact_info as string) ?? "",
-    meta_title: (data.meta_title as string) ?? "",
-    meta_description: (data.meta_description as string) ?? "",
-    logo: (data.logo as string | null) ?? null,
-    footer_slogan: (data.footer_slogan as string) ?? "",
-  };
+  const { getCachedPublicRestaurantRow, restaurantRowToProfile } = await import(
+    "@/lib/public-menu-cache"
+  );
+  const row = await getCachedPublicRestaurantRow(slug);
+  if (!row) return null;
+  return restaurantRowToProfile(row, slug);
 }
 
 export function buildPublicMenuTitle(restaurantName: string): string {
