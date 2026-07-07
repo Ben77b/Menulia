@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRestaurant } from "@/contexts/restaurant-context";
+import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { UtensilsCrossed, LayoutTemplate, Palette, QrCode, ArrowRight, CheckCircle2 } from "lucide-react";
@@ -9,7 +9,7 @@ import Link from "next/link";
 import { getPublicMenuUrl } from "@/lib/site-url";
 
 export default function DashboardPage() {
-  const { currentRestaurant, loading } = useRestaurant();
+  const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
   const [stats, setStats] = useState({
     totalCategories: 0,
     totalDishes: 0,
@@ -18,13 +18,13 @@ export default function DashboardPage() {
   const [statsLoading, setStatsLoading] = useState(false);
 
   useEffect(() => {
-    if (currentRestaurant) {
+    if (activeRestaurant) {
       loadStats();
     }
-  }, [currentRestaurant]);
+  }, [activeRestaurant]);
 
   async function loadStats() {
-    if (!currentRestaurant) return;
+    if (!activeRestaurant) return;
 
     try {
       setStatsLoading(true);
@@ -33,7 +33,7 @@ export default function DashboardPage() {
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('id')
-        .eq('restaurant_id', currentRestaurant.id);
+        .eq('restaurant_id', activeRestaurant.id);
 
       if (categoriesError) throw categoriesError;
 
@@ -53,7 +53,7 @@ export default function DashboardPage() {
       const { data: restaurantData, error: restaurantError } = await supabase
         .from('restaurants')
         .select('custom_links')
-        .eq('id', currentRestaurant.id)
+        .eq('id', activeRestaurant.id)
         .single();
 
       if (restaurantError) throw restaurantError;
@@ -82,12 +82,13 @@ export default function DashboardPage() {
   // Stats will load in background
 
   // Always render the layout, show different content based on state
-  const displayName = currentRestaurant?.name || (loading ? 'Loading...' : 'No restaurant selected');
-  const showViewLiveSite = currentRestaurant?.slug && !loading;
+  const displayName =
+    activeRestaurant?.name || (awaitingWorkspace ? "Loading..." : "No restaurant selected");
+  const showViewLiveSite = Boolean(activeRestaurant?.slug);
 
-  const restaurantBase = currentRestaurant ? `/dashboard/${currentRestaurant.id}` : "";
+  const restaurantBase = activeRestaurant ? `/dashboard/${activeRestaurant.id}` : "";
 
-  const quickSteps = currentRestaurant
+  const quickSteps = activeRestaurant
     ? [
         {
           icon: LayoutTemplate,
@@ -122,10 +123,10 @@ export default function DashboardPage() {
             Managing <span className="font-medium text-slate-900">{displayName}</span>
           </p>
         </div>
-        {showViewLiveSite && currentRestaurant && (
+        {showViewLiveSite && activeRestaurant && (
           <Button
             variant="light"
-            href={getPublicMenuUrl(currentRestaurant.slug)}
+            href={getPublicMenuUrl(activeRestaurant.slug)}
             target="_blank"
             rel="noopener noreferrer"
             isExternal

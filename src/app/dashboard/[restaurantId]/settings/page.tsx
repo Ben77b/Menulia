@@ -1,15 +1,15 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
+import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { HoursScheduleBuilder } from "@/components/dashboard/hours-schedule-builder";
 import { SettingsSubNav } from "@/components/dashboard/settings-sub-nav";
 import {
   SettingsMenuPreview,
-  type SettingsLivePreviewInput,
 } from "@/components/dashboard/settings-menu-preview";
 import {
   Clock,
@@ -22,31 +22,19 @@ import {
   Phone,
 } from "lucide-react";
 import {
-  defaultScheduleBlocks,
-  parseHoursSchedule,
-  type HoursScheduleBlock,
-} from "@/lib/hours-schedule";
-import { parseContactInfo } from "@/lib/contact-info";
-import {
   formatRestaurantSettingsError,
   isRestaurantSlugAvailable,
   slugCollisionMessage,
 } from "@/lib/restaurant-slug";
 import {
   deleteRestaurant,
-  loadRestaurantSettings,
   saveFullRestaurantSettings,
 } from "@/lib/restaurant-settings";
 import { MAX_CUSTOM_LINKS, MAX_LINK_LABEL_LENGTH } from "@/lib/menu-limits";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-
-interface CustomLink {
-  id: string;
-  label: string;
-  url: string;
-}
+import { useSettingsFormDraft } from "@/hooks/use-settings-form-draft";
 
 type SettingsTab = "general" | "hours-location" | "social-links" | "danger";
 
@@ -61,27 +49,42 @@ const SETTINGS_TAB_IDS: SettingsTab[] = ["general", "hours-location", "social-li
 
 function SettingsPageContent() {
   const router = useRouter();
-  const { currentRestaurant, refreshRestaurants, loading: restaurantsLoading } = useRestaurant();
+  const { refreshRestaurants } = useRestaurant();
+  const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
+
+  const {
+    formDraft,
+    patchDraft,
+    loadDraftFromServer,
+    livePreview,
+    markDraftSaved,
+    saveForm,
+    setScheduleBlocks,
+    setCustomLinks,
+  } = useSettingsFormDraft(activeRestaurant?.id);
+
+  const {
+    restaurantName,
+    restaurantTagline,
+    restaurantLocation,
+    restaurantPhone,
+    restaurantEmail,
+    restaurantSlug,
+    originalSlug,
+    footerSlogan,
+    scheduleBlocks,
+    customLinks,
+  } = formDraft;
+
   const [activeTab, setActiveTab] = useDashboardSearchParam(
     "tab",
     SETTINGS_TAB_IDS,
     "general"
   ) as [SettingsTab, (tab: SettingsTab) => void];
-  const [scheduleBlocks, setScheduleBlocks] = useState<HoursScheduleBlock[]>(defaultScheduleBlocks());
-  const [customLinks, setCustomLinks] = useState<CustomLink[]>([]);
-  const [footerSlogan, setFooterSlogan] = useState("");
-  const [restaurantName, setRestaurantName] = useState("");
-  const [restaurantTagline, setRestaurantTagline] = useState("");
-  const [restaurantLocation, setRestaurantLocation] = useState("");
-  const [restaurantPhone, setRestaurantPhone] = useState("");
-  const [restaurantEmail, setRestaurantEmail] = useState("");
-  const [restaurantSlug, setRestaurantSlug] = useState("");
-  const [originalSlug, setOriginalSlug] = useState("");
   const [slugError, setSlugError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -90,75 +93,10 @@ function SettingsPageContent() {
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
   const supabase = getSupabaseBrowserClient();
 
-  const livePreview: SettingsLivePreviewInput = useMemo(
-    () => ({
-      restaurantName,
-      location: restaurantLocation,
-      phone: restaurantPhone,
-      email: restaurantEmail,
-      scheduleBlocks,
-      footerSlogan,
-      links: customLinks,
-    }),
-    [
-      restaurantName,
-      restaurantLocation,
-      restaurantPhone,
-      restaurantEmail,
-      scheduleBlocks,
-      footerSlogan,
-      customLinks,
-    ]
-  );
-
-  useEffect(() => {
-    if (currentRestaurant) {
-      loadRestaurantData();
-    }
-  }, [currentRestaurant]);
-
-  async function loadRestaurantData() {
-    if (!currentRestaurant) return;
-
-    setLoadError(null);
-
-    try {
-      const data = await loadRestaurantSettings(supabase, currentRestaurant.id);
-
-      setRestaurantName(data.name);
-      setRestaurantTagline(data.tagline);
-      setRestaurantLocation(data.location);
-      setRestaurantSlug(data.slug);
-      setOriginalSlug(data.slug);
-
-      const parsedHours = parseHoursSchedule(data.hours);
-      setScheduleBlocks(parsedHours ?? defaultScheduleBlocks());
-
-      const contact = parseContactInfo(data.contact_info);
-      setRestaurantPhone(contact.phone);
-      setRestaurantEmail(contact.email);
-
-      setFooterSlogan(data.footer_slogan);
-
-      setCustomLinks(
-        (data.custom_links ?? []).map((link) => ({
-          id: link.id,
-          label: link.label ?? "",
-          url: link.url ?? "",
-        }))
-      );
-    } catch (error) {
-      console.error("[SettingsLoad:Failed]", error);
-      const message =
-        error instanceof Error ? error.message : "Failed to load restaurant settings.";
-      setLoadError(message);
-    }
-  }
-
   async function saveChanges() {
-    if (!currentRestaurant?.id) return;
+    if (!activeRestaurant?.id) return;
 
-    const restaurantId = currentRestaurant.id;
+    const restaurantId = activeRestaurant.id;
     const slugUnchanged = restaurantSlug.trim() === originalSlug.trim();
     const normalizedSlug = restaurantSlug.trim().toLowerCase();
 
@@ -197,26 +135,23 @@ function SettingsPageContent() {
         }
       }
 
-      const result = await saveFullRestaurantSettings(supabase, restaurantId, {
-        name: restaurantName,
-        slug: restaurantSlug,
-        originalSlug,
-        tagline: restaurantTagline,
-        location: restaurantLocation,
-        phone: restaurantPhone,
-        email: restaurantEmail,
-        scheduleBlocks,
-        footerSlogan,
-        links: customLinks,
-      });
+      const result = await saveFullRestaurantSettings(supabase, restaurantId, saveForm);
 
       if (result.normalizedSlug) {
-        setOriginalSlug(result.normalizedSlug);
-        setRestaurantSlug(result.normalizedSlug);
+        markDraftSaved({
+          originalSlug: result.normalizedSlug,
+          restaurantSlug: result.normalizedSlug,
+        });
+      } else {
+        markDraftSaved();
       }
 
       await refreshRestaurants({ silent: true });
-      await loadRestaurantData();
+      try {
+        await loadDraftFromServer();
+      } catch (error) {
+        console.error("[SettingsReload:Failed]", error);
+      }
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
@@ -232,7 +167,7 @@ function SettingsPageContent() {
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, "")
       .replace(/-+/g, "-");
-    setRestaurantSlug(formatted);
+    patchDraft({ restaurantSlug: formatted });
 
     if (formatted && !slugRegex.test(formatted)) {
       setSlugError("Slug must contain only lowercase letters, numbers, and hyphens");
@@ -253,21 +188,21 @@ function SettingsPageContent() {
     setCustomLinks(customLinks.filter((link) => link.id !== id));
   }
 
-  function updateCustomLink(id: string, field: keyof CustomLink, value: string) {
+  function updateCustomLink(id: string, field: "label" | "url", value: string) {
     setCustomLinks(
       customLinks.map((link) => (link.id === id ? { ...link, [field]: value } : link))
     );
   }
 
   async function handleDeleteRestaurant() {
-    if (!currentRestaurant?.id) return;
-    if (deleteConfirmText.trim() !== currentRestaurant.name.trim()) return;
+    if (!activeRestaurant?.id) return;
+    if (deleteConfirmText.trim() !== activeRestaurant.name.trim()) return;
 
     setDeleting(true);
     setDeleteError(null);
 
     try {
-      await deleteRestaurant(supabase, currentRestaurant.id);
+      await deleteRestaurant(supabase, activeRestaurant.id);
       localStorage.removeItem("menulia_current_restaurant");
       const remaining = await refreshRestaurants({ silent: true });
       setDeleteModalOpen(false);
@@ -282,15 +217,15 @@ function SettingsPageContent() {
     }
   }
 
-  if (restaurantsLoading) {
+  if (awaitingWorkspace) {
     return (
       <div className="air-page mx-auto max-w-3xl py-12 text-center text-muted-foreground">
-        Loading settings…
+        <LoadingSpinner label="Loading settings…" />
       </div>
     );
   }
 
-  if (!currentRestaurant?.id) {
+  if (!activeRestaurant?.id) {
     return (
       <div className="air-page mx-auto max-w-3xl py-12 text-center text-muted-foreground">
         Select a restaurant to manage settings.
@@ -311,18 +246,12 @@ function SettingsPageContent() {
           <Button
             size="lg"
             onClick={saveChanges}
-            disabled={saving || !currentRestaurant?.id || Boolean(slugError)}
+            disabled={saving || Boolean(slugError)}
           >
             {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
           </Button>
         )}
       </div>
-
-      {loadError && (
-        <div className="mb-4 shrink-0 air-alert-warning">
-          {loadError}
-        </div>
-      )}
 
       {saveError && (
         <div className="mb-4 shrink-0 air-alert-error">
@@ -350,7 +279,7 @@ function SettingsPageContent() {
                   <input
                     type="text"
                     value={restaurantName}
-                    onChange={(e) => setRestaurantName(e.target.value)}
+                    onChange={(e) => patchDraft({ restaurantName: e.target.value })}
                     className="air-input"
                     placeholder="Your Restaurant Name"
                   />
@@ -360,7 +289,7 @@ function SettingsPageContent() {
                   <input
                     type="text"
                     value={restaurantTagline}
-                    onChange={(e) => setRestaurantTagline(e.target.value)}
+                    onChange={(e) => patchDraft({ restaurantTagline: e.target.value })}
                     className="air-input"
                     placeholder="Fresh seasonal cuisine in the heart of the city"
                   />
@@ -406,7 +335,7 @@ function SettingsPageContent() {
                     <input
                       type="text"
                       value={restaurantLocation}
-                      onChange={(e) => setRestaurantLocation(e.target.value)}
+                      onChange={(e) => patchDraft({ restaurantLocation: e.target.value })}
                       className="air-input"
                       placeholder="123 Main Street, Dublin"
                     />
@@ -419,7 +348,7 @@ function SettingsPageContent() {
                       <input
                         type="tel"
                         value={restaurantPhone}
-                        onChange={(e) => setRestaurantPhone(e.target.value)}
+                        onChange={(e) => patchDraft({ restaurantPhone: e.target.value })}
                         className="air-input"
                         placeholder="+1 234 567 890"
                       />
@@ -431,7 +360,7 @@ function SettingsPageContent() {
                       <input
                         type="email"
                         value={restaurantEmail}
-                        onChange={(e) => setRestaurantEmail(e.target.value)}
+                        onChange={(e) => patchDraft({ restaurantEmail: e.target.value })}
                         className="air-input"
                         placeholder="hello@restaurant.com"
                       />
@@ -464,7 +393,7 @@ function SettingsPageContent() {
                   <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
                   <textarea
                     value={footerSlogan}
-                    onChange={(e) => setFooterSlogan(e.target.value)}
+                    onChange={(e) => patchDraft({ footerSlogan: e.target.value })}
                     placeholder="We recommend reservations after 12 PM"
                     rows={6}
                     className="air-textarea"
@@ -573,7 +502,7 @@ function SettingsPageContent() {
               <Button
                 size="lg"
                 onClick={saveChanges}
-                disabled={saving || !currentRestaurant?.id || Boolean(slugError)}
+                disabled={saving || Boolean(slugError)}
               >
                 {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
               </Button>
@@ -582,23 +511,23 @@ function SettingsPageContent() {
         </div>
 
         <ClientErrorBoundary title="Preview failed to load">
-          <SettingsMenuPreview restaurantId={currentRestaurant.id} live={livePreview} />
+          <SettingsMenuPreview restaurantId={activeRestaurant.id} live={livePreview} />
         </ClientErrorBoundary>
       </div>
 
-      {deleteModalOpen && currentRestaurant && (
+      {deleteModalOpen && activeRestaurant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
             <h3 className="text-lg font-semibold text-gray-900">Delete Restaurant</h3>
             <p className="mt-2 text-sm text-gray-600">
-              This will permanently delete <strong>{currentRestaurant.name}</strong> and all menu
+              This will permanently delete <strong>{activeRestaurant.name}</strong> and all menu
               data. Type the restaurant name to confirm.
             </p>
             <input
               type="text"
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
-              placeholder={currentRestaurant.name}
+              placeholder={activeRestaurant.name}
               className="air-input mt-4 focus:ring-red-500/20"
             />
             {deleteError && <p className="mt-2 text-sm text-red-600">{deleteError}</p>}
@@ -614,7 +543,7 @@ function SettingsPageContent() {
                 variant="danger"
                 onClick={handleDeleteRestaurant}
                 disabled={
-                  deleting || deleteConfirmText.trim() !== currentRestaurant.name.trim()
+                  deleting || deleteConfirmText.trim() !== activeRestaurant.name.trim()
                 }
               >
                 {deleting ? "Deleting..." : "Delete permanently"}

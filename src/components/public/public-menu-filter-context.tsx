@@ -4,11 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
-  useMemo,
+  useEffect,
   useState,
   type ReactNode,
 } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FILTERABLE_TAGS } from "@/lib/dietary-tags";
 
 const FILTER_SEARCH_PARAM = "diet";
@@ -21,47 +20,76 @@ interface PublicMenuFilterContextValue {
 
 const PublicMenuFilterContext = createContext<PublicMenuFilterContextValue | null>(null);
 
-function parseFilterTags(searchParams: URLSearchParams): Set<string> {
-  const tags = searchParams
+function parseFilterTags(search: string): Set<string> {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const tags = params
     .getAll(FILTER_SEARCH_PARAM)
     .filter((tag) => FILTERABLE_TAG_SET.has(tag));
   return new Set(tags);
 }
 
-function PublicMenuFilterProviderUrl({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+function readInitialFiltersFromLocation(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  return parseFilterTags(window.location.search);
+}
 
-  const activeFilters = useMemo(() => parseFilterTags(searchParams), [searchParams]);
+function syncFiltersToLocation(filters: Set<string>) {
+  if (typeof window === "undefined") return;
 
-  const toggleFilter = useCallback(
-    (tag: string) => {
-      if (!FILTERABLE_TAG_SET.has(tag)) return;
+  const url = new URL(window.location.href);
+  url.searchParams.delete(FILTER_SEARCH_PARAM);
+  filters.forEach((tag) => url.searchParams.append(FILTER_SEARCH_PARAM, tag));
 
-      const params = new URLSearchParams(searchParams.toString());
-      const next = new Set(parseFilterTags(params));
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(window.history.state, "", nextUrl);
+}
 
+function PublicMenuFilterProviderInstant({ children }: { children: ReactNode }) {
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(readInitialFiltersFromLocation);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setActiveFilters(readInitialFiltersFromLocation());
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const toggleFilter = useCallback((tag: string) => {
+    if (!FILTERABLE_TAG_SET.has(tag)) return;
+
+    setActiveFilters((previous) => {
+      const next = new Set(previous);
       if (next.has(tag)) {
         next.delete(tag);
       } else {
         next.add(tag);
       }
-
-      params.delete(FILTER_SEARCH_PARAM);
-      next.forEach((value) => params.append(FILTER_SEARCH_PARAM, value));
-
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    },
-    [pathname, router, searchParams]
-  );
+      syncFiltersToLocation(next);
+      return next;
+    });
+  }, []);
 
   return (
     <PublicMenuFilterContext.Provider value={{ activeFilters, toggleFilter }}>
       {children}
     </PublicMenuFilterContext.Provider>
   );
+}
+
+export function PublicMenuFilterProvider({
+  children,
+  syncToUrl = true,
+}: {
+  children: ReactNode;
+  syncToUrl?: boolean;
+}) {
+  if (!syncToUrl) {
+    return <PublicMenuFilterProviderLocal>{children}</PublicMenuFilterProviderLocal>;
+  }
+
+  return <PublicMenuFilterProviderInstant>{children}</PublicMenuFilterProviderInstant>;
 }
 
 function PublicMenuFilterProviderLocal({ children }: { children: ReactNode }) {
@@ -85,20 +113,6 @@ function PublicMenuFilterProviderLocal({ children }: { children: ReactNode }) {
       {children}
     </PublicMenuFilterContext.Provider>
   );
-}
-
-export function PublicMenuFilterProvider({
-  children,
-  syncToUrl = true,
-}: {
-  children: ReactNode;
-  syncToUrl?: boolean;
-}) {
-  if (syncToUrl) {
-    return <PublicMenuFilterProviderUrl>{children}</PublicMenuFilterProviderUrl>;
-  }
-
-  return <PublicMenuFilterProviderLocal>{children}</PublicMenuFilterProviderLocal>;
 }
 
 export function usePublicMenuFilters(): PublicMenuFilterContextValue {

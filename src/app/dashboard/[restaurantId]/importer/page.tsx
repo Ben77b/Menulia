@@ -1,13 +1,18 @@
 "use client";
 
-import { useRestaurant } from "@/contexts/restaurant-context";
+import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PremiumPaywall } from "@/components/dashboard/premium-paywall";
 import { MenuImporter } from "@/components/dashboard/menu-importer";
 
 export default function ImporterPage() {
-  const { currentRestaurant } = useRestaurant();
+  const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
 
-  if (!currentRestaurant) {
+  if (awaitingWorkspace) {
+    return <LoadingSpinner label="Loading importer…" />;
+  }
+
+  if (!activeRestaurant) {
     return (
       <div>
         <h1 className="text-2xl font-bold">AI Menu Importer</h1>

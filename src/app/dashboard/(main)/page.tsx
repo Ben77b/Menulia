@@ -9,17 +9,17 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function DashboardIndexPage() {
   const router = useRouter();
-  const { restaurants, loading, bootstrapped, user, hasRestaurants } = useRestaurant();
+  const { restaurants, loading, bootstrapped, user, hasRestaurants, isFetching } = useRestaurant();
 
   useEffect(() => {
-    if (!bootstrapped || loading || !user) return;
+    if (!bootstrapped || loading || isFetching || !user) return;
 
     if (hasRestaurants) {
       router.replace(`/dashboard/${restaurants[0].id}`);
     }
-  }, [bootstrapped, loading, hasRestaurants, restaurants, router, user]);
+  }, [bootstrapped, loading, isFetching, hasRestaurants, restaurants, router, user]);
 
-  if (!bootstrapped || loading) {
+  if (!bootstrapped || loading || isFetching) {
     return <LoadingSpinner label="Preparing your workspace..." />;
   }
 

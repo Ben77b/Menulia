@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseContactInfo } from "@/lib/contact-info";
 import type { ResolvedMenuTheme, ThemeHotspotId } from "@/lib/advanced-theme";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
@@ -403,36 +403,28 @@ export function PublicMenuLayout({
       </main>
 
       {display.showDietary && (
-        <Suspense
-          fallback={
-            <div className="border-t border-black/5 px-6 py-6 text-center text-sm text-[#86868B]">
-              Loading filters...
-            </div>
-          }
+        <PreviewHotspot
+          id="filters"
+          enabled={hotspotEnabled}
+          active={previewInteractive?.activeHotspot === "filters"}
+          onSelect={previewInteractive?.onHotspotClick}
+          indicatorPosition="top-left"
         >
-          <PreviewHotspot
-            id="filters"
-            enabled={hotspotEnabled}
-            active={previewInteractive?.activeHotspot === "filters"}
-            onSelect={previewInteractive?.onHotspotClick}
-            indicatorPosition="top-left"
-          >
-            <PublicMenuFilterBar
-              backgroundColor={themedColor(isPreview, "filterBg", theme.filterAreaBg)}
-              textColor={themedColor(isPreview, "filterText", theme.filterText)}
-              borderColor={themedColor(isPreview, "filterBorder", theme.filterBorder)}
-              titleFont={titleFont}
-              bodyFont={bodyFont}
-              titleFontWeight={titleFontWeight}
-              titleFontStyle={titleFontStyle}
-              bodyFontWeight={bodyFontWeight}
-              bodyFontStyle={bodyFontStyle}
-              locale={locale}
-              activeFilters={activeFilters}
-              onToggleFilter={toggleFilter}
-            />
-          </PreviewHotspot>
-        </Suspense>
+          <PublicMenuFilterBar
+            backgroundColor={themedColor(isPreview, "filterBg", theme.filterAreaBg)}
+            textColor={themedColor(isPreview, "filterText", theme.filterText)}
+            borderColor={themedColor(isPreview, "filterBorder", theme.filterBorder)}
+            titleFont={titleFont}
+            bodyFont={bodyFont}
+            titleFontWeight={titleFontWeight}
+            titleFontStyle={titleFontStyle}
+            bodyFontWeight={bodyFontWeight}
+            bodyFontStyle={bodyFontStyle}
+            locale={locale}
+            activeFilters={activeFilters}
+            onToggleFilter={toggleFilter}
+          />
+        </PreviewHotspot>
       )}
 
       <PreviewHotspot

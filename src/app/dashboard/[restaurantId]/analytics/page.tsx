@@ -1,14 +1,19 @@
 "use client";
 
-import { useRestaurant } from "@/contexts/restaurant-context";
+import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PremiumPaywall } from "@/components/dashboard/premium-paywall";
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts";
 import { ExpenseLedger } from "@/components/dashboard/expense-ledger";
 
 export default function AnalyticsPage() {
-  const { currentRestaurant } = useRestaurant();
+  const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
 
-  if (!currentRestaurant) {
+  if (awaitingWorkspace) {
+    return <LoadingSpinner label="Loading analytics…" />;
+  }
+
+  if (!activeRestaurant) {
     return (
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
@@ -36,7 +41,7 @@ export default function AnalyticsPage() {
         <PremiumPaywall isPremium={false}>
           <AnalyticsCharts pageViews={pageViews} reservations={reservations} expenses={expenses} />
           <div className="mt-8">
-            <ExpenseLedger initialExpenses={expenses} restaurantId={currentRestaurant.id} />
+            <ExpenseLedger initialExpenses={expenses} restaurantId={activeRestaurant.id} />
           </div>
         </PremiumPaywall>
         <p className="mt-6 text-sm text-text-secondary">

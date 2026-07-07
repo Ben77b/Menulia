@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRestaurant } from "@/contexts/restaurant-context";
+import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { getPublicMenuUrl } from "@/lib/site-url";
 import { EmbedMenuCard } from "@/components/dashboard/embed-menu-card";
+import { Button } from "@/components/ui/button";
 import { QrCode, Download } from "lucide-react";
 import QRCode from "react-qr-code";
 
 export default function QrCodePage() {
-  const { currentRestaurant } = useRestaurant();
+  const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
   const [qrColor, setQrColor] = useState("#000000");
   const qrRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +34,7 @@ export default function QrCodePage() {
       const pngUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = pngUrl;
-      link.download = `qr-code-${currentRestaurant?.slug || "restaurant"}.png`;
+      link.download = `qr-code-${activeRestaurant?.slug || "restaurant"}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -40,9 +42,13 @@ export default function QrCodePage() {
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   }
 
-  const restaurantUrl = currentRestaurant
-    ? getPublicMenuUrl(currentRestaurant.slug)
+  const restaurantUrl = activeRestaurant
+    ? getPublicMenuUrl(activeRestaurant.slug)
     : getPublicMenuUrl("demo");
+
+  if (awaitingWorkspace) {
+    return <LoadingSpinner label="Loading QR code…" />;
+  }
 
   return (
     <div className="air-page">
@@ -112,10 +118,10 @@ export default function QrCodePage() {
         </div>
       </div>
 
-      {currentRestaurant && (
+      {activeRestaurant && (
         <EmbedMenuCard
-          slug={currentRestaurant.slug}
-          restaurantName={currentRestaurant.name}
+          slug={activeRestaurant.slug}
+          restaurantName={activeRestaurant.name}
         />
       )}
     </div>

@@ -35,6 +35,7 @@ interface RestaurantContextType {
   restaurants: RestaurantSummary[];
   hasRestaurants: boolean;
   loading: boolean;
+  isFetching: boolean;
   bootstrapped: boolean;
   user: User | null;
   userProfile: UserProfile | null;
@@ -69,17 +70,23 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [currentRestaurant, setCurrentRestaurant] = useState<RestaurantSummary | null>(null);
   const [restaurants, setRestaurants] = useState<RestaurantSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const userIdRef = useRef<string | null>(null);
   const bootstrappedRef = useRef(false);
+  const restaurantsRef = useRef<RestaurantSummary[]>([]);
 
   useEffect(() => {
     bootstrappedRef.current = bootstrapped;
   }, [bootstrapped]);
 
   const hasRestaurants = restaurants.length > 0;
+
+  useEffect(() => {
+    restaurantsRef.current = restaurants;
+  }, [restaurants]);
 
   const clearSessionState = useCallback(() => {
     userIdRef.current = null;
@@ -113,32 +120,34 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     if (error) {
       logAuthDiagnostic("restaurants.load", error);
       console.dir(error, { depth: null });
-      setRestaurants([]);
-      return [];
+      return restaurantsRef.current;
     }
 
     const summaries = (data || []).map((row) => toSummary(row as Record<string, unknown>));
     setRestaurants(summaries);
+    restaurantsRef.current = summaries;
     return summaries;
   }, []);
 
   const refreshRestaurants = useCallback(async (options?: { silent?: boolean }) => {
     if (!userIdRef.current) {
-      setRestaurants([]);
-      return [];
+      return restaurantsRef.current;
     }
 
-    if (!options?.silent) {
+    const silent = options?.silent ?? false;
+    if (!silent) {
       setLoading(true);
     }
+    setIsFetching(true);
+
     try {
       return await loadRestaurantsForUser(userIdRef.current);
     } catch (error) {
       logAuthDiagnostic("restaurants.refresh", error);
-      setRestaurants([]);
-      return [];
+      return restaurantsRef.current;
     } finally {
-      if (!options?.silent) {
+      setIsFetching(false);
+      if (!silent) {
         setLoading(false);
       }
     }
@@ -239,7 +248,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           await loadRestaurantsForUser(sessionUser.id);
         } catch (error) {
           logAuthDiagnostic(`auth.${event}`, error);
-          setRestaurants([]);
         } finally {
           if (mounted) {
             if (isInitialBootstrap) {
@@ -269,16 +277,16 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   ]);
 
   useEffect(() => {
-    if (!bootstrapped || restaurants.length === 0) {
-      if (restaurants.length === 0) {
-        setCurrentRestaurant(null);
-      }
+    if (!bootstrapped || loading || isFetching) return;
+
+    if (restaurants.length === 0) {
+      setCurrentRestaurant(null);
       return;
     }
 
     if (restaurantId) {
       const matched = restaurants.find((entry) => entry.id === restaurantId);
-      setCurrentRestaurant(matched ?? restaurants[0]);
+      setCurrentRestaurant(matched ?? restaurants[0] ?? null);
       return;
     }
 
@@ -296,8 +304,8 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    setCurrentRestaurant(restaurants[0]);
-  }, [bootstrapped, restaurantId, restaurants]);
+    setCurrentRestaurant(restaurants[0] ?? null);
+  }, [bootstrapped, loading, isFetching, restaurantId, restaurants]);
 
   useEffect(() => {
     if (!bootstrapped || loading || !user) return;
@@ -326,6 +334,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         restaurants,
         hasRestaurants,
         loading,
+        isFetching,
         bootstrapped,
         user,
         userProfile,

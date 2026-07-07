@@ -36,9 +36,10 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const {
     currentRestaurant,
     restaurants,
-    hasRestaurants,
     switchRestaurant,
     loading,
+    isFetching,
+    bootstrapped,
     user,
     userProfile,
   } = useRestaurant();
@@ -48,8 +49,18 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const profileSubtitle = user?.email ?? "Account settings";
   const isAccountPage = pathname === "/dashboard/account";
 
+  const activeRestaurant =
+    currentRestaurant ??
+    (restaurantId ? restaurants.find((entry) => entry.id === restaurantId) : null) ??
+    restaurants[0] ??
+    null;
+
+  const hasRestaurants = restaurants.length > 0;
+  const workspaceReady = bootstrapped && !loading && !isFetching;
+  const showOnboardingLockout = workspaceReady && !hasRestaurants;
+
   const activeRestaurantId = hasRestaurants
-    ? currentRestaurant?.id ?? restaurants[0]?.id
+    ? currentRestaurant?.id ?? restaurantId ?? restaurants[0]?.id
     : undefined;
 
   const navItems =
@@ -104,16 +115,20 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             <p className="mt-0.5 text-xs text-[#86868B]">Restaurant workspace</p>
           </div>
 
-          {hasRestaurants ? (
+          {!workspaceReady && user ? (
+            <div className="mb-6 rounded-2xl border border-[#E5E5EA] bg-[#FAFAFA] px-4 py-4 text-sm text-[#86868B]">
+              Loading workspace…
+            </div>
+          ) : hasRestaurants ? (
             <div className="mb-6 px-1">
               <div className="relative">
                 <button
                   onClick={() => setRestaurantOpen(!restaurantOpen)}
                   className="air-card flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors hover:bg-[#FAFAFA]"
                 >
-                  {currentRestaurant?.logo ? (
+                  {activeRestaurant?.logo ? (
                     <img
-                      src={currentRestaurant.logo}
+                      src={activeRestaurant.logo}
                       alt=""
                       className="h-9 w-9 rounded-xl object-cover"
                     />
@@ -124,7 +139,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-900">
-                      {currentRestaurant?.name || "Select Restaurant"}
+                      {activeRestaurant?.name || "Select Restaurant"}
                     </p>
                     <p className="text-xs text-[#86868B]">
                       {loading
@@ -179,11 +194,11 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 )}
               </div>
             </div>
-          ) : (
+          ) : showOnboardingLockout ? (
             <div className="mb-6 rounded-2xl border border-dashed border-[#E5E5EA] bg-[#FAFAFA] px-4 py-4 text-sm text-[#86868B]">
               Dashboard locked until your first restaurant is created.
             </div>
-          )}
+          ) : null}
 
           <nav className="flex-1 space-y-1 px-1">
             {navItems.map((item) => {
@@ -201,10 +216,10 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               );
             })}
 
-            {currentRestaurant?.slug && (
+            {activeRestaurant?.slug && (
               <Button
                 variant="light"
-                href={publicMenuAbsoluteUrl(currentRestaurant.slug)}
+                href={publicMenuAbsoluteUrl(activeRestaurant.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
                 isExternal
