@@ -788,9 +788,25 @@ export function MenuBuilder() {
       )}
 
       {tree.sections.length === 0 ? (
-        <div className="air-card air-card-pad py-16 text-center">
-          <Layers className="mx-auto mb-3 h-10 w-10 text-[#C7C7CC]" />
-          <p className="text-[#86868B]">Create your first section to start building the menu tree.</p>
+        <div className="air-card air-card-pad flex flex-col items-center py-20 text-center">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F5F5F7]">
+            <Layers className="h-8 w-8 text-[#C7C7CC]" />
+          </div>
+          <h2 className="text-lg font-semibold text-slate-900">Welcome to your menu builder!</h2>
+          <p className="mt-2 max-w-sm text-sm text-[#86868B]">
+            Create your first section to get started. Sections organize your menu into groups like
+            Food, Drinks, or Desserts.
+          </p>
+          <Button
+            variant="dark"
+            size="lg"
+            className="mt-8 gap-2"
+            onClick={() => setAddingSection(true)}
+            disabled={busy || tree.sections.length >= MAX_SECTIONS}
+          >
+            <Plus className="h-4 w-4" />
+            Add Section
+          </Button>
         </div>
       ) : (
         <>
