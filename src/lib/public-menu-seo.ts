@@ -23,10 +23,10 @@ export interface PublicRestaurantProfile {
 export async function fetchPublicRestaurantBySlug(
   slug: string
 ): Promise<PublicRestaurantProfile | null> {
-  const { getCachedPublicRestaurantRow, restaurantRowToProfile } = await import(
+  const { getPublicRestaurantRow, restaurantRowToProfile } = await import(
     "@/lib/public-menu-cache"
   );
-  const row = await getCachedPublicRestaurantRow(slug);
+  const row = await getPublicRestaurantRow(slug);
   if (!row) return null;
   return restaurantRowToProfile(row, slug);
 }

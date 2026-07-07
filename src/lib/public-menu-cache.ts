@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors, DEFAULT_MENU_THEME } from "@/lib/theme-colors";
 import {
@@ -7,8 +6,6 @@ import {
 } from "@/lib/theme-inheritance";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import type { PublicRestaurantProfile } from "@/lib/public-menu-seo";
-
-export const PUBLIC_MENU_REVALIDATE_SECONDS = 60;
 
 export interface PublicMenuSplashTheme {
   restaurantName: string;
@@ -23,14 +20,6 @@ export const DEFAULT_PUBLIC_MENU_SPLASH: PublicMenuSplashTheme = {
   backgroundColor: DEFAULT_MENU_THEME.headerBackgroundColor,
   accentColor: DEFAULT_MENU_THEME.categoryAccentColor,
 };
-
-export function publicMenuCacheTag(slug: string): string {
-  return `public-menu:${slug}`;
-}
-
-export function publicMenuDataCacheTag(restaurantId: string): string {
-  return `public-menu-data:${restaurantId}`;
-}
 
 type RestaurantRow = Record<string, unknown>;
 
@@ -70,31 +59,15 @@ export function restaurantRowToSplashTheme(row: RestaurantRow | null): PublicMen
   };
 }
 
-export async function getCachedPublicRestaurantRow(slug: string): Promise<RestaurantRow | null> {
-  return unstable_cache(
-    async () => queryRestaurantBySlug(slug),
-    ["public-menu-restaurant-row", slug],
-    {
-      revalidate: PUBLIC_MENU_REVALIDATE_SECONDS,
-      tags: [publicMenuCacheTag(slug), "public-menu"],
-    }
-  )();
+export async function getPublicRestaurantRow(slug: string): Promise<RestaurantRow | null> {
+  return queryRestaurantBySlug(slug);
 }
 
-export async function getCachedPublicMenuPayload(restaurantId: string) {
-  return unstable_cache(
-    async () => fetchPublicMenuData(restaurantId),
-    ["public-menu-data", restaurantId],
-    {
-      revalidate: PUBLIC_MENU_REVALIDATE_SECONDS,
-      tags: [publicMenuDataCacheTag(restaurantId), "public-menu"],
-    }
-  )();
+export async function getPublicMenuPayload(restaurantId: string) {
+  return fetchPublicMenuData(restaurantId);
 }
 
-export async function getCachedPublicMenuSplashBySlug(
-  slug: string
-): Promise<PublicMenuSplashTheme> {
-  const row = await getCachedPublicRestaurantRow(slug);
+export async function getPublicMenuSplashBySlug(slug: string): Promise<PublicMenuSplashTheme> {
+  const row = await getPublicRestaurantRow(slug);
   return restaurantRowToSplashTheme(row);
 }

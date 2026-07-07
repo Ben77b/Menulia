@@ -1,4 +1,4 @@
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 import { parseMenuThemeColors } from "@/lib/theme-colors";
 import {
@@ -9,8 +9,8 @@ import { PublicMenuShell } from "@/components/public/public-menu-shell";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { PublicMenuJsonLd } from "@/components/public/public-menu-json-ld";
 import {
-  getCachedPublicMenuPayload,
-  getCachedPublicRestaurantRow,
+  getPublicMenuPayload,
+  getPublicRestaurantRow,
   restaurantRowToProfile,
 } from "@/lib/public-menu-cache";
 import {
@@ -64,7 +64,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
   const resolvedParams = await params;
   const slugParam = resolvedParams["restaurant-slug"];
 
-  const restaurant = await getCachedPublicRestaurantRow(slugParam);
+  const restaurant = await getPublicRestaurantRow(slugParam);
 
   if (!restaurant) {
     return <MenuAwaitingSync slugParam={slugParam} />;
@@ -74,7 +74,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
   const restaurantId = profile.id;
 
   const [{ menu, flatCategories, hasNestedStructure }] = await Promise.all([
-    getCachedPublicMenuPayload(restaurantId),
+    getPublicMenuPayload(restaurantId),
   ]);
 
   const links = parseCustomLinks(restaurant.custom_links);

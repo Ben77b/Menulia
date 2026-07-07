@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { getCachedPublicMenuSplashBySlug } from "@/lib/public-menu-cache";
+import { getPublicMenuSplashBySlug } from "@/lib/public-menu-cache";
 import { PublicMenuRouteShell } from "@/components/public/public-menu-route-shell";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export function headers() {
   return {
@@ -19,7 +19,7 @@ export default async function PublicMenuLayout({
 }) {
   const resolvedParams = await params;
   const slug = resolvedParams["restaurant-slug"];
-  const splash = await getCachedPublicMenuSplashBySlug(slug);
+  const splash = await getPublicMenuSplashBySlug(slug);
 
   return <PublicMenuRouteShell splash={splash}>{children}</PublicMenuRouteShell>;
 }
