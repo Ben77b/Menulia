@@ -154,9 +154,7 @@ async function getNextDishDisplayOrder(categoryId: string): Promise<number> {
   const { data, error } = await supabase
     .from("dishes")
     .select("display_order")
-    .eq("category_id", categoryId)
-    .order("display_order", { ascending: false })
-    .limit(1);
+    .eq("category_id", categoryId);
 
   if (error && isMissingColumnError(error)) {
     const { count } = await supabase
@@ -167,7 +165,7 @@ async function getNextDishDisplayOrder(categoryId: string): Promise<number> {
   }
 
   if (error || !data?.length) return 0;
-  return Number(data[0].display_order ?? 0) + 1;
+  return Math.max(...data.map((row) => Number(row.display_order ?? 0)), 0) + 1;
 }
 
 export async function fetchMenuCategories(restaurantId: string): Promise<MenuCategoryRecord[]> {
@@ -288,10 +286,12 @@ export async function createMenuDish(
   price: number,
   image: string | null = null,
   tags: string[] = [],
-  allergens: string[] = []
+  allergens: string[] = [],
+  options?: { displayOrder?: number }
 ): Promise<MenuDishRecord> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
-  const displayOrder = await getNextDishDisplayOrder(categoryId);
+  const displayOrder =
+    options?.displayOrder ?? (await getNextDishDisplayOrder(categoryId));
 
   const { data, error } = await insertDishRow({
     category_id: categoryId,

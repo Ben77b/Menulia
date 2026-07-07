@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { parseContactInfo } from "@/lib/contact-info";
 import type { ResolvedMenuTheme, ThemeHotspotId } from "@/lib/advanced-theme";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
@@ -23,6 +23,7 @@ import { PublicMenuFilterBar } from "./public-menu-filter-bar";
 import { PreviewHotspot } from "./preview-hotspot";
 import { themedColor } from "@/lib/preview-theme-vars";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
+import { usePublicMenuFilters } from "@/components/public/public-menu-filter-context";
 
 export interface PreviewInteractiveConfig {
   enabled: boolean;
@@ -87,14 +88,15 @@ function DishSection({
   previewInteractive?: PreviewInteractiveConfig;
 }) {
   const filteredDishes = useMemo(() => {
+    const dishes = subcategory.dishes ?? [];
     if (!display.showDietary || activeFilters.size === 0) {
-      return subcategory.dishes;
+      return dishes;
     }
-    return filterDishesByTags(subcategory.dishes, activeFilters);
+    return filterDishesByTags(dishes, activeFilters);
   }, [subcategory.dishes, activeFilters, display.showDietary]);
 
   const emptyMessage =
-    subcategory.dishes.length === 0
+    (subcategory.dishes?.length ?? 0) === 0
       ? menuUiString(locale, "noDishes")
       : menuUiString(locale, "noFilterMatch");
 
@@ -219,18 +221,18 @@ export function PublicMenuLayout({
   );
 
   const [locale, setLocale] = useState<PublicMenuLocale>("en");
+  const { activeFilters, toggleFilter } = usePublicMenuFilters();
   const [activeParentId, setActiveParentId] = useState(safeMenu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
-    safeMenu[0]?.subcategories[0]?.id ?? safeFlatCategories[0]?.id ?? ""
+    safeMenu[0]?.subcategories?.[0]?.id ?? safeFlatCategories[0]?.id ?? ""
   );
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (hasNestedStructure) {
       if (safeMenu.length === 0) return;
       if (!safeMenu.some((parent) => parent.id === activeParentId)) {
         setActiveParentId(safeMenu[0].id);
-        setActiveSubcategoryId(safeMenu[0].subcategories[0]?.id ?? "");
+        setActiveSubcategoryId(safeMenu[0].subcategories?.[0]?.id ?? "");
       }
       return;
     }
@@ -269,21 +271,9 @@ export function PublicMenuLayout({
   function handleParentChange(parentId: string) {
     setActiveParentId(parentId);
     const parent = safeMenu.find((item) => item.id === parentId);
-    if (parent?.subcategories[0]) {
+    if (parent?.subcategories?.[0]) {
       setActiveSubcategoryId(parent.subcategories[0].id);
     }
-  }
-
-  function toggleFilter(tag: string) {
-    setActiveFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(tag)) {
-        next.delete(tag);
-      } else {
-        next.add(tag);
-      }
-      return next;
-    });
   }
 
   return (
@@ -413,28 +403,36 @@ export function PublicMenuLayout({
       </main>
 
       {display.showDietary && (
-        <PreviewHotspot
-          id="filters"
-          enabled={hotspotEnabled}
-          active={previewInteractive?.activeHotspot === "filters"}
-          onSelect={previewInteractive?.onHotspotClick}
-          indicatorPosition="top-left"
+        <Suspense
+          fallback={
+            <div className="border-t border-black/5 px-6 py-6 text-center text-sm text-[#86868B]">
+              Loading filters...
+            </div>
+          }
         >
-          <PublicMenuFilterBar
-            backgroundColor={themedColor(isPreview, "filterBg", theme.filterAreaBg)}
-            textColor={themedColor(isPreview, "filterText", theme.filterText)}
-            borderColor={themedColor(isPreview, "filterBorder", theme.filterBorder)}
-            titleFont={titleFont}
-            bodyFont={bodyFont}
-            titleFontWeight={titleFontWeight}
-            titleFontStyle={titleFontStyle}
-            bodyFontWeight={bodyFontWeight}
-            bodyFontStyle={bodyFontStyle}
-            locale={locale}
-            activeFilters={activeFilters}
-            onToggleFilter={toggleFilter}
-          />
-        </PreviewHotspot>
+          <PreviewHotspot
+            id="filters"
+            enabled={hotspotEnabled}
+            active={previewInteractive?.activeHotspot === "filters"}
+            onSelect={previewInteractive?.onHotspotClick}
+            indicatorPosition="top-left"
+          >
+            <PublicMenuFilterBar
+              backgroundColor={themedColor(isPreview, "filterBg", theme.filterAreaBg)}
+              textColor={themedColor(isPreview, "filterText", theme.filterText)}
+              borderColor={themedColor(isPreview, "filterBorder", theme.filterBorder)}
+              titleFont={titleFont}
+              bodyFont={bodyFont}
+              titleFontWeight={titleFontWeight}
+              titleFontStyle={titleFontStyle}
+              bodyFontWeight={bodyFontWeight}
+              bodyFontStyle={bodyFontStyle}
+              locale={locale}
+              activeFilters={activeFilters}
+              onToggleFilter={toggleFilter}
+            />
+          </PreviewHotspot>
+        </Suspense>
       )}
 
       <PreviewHotspot

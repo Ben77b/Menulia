@@ -30,6 +30,7 @@ import {
   DesignTypographySection,
 } from "@/components/dashboard/design-branding-sections";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
+import { PublicMenuFilterProvider } from "@/components/public/public-menu-filter-context";
 import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
 import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
@@ -343,14 +344,16 @@ export function DesignStudio() {
                 previewCanvas
                 className="border-0 bg-transparent p-0"
               >
-                <PublicMenuLayout
-                  {...previewProps}
-                  previewInteractive={{
-                    enabled: true,
-                    activeHotspot,
-                    onHotspotClick: handleHotspotClick,
-                  }}
-                />
+                <PublicMenuFilterProvider syncToUrl={false}>
+                  <PublicMenuLayout
+                    {...previewProps}
+                    previewInteractive={{
+                      enabled: true,
+                      activeHotspot,
+                      onHotspotClick: handleHotspotClick,
+                    }}
+                  />
+                </PublicMenuFilterProvider>
               </MenuPhonePreview>
 
               {colorPopover && activePopoverGroup && (

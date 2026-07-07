@@ -5,7 +5,7 @@ import {
   resolveUnifiedMenuTheme,
   splitAdvancedThemeStorage,
 } from "@/lib/theme-inheritance";
-import { PublicMenuLayout } from "@/components/public/public-menu-layout";
+import { PublicMenuShell } from "@/components/public/public-menu-shell";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { PublicMenuJsonLd } from "@/components/public/public-menu-json-ld";
 import {
@@ -97,7 +97,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
         hasNestedStructure={hasNestedStructure}
       />
       <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
-      <PublicMenuLayout
+      <PublicMenuShell
         restaurantName={restaurant.name as string}
         logo={(restaurant.logo as string | null) ?? null}
         location={(restaurant.location as string | null) ?? ""}

@@ -4,6 +4,10 @@ import type {
   MenuBuilderSection,
   MenuBuilderTree,
 } from "./menu-builder-types";
+import {
+  normalizeDishDisplayOrder,
+  sortDishesByDisplayOrder,
+} from "./menu-dish-order";
 
 export function renameCategoryInTree(tree: MenuBuilderTree, id: string, name: string): MenuBuilderTree {
   return {
@@ -149,11 +153,11 @@ export function addDishToCategory(
   categoryId: string,
   dish: MenuBuilderDish
 ): MenuBuilderTree {
+  const existing = findCategory(tree, categoryId)?.dishes ?? [];
+  const normalized = normalizeDishDisplayOrder(dish, existing);
+
   return patchCategoryInTree(tree, categoryId, {
-    dishes: [
-      ...(findCategory(tree, categoryId)?.dishes ?? []),
-      dish,
-    ].sort((a, b) => a.display_order - b.display_order),
+    dishes: sortDishesByDisplayOrder([...existing, normalized]),
   });
 }
 
@@ -230,7 +234,7 @@ export function recordsToCategory(category: {
     layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
     order_index: category.order_index,
     parent_id: category.parent_id ?? "",
-    dishes: [...category.items].sort((a, b) => a.display_order - b.display_order),
+    dishes: [...category.items].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
   };
 }
 

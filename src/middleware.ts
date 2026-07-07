@@ -1,7 +1,12 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { applySecurityHeadersForPath } from "@/lib/security-headers";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
+
+function withSecurityHeaders(response: NextResponse, pathname: string): NextResponse {
+  return applySecurityHeadersForPath(response, pathname);
+}
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -39,16 +44,25 @@ export async function middleware(request: NextRequest) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    return withSecurityHeaders(NextResponse.redirect(loginUrl), pathname);
   }
 
   if ((pathname === "/login" || pathname === "/signup") && user) {
-    return response;
+    return withSecurityHeaders(response, pathname);
   }
 
-  return response;
+  return withSecurityHeaders(response, pathname);
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  matcher: [
+    "/dashboard",
+    "/dashboard/:path*",
+    "/login",
+    "/signup",
+    "/logout",
+    "/onboarding",
+    "/menu/:path*",
+    "/api/:path*",
+  ],
 };

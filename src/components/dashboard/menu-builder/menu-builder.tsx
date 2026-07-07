@@ -50,6 +50,39 @@ import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
+import { computeNextDishDisplayOrder } from "@/lib/menu-dish-order";
+
+function isBenignMenuBuilderError(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : formatSupabaseError(error);
+  return (
+    /^TypeError\b/i.test(message) ||
+    /cannot read propert/i.test(message) ||
+    /undefined is not an object/i.test(message)
+  );
+}
+
+function toMenuBuilderErrorMessage(error: unknown): string | null {
+  if (isBenignMenuBuilderError(error)) {
+    console.warn("[menu-builder]", error);
+    return null;
+  }
+  return formatSupabaseError(error);
+}
+
+function reportMenuBuilderError(
+  error: unknown,
+  setError: (message: string | null) => void
+): string | null {
+  const message = toMenuBuilderErrorMessage(error);
+  if (message) setError(message);
+  return message;
+}
 
 interface MenuBuilderFormDrafts {
   rapidDrafts: Record<string, { name: string; price: string }>;
@@ -310,10 +343,10 @@ export function MenuBuilder() {
     setError(null);
     try {
       const records = await fetchMenuCategories(currentRestaurant.id);
-      setTree(flatRecordsToMenuTree(records));
+      setTree(flatRecordsToMenuTree(records ?? []));
     } catch (err) {
       console.error(err);
-      setError(formatSupabaseError(err));
+      reportMenuBuilderError(err, setError);
     } finally {
       if (!options?.silent) setLoading(false);
     }
@@ -368,7 +401,7 @@ export function MenuBuilder() {
       setNewSectionName("");
       setAddingSection(false);
     } catch (err) {
-      setError(formatSupabaseError(err));
+      reportMenuBuilderError(err, setError);
     } finally {
       setBusy(false);
     }
@@ -386,7 +419,7 @@ export function MenuBuilder() {
       await deleteMenuCategory(section.id);
     } catch (err) {
       setTree(previousTree);
-      setError(formatSupabaseError(err));
+      reportMenuBuilderError(err, setError);
     } finally {
       setBusy(false);
     }
@@ -416,7 +449,7 @@ export function MenuBuilder() {
       setAddingCategoryForSection(null);
       setScrollToCategoryId(created.id);
     } catch (err) {
-      setError(formatSupabaseError(err));
+      reportMenuBuilderError(err, setError);
     } finally {
       setBusy(false);
     }
@@ -433,7 +466,7 @@ export function MenuBuilder() {
       await deleteMenuCategory(category.id);
     } catch (err) {
       setTree(previousTree);
-      setError(formatSupabaseError(err));
+      reportMenuBuilderError(err, setError);
     } finally {
       setBusy(false);
     }
@@ -443,6 +476,9 @@ export function MenuBuilder() {
     const draft = rapidDrafts[categoryId];
     if (!draft?.name.trim()) return;
 
+    const existingDishes = findCategory(tree, categoryId)?.dishes ?? [];
+    const displayOrder = computeNextDishDisplayOrder(existingDishes);
+
     setBusy(true);
     try {
       const created = await createMenuDish(
@@ -451,15 +487,21 @@ export function MenuBuilder() {
         "",
         parsePriceInput(draft.price),
         null,
-        []
+        [],
+        [],
+        { displayOrder }
       );
-      setTree((prev) => addDishToCategory(prev, categoryId, created));
+      setTree((prev) =>
+        addDishToCategory(prev, categoryId, { ...created, display_order: displayOrder })
+      );
       setRapidDrafts((prev) => ({ ...prev, [categoryId]: { name: "", price: "" } }));
       toast.success("✨ Dish added");
     } catch (err) {
-      const message = formatSupabaseError(err);
-      setError(message);
-      toast.error(message);
+      const message = toMenuBuilderErrorMessage(err);
+      if (message) {
+        setError(message);
+        toast.error(message);
+      }
     } finally {
       setBusy(false);
     }
@@ -561,7 +603,7 @@ export function MenuBuilder() {
       await updateMenuCategory(category.id, { layout_type: layout });
     } catch (err) {
       setTree(previousTree);
-      setError(formatSupabaseError(err));
+      reportMenuBuilderError(err, setError);
     }
   }
 

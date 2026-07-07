@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PublicMenuLayout } from "@/components/public/public-menu-layout";
+import { PublicMenuFilterProvider } from "@/components/public/public-menu-filter-context";
 import { MenuPhonePreview } from "@/components/dashboard/menu-phone-preview";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { restaurantPreviewProfileFromSummary } from "@/lib/restaurant-preview-profile";
@@ -216,7 +217,11 @@ export function SettingsMenuPreview({ restaurantId, live }: SettingsMenuPreviewP
       label={loading ? "Loading preview…" : "Live Preview — updates as you edit"}
       className="sticky top-6 hidden lg:flex"
     >
-      {!loading && <PublicMenuLayout {...previewProps} />}
+      {!loading && (
+        <PublicMenuFilterProvider syncToUrl={false}>
+          <PublicMenuLayout {...previewProps} />
+        </PublicMenuFilterProvider>
+      )}
     </MenuPhonePreview>
   );
 }

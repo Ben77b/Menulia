@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { getPublicMenuUrl } from "@/lib/site-url";
-import { Button } from "@/components/ui/button";
+import { EmbedMenuCard } from "@/components/dashboard/embed-menu-card";
 import { QrCode, Download } from "lucide-react";
 import QRCode from "react-qr-code";
 
@@ -111,6 +111,13 @@ export default function QrCodePage() {
           </div>
         </div>
       </div>
+
+      {currentRestaurant && (
+        <EmbedMenuCard
+          slug={currentRestaurant.slug}
+          restaurantName={currentRestaurant.name}
+        />
+      )}
     </div>
   );
 }

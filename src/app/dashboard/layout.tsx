@@ -5,3 +5,10 @@ export default function DashboardRootLayout({
 }) {
   return <>{children}</>;
 }
+
+export function headers() {
+  return {
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": "frame-ancestors 'none'",
+  };
+}
