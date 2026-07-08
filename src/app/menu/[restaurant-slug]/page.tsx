@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
 import {
   resolveUnifiedMenuTheme,
@@ -8,6 +9,7 @@ import {
 import { PublicMenuShell } from "@/components/public/public-menu-shell";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { PublicMenuJsonLd } from "@/components/public/public-menu-json-ld";
+import { PublicMenuSplashScreen } from "@/components/public/public-menu-splash-screen";
 import {
   getPublicMenuPayload,
   getPublicRestaurantRow,
@@ -60,15 +62,20 @@ export async function generateMetadata({ params }: PageProps) {
   return buildPublicMenuPageMetadata(restaurant);
 }
 
-export default async function PublicMenuPage({ params }: PageProps) {
+export default function PublicMenuPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<PublicMenuSplashScreen />}>
+      <PublicMenuPageContent params={params} />
+    </Suspense>
+  );
+}
+
+async function PublicMenuPageContent({ params }: PageProps) {
   const resolvedParams = await params;
   const slugParam = resolvedParams["restaurant-slug"];
 
   const restaurant = await getPublicRestaurantRow(slugParam);
-
-  if (!restaurant) {
-    return <MenuAwaitingSync slugParam={slugParam} />;
-  }
+  if (!restaurant) return <MenuAwaitingSync slugParam={slugParam} />;
 
   const profile = restaurantRowToProfile(restaurant, slugParam);
   const restaurantId = profile.id;
