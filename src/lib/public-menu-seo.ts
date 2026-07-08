@@ -3,6 +3,7 @@ import { createAnonClient } from "@/lib/supabase";
 import { parseContactInfo } from "@/lib/contact-info";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import { collectAllDishes } from "@/lib/public-menu-utils";
+import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 import { publicMenuPath } from "@/lib/public-menu-url";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net";
@@ -82,19 +83,22 @@ export function buildPublicMenuPageMetadata(
 }
 
 function menuItemJsonLd(dish: {
-  name: string;
-  description: string;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue;
   price: number;
   hide_price?: boolean;
   image: string | null;
 }) {
+  const localizedName = resolveLocalizedText(dish.name, "en");
+  const localizedDescription = resolveLocalizedText(dish.description, "en");
+
   const item: Record<string, unknown> = {
     "@type": "MenuItem",
-    name: dish.name,
+    name: localizedName,
   };
 
-  if (dish.description.trim()) {
-    item.description = dish.description.trim();
+  if (localizedDescription.trim()) {
+    item.description = localizedDescription.trim();
   }
 
   if (dish.image) {
@@ -121,8 +125,8 @@ function menuSectionsJsonLd(
     return menu.flatMap((parent) =>
       parent.subcategories.map((subcategory) => ({
         "@type": "MenuSection",
-        name: subcategory.name,
-        description: subcategory.description?.trim() || undefined,
+        name: resolveLocalizedText(subcategory.name, "en"),
+        description: resolveLocalizedText(subcategory.description, "en").trim() || undefined,
         hasMenuItem: subcategory.dishes.map(menuItemJsonLd),
       }))
     );
@@ -130,8 +134,8 @@ function menuSectionsJsonLd(
 
   return flatCategories.map((category) => ({
     "@type": "MenuSection",
-    name: category.name,
-    description: category.description?.trim() || undefined,
+    name: resolveLocalizedText(category.name, "en"),
+    description: resolveLocalizedText(category.description, "en").trim() || undefined,
     hasMenuItem: category.dishes.map(menuItemJsonLd),
   }));
 }

@@ -1,4 +1,10 @@
 import { parseDishTagsFromDb, serializeDishTagsForDb } from "./dietary-tags";
+import {
+  parseLocalizedFieldFromDb,
+  resolveLocalizedText,
+  serializeLocalizedFieldForDb,
+  type LocalizedTextValue,
+} from "./localized-text";
 import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
 import { isMissingColumnError } from "./restaurant-settings";
@@ -91,8 +97,8 @@ async function updateDishRow(
 
 export interface MenuCategoryRecord {
   id: string;
-  name: string;
-  description: string | null;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue | null;
   layout_type: string;
   order_index: number;
   parent_id: string | null;
@@ -101,8 +107,8 @@ export interface MenuCategoryRecord {
 
 export interface MenuDishRecord {
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue;
   price: number;
   image_url: string | null;
   tags: string[];
@@ -117,8 +123,8 @@ function mapDishRecord(dish: Record<string, unknown>): MenuDishRecord {
   const normalized = parseDishTagsFromDb(dish);
   return {
     id: dish.id as string,
-    name: dish.name as string,
-    description: (dish.description as string) ?? "",
+    name: parseLocalizedFieldFromDb(dish.name),
+    description: parseLocalizedFieldFromDb(dish.description),
     price: parseFloat(String(dish.price)) || 0,
     image_url: (dish.image as string) ?? null,
     tags: normalized.tags,
@@ -226,8 +232,8 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
 
       return {
         id: category.id,
-        name: category.name,
-        description: (category.description as string | null) ?? null,
+        name: parseLocalizedFieldFromDb(category.name),
+        description: parseLocalizedFieldFromDb(category.description) || null,
         layout_type: category.layout_type ?? "stacked",
         order_index: category.order_index ?? 0,
         parent_id: category.parent_id ?? null,
@@ -276,8 +282,8 @@ export async function createMenuCategory(
 
   return {
     id: data.id,
-    name: data.name,
-    description: (data.description as string | null) ?? null,
+    name: parseLocalizedFieldFromDb(data.name),
+    description: parseLocalizedFieldFromDb(data.description) || null,
     layout_type: data.layout_type ?? "stacked",
     order_index: data.order_index ?? 0,
     parent_id: data.parent_id ?? null,
@@ -292,7 +298,19 @@ export async function updateMenuCategory(
   >
 ): Promise<void> {
   const supabase = getSupabaseBrowserClient();
-  let { error } = await supabase.from("categories").update(updates).eq("id", categoryId);
+  const payload: Record<string, unknown> = { ...updates };
+
+  if ("name" in payload && payload.name !== undefined) {
+    payload.name = serializeLocalizedFieldForDb(payload.name as LocalizedTextValue);
+  }
+  if ("description" in payload) {
+    payload.description =
+      payload.description === null || payload.description === undefined
+        ? null
+        : serializeLocalizedFieldForDb(payload.description as LocalizedTextValue);
+  }
+
+  let { error } = await supabase.from("categories").update(payload).eq("id", categoryId);
 
   if (error && isMissingColumnError(error) && "description" in updates) {
     const { description: _ignored, ...withoutDescription } = updates;
@@ -352,8 +370,8 @@ export async function createMenuDish(
 
 export async function updateMenuDish(
   dishId: string,
-  name: string,
-  description: string,
+  name: LocalizedTextValue,
+  description: LocalizedTextValue,
   price: number,
   image: string | null = null,
   tags: string[] = [],
@@ -364,8 +382,8 @@ export async function updateMenuDish(
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
 
   const { error } = await updateDishRow(dishId, {
-    name: name.trim(),
-    description: description.trim(),
+    name: serializeLocalizedFieldForDb(name),
+    description: serializeLocalizedFieldForDb(description),
     price: String(price),
     image,
     tags: tagsForDb,
@@ -419,9 +437,14 @@ export async function deleteMenuDish(dishId: string): Promise<void> {
   }
 }
 
-function duplicateName(name: string): string {
-  const base = name.trim();
-  return base.endsWith("(Copy)") ? `${base} (Copy)` : `${base} (Copy)`;
+function duplicateName(name: LocalizedTextValue): LocalizedTextValue {
+  const base = resolveLocalizedText(name, "en").trim();
+  const copy = base.endsWith("(Copy)") ? `${base} (Copy)` : `${base} (Copy)`;
+  if (typeof name === "string" || !base) return copy;
+  if (typeof name === "object" && name !== null && !Array.isArray(name)) {
+    return { ...name, en: copy };
+  }
+  return copy;
 }
 
 async function cloneDishToCategory(
@@ -433,8 +456,8 @@ async function cloneDishToCategory(
 
   const { data, error: insertError } = await insertDishRow({
     category_id: categoryId,
-    name: (source.name as string) ?? "",
-    description: (source.description as string) ?? "",
+    name: serializeLocalizedFieldForDb(source.name as LocalizedTextValue),
+    description: serializeLocalizedFieldForDb(source.description as LocalizedTextValue),
     price: String(source.price ?? "0"),
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
@@ -467,8 +490,8 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
 
   const { data, error: insertError } = await insertDishRow({
     category_id: source.category_id,
-    name: duplicateName(source.name as string),
-    description: (source.description as string) ?? "",
+    name: serializeLocalizedFieldForDb(duplicateName(source.name as LocalizedTextValue)),
+    description: serializeLocalizedFieldForDb(source.description as LocalizedTextValue),
     price: String(source.price ?? "0"),
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
@@ -502,11 +525,15 @@ export async function duplicateMenuCategory(
     throw error ?? new Error("Category not found.");
   }
 
-  const created = await createMenuCategory(duplicateName(source.name as string), restaurantId, {
-    layout_type: source.layout_type === "carousel" ? "carousel" : "stacked",
-    parent_id: (source.parent_id as string | null) ?? null,
-    description: (source.description as string | null) ?? null,
-  });
+  const created = await createMenuCategory(
+    resolveLocalizedText(duplicateName(source.name as LocalizedTextValue), "en"),
+    restaurantId,
+    {
+      layout_type: source.layout_type === "carousel" ? "carousel" : "stacked",
+      parent_id: (source.parent_id as string | null) ?? null,
+      description: resolveLocalizedText(source.description as LocalizedTextValue, "en") || null,
+    }
+  );
 
   try {
     const sourceDishes = await fetchDishesForCategory(categoryId);

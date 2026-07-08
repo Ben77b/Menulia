@@ -5,6 +5,7 @@ import { contrastingTextColor, subtleDividerColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
 import type { PublicMenuParentCategory } from "@/lib/menu-hierarchy";
+import { resolveLocalizedText } from "@/lib/localized-text";
 
 interface NestedCategoryNavProps {
   menu: PublicMenuParentCategory[];
@@ -26,6 +27,7 @@ interface NestedCategoryNavProps {
   categoryFontStyle?: "normal" | "italic";
   activeParentId: string;
   activeSubcategoryId: string;
+  lang?: string;
   showTier1: boolean;
   onParentChange: (parentId: string) => void;
   onSubcategoryChange: (subcategoryId: string) => void;
@@ -51,6 +53,7 @@ export function NestedCategoryNav({
   categoryFontStyle,
   activeParentId,
   activeSubcategoryId,
+  lang = "en",
   showTier1,
   onParentChange,
   onSubcategoryChange,
@@ -125,7 +128,7 @@ export function NestedCategoryNav({
                       }
                 }
               >
-                {parent.name}
+                {resolveLocalizedText(parent.name, lang)}
               </button>
             );
           })}
@@ -175,7 +178,7 @@ export function NestedCategoryNav({
                       }
                 }
               >
-                {subcategory.name}
+                {resolveLocalizedText(subcategory.name, lang)}
               </button>
             );
           })}

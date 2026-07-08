@@ -1,77 +1,58 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Globe } from "lucide-react";
+import type { PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { contrastingTextColor } from "@/lib/contrast";
-import { HEADER_LANGUAGES, menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 
 interface MenuLanguageSelectorProps {
-  locale: PublicMenuLocale;
-  onLocaleChange: (locale: PublicMenuLocale) => void;
-  headerBackgroundColor: string;
+  lang: PublicMenuLocale;
+  onLangChange: (lang: PublicMenuLocale) => void;
+  headerBackgroundColor?: string;
 }
 
 export function MenuLanguageSelector({
-  locale,
-  onLocaleChange,
-  headerBackgroundColor,
+  lang,
+  onLangChange,
+  headerBackgroundColor = "#111827",
 }: MenuLanguageSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const isEnglish = lang !== "es";
   const textColor = contrastingTextColor(headerBackgroundColor);
-  const current = HEADER_LANGUAGES.find((lang) => lang.code === locale) ?? HEADER_LANGUAGES[0];
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const inactiveColor = `${textColor}CC`;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div
+      className="inline-flex items-center rounded-full border p-1 text-[11px] font-semibold tracking-wide backdrop-blur-sm sm:text-xs"
+      style={{
+        borderColor: `${textColor}66`,
+        backgroundColor: `${textColor}22`,
+        color: textColor,
+      }}
+    >
       <button
         type="button"
-        aria-label={menuUiString(locale, "language")}
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className="flex h-10 items-center gap-1 rounded-full px-2 transition-opacity hover:opacity-80 sm:gap-1.5 sm:px-3"
-        style={{ color: textColor }}
+        aria-label="Switch language to English"
+        onClick={() => onLangChange("en")}
+        className="rounded-full px-2.5 py-1 transition-colors"
+        style={
+          isEnglish
+            ? { backgroundColor: textColor, color: contrastingTextColor(textColor) }
+            : { color: inactiveColor }
+        }
       >
-        <Globe className="h-4 w-4 shrink-0" style={{ color: textColor }} />
-        <span className="hidden text-xs font-medium sm:inline">{current.flag}</span>
-        <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-80" style={{ color: textColor }} />
+        🇬🇧 EN
       </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-full z-[80] mt-2 max-h-72 w-48 overflow-y-auto rounded-xl border border-black/10 py-1 shadow-xl"
-          style={{ backgroundColor: headerBackgroundColor, color: textColor }}
-        >
-          {HEADER_LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              type="button"
-              onClick={() => {
-                onLocaleChange(lang.code);
-                setOpen(false);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-opacity hover:opacity-80"
-              style={{
-                color: textColor,
-                fontWeight: lang.code === locale ? 600 : 400,
-              }}
-            >
-              <span>{lang.flag}</span>
-              <span>{lang.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <button
+        type="button"
+        aria-label="Switch language to Spanish"
+        onClick={() => onLangChange("es")}
+        className="rounded-full px-2.5 py-1 transition-colors"
+        style={
+          !isEnglish
+            ? { backgroundColor: textColor, color: contrastingTextColor(textColor) }
+            : { color: inactiveColor }
+        }
+      >
+        🇪🇸 ES
+      </button>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { MenuDishRecord } from "./menu-db";
+import type { LocalizedTextValue } from "./localized-text";
 
 /** Tier 3 — leaf item on the public menu */
 export type MenuBuilderDish = MenuDishRecord;
@@ -6,8 +7,8 @@ export type MenuBuilderDish = MenuDishRecord;
 /** Tier 2 — nested under a section; holds dishes */
 export interface MenuBuilderCategory {
   id: string;
-  name: string;
-  description: string | null;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue | null;
   layout_type: "stacked" | "carousel";
   order_index: number;
   parent_id: string;
@@ -17,8 +18,8 @@ export interface MenuBuilderCategory {
 /** Tier 1 — top-level section (Food, Drinks, …) */
 export interface MenuBuilderSection {
   id: string;
-  name: string;
-  description: string | null;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue | null;
   order_index: number;
   categories: MenuBuilderCategory[];
 }

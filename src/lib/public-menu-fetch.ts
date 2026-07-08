@@ -1,5 +1,6 @@
 import { createAnonClient } from "@/lib/supabase";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
+import { parseLocalizedFieldFromDb } from "@/lib/localized-text";
 import {
   buildMenuHierarchy,
   mapDishRow,
@@ -143,8 +144,10 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
 
   const categoryRows: CategoryRow[] = categorySource.map((category) => ({
     id: category.id,
-    name: category.name,
-    description: (category as { description?: string | null }).description ?? null,
+    name: parseLocalizedFieldFromDb(category.name),
+    description: parseLocalizedFieldFromDb(
+      (category as { description?: string | null }).description ?? null
+    ) || null,
     layout_type: category.layout_type ?? "stacked",
     order_index: category.order_index ?? 0,
     parent_id: category.parent_id ?? null,

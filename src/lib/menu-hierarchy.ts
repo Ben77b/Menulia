@@ -1,9 +1,10 @@
 import type { PublicMenuDish } from "@/components/public/dish-card";
+import type { LocalizedTextValue } from "@/lib/localized-text";
 
 export interface CategoryRow {
   id: string;
-  name: string;
-  description?: string | null;
+  name: LocalizedTextValue;
+  description?: LocalizedTextValue;
   layout_type: string;
   order_index: number;
   parent_id: string | null;
@@ -11,24 +12,25 @@ export interface CategoryRow {
 
 export interface PublicMenuSubcategory {
   id: string;
-  name: string;
-  description?: string | null;
+  name: LocalizedTextValue;
+  description?: LocalizedTextValue;
   layout_type: "carousel" | "stacked";
   dishes: PublicMenuDish[];
 }
 
 export interface PublicMenuParentCategory {
   id: string;
-  name: string;
+  name: LocalizedTextValue;
   subcategories: PublicMenuSubcategory[];
 }
 
 import { parseDishTagsFromDb } from "@/lib/dietary-tags";
+import { parseLocalizedFieldFromDb } from "@/lib/localized-text";
 
 export function mapDishRow(dish: {
   id: string;
-  name: string;
-  description?: string | null;
+  name: LocalizedTextValue;
+  description?: LocalizedTextValue;
   price?: string | number | null;
   hide_price?: boolean | null;
   image?: string | null;
@@ -38,8 +40,8 @@ export function mapDishRow(dish: {
   const normalized = parseDishTagsFromDb(dish);
   return {
     id: dish.id,
-    name: dish.name,
-    description: dish.description || "",
+    name: parseLocalizedFieldFromDb(dish.name),
+    description: parseLocalizedFieldFromDb(dish.description ?? ""),
     price: typeof dish.price === "number" ? dish.price : parseFloat(String(dish.price)) || 0,
     hide_price: typeof dish.hide_price === "boolean" ? dish.hide_price : false,
     image: dish.image ?? null,

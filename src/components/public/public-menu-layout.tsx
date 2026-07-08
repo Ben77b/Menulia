@@ -24,6 +24,7 @@ import { PreviewHotspot } from "./preview-hotspot";
 import { themedColor } from "@/lib/preview-theme-vars";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { usePublicMenuFilters } from "@/components/public/public-menu-filter-context";
+import { resolveLocalizedText } from "@/lib/localized-text";
 
 export interface PreviewInteractiveConfig {
   enabled: boolean;
@@ -106,6 +107,7 @@ function DishSection({
   const sectionNote = (
     <CategorySectionHeader
       note={subcategory.description}
+      lang={locale}
       bodyFont={bodyFont}
       bodyFontWeight={bodyFontWeight}
       bodyFontStyle={bodyFontStyle}
@@ -114,7 +116,7 @@ function DishSection({
   );
 
   const categoryHeading = (
-    <h2 className="sr-only">{subcategory.name}</h2>
+    <h2 className="sr-only">{resolveLocalizedText(subcategory.name, locale)}</h2>
   );
 
   if (subcategory.layout_type === "carousel") {
@@ -130,6 +132,7 @@ function DishSection({
         {sectionNote}
         <DishCarousel
           dishes={filteredDishes}
+          lang={locale}
           restaurantName={restaurantName}
           accentColor={themedColor(isPreview, "carouselArrowBg", theme.carouselArrowBg)}
           arrowIconColor={themedColor(isPreview, "carouselArrowIcon", theme.carouselArrowIcon)}
@@ -165,6 +168,7 @@ function DishSection({
           <DishCard
             key={dish.id}
             dish={dish}
+            lang={locale}
             restaurantName={restaurantName}
             titleFont={titleFont}
             bodyFont={bodyFont}
@@ -303,8 +307,8 @@ export function PublicMenuLayout({
           titleFontWeight={titleFontWeight}
           titleFontStyle={titleFontStyle}
           links={links ?? []}
-          locale={locale}
-          onLocaleChange={setLocale}
+          lang={locale}
+          onLangChange={setLocale}
         />
       </PreviewHotspot>
 
@@ -336,6 +340,7 @@ export function PublicMenuLayout({
             categoryFontStyle={categoryFontStyle}
             activeParentId={activeParentId}
             activeSubcategoryId={activeSubcategoryId}
+            lang={locale}
             showTier1
             onParentChange={handleParentChange}
             onSubcategoryChange={setActiveSubcategoryId}
@@ -354,6 +359,7 @@ export function PublicMenuLayout({
             categoryFontWeight={categoryFontWeight}
             categoryFontStyle={categoryFontStyle}
             activeCategoryId={activeSubcategoryId}
+            lang={locale}
             onCategoryChange={setActiveSubcategoryId}
           />
         )}

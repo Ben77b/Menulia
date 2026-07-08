@@ -14,6 +14,7 @@ import {
   normalizeDishTagFields,
 } from "@/lib/dietary-tags";
 import { parsePriceInput } from "@/lib/price-input";
+import { resolveLocalizedText } from "@/lib/localized-text";
 
 export interface DishDetailDraft {
   name: string;
@@ -79,8 +80,8 @@ export function DishDetailSheet({
     dishIdRef.current = dish.id;
     const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
     setDraft({
-      name: dish.name,
-      description: dish.description,
+      name: resolveLocalizedText(dish.name, "en"),
+      description: resolveLocalizedText(dish.description, "en"),
       price: String(dish.price),
       hide_price: Boolean(dish.hide_price),
       image_url: dish.image_url,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, Pencil, Check, X } from "lucide-react";
+import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, Pencil, Check, X, Sparkles } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { useSessionPersistedState } from "@/hooks/use-session-persisted-state";
@@ -51,6 +51,8 @@ import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
 import { computeNextDishDisplayOrder } from "@/lib/menu-dish-order";
+import { mergeLocalizedText, resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
+import { translateMenuTreeToLanguage } from "@/lib/menu-translation";
 
 function isBenignMenuBuilderError(error: unknown): boolean {
   if (error instanceof TypeError) return true;
@@ -124,7 +126,7 @@ function categoryCardId(categoryId: string): string {
 }
 
 interface EditableCategoryNameProps {
-  name: string;
+  name: LocalizedTextValue;
   disabled?: boolean;
   titleClassName?: string;
   onRename: (nextName: string) => Promise<boolean>;
@@ -136,21 +138,22 @@ function EditableCategoryName({
   titleClassName,
   onRename,
 }: EditableCategoryNameProps) {
+  const displayName = resolveLocalizedText(name, "en");
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(name);
+  const [draft, setDraft] = useState(displayName);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!editing) setDraft(name);
-  }, [name, editing]);
+    if (!editing) setDraft(displayName);
+  }, [displayName, editing]);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
   function cancelEdit() {
-    setDraft(name);
+    setDraft(displayName);
     setEditing(false);
   }
 
@@ -211,12 +214,12 @@ function EditableCategoryName({
 
   return (
     <div className="flex min-w-0 items-center gap-1.5">
-      <span className={cn("truncate", titleClassName)}>{name}</span>
+      <span className={cn("truncate", titleClassName)}>{displayName}</span>
       <button
         type="button"
         onClick={() => setEditing(true)}
         disabled={disabled}
-        aria-label={`Rename ${name}`}
+        aria-label={`Rename ${displayName}`}
         className="rounded-lg p-1 text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-40"
       >
         <Pencil className="h-3.5 w-3.5" />
@@ -282,6 +285,7 @@ export function MenuBuilder() {
   } | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
 
   const selectedCategory = useMemo(
     () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
@@ -409,7 +413,7 @@ export function MenuBuilder() {
 
   async function handleDeleteSection(section: MenuBuilderSection) {
     const { categories, dishes } = countSectionContents(section);
-    const message = `Delete section "${section.name}" and all ${categories} categories with ${dishes} dishes? This cannot be undone.`;
+    const message = `Delete section "${resolveLocalizedText(section.name, "en")}" and all ${categories} categories with ${dishes} dishes? This cannot be undone.`;
     if (!confirm(message)) return;
 
     const previousTree = tree;
@@ -456,7 +460,7 @@ export function MenuBuilder() {
   }
 
   async function handleDeleteCategory(sectionId: string, category: MenuBuilderCategory) {
-    const message = `Delete category "${category.name}" and its ${category.dishes.length} dishes?`;
+    const message = `Delete category "${resolveLocalizedText(category.name, "en")}" and its ${category.dishes.length} dishes?`;
     if (!confirm(message)) return;
 
     const previousTree = tree;
@@ -515,8 +519,8 @@ export function MenuBuilder() {
 
     const optimisticDish: MenuBuilderDish = {
       ...dish,
-      name: draft.name.trim(),
-      description: draft.description.trim(),
+      name: mergeLocalizedText(dish.name, "en", draft.name.trim()),
+      description: mergeLocalizedText(dish.description, "en", draft.description.trim()),
       price: parsePriceInput(draft.price),
       image_url: draft.image_url,
       tags: draft.filterableTags,
@@ -531,8 +535,8 @@ export function MenuBuilder() {
     try {
       await updateMenuDish(
         dish.id,
-        draft.name,
-        draft.description,
+        optimisticDish.name,
+        optimisticDish.description,
         parsePriceInput(draft.price),
         draft.image_url,
         draft.filterableTags,
@@ -579,7 +583,7 @@ export function MenuBuilder() {
   }
 
   async function handleDeleteDish(dish: MenuBuilderDish, categoryId: string) {
-    if (!confirm(`Delete "${dish.name}"?`)) return;
+    if (!confirm(`Delete "${resolveLocalizedText(dish.name, "en")}"?`)) return;
 
     const previousTree = tree;
     setTree((prev) => removeDishFromCategory(prev, categoryId, dish.id));
@@ -647,7 +651,7 @@ export function MenuBuilder() {
     try {
       const created = await duplicateMenuDish(dish.id);
       setTree((prev) => addDishToCategory(prev, categoryId, created));
-      toast.success(`"${dish.name}" duplicated`);
+      toast.success(`"${resolveLocalizedText(dish.name, "en")}" duplicated`);
     } catch (err) {
       const message = formatSupabaseError(err);
       setError(message);
@@ -660,9 +664,20 @@ export function MenuBuilder() {
   async function handleCategoryNoteChange(categoryId: string, description: string) {
     const trimmed = description.trim();
     const previousTree = tree;
-    setTree((prev) => patchCategoryInTree(prev, categoryId, { description: trimmed || null }));
+    const section = tree.sections.find((entry) => entry.id === categoryId);
+    const category = section ?? findCategory(tree, categoryId);
+    const currentDescription = section?.description ?? category?.description ?? "";
+    const mergedDescription = mergeLocalizedText(currentDescription, "en", trimmed);
+
+    setTree((prev) =>
+      patchCategoryInTree(prev, categoryId, {
+        description: trimmed ? mergedDescription : null,
+      })
+    );
     try {
-      await updateMenuCategory(categoryId, { description: trimmed || null });
+      await updateMenuCategory(categoryId, {
+        description: trimmed ? mergedDescription : null,
+      });
     } catch (err) {
       setTree(previousTree);
       const message = formatSupabaseError(err);
@@ -671,21 +686,26 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleRenameCategory(id: string, currentName: string, nextName: string): Promise<boolean> {
+  async function handleRenameCategory(
+    id: string,
+    currentName: LocalizedTextValue,
+    nextName: string
+  ): Promise<boolean> {
     const trimmed = nextName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
     if (!trimmed) {
       toast.error("Category name cannot be empty");
       return false;
     }
-    if (trimmed === currentName.trim()) {
+    if (trimmed === resolveLocalizedText(currentName, "en").trim()) {
       return true;
     }
 
+    const mergedName = mergeLocalizedText(currentName, "en", trimmed);
     const previousTree = tree;
-    setTree((prev) => renameCategoryInTree(prev, id, trimmed));
+    setTree((prev) => renameCategoryInTree(prev, id, mergedName));
 
     try {
-      await updateMenuCategory(id, { name: trimmed });
+      await updateMenuCategory(id, { name: mergedName });
       toast.success("✨ Section renamed successfully!");
       return true;
     } catch (err) {
@@ -793,17 +813,54 @@ export function MenuBuilder() {
     }
   }
 
+  async function handleTranslateMenu() {
+    if (translating || busy) return;
+
+    setTranslating(true);
+    setError(null);
+    try {
+      const updated = await translateMenuTreeToLanguage(tree, "es");
+      setTree(updated);
+      toast.success("✨ Menu translated to Spanish");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   if (loading) {
     return <MenuBuilderSkeleton />;
   }
 
   return (
     <div className="air-page">
-      <div>
-        <h1 className="air-page-title">Menu Builder</h1>
-        <p className="air-page-subtitle">
-          Sections → Categories → Dishes. Tab to price, Enter to save.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="air-page-title">Menu Builder</h1>
+          <p className="air-page-subtitle">
+            Sections → Categories → Dishes. Tab to price, Enter to save.
+          </p>
+        </div>
+        {tree.sections.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => void handleTranslateMenu()}
+            disabled={busy || translating}
+          >
+            {translating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            Translate Menu to Spanish
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -861,7 +918,7 @@ export function MenuBuilder() {
                 .filter((section): section is MenuBuilderSection => Boolean(section?.id))
                 .map((section) => ({
                   id: section.id,
-                  label: `${section.name ?? "Section"} (${section.categories?.length ?? 0})`,
+                  label: `${resolveLocalizedText(section.name, "en") || "Section"} (${section.categories?.length ?? 0})`,
                 }))}
               active={activeSection?.id ?? tree.sections?.[0]?.id ?? ""}
               onChange={(sectionId) => {
@@ -1003,7 +1060,7 @@ export function MenuBuilder() {
         saving={busy}
         uploadingImage={uploadingImage}
         restaurantName={currentRestaurant?.name ?? ""}
-        categoryName={selectedCategory?.name ?? ""}
+        categoryName={resolveLocalizedText(selectedCategory?.name, "en")}
         onClose={() => setSelectedDish(null)}
         onSave={handleSaveDishDetail}
         onImageUpload={handleImageUpload}
@@ -1056,11 +1113,11 @@ function CategoryBlock({
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
-  const [noteDraft, setNoteDraft] = useState(category.description ?? "");
+  const [noteDraft, setNoteDraft] = useState(resolveLocalizedText(category.description, "en"));
 
   useEffect(() => {
-    setNoteDraft(category.description ?? "");
-  }, [category.id]);
+    setNoteDraft(resolveLocalizedText(category.description, "en"));
+  }, [category.id, category.description]);
 
   async function handleQuickAdd() {
     await onRapidAdd();
@@ -1109,7 +1166,7 @@ function CategoryBlock({
             className="text-slate-500 hover:text-slate-700"
             onClick={onDuplicateCategory}
             disabled={busy || duplicating}
-            aria-label={`Duplicate ${category.name}`}
+            aria-label={`Duplicate ${resolveLocalizedText(category.name, "en")}`}
           >
             {duplicating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1135,7 +1192,7 @@ function CategoryBlock({
           onChange={(e) => setNoteDraft(e.target.value)}
           onBlur={() => {
             const trimmed = noteDraft.trim();
-            const saved = (category.description ?? "").trim();
+            const saved = resolveLocalizedText(category.description, "en").trim();
             if (trimmed !== saved) {
               void onNoteChange(trimmed);
             }
@@ -1176,13 +1233,17 @@ function CategoryBlock({
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="truncate font-medium text-slate-900">{dish?.name ?? "Untitled dish"}</p>
+                <p className="truncate font-medium text-slate-900">
+                  {resolveLocalizedText(dish?.name, "en") || "Untitled dish"}
+                </p>
                 {dish?.is_available === false && (
                   <span className="air-badge shrink-0">Hidden</span>
                 )}
               </div>
               {dish?.description ? (
-                <p className="truncate text-xs text-[#86868B]">{dish.description}</p>
+                <p className="truncate text-xs text-[#86868B]">
+                  {resolveLocalizedText(dish.description, "en")}
+                </p>
               ) : (
                 <p className="text-xs text-[#86868B]">Tap to add photo, description, and tags</p>
               )}
@@ -1195,7 +1256,7 @@ function CategoryBlock({
                 if (dish) onDuplicateDish(dish);
               }}
               disabled={busy || !dish}
-              aria-label={`Duplicate ${dish?.name ?? "dish"}`}
+              aria-label={`Duplicate ${resolveLocalizedText(dish?.name, "en") || "dish"}`}
               className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-slate-600 group-hover:opacity-100 disabled:opacity-40"
             >
               <Copy className="h-4 w-4" />

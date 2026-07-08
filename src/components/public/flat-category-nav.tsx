@@ -4,6 +4,7 @@ import { contrastingTextColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
 import type { PublicMenuSubcategory } from "@/lib/menu-hierarchy";
+import { resolveLocalizedText } from "@/lib/localized-text";
 
 interface FlatCategoryNavProps {
   categories: PublicMenuSubcategory[];
@@ -18,6 +19,7 @@ interface FlatCategoryNavProps {
   categoryFontWeight?: number;
   categoryFontStyle?: "normal" | "italic";
   activeCategoryId: string;
+  lang?: string;
   onCategoryChange: (categoryId: string) => void;
 }
 
@@ -34,6 +36,7 @@ export function FlatCategoryNav({
   categoryFontWeight,
   categoryFontStyle,
   activeCategoryId,
+  lang = "en",
   onCategoryChange,
 }: FlatCategoryNavProps) {
   const isPreview = usePreviewCanvas();
@@ -82,7 +85,7 @@ export function FlatCategoryNav({
                   }
             }
           >
-            {category.name}
+            {resolveLocalizedText(category.name, lang)}
           </button>
         );
       })}

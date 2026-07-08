@@ -4,12 +4,17 @@ import type {
   MenuBuilderSection,
   MenuBuilderTree,
 } from "./menu-builder-types";
+import type { LocalizedTextValue } from "./localized-text";
 import {
   normalizeDishDisplayOrder,
   sortDishesByDisplayOrder,
 } from "./menu-dish-order";
 
-export function renameCategoryInTree(tree: MenuBuilderTree, id: string, name: string): MenuBuilderTree {
+export function renameCategoryInTree(
+  tree: MenuBuilderTree,
+  id: string,
+  name: LocalizedTextValue
+): MenuBuilderTree {
   return {
     sections: tree.sections.map((section) =>
       section.id === id
@@ -220,8 +225,8 @@ export function findCategory(
 
 export function recordsToCategory(category: {
   id: string;
-  name: string;
-  description: string | null;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue | null;
   layout_type: string;
   order_index: number;
   parent_id: string | null;
@@ -240,8 +245,8 @@ export function recordsToCategory(category: {
 
 export function recordsToSection(category: {
   id: string;
-  name: string;
-  description: string | null;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue | null;
   order_index: number;
 }): MenuBuilderSection {
   return {

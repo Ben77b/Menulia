@@ -9,9 +9,10 @@ import type { RestaurantLink } from "@/lib/restaurant-links";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
 import { MenuLanguageSelector } from "./menu-language-selector";
+import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 
 interface MenuHeaderProps {
-  restaurantName: string;
+  restaurantName: LocalizedTextValue;
   logo: string | null;
   headerBackgroundColor: string;
   headerTextColor?: string;
@@ -19,8 +20,8 @@ interface MenuHeaderProps {
   titleFontWeight?: number;
   titleFontStyle?: "normal" | "italic";
   links: RestaurantLink[];
-  locale: PublicMenuLocale;
-  onLocaleChange: (locale: PublicMenuLocale) => void;
+  lang: PublicMenuLocale;
+  onLangChange: (lang: PublicMenuLocale) => void;
 }
 
 export function MenuHeader({
@@ -32,8 +33,8 @@ export function MenuHeader({
   titleFontWeight,
   titleFontStyle,
   links,
-  locale,
-  onLocaleChange,
+  lang,
+  onLangChange,
 }: MenuHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isPreview = usePreviewCanvas();
@@ -41,6 +42,7 @@ export function MenuHeader({
     ? headerTextColor ?? pv("headerText")
     : headerTextColor ?? contrastingTextColor(headerBackgroundColor);
   const hasLinks = links.length > 0;
+  const localizedRestaurantName = resolveLocalizedText(restaurantName, lang);
 
   return (
     <>
@@ -83,12 +85,12 @@ export function MenuHeader({
                     }
               }
             >
-              {restaurantName}
+              {localizedRestaurantName}
             </h1>
             {logo ? (
               <RestaurantLogo
                 src={logo}
-                alt={`${restaurantName} logo`}
+                alt={`${localizedRestaurantName} logo`}
                 wrapperClassName="h-16 w-40 sm:h-20 sm:w-48"
                 className="h-full w-full"
               />
@@ -97,8 +99,8 @@ export function MenuHeader({
 
           <div className="flex justify-end">
             <MenuLanguageSelector
-              locale={locale}
-              onLocaleChange={onLocaleChange}
+              lang={lang}
+              onLangChange={onLangChange}
               headerBackgroundColor={headerBackgroundColor}
             />
           </div>
@@ -124,7 +126,7 @@ export function MenuHeader({
               style={{ borderColor: textColor, color: textColor }}
             >
               <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: textColor }}>
-                {menuUiString(locale, "links")}
+                {menuUiString(lang, "links")}
               </p>
               <button
                 type="button"

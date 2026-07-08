@@ -6,10 +6,12 @@ import { contrastingTextColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
+import type { PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { DishCard, type PublicMenuDish } from "./dish-card";
 
 interface DishCarouselProps {
   dishes: PublicMenuDish[];
+  lang: PublicMenuLocale;
   restaurantName: string;
   accentColor: string;
   arrowIconColor?: string;
@@ -57,6 +59,7 @@ function CarouselCardFrame({
 
 export function DishCarousel({
   dishes,
+  lang,
   restaurantName,
   accentColor,
   arrowIconColor,
@@ -145,6 +148,7 @@ export function DishCarousel({
           <CarouselCardFrame isActive>
             <DishCard
               dish={dishes[0]}
+              lang={lang}
               restaurantName={restaurantName}
               titleFont={titleFont}
               bodyFont={bodyFont}
@@ -179,6 +183,7 @@ export function DishCarousel({
                 <CarouselCardFrame isActive={isActive}>
                   <DishCard
                     dish={slot.dish}
+                    lang={lang}
                     restaurantName={restaurantName}
                     titleFont={titleFont}
                     bodyFont={bodyFont}

@@ -4,11 +4,12 @@ import Image from "next/image";
 import { formatPrice } from "@/lib/utils";
 import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
+import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 
 export interface PublicMenuDish {
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedTextValue;
+  description: LocalizedTextValue;
   price: number;
   /** If true, do not display price on the public menu */
   hide_price: boolean;
@@ -21,6 +22,7 @@ export interface PublicMenuDish {
 
 interface DishCardProps {
   dish: PublicMenuDish;
+  lang?: string;
   restaurantName: string;
   titleFont: string;
   bodyFont: string;
@@ -80,6 +82,7 @@ function TagBadge({
 
 export function DishCard({
   dish,
+  lang = "en",
   restaurantName,
   titleFont,
   bodyFont,
@@ -102,7 +105,9 @@ export function DishCard({
   const resolvedDescription = descriptionColor ?? textColor;
   const resolvedPrice = priceColor ?? textColor;
 
-  const imageAlt = `${dish.name} at ${restaurantName}`;
+  const localizedName = resolveLocalizedText(dish.name, lang);
+  const localizedDescription = resolveLocalizedText(dish.description, lang);
+  const imageAlt = `${localizedName} at ${restaurantName}`;
 
   const imageBlock =
     showImage && dish.image ? (
@@ -129,9 +134,9 @@ export function DishCard({
           fontStyle: titleFontStyle ?? "normal",
         }}
       >
-        {dish.name}
+        {localizedName}
       </h3>
-      {display.showDescriptions && dish.description && (
+      {display.showDescriptions && localizedDescription && (
         <p
           className={`leading-relaxed ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
           style={{
@@ -141,7 +146,7 @@ export function DishCard({
             fontStyle: bodyFontStyle ?? "normal",
           }}
         >
-          {dish.description}
+          {localizedDescription}
         </p>
       )}
       {display.showDietary && (dish.tags ?? []).length > 0 && (

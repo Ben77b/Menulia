@@ -1,5 +1,8 @@
+import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
+
 interface CategorySectionHeaderProps {
-  note?: string | null;
+  note?: LocalizedTextValue;
+  lang?: string;
   bodyFont: string;
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
@@ -8,12 +11,13 @@ interface CategorySectionHeaderProps {
 
 export function CategorySectionHeader({
   note,
+  lang = "en",
   bodyFont,
   bodyFontWeight,
   bodyFontStyle,
   noteColor,
 }: CategorySectionHeaderProps) {
-  const trimmedNote = note?.trim();
+  const trimmedNote = resolveLocalizedText(note, lang).trim();
   if (!trimmedNote) return null;
 
   return (
