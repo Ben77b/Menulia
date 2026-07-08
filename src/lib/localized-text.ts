@@ -87,12 +87,20 @@ export function collectTextForTranslation(
   if (typeof value === "string") return value.trim();
   if (!isLocalizedTextRecord(value)) return "";
 
+  if (normalizeText(value[targetLang]).trim()) {
+    return "";
+  }
+
+  const counterpart = targetLang === "en" ? "es" : "en";
+  if (normalizeText(value[counterpart]).trim()) {
+    return value[counterpart].trim();
+  }
+
   for (const [lang, text] of Object.entries(value)) {
     if (lang !== targetLang && text.trim()) {
       return text.trim();
     }
   }
 
-  const fallback = Object.values(value).find((text) => text.trim());
-  return fallback?.trim() ?? "";
+  return "";
 }

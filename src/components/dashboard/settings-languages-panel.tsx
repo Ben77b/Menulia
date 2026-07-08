@@ -45,10 +45,11 @@ export function SettingsLanguagesPanel({ restaurantId }: SettingsLanguagesPanelP
     setTranslating(true);
     try {
       const records = await fetchMenuCategories(restaurantId);
-      const tree = flatRecordsToMenuTree(records);
+      let tree = flatRecordsToMenuTree(records);
+      const orderedTargets = [...targets].sort();
 
-      for (const targetLang of targets) {
-        await translateMenuTreeToLanguage(tree, targetLang);
+      for (const targetLang of orderedTargets) {
+        tree = await translateMenuTreeToLanguage(tree, targetLang);
       }
 
       toast.success("✨ Menu translated successfully");
@@ -68,8 +69,8 @@ export function SettingsLanguagesPanel({ restaurantId }: SettingsLanguagesPanelP
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Menu Languages</h2>
           <p className="mt-1 text-sm text-gray-600">
-            DeepL detects the language of each dish and category automatically, then generates
-            guest-facing translations for the languages you select below.
+            DeepL detects the language of each item automatically. Select only the languages you
+            want to add — skip the one your menu is already written in.
           </p>
         </div>
       </div>

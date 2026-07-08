@@ -185,25 +185,49 @@ export async function translateMenuTreeToLanguage(
 
   items.forEach((item, index) => {
     const translated = translations[index]?.trim() ?? "";
-    if (!translated) return;
-
     const detectedBase = deeplCodeToMenuLanguage(detectedSourceLanguages[index]);
-    if (detectedBase === targetLang) return;
+    const sourceText = item.text.trim();
 
-    if (item.entityType === "category") {
-      const current = getCategoryFieldValue(tree, item.entityId, item.field);
-      const merged = mergeLocalizedText(current, targetLang, translated, detectedBase);
+    const applyCategoryPatch = (merged: LocalizedTextRecord) => {
       const patch = categoryPatches.get(item.entityId) ?? {};
       patch[item.field] = merged;
       categoryPatches.set(item.entityId, patch);
+    };
+
+    const applyDishPatch = (merged: LocalizedTextRecord) => {
+      const patch = dishPatches.get(item.entityId) ?? {};
+      patch[item.field] = merged;
+      dishPatches.set(item.entityId, patch);
+    };
+
+    if (item.entityType === "category") {
+      const current = getCategoryFieldValue(tree, item.entityId, item.field);
+
+      if (detectedBase === targetLang) {
+        if (sourceText) {
+          applyCategoryPatch(mergeLocalizedText(current, detectedBase, sourceText, detectedBase));
+        }
+        return;
+      }
+
+      if (!translated) return;
+
+      applyCategoryPatch(mergeLocalizedText(current, targetLang, translated, detectedBase));
       return;
     }
 
     const current = getDishFieldValue(tree, item.entityId, item.field);
-    const merged = mergeLocalizedText(current, targetLang, translated, detectedBase);
-    const patch = dishPatches.get(item.entityId) ?? {};
-    patch[item.field] = merged;
-    dishPatches.set(item.entityId, patch);
+
+    if (detectedBase === targetLang) {
+      if (sourceText) {
+        applyDishPatch(mergeLocalizedText(current, detectedBase, sourceText, detectedBase));
+      }
+      return;
+    }
+
+    if (!translated) return;
+
+    applyDishPatch(mergeLocalizedText(current, targetLang, translated, detectedBase));
   });
 
   await Promise.all([
