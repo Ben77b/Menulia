@@ -473,7 +473,10 @@ function SettingsPageContent() {
           )}
 
           {activeTab === "languages" && (
-            <SettingsLanguagesPanel restaurantId={activeRestaurant.id} />
+            <SettingsLanguagesPanel
+              restaurantId={activeRestaurant.id}
+              restaurantName={activeRestaurant.name}
+            />
           )}
 
           {activeTab === "danger" && (

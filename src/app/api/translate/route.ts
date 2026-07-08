@@ -12,6 +12,7 @@ const requestSchema = z.object({
   texts: z.array(z.string()).min(1).max(500),
   source_lang: z.string().optional(),
   target_lang: z.string().min(2).max(5),
+  tag_handling: z.enum(["html", "xml"]).optional(),
 });
 
 async function createAuthenticatedSupabase() {
@@ -45,16 +46,22 @@ async function translateBatch(
   apiKey: string,
   texts: string[],
   sourceLang: string | undefined,
-  targetLang: string
+  targetLang: string,
+  tagHandling?: "html" | "xml"
 ): Promise<Array<{ text: string; detectedSourceLanguage?: string }>> {
   const endpoint = getDeepLEndpoint(apiKey);
   const body = new URLSearchParams();
   texts.forEach((text) => body.append("text", text));
   body.set("target_lang", targetLang.toUpperCase());
+  body.set("preserve_formatting", "1");
 
   const normalizedSource = sourceLang?.trim().toLowerCase();
   if (normalizedSource && normalizedSource !== "auto") {
     body.set("source_lang", normalizedSource.toUpperCase());
+  }
+
+  if (tagHandling) {
+    body.set("tag_handling", tagHandling);
   }
 
   const response = await fetch(endpoint, {
@@ -113,13 +120,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid translation request." }, { status: 400 });
     }
 
-    const { texts, source_lang, target_lang } = parsed.data;
+    const { texts, source_lang, target_lang, tag_handling } = parsed.data;
     const translations: string[] = [];
     const detectedSourceLanguages: string[] = [];
 
     for (let index = 0; index < texts.length; index += DEEPL_BATCH_SIZE) {
       const chunk = texts.slice(index, index + DEEPL_BATCH_SIZE);
-      const chunkTranslations = await translateBatch(apiKey, chunk, source_lang, target_lang);
+      const chunkTranslations = await translateBatch(
+        apiKey,
+        chunk,
+        source_lang,
+        target_lang,
+        tag_handling
+      );
       translations.push(...chunkTranslations.map((entry) => entry.text));
       detectedSourceLanguages.push(
         ...chunkTranslations.map((entry) => entry.detectedSourceLanguage ?? "")

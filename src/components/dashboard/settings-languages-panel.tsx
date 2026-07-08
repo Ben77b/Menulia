@@ -12,9 +12,13 @@ import { cn } from "@/lib/utils";
 
 interface SettingsLanguagesPanelProps {
   restaurantId: string;
+  restaurantName: string;
 }
 
-export function SettingsLanguagesPanel({ restaurantId }: SettingsLanguagesPanelProps) {
+export function SettingsLanguagesPanel({
+  restaurantId,
+  restaurantName,
+}: SettingsLanguagesPanelProps) {
   const toast = useToast();
   const [translating, setTranslating] = useState(false);
   const [targetLanguages, setTargetLanguages] = useState<Set<MenuContentLanguage>>(
@@ -49,7 +53,7 @@ export function SettingsLanguagesPanel({ restaurantId }: SettingsLanguagesPanelP
       const orderedTargets = [...targets].sort();
 
       for (const targetLang of orderedTargets) {
-        tree = await translateMenuTreeToLanguage(tree, targetLang);
+        tree = await translateMenuTreeToLanguage(tree, targetLang, { restaurantName });
       }
 
       toast.success("✨ Menu translated successfully");

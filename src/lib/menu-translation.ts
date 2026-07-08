@@ -7,10 +7,13 @@ import {
   getMenuContentLanguageMeta,
 } from "./menu-content-languages";
 import {
+  applyTranslationBrandProtection,
   collectTextForTranslation,
   mergeLocalizedText,
+  stripTranslationBrandProtection,
   type LocalizedTextRecord,
   type LocalizedTextValue,
+  type TranslationBrandProtectionOptions,
 } from "./localized-text";
 
 export type MenuTranslationField = "name" | "description";
@@ -139,6 +142,7 @@ async function callTranslateApi(
       texts,
       source_lang: "auto",
       target_lang: getMenuContentLanguageMeta(targetLang).deeplCode,
+      tag_handling: "html",
     }),
   });
 
@@ -164,13 +168,18 @@ async function callTranslateApi(
 
 export async function translateMenuTreeToLanguage(
   tree: MenuBuilderTree,
-  targetLang: MenuContentLanguage
+  targetLang: MenuContentLanguage,
+  brandProtection: TranslationBrandProtectionOptions = {}
 ): Promise<MenuBuilderTree> {
   const items = collectMenuTranslationItems(tree, targetLang);
   if (items.length === 0) return tree;
 
+  const protectedTexts = items.map((item) =>
+    applyTranslationBrandProtection(item.text, brandProtection)
+  );
+
   const { translations, detectedSourceLanguages } = await callTranslateApi(
-    items.map((item) => item.text),
+    protectedTexts,
     targetLang
   );
 
@@ -184,7 +193,7 @@ export async function translateMenuTreeToLanguage(
   >();
 
   items.forEach((item, index) => {
-    const translated = translations[index]?.trim() ?? "";
+    const translated = stripTranslationBrandProtection(translations[index]?.trim() ?? "");
     const detectedBase = deeplCodeToMenuLanguage(detectedSourceLanguages[index]);
     const sourceText = item.text.trim();
 

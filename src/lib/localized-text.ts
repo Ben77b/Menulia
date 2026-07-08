@@ -104,3 +104,146 @@ export function collectTextForTranslation(
 
   return "";
 }
+
+const TRANSLATE_NO_OPEN = '<span translate="no">';
+const TRANSLATE_NO_CLOSE = "</span>";
+
+/** Well-known brand names that should never be auto-translated. */
+export const GLOBAL_PROTECTED_BRANDS = [
+  "Coca-Cola",
+  "Coca Cola",
+  "Pepsi",
+  "Heineken",
+  "Corona",
+  "Red Bull",
+  "Nutella",
+  "Oreo",
+  "Fanta",
+  "Sprite",
+  "Schweppes",
+  "Evian",
+  "San Pellegrino",
+  "Perrier",
+];
+
+export interface TranslationBrandProtectionOptions {
+  restaurantName?: string;
+  additionalBrands?: string[];
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isInsideTranslateNoSpan(text: string, index: number): boolean {
+  const before = text.slice(0, index);
+  const openCount = (before.match(/<span[^>]*translate=["']no["'][^>]*>/gi) ?? []).length;
+  const closeCount = (before.match(/<\/span>/gi) ?? []).length;
+  return openCount > closeCount;
+}
+
+function wrapTranslateNo(inner: string): string {
+  return `${TRANSLATE_NO_OPEN}${inner}${TRANSLATE_NO_CLOSE}`;
+}
+
+function replaceOutsideTranslateNoSpans(
+  text: string,
+  regex: RegExp,
+  wrapMatch: (match: string) => string
+): string {
+  const flags = regex.flags.includes("g") ? regex.flags : `${regex.flags}g`;
+  const matcher = new RegExp(regex.source, flags);
+  let output = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = matcher.exec(text)) !== null) {
+    const start = match.index;
+    const matched = match[0];
+    const end = start + matched.length;
+
+    output += text.slice(lastIndex, start);
+    output += isInsideTranslateNoSpan(text, start) ? matched : wrapMatch(matched);
+    lastIndex = end;
+  }
+
+  output += text.slice(lastIndex);
+  return output;
+}
+
+function wrapQuotedAndBracketedSegments(text: string): string {
+  let result = text;
+
+  result = result.replace(/"([^"]+)"/g, (full, inner: string) => {
+    if (!inner.trim()) return full;
+    return `"${wrapTranslateNo(inner)}"`;
+  });
+
+  result = result.replace(/'([^']+)'/g, (full, inner: string) => {
+    if (!inner.trim()) return full;
+    return `'${wrapTranslateNo(inner)}'`;
+  });
+
+  result = result.replace(/\[([^\]]+)\]/g, (full, inner: string) => {
+    if (!inner.trim()) return full;
+    return `[${wrapTranslateNo(inner)}]`;
+  });
+
+  return result;
+}
+
+function collectProtectedTerms(options: TranslationBrandProtectionOptions): string[] {
+  const terms = new Set<string>();
+
+  for (const brand of GLOBAL_PROTECTED_BRANDS) {
+    terms.add(brand.trim());
+  }
+
+  for (const brand of options.additionalBrands ?? []) {
+    if (brand.trim()) terms.add(brand.trim());
+  }
+
+  if (options.restaurantName?.trim()) {
+    terms.add(options.restaurantName.trim());
+  }
+
+  return [...terms].sort((a, b) => b.length - a.length);
+}
+
+/** Wrap quoted segments and brand names so DeepL preserves them via tag_handling=html. */
+export function applyTranslationBrandProtection(
+  text: string,
+  options: TranslationBrandProtectionOptions = {}
+): string {
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+
+  let protectedText = wrapQuotedAndBracketedSegments(trimmed);
+  const terms = collectProtectedTerms(options);
+
+  for (const term of terms) {
+    if (term.length < 2) continue;
+    const regex = new RegExp(escapeRegExp(term), "gi");
+    protectedText = replaceOutsideTranslateNoSpans(protectedText, regex, wrapTranslateNo);
+  }
+
+  return protectedText;
+}
+
+/** Remove DeepL preservation spans while keeping the original protected text inside. */
+export function stripTranslationBrandProtection(text: string): string {
+  if (!text.includes("translate=")) return text;
+
+  let cleaned = text;
+  let previous = "";
+
+  while (cleaned !== previous) {
+    previous = cleaned;
+    cleaned = cleaned.replace(
+      /<span[^>]*translate=["']no["'][^>]*>([\s\S]*?)<\/span>/gi,
+      "$1"
+    );
+  }
+
+  return cleaned.replace(/<span[^>]*translate=["']no["'][^>]*\/>/gi, "");
+}
