@@ -416,10 +416,7 @@ function SettingsPageContent() {
               <div className="flex flex-col gap-8">
                 <div className="air-card air-card-pad">
                   <div className="mb-4 flex items-center gap-3">
-                    <span className="text-base">🔗</span>
-                    <h3 className="text-base font-semibold text-slate-900">
-                      Share & Embed Menu
-                    </h3>
+                    <h3 className="text-base font-semibold text-slate-900">🔗 Share & Embed Menu</h3>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
