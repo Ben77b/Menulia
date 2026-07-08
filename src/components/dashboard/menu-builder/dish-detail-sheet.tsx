@@ -22,6 +22,8 @@ export interface DishDetailDraft {
   price: string;
   /** When enabled, this dish will be rendered without a price on the public menu */
   hide_price: boolean;
+  /** When enabled, DeepL will not translate the dish title */
+  lock_title_translation: boolean;
   image_url: string | null;
   filterableTags: string[];
   allergens: string[];
@@ -60,6 +62,7 @@ export function DishDetailSheet({
     description: "",
     price: "",
     hide_price: false,
+    lock_title_translation: false,
     image_url: null,
     filterableTags: [],
     allergens: [],
@@ -84,6 +87,7 @@ export function DishDetailSheet({
       description: resolveLocalizedText(dish.description, "en"),
       price: String(dish.price),
       hide_price: Boolean(dish.hide_price),
+      lock_title_translation: Boolean(dish.lock_title_translation),
       image_url: dish.image_url,
       filterableTags: normalized.tags,
       allergens: normalized.allergens,
@@ -278,6 +282,15 @@ export function DishDetailSheet({
             description="Show the dish name and description, but omit its price."
             checked={draft.hide_price}
             onChange={(checked) => setDraft((prev) => ({ ...prev, hide_price: checked }))}
+          />
+
+          <ToggleSwitch
+            label="Do not translate title"
+            description="Protects unique dish names from changing. Description will still be translated."
+            checked={draft.lock_title_translation}
+            onChange={(checked) =>
+              setDraft((prev) => ({ ...prev, lock_title_translation: checked }))
+            }
           />
 
           <div>

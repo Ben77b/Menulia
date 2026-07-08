@@ -146,6 +146,13 @@ function wrapTranslateNo(inner: string): string {
   return `${TRANSLATE_NO_OPEN}${inner}${TRANSLATE_NO_CLOSE}`;
 }
 
+/** Wrap an entire string so DeepL leaves it unchanged during translation. */
+export function wrapTextAsNonTranslatable(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+  return wrapTranslateNo(trimmed);
+}
+
 function replaceOutsideTranslateNoSpans(
   text: string,
   regex: RegExp,

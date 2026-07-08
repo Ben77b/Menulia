@@ -37,6 +37,12 @@ async function insertDishRow(
       continue;
     }
 
+    if ("lock_title_translation" in current) {
+      const { lock_title_translation: _ignored, ...withoutLockTitle } = current;
+      current = withoutLockTitle;
+      continue;
+    }
+
     if ("display_order" in current) {
       const { display_order: _ignored, ...withoutOrder } = current;
       current = withoutOrder;
@@ -58,6 +64,7 @@ async function updateDishRow(
   let result = await supabase.from("dishes").update(payload).eq("id", dishId);
   if (result.error && isMissingColumnError(result.error)) {
     const hasHidePrice = "hide_price" in payload;
+    const hasLockTitleTranslation = "lock_title_translation" in payload;
     const hasAvailability = "is_available" in payload;
 
     // Retry without `hide_price` first to preserve `is_available` updates.
@@ -72,6 +79,26 @@ async function updateDishRow(
       // If we still get a missing-column error, drop `is_available` as well.
       if (hasAvailability && isMissingColumnError(result.error)) {
         const { is_available: _ignored2, ...withoutAvailability } = withoutHidePrice;
+        result = await supabase
+          .from("dishes")
+          .update(withoutAvailability)
+          .eq("id", dishId);
+        return { error: result.error, availabilityPersisted: false };
+      }
+
+      return { error: result.error, availabilityPersisted: false };
+    }
+
+    if (hasLockTitleTranslation) {
+      const { lock_title_translation: _ignored, ...withoutLockTitle } = payload;
+      result = await supabase.from("dishes").update(withoutLockTitle).eq("id", dishId);
+
+      if (!result.error) {
+        return { error: result.error, availabilityPersisted: !result.error && hasAvailability };
+      }
+
+      if (hasAvailability && isMissingColumnError(result.error)) {
+        const { is_available: _ignored2, ...withoutAvailability } = withoutLockTitle;
         result = await supabase
           .from("dishes")
           .update(withoutAvailability)
@@ -116,6 +143,8 @@ export interface MenuDishRecord {
   is_available: boolean;
   /** If true, omit the dish price from the public menu */
   hide_price: boolean;
+  /** If true, skip translating the dish title during DeepL menu translation */
+  lock_title_translation: boolean;
   display_order: number;
 }
 
@@ -131,6 +160,7 @@ function mapDishRecord(dish: Record<string, unknown>): MenuDishRecord {
     allergens: normalized.allergens,
     is_available: readIsAvailable(dish),
     hide_price: Boolean(dish.hide_price),
+    lock_title_translation: Boolean(dish.lock_title_translation),
     display_order: Number(dish.display_order ?? 0),
   };
 }
@@ -377,7 +407,8 @@ export async function updateMenuDish(
   tags: string[] = [],
   allergens: string[] = [],
   isAvailable = true,
-  hidePrice: boolean = false
+  hidePrice: boolean = false,
+  lockTitleTranslation: boolean = false
 ): Promise<void> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
 
@@ -389,6 +420,7 @@ export async function updateMenuDish(
     tags: tagsForDb,
     is_available: isAvailable,
     hide_price: hidePrice,
+    lock_title_translation: lockTitleTranslation,
   });
 
   if (error) {
@@ -463,6 +495,7 @@ async function cloneDishToCategory(
     tags: tagsForDb,
     is_available: readIsAvailable(source),
     hide_price: Boolean(source.hide_price),
+    lock_title_translation: Boolean(source.lock_title_translation),
     display_order: Number(source.display_order ?? 0),
   });
 
@@ -497,6 +530,9 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     tags: tagsForDb,
     is_available: readIsAvailable(source as Record<string, unknown>),
     hide_price: Boolean((source as Record<string, unknown>).hide_price),
+    lock_title_translation: Boolean(
+      (source as Record<string, unknown>).lock_title_translation
+    ),
     display_order: displayOrder,
   });
 
@@ -550,6 +586,7 @@ export async function duplicateMenuCategory(
             tags: serializeDishTagsForDb(dish.tags, dish.allergens),
             is_available: dish.is_available,
             hide_price: dish.hide_price,
+            lock_title_translation: dish.lock_title_translation,
             display_order: dish.display_order,
           },
           created.id

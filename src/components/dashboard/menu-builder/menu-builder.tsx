@@ -525,6 +525,7 @@ export function MenuBuilder() {
       allergens: draft.allergens,
       is_available: draft.is_available,
       hide_price: draft.hide_price,
+      lock_title_translation: draft.lock_title_translation,
     };
 
     setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, optimisticDish));
@@ -540,7 +541,8 @@ export function MenuBuilder() {
         draft.filterableTags,
         draft.allergens,
         draft.is_available,
-        draft.hide_price
+        draft.hide_price,
+        draft.lock_title_translation
       );
       toast.success("✨ Dish updated successfully");
     } catch (err) {

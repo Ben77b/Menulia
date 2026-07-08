@@ -11,6 +11,7 @@ import {
   collectTextForTranslation,
   mergeLocalizedText,
   stripTranslationBrandProtection,
+  wrapTextAsNonTranslatable,
   type LocalizedTextRecord,
   type LocalizedTextValue,
   type TranslationBrandProtectionOptions,
@@ -25,6 +26,7 @@ export interface MenuTranslationItem {
   entityId: string;
   field: MenuTranslationField;
   text: string;
+  lockTitleTranslation?: boolean;
 }
 
 function pushTranslationItem(
@@ -33,7 +35,8 @@ function pushTranslationItem(
   entityId: string,
   field: MenuTranslationField,
   value: LocalizedTextValue,
-  targetLang: MenuContentLanguage
+  targetLang: MenuContentLanguage,
+  options?: { lockTitleTranslation?: boolean }
 ) {
   const text = collectTextForTranslation(value, targetLang);
   if (!text) return;
@@ -44,7 +47,19 @@ function pushTranslationItem(
     entityId,
     field,
     text,
+    lockTitleTranslation: options?.lockTitleTranslation,
   });
+}
+
+function pushDishTranslationItems(
+  items: MenuTranslationItem[],
+  dish: MenuBuilderDish,
+  targetLang: MenuContentLanguage
+) {
+  pushTranslationItem(items, "dish", dish.id, "name", dish.name, targetLang, {
+    lockTitleTranslation: dish.lock_title_translation,
+  });
+  pushTranslationItem(items, "dish", dish.id, "description", dish.description, targetLang);
 }
 
 export function collectMenuTranslationItems(
@@ -66,8 +81,7 @@ export function collectMenuTranslationItems(
       }
 
       for (const dish of category.dishes) {
-        pushTranslationItem(items, "dish", dish.id, "name", dish.name, targetLang);
-        pushTranslationItem(items, "dish", dish.id, "description", dish.description, targetLang);
+        pushDishTranslationItems(items, dish, targetLang);
       }
     }
   }
@@ -79,8 +93,7 @@ export function collectMenuTranslationItems(
     }
 
     for (const dish of category.dishes) {
-      pushTranslationItem(items, "dish", dish.id, "name", dish.name, targetLang);
-      pushTranslationItem(items, "dish", dish.id, "description", dish.description, targetLang);
+      pushDishTranslationItems(items, dish, targetLang);
     }
   }
 
@@ -174,9 +187,12 @@ export async function translateMenuTreeToLanguage(
   const items = collectMenuTranslationItems(tree, targetLang);
   if (items.length === 0) return tree;
 
-  const protectedTexts = items.map((item) =>
-    applyTranslationBrandProtection(item.text, brandProtection)
-  );
+  const protectedTexts = items.map((item) => {
+    if (item.lockTitleTranslation && item.field === "name") {
+      return wrapTextAsNonTranslatable(item.text);
+    }
+    return applyTranslationBrandProtection(item.text, brandProtection);
+  });
 
   const { translations, detectedSourceLanguages } = await callTranslateApi(
     protectedTexts,
@@ -256,7 +272,8 @@ export async function translateMenuTreeToLanguage(
         dish.tags,
         dish.allergens,
         dish.is_available,
-        dish.hide_price
+        dish.hide_price,
+        dish.lock_title_translation
       );
     }),
   ]);
