@@ -34,15 +34,42 @@ export function mergeLocalizedText(
   nextText: string,
   baseLang: string = "en"
 ): LocalizedTextRecord {
-  const existing = isLocalizedTextRecord(current)
-    ? current
-    : { [baseLang]: resolveLocalizedText(current, baseLang, baseLang) };
+  const existing: LocalizedTextRecord = isLocalizedTextRecord(current)
+    ? { ...current }
+    : typeof current === "string"
+      ? { [baseLang]: current }
+      : { [baseLang]: "" };
+
+  if (nextLang === baseLang) {
+    return { ...existing, [baseLang]: nextText };
+  }
+
+  const preservedBase =
+    normalizeText(existing[baseLang]) || (typeof current === "string" ? current : "");
 
   return {
     ...existing,
-    [baseLang]: normalizeText(existing[baseLang]) || resolveLocalizedText(current, baseLang, baseLang),
+    [baseLang]: preservedBase,
     [nextLang]: nextText,
   };
+}
+
+/** Menu Builder always edits the primary source locale — never guest-language fallbacks. */
+export const BUILDER_SOURCE_LANGUAGE = "en";
+
+export function resolveBuilderSourceText(value: LocalizedTextValue): string {
+  if (typeof value === "string") return value;
+  if (!isLocalizedTextRecord(value)) return "";
+  return normalizeText(value[BUILDER_SOURCE_LANGUAGE]);
+}
+
+export function resolveBuilderTranslationText(
+  value: LocalizedTextValue,
+  lang: string
+): string {
+  if (typeof value === "string") return "";
+  if (!isLocalizedTextRecord(value)) return "";
+  return normalizeText(value[lang]);
 }
 
 export function parseLocalizedFieldFromDb(value: unknown): LocalizedTextValue {
