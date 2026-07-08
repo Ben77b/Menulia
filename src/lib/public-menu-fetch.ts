@@ -37,29 +37,31 @@ export function buildFlatCategories(
   return leafRows.map((row) => rowToSubcategory(row, dishesByCategoryId));
 }
 
-const PUBLIC_DISH_COLUMNS = "id, name, description, price, image, tags";
-const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS}, is_available`;
+const PUBLIC_DISH_COLUMNS_BASE = "id, name, description, price, image, tags";
+const PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_BASE}, hide_price`;
+const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE}, is_available`;
+const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY_NO_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_BASE}, is_available`;
 
 async function fetchActiveDishesForCategory(
   supabase: ReturnType<typeof createAnonClient>,
   categoryId: string
 ): Promise<ReturnType<typeof mapDishRow>[]> {
+  // We include `hide_price` when available, but fall back safely if the column
+  // doesn't exist yet (e.g. during staged migrations).
+  const withOrderColumns = PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY;
+
   const { data: withOrder, error: orderError } = await supabase
     .from("dishes")
-    .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY)
+    .select(withOrderColumns)
     .eq("category_id", categoryId)
     .eq("is_available", true)
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (!orderError) {
-    return (withOrder ?? []).map(mapDishRow);
-  }
+  if (!orderError) return (withOrder ?? []).map(mapDishRow);
+  if (!isMissingColumnError(orderError)) return [];
 
-  if (!isMissingColumnError(orderError)) {
-    return [];
-  }
-
+  // Retry without `display_order` ordering.
   const { data: withAvailability, error: availabilityError } = await supabase
     .from("dishes")
     .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY)
@@ -67,24 +69,39 @@ async function fetchActiveDishesForCategory(
     .eq("is_available", true)
     .order("created_at", { ascending: true });
 
-  if (!availabilityError) {
-    return (withAvailability ?? []).map(mapDishRow);
-  }
+  if (!availabilityError) return (withAvailability ?? []).map(mapDishRow);
+  if (!isMissingColumnError(availabilityError)) return [];
 
-  if (!isMissingColumnError(availabilityError)) {
-    return [];
-  }
-
-  const { data: withoutAvailability, error: fallbackError } = await supabase
+  // Retry with `is_available` but without `hide_price`.
+  const { data: withAvailabilityNoHide, error: availabilityNoHideError } = await supabase
     .from("dishes")
-    .select(PUBLIC_DISH_COLUMNS)
+    .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY_NO_HIDE_PRICE)
+    .eq("category_id", categoryId)
+    .eq("is_available", true)
+    .order("created_at", { ascending: true });
+
+  if (!availabilityNoHideError) return (withAvailabilityNoHide ?? []).map(mapDishRow);
+  if (!isMissingColumnError(availabilityNoHideError)) return [];
+
+  // Retry without `is_available`, but keep `hide_price`.
+  const { data: withoutAvailabilityWithHide, error: fallbackWithHideError } = await supabase
+    .from("dishes")
+    .select(PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE)
     .eq("category_id", categoryId)
     .order("created_at", { ascending: true });
 
-  if (fallbackError) {
-    return [];
-  }
+  if (!fallbackWithHideError)
+    return (withoutAvailabilityWithHide ?? []).map(mapDishRow);
+  if (!isMissingColumnError(fallbackWithHideError)) return [];
 
+  // Final fallback: no `is_available` and no `hide_price`.
+  const { data: withoutAvailability, error: fallbackError } = await supabase
+    .from("dishes")
+    .select(PUBLIC_DISH_COLUMNS_BASE)
+    .eq("category_id", categoryId)
+    .order("created_at", { ascending: true });
+
+  if (fallbackError) return [];
   return (withoutAvailability ?? []).map(mapDishRow);
 }
 

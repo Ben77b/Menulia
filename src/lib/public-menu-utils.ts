@@ -8,6 +8,7 @@ export function sanitizePublicMenuDish(dish: PublicMenuDish): PublicMenuDish {
     name: dish.name ?? "",
     description: dish.description ?? "",
     price: typeof dish.price === "number" && !Number.isNaN(dish.price) ? dish.price : 0,
+    hide_price: Boolean(dish.hide_price),
     image: dish.image ?? null,
     tags: Array.isArray(dish.tags) ? dish.tags : [],
     allergens: Array.isArray(dish.allergens) ? dish.allergens : [],

@@ -30,6 +30,7 @@ export function mapDishRow(dish: {
   name: string;
   description?: string | null;
   price?: string | number | null;
+  hide_price?: boolean | null;
   image?: string | null;
   tags?: string[] | null;
   allergens?: string[] | null;
@@ -40,6 +41,7 @@ export function mapDishRow(dish: {
     name: dish.name,
     description: dish.description || "",
     price: typeof dish.price === "number" ? dish.price : parseFloat(String(dish.price)) || 0,
+    hide_price: typeof dish.hide_price === "boolean" ? dish.hide_price : false,
     image: dish.image ?? null,
     tags: normalized.tags,
     allergens: normalized.allergens,

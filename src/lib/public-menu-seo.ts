@@ -85,6 +85,7 @@ function menuItemJsonLd(dish: {
   name: string;
   description: string;
   price: number;
+  hide_price?: boolean;
   image: string | null;
 }) {
   const item: Record<string, unknown> = {
@@ -100,7 +101,7 @@ function menuItemJsonLd(dish: {
     item.image = dish.image;
   }
 
-  if (dish.price > 0) {
+  if (!dish.hide_price && dish.price > 0) {
     item.offers = {
       "@type": "Offer",
       price: dish.price.toFixed(2),

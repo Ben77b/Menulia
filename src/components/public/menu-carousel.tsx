@@ -13,6 +13,7 @@ interface CarouselItem {
   name: string;
   description: string;
   price: number;
+  hide_price?: boolean;
   image_url: string | null;
   allergens: string[];
   tags: string[];
@@ -118,7 +119,7 @@ export function MenuCarousel({ items, design }: MenuCarouselProps) {
                     className="mt-1 font-bold text-sm"
                     style={{ color: design.priceColor }}
                   >
-                    {formatPrice(item.price)}
+                    {!item.hide_price && formatPrice(item.price)}
                   </span>
                   {isActive && item.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap justify-center gap-1.5">

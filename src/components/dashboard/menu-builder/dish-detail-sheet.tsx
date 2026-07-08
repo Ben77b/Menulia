@@ -19,6 +19,8 @@ export interface DishDetailDraft {
   name: string;
   description: string;
   price: string;
+  /** When enabled, this dish will be rendered without a price on the public menu */
+  hide_price: boolean;
   image_url: string | null;
   filterableTags: string[];
   allergens: string[];
@@ -56,6 +58,7 @@ export function DishDetailSheet({
     name: "",
     description: "",
     price: "",
+    hide_price: false,
     image_url: null,
     filterableTags: [],
     allergens: [],
@@ -79,6 +82,7 @@ export function DishDetailSheet({
       name: dish.name,
       description: dish.description,
       price: String(dish.price),
+      hide_price: Boolean(dish.hide_price),
       image_url: dish.image_url,
       filterableTags: normalized.tags,
       allergens: normalized.allergens,
@@ -267,6 +271,13 @@ export function DishDetailSheet({
               className="air-input"
             />
           </div>
+
+          <ToggleSwitch
+            label="Hide price on public menu"
+            description="Show the dish name and description, but omit its price."
+            checked={draft.hide_price}
+            onChange={(checked) => setDraft((prev) => ({ ...prev, hide_price: checked }))}
+          />
 
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">

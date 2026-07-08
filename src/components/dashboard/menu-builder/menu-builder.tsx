@@ -489,6 +489,7 @@ export function MenuBuilder() {
         null,
         [],
         [],
+        false,
         { displayOrder }
       );
       setTree((prev) =>
@@ -521,6 +522,7 @@ export function MenuBuilder() {
       tags: draft.filterableTags,
       allergens: draft.allergens,
       is_available: draft.is_available,
+      hide_price: draft.hide_price,
     };
 
     setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, optimisticDish));
@@ -535,7 +537,8 @@ export function MenuBuilder() {
         draft.image_url,
         draft.filterableTags,
         draft.allergens,
-        draft.is_available
+        draft.is_available,
+        draft.hide_price
       );
       toast.success("✨ Dish updated successfully");
     } catch (err) {

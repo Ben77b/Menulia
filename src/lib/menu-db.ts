@@ -25,6 +25,12 @@ async function insertDishRow(
       continue;
     }
 
+    if ("hide_price" in current) {
+      const { hide_price: _ignored, ...withoutHidePrice } = current;
+      current = withoutHidePrice;
+      continue;
+    }
+
     if ("display_order" in current) {
       const { display_order: _ignored, ...withoutOrder } = current;
       current = withoutOrder;
@@ -44,10 +50,37 @@ async function updateDishRow(
   const supabase = getSupabaseBrowserClient();
 
   let result = await supabase.from("dishes").update(payload).eq("id", dishId);
-  if (result.error && isMissingColumnError(result.error) && "is_available" in payload) {
-    const { is_available: _ignored, ...withoutAvailability } = payload;
-    result = await supabase.from("dishes").update(withoutAvailability).eq("id", dishId);
-    return { error: result.error, availabilityPersisted: false };
+  if (result.error && isMissingColumnError(result.error)) {
+    const hasHidePrice = "hide_price" in payload;
+    const hasAvailability = "is_available" in payload;
+
+    // Retry without `hide_price` first to preserve `is_available` updates.
+    if (hasHidePrice) {
+      const { hide_price: _ignored, ...withoutHidePrice } = payload;
+      result = await supabase.from("dishes").update(withoutHidePrice).eq("id", dishId);
+
+      if (!result.error) {
+        return { error: result.error, availabilityPersisted: !result.error && hasAvailability };
+      }
+
+      // If we still get a missing-column error, drop `is_available` as well.
+      if (hasAvailability && isMissingColumnError(result.error)) {
+        const { is_available: _ignored2, ...withoutAvailability } = withoutHidePrice;
+        result = await supabase
+          .from("dishes")
+          .update(withoutAvailability)
+          .eq("id", dishId);
+        return { error: result.error, availabilityPersisted: false };
+      }
+
+      return { error: result.error, availabilityPersisted: false };
+    }
+
+    if (hasAvailability && isMissingColumnError(result.error)) {
+      const { is_available: _ignored, ...withoutAvailability } = payload;
+      result = await supabase.from("dishes").update(withoutAvailability).eq("id", dishId);
+      return { error: result.error, availabilityPersisted: false };
+    }
   }
 
   return {
@@ -75,6 +108,8 @@ export interface MenuDishRecord {
   tags: string[];
   allergens: string[];
   is_available: boolean;
+  /** If true, omit the dish price from the public menu */
+  hide_price: boolean;
   display_order: number;
 }
 
@@ -89,6 +124,7 @@ function mapDishRecord(dish: Record<string, unknown>): MenuDishRecord {
     tags: normalized.tags,
     allergens: normalized.allergens,
     is_available: readIsAvailable(dish),
+    hide_price: Boolean(dish.hide_price),
     display_order: Number(dish.display_order ?? 0),
   };
 }
@@ -287,6 +323,7 @@ export async function createMenuDish(
   image: string | null = null,
   tags: string[] = [],
   allergens: string[] = [],
+  hidePrice: boolean = false,
   options?: { displayOrder?: number }
 ): Promise<MenuDishRecord> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
@@ -301,6 +338,7 @@ export async function createMenuDish(
     image,
     tags: tagsForDb,
     is_available: true,
+    hide_price: hidePrice,
     display_order: displayOrder,
   });
 
@@ -320,7 +358,8 @@ export async function updateMenuDish(
   image: string | null = null,
   tags: string[] = [],
   allergens: string[] = [],
-  isAvailable = true
+  isAvailable = true,
+  hidePrice: boolean = false
 ): Promise<void> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
 
@@ -331,6 +370,7 @@ export async function updateMenuDish(
     image,
     tags: tagsForDb,
     is_available: isAvailable,
+    hide_price: hidePrice,
   });
 
   if (error) {
@@ -399,6 +439,7 @@ async function cloneDishToCategory(
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
     is_available: readIsAvailable(source),
+    hide_price: Boolean(source.hide_price),
     display_order: Number(source.display_order ?? 0),
   });
 
@@ -432,6 +473,7 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
     is_available: readIsAvailable(source as Record<string, unknown>),
+    hide_price: Boolean((source as Record<string, unknown>).hide_price),
     display_order: displayOrder,
   });
 
@@ -480,6 +522,7 @@ export async function duplicateMenuCategory(
             image: dish.image_url,
             tags: serializeDishTagsForDb(dish.tags, dish.allergens),
             is_available: dish.is_available,
+            hide_price: dish.hide_price,
             display_order: dish.display_order,
           },
           created.id

@@ -10,6 +10,8 @@ export interface PublicMenuDish {
   name: string;
   description: string;
   price: number;
+  /** If true, do not display price on the public menu */
+  hide_price: boolean;
   image: string | null;
   /** Filterable dietary tags — used by public menu filters */
   tags: string[];
@@ -179,7 +181,7 @@ export function DishCard({
           })}
         </div>
       )}
-      {display.showPrices && (
+      {display.showPrices && !dish.hide_price && (
         <p
           className={`font-bold ${compact ? "text-sm" : "text-base"}`}
           style={{

@@ -66,6 +66,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
           name: item.name,
           description: item.description,
           price: item.price,
+          hide_price: Boolean(item.hide_price),
           image_url: item.image_url,
           allergens: item.allergens,
           tags: item.tags,
@@ -182,7 +183,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                             className={`font-bold ${fontClasses?.body || ''}`}
                             style={{ color: design.buttonColor }}
                           >
-                            {formatPrice(item.price)}
+                            {!item.hide_price && formatPrice(item.price)}
                           </span>
                           {item.tags.length > 0 && (
                             <div className="flex gap-1">

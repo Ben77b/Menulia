@@ -53,6 +53,7 @@ const MOCK_FLAT: PublicMenuSubcategory[] = [
         name: "Seasonal Soup",
         description: "Chef's daily selection.",
         price: 9,
+        hide_price: false,
         image: null,
         tags: ["Vegetarian"],
         allergens: [],
