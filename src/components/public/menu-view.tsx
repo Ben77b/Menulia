@@ -139,7 +139,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
             </p>
           </div>
         ) : (
-        filteredCategories.map((cat, catIndex) => (
+        filteredCategories.map((cat) => (
           <div
             key={cat.id}
             id={`category-${cat.id}`}
@@ -156,7 +156,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
               </div>
             ) : (
               <div className="space-y-4">
-                {cat.items.map((item, itemIndex) => (
+                {cat.items.map((item) => (
                   <div
                     key={item.id}
                     className="rounded-2xl border border-border bg-white p-4 shadow-sm"
@@ -171,8 +171,6 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                             className="object-cover"
                             quality={75}
                             sizes="(max-width: 768px) 80px, 96px"
-                            priority={catIndex === 0 && itemIndex < 3}
-                            loading={catIndex === 0 && itemIndex < 3 ? "eager" : "lazy"}
                           />
                         </div>
                       )}
@@ -272,7 +270,6 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                   className="relative h-16 w-auto object-contain"
                   quality={75}
                   sizes="64px"
-                  loading="eager"
                 />
               </div>
               <h2

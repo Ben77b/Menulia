@@ -103,8 +103,6 @@ export function MenuCarousel({ items, design }: MenuCarouselProps) {
                       className="object-cover"
                       sizes="320px"
                       quality={75}
-                      priority={isActive}
-                      loading={isActive ? "eager" : "lazy"}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-4xl bg-muted rounded-2xl">🍽️</div>

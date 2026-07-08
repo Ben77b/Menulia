@@ -338,83 +338,77 @@ function SettingsPageContent() {
                   </div>
                   {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
                 </div>
-              </div>
-            </div>
-          )}
 
-          {activeTab === "general" && (
-            <div className="air-card air-card-pad">
-              <div className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">🔗 Share & Embed Menu</h2>
+                <div className="border-t border-gray-100 pt-8">
+                  <h3 className="text-base font-semibold text-gray-900">🔗 Share & Embed Menu</h3>
                   <p className="mt-1 text-sm text-gray-600">
                     Copy your public link or embed the menu directly on your website.
                   </p>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
-                  <h3 className="mb-3 text-sm font-medium text-slate-700">Direct Link</h3>
-                  <p className="break-all text-sm font-medium text-slate-900">
-                    https://www.menulia.net/menu/{restaurantSlug}
-                  </p>
-                  <p className="mt-1 text-xs text-[#86868B]">Share your public menu</p>
+                  <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
+                      <h4 className="mb-3 text-sm font-medium text-slate-700">Direct Link</h4>
+                      <p className="break-all text-sm font-medium text-slate-900">
+                        https://www.menulia.net/menu/{restaurantSlug}
+                      </p>
+                      <p className="mt-1 text-xs text-[#86868B]">Share your public menu</p>
 
-                  <div className="mt-4 flex">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="shrink-0 w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
-                      onClick={() =>
-                        void copyToClipboard(
-                          `https://www.menulia.net/menu/${restaurantSlug}`,
-                          setDirectLinkCopied
-                        )
-                      }
-                      aria-label="Copy public menu link"
-                    >
-                      {directLinkCopied ? (
-                        <span className="inline-flex items-center gap-2">
-                          <span className="text-emerald-700">✓</span> Copied
-                        </span>
-                      ) : (
-                        "📋 Copy Link"
-                      )}
-                    </Button>
+                      <div className="mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                          onClick={() =>
+                            void copyToClipboard(
+                              `https://www.menulia.net/menu/${restaurantSlug}`,
+                              setDirectLinkCopied
+                            )
+                          }
+                          aria-label="Copy public menu link"
+                        >
+                          {directLinkCopied ? (
+                            <span className="inline-flex items-center gap-2">
+                              <span className="text-emerald-700">✓</span> Copied
+                            </span>
+                          ) : (
+                            "📋 Copy Link"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
+                      <h4 className="mb-3 text-sm font-medium text-slate-700">HTML Website Embed</h4>
+                      {(() => {
+                        const embedSrc = `https://www.menulia.net/menu/${restaurantSlug}`;
+                        const embedCode = `<iframe src="${embedSrc}" style="width:100%; height:800px; border:none; border-radius:12px;" loading="lazy"></iframe>`;
+
+                        return (
+                          <>
+                            <pre className="min-w-0 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
+                              <code>{embedCode}</code>
+                            </pre>
+
+                            <div className="mt-4">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                                onClick={() => void copyToClipboard(embedCode, setEmbedCopied)}
+                                aria-label="Copy embed HTML"
+                              >
+                                {embedCopied ? "✓ Copied" : "📋 Copy Embed Code"}
+                              </Button>
+                            </div>
+
+                            <p className="mt-2 text-xs text-[#86868B]">
+                              Paste this HTML into your website to embed your menu.
+                            </p>
+                          </>
+                        );
+                      })()}
+                    </div>
                   </div>
-                </div>
-
-                <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
-                  <h3 className="mb-3 text-sm font-medium text-slate-700">HTML Website Embed</h3>
-                  {(() => {
-                    const embedSrc = `https://www.menulia.net/menu/${restaurantSlug}`;
-                    const embedCode = `<iframe src="${embedSrc}" style="width:100%; height:800px; border:none; border-radius:12px;" loading="lazy"></iframe>`;
-
-                    return (
-                      <>
-                        <pre className="min-w-0 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
-                          <code>{embedCode}</code>
-                        </pre>
-
-                        <div className="mt-4 flex">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="shrink-0 w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
-                            onClick={() => void copyToClipboard(embedCode, setEmbedCopied)}
-                            aria-label="Copy embed HTML"
-                          >
-                            {embedCopied ? "✓ Copied" : "📋 Copy Embed Code"}
-                          </Button>
-                        </div>
-
-                        <p className="mt-2 text-xs text-[#86868B]">
-                          Paste this HTML into your website to embed your menu.
-                        </p>
-                      </>
-                    );
-                  })()}
                 </div>
               </div>
             </div>
