@@ -139,7 +139,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
             </p>
           </div>
         ) : (
-        filteredCategories.map((cat) => (
+        filteredCategories.map((cat, catIndex) => (
           <div
             key={cat.id}
             id={`category-${cat.id}`}
@@ -156,7 +156,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
               </div>
             ) : (
               <div className="space-y-4">
-                {cat.items.map((item) => (
+                {cat.items.map((item, itemIndex) => (
                   <div
                     key={item.id}
                     className="rounded-2xl border border-border bg-white p-4 shadow-sm"
@@ -169,7 +169,10 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                             alt={item.name}
                             fill
                             className="object-cover"
-                            sizes="96px"
+                            quality={75}
+                            sizes="(max-width: 768px) 80px, 96px"
+                            priority={catIndex === 0 && itemIndex < 3}
+                            loading={catIndex === 0 && itemIndex < 3 ? "eager" : "lazy"}
                           />
                         </div>
                       )}
@@ -261,10 +264,15 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
             <div className="flex flex-col items-center text-center space-y-3">
               <div className="relative">
                 <div className="absolute inset-0 rounded-full opacity-10" style={{ backgroundColor: design.buttonColor, transform: 'scale(1.2)' }}></div>
-                <img
+                <Image
                   src={design.logo}
                   alt={design.restaurantName || restaurant.name}
+                  width={256}
+                  height={64}
                   className="relative h-16 w-auto object-contain"
+                  quality={75}
+                  sizes="64px"
+                  loading="eager"
                 />
               </div>
               <h2

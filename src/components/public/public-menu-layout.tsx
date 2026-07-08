@@ -73,6 +73,7 @@ function DishSection({
   activeFilters,
   display,
   previewInteractive,
+  aboveFold = false,
 }: {
   subcategory: PublicMenuSubcategory;
   restaurantName: string;
@@ -88,6 +89,7 @@ function DishSection({
   activeFilters: Set<string>;
   display: PublicMenuDisplayOptions;
   previewInteractive?: PreviewInteractiveConfig;
+  aboveFold?: boolean;
 }) {
   const filteredDishes = useMemo(() => {
     const dishes = subcategory.dishes ?? [];
@@ -149,6 +151,7 @@ function DishSection({
           descriptionColor={themedColor(isPreview, "itemDescription", theme.itemDescriptionText)}
           priceColor={themedColor(isPreview, "itemPrice", theme.priceTextColor)}
           emptyMessage={emptyMessage}
+          priority={aboveFold}
         />
       </PreviewHotspot>
     );
@@ -165,7 +168,7 @@ function DishSection({
       {categoryHeading}
       {sectionNote}
       <div className="mx-auto max-w-3xl space-y-12">
-        {filteredDishes.map((dish) => (
+        {filteredDishes.map((dish, index) => (
           <DishCard
             key={dish.id}
             dish={dish}
@@ -184,6 +187,7 @@ function DishSection({
             display={display}
             layout="stacked"
             imageClassName="w-full"
+            priority={aboveFold && index < 3}
           />
         ))}
         {filteredDishes.length === 0 && (
@@ -267,6 +271,13 @@ export function PublicMenuLayout({
       parent?.subcategories[0]
     );
   }, [safeMenu, safeFlatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
+
+  const aboveFoldSubcategoryId = hasNestedStructure
+    ? safeMenu[0]?.subcategories?.[0]?.id
+    : safeFlatCategories[0]?.id;
+  const isAboveFold = Boolean(
+    aboveFoldSubcategoryId && activeSubcategoryId === aboveFoldSubcategoryId
+  );
 
   const allDishes = useMemo(
     () => collectAllDishes(safeMenu, safeFlatCategories, hasNestedStructure),
@@ -410,6 +421,7 @@ export function PublicMenuLayout({
               activeFilters={activeFilters}
               display={display}
               previewInteractive={previewInteractive}
+              aboveFold={isAboveFold}
             />
           </section>
         )}

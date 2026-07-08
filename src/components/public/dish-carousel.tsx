@@ -27,6 +27,11 @@ interface DishCarouselProps {
   descriptionColor?: string;
   priceColor?: string;
   emptyMessage?: string;
+  /**
+   * When true, marks the first visible dish images as priority to improve
+   * above-the-fold loading (especially while the splash screen is still up).
+   */
+  priority?: boolean;
 }
 
 const FOCUS_TRANSITION =
@@ -75,6 +80,7 @@ export function DishCarousel({
   descriptionColor,
   priceColor,
   emptyMessage = "No dishes in this category.",
+  priority = false,
 }: DishCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const isPreview = usePreviewCanvas();
@@ -163,6 +169,7 @@ export function DishCarousel({
               priceColor={priceColor}
               layout="carousel"
               imageClassName="w-full"
+              priority={priority}
             />
           </CarouselCardFrame>
         </div>
@@ -199,6 +206,7 @@ export function DishCarousel({
                     layout="carousel"
                     compact={!isActive}
                     imageClassName="w-full"
+                    priority={priority && (isActive || slot.position !== "center")}
                   />
                 </CarouselCardFrame>
               </div>

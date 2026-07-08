@@ -342,6 +342,84 @@ function SettingsPageContent() {
             </div>
           )}
 
+          {activeTab === "general" && (
+            <div className="air-card air-card-pad">
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">🔗 Share & Embed Menu</h2>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Copy your public link or embed the menu directly on your website.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
+                  <h3 className="mb-3 text-sm font-medium text-slate-700">Direct Link</h3>
+                  <p className="break-all text-sm font-medium text-slate-900">
+                    https://www.menulia.net/menu/{restaurantSlug}
+                  </p>
+                  <p className="mt-1 text-xs text-[#86868B]">Share your public menu</p>
+
+                  <div className="mt-4 flex">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="shrink-0 w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                      onClick={() =>
+                        void copyToClipboard(
+                          `https://www.menulia.net/menu/${restaurantSlug}`,
+                          setDirectLinkCopied
+                        )
+                      }
+                      aria-label="Copy public menu link"
+                    >
+                      {directLinkCopied ? (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="text-emerald-700">✓</span> Copied
+                        </span>
+                      ) : (
+                        "📋 Copy Link"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
+                  <h3 className="mb-3 text-sm font-medium text-slate-700">HTML Website Embed</h3>
+                  {(() => {
+                    const embedSrc = `https://www.menulia.net/menu/${restaurantSlug}`;
+                    const embedCode = `<iframe src="${embedSrc}" style="width:100%; height:800px; border:none; border-radius:12px;" loading="lazy"></iframe>`;
+
+                    return (
+                      <>
+                        <pre className="min-w-0 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
+                          <code>{embedCode}</code>
+                        </pre>
+
+                        <div className="mt-4 flex">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="shrink-0 w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                            onClick={() => void copyToClipboard(embedCode, setEmbedCopied)}
+                            aria-label="Copy embed HTML"
+                          >
+                            {embedCopied ? "✓ Copied" : "📋 Copy Embed Code"}
+                          </Button>
+                        </div>
+
+                        <p className="mt-2 text-xs text-[#86868B]">
+                          Paste this HTML into your website to embed your menu.
+                        </p>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === "hours-location" && (
             <>
               <div className="air-card air-card-pad">
@@ -414,76 +492,6 @@ function SettingsPageContent() {
                 <h2 className="text-lg font-semibold text-gray-900">Links & Custom Footer Notes</h2>
               </div>
               <div className="flex flex-col gap-8">
-                <div className="air-card air-card-pad">
-                  <div className="mb-4 flex items-center gap-3">
-                    <h3 className="text-base font-semibold text-slate-900">🔗 Share & Embed Menu</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <div className="rounded-xl border border-[#F5F5F7] bg-white p-4">
-                      <h4 className="mb-2 text-sm font-medium text-slate-700">Direct Link</h4>
-                      <div className="flex items-start gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="break-all text-sm text-slate-900">
-                            https://www.menulia.net/menu/{restaurantSlug}
-                          </p>
-                          <p className="mt-1 text-xs text-[#86868B]">Share your public menu</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="shrink-0"
-                          onClick={() =>
-                            void copyToClipboard(
-                              `https://www.menulia.net/menu/${restaurantSlug}`,
-                              setDirectLinkCopied
-                            )
-                          }
-                          aria-label="Copy public menu link"
-                        >
-                          {directLinkCopied ? (
-                            <span className="inline-flex items-center gap-2">
-                              <span className="text-emerald-700">✓</span>
-                              Copied
-                            </span>
-                          ) : (
-                            "📋 Copy Link"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-[#F5F5F7] bg-white p-4">
-                      <h4 className="mb-2 text-sm font-medium text-slate-700">HTML Website Embed</h4>
-                      {(() => {
-                        const embedSrc = `https://www.menulia.net/menu/${restaurantSlug}`;
-                        const embedCode = `<iframe src="${embedSrc}" style="width:100%; height:800px; border:none; border-radius:12px;" loading="lazy"></iframe>`;
-                        return (
-                          <>
-                            <div className="mb-2 flex items-start justify-between gap-3">
-                              <pre className="min-w-0 flex-1 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
-                                <code>{embedCode}</code>
-                              </pre>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="shrink-0"
-                                onClick={() => void copyToClipboard(embedCode, setEmbedCopied)}
-                                aria-label="Copy embed HTML"
-                              >
-                                {embedCopied ? "✓ Copied" : "📋 Copy Embed Code"}
-                              </Button>
-                            </div>
-                            <p className="text-xs text-[#86868B]">
-                              Paste this HTML into your website to embed your menu.
-                            </p>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-
                 <div>
                   <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
                   <textarea

@@ -38,6 +38,11 @@ interface DishCardProps {
   layout?: "carousel" | "stacked";
   compact?: boolean;
   imageClassName?: string;
+  /**
+   * Marks this dish image as critical for above-the-fold rendering.
+   * Helps prevent the splash from feeling like it's gone too early.
+   */
+  priority?: boolean;
 }
 
 function TagBadge({
@@ -98,6 +103,7 @@ export function DishCard({
   layout = "carousel",
   compact = false,
   imageClassName = "w-full max-w-xs",
+  priority = false,
 }: DishCardProps) {
   const showImage = display.showImages && Boolean(dish.image);
 
@@ -117,8 +123,10 @@ export function DishCard({
           alt={imageAlt}
           fill
           className="object-cover"
+          quality={75}
           sizes="(max-width: 768px) 80vw, 320px"
-          loading="lazy"
+          priority={priority}
+          loading={priority ? "eager" : "lazy"}
         />
       </div>
     ) : null;
