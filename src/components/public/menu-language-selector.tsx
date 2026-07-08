@@ -20,6 +20,7 @@ export function MenuLanguageSelector({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const textColor = contrastingTextColor(headerBackgroundColor);
+  const panelBackground = contrastingTextColor(textColor);
   const currentLanguage =
     PUBLIC_MENU_LANGUAGES.find((language) => language.code === lang) ??
     PUBLIC_MENU_LANGUAGES[0];
@@ -56,22 +57,20 @@ export function MenuLanguageSelector({
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        aria-label="Change menu language"
+        aria-label={`Change menu language (${currentLanguage.label})`}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[11px] font-semibold tracking-wide backdrop-blur-sm transition-opacity hover:opacity-90 sm:text-xs"
+        className="inline-flex items-center gap-1 rounded-full border px-2 py-1.5 backdrop-blur-sm transition-opacity hover:opacity-90"
         style={{
-          borderColor: `${textColor}66`,
-          backgroundColor: `${textColor}22`,
+          borderColor: `${textColor}44`,
+          backgroundColor: `${textColor}18`,
           color: textColor,
         }}
       >
-        <span>
-          {currentLanguage.flag} {currentLanguage.code.toUpperCase()}
-        </span>
+        <span className="text-lg leading-none">{currentLanguage.flag}</span>
         <ChevronDown
-          className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")}
+          className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
           aria-hidden
         />
       </button>
@@ -80,11 +79,10 @@ export function MenuLanguageSelector({
         <div
           role="listbox"
           aria-label="Menu languages"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[9.5rem] overflow-hidden rounded-2xl border shadow-xl"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 flex flex-col gap-1 rounded-2xl border p-1.5 shadow-xl"
           style={{
             borderColor: `${textColor}33`,
-            backgroundColor: contrastingTextColor(textColor),
-            color: textColor,
+            backgroundColor: panelBackground,
           }}
         >
           {PUBLIC_MENU_LANGUAGES.map((language) => {
@@ -95,11 +93,12 @@ export function MenuLanguageSelector({
                 key={language.code}
                 type="button"
                 role="option"
+                aria-label={language.label}
                 aria-selected={isActive}
                 onClick={() => selectLanguage(language.code)}
                 className={cn(
-                  "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors",
-                  isActive ? "font-semibold" : "hover:opacity-80"
+                  "flex h-10 w-10 items-center justify-center rounded-xl text-xl transition-opacity",
+                  isActive ? "opacity-100" : "opacity-80 hover:opacity-100"
                 )}
                 style={
                   isActive
@@ -109,11 +108,7 @@ export function MenuLanguageSelector({
                     : undefined
                 }
               >
-                <span>{language.flag}</span>
-                <span>{language.label}</span>
-                <span className="ml-auto text-[11px] uppercase tracking-wide opacity-70">
-                  {language.code}
-                </span>
+                {language.flag}
               </button>
             );
           })}

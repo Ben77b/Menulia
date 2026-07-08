@@ -10,6 +10,7 @@ import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import {
   collectAllDishes,
   filterDishesByTags,
+  menuHasGuestTranslations,
   sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
 import { MenuHeader } from "./menu-header";
@@ -224,6 +225,11 @@ export function PublicMenuLayout({
     [menu, flatCategories]
   );
 
+  const showLanguageSelector = useMemo(
+    () => menuHasGuestTranslations(safeMenu, safeFlatCategories, hasNestedStructure),
+    [safeMenu, safeFlatCategories, hasNestedStructure]
+  );
+
   const [locale, setLocale] = useState<PublicMenuLocale>("en");
   const { activeFilters, toggleFilter } = usePublicMenuFilters();
   const [activeParentId, setActiveParentId] = useState(safeMenu[0]?.id ?? "");
@@ -309,6 +315,7 @@ export function PublicMenuLayout({
           links={links ?? []}
           lang={locale}
           onLangChange={setLocale}
+          showLanguageSelector={showLanguageSelector}
         />
       </PreviewHotspot>
 

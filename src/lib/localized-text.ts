@@ -67,3 +67,32 @@ export function serializeLocalizedFieldForDb(value: LocalizedTextValue): string 
   if (typeof value === "string") return value;
   return JSON.stringify(value);
 }
+
+export function countPopulatedLocaleKeys(value: LocalizedTextValue): number {
+  if (typeof value === "string") return value.trim() ? 1 : 0;
+  if (!isLocalizedTextRecord(value)) return 0;
+  return Object.values(value).filter((text) => text.trim()).length;
+}
+
+/** True when a field stores guest-facing copy in more than one language. */
+export function fieldHasGuestTranslations(value: LocalizedTextValue): boolean {
+  return countPopulatedLocaleKeys(value) >= 2;
+}
+
+/** Pick the best source text to send for translation into `targetLang`. */
+export function collectTextForTranslation(
+  value: LocalizedTextValue,
+  targetLang: string
+): string {
+  if (typeof value === "string") return value.trim();
+  if (!isLocalizedTextRecord(value)) return "";
+
+  for (const [lang, text] of Object.entries(value)) {
+    if (lang !== targetLang && text.trim()) {
+      return text.trim();
+    }
+  }
+
+  const fallback = Object.values(value).find((text) => text.trim());
+  return fallback?.trim() ?? "";
+}

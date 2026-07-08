@@ -22,6 +22,7 @@ interface MenuHeaderProps {
   links: RestaurantLink[];
   lang: PublicMenuLocale;
   onLangChange: (lang: PublicMenuLocale) => void;
+  showLanguageSelector?: boolean;
 }
 
 export function MenuHeader({
@@ -35,6 +36,7 @@ export function MenuHeader({
   links,
   lang,
   onLangChange,
+  showLanguageSelector = false,
 }: MenuHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isPreview = usePreviewCanvas();
@@ -98,11 +100,15 @@ export function MenuHeader({
           </div>
 
           <div className="flex justify-end">
-            <MenuLanguageSelector
-              lang={lang}
-              onLangChange={onLangChange}
-              headerBackgroundColor={headerBackgroundColor}
-            />
+            {showLanguageSelector ? (
+              <MenuLanguageSelector
+                lang={lang}
+                onLangChange={onLangChange}
+                headerBackgroundColor={headerBackgroundColor}
+              />
+            ) : (
+              <span className="h-10 w-10" />
+            )}
           </div>
         </div>
       </header>

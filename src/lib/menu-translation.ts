@@ -1,9 +1,14 @@
 import type { MenuBuilderDish, MenuBuilderTree } from "./menu-builder-types";
 import { findCategory } from "./menu-builder-mutations";
 import { updateMenuCategory, updateMenuDish } from "./menu-db";
+import type { MenuContentLanguage } from "./menu-content-languages";
 import {
+  deeplCodeToMenuLanguage,
+  getMenuContentLanguageMeta,
+} from "./menu-content-languages";
+import {
+  collectTextForTranslation,
   mergeLocalizedText,
-  resolveLocalizedText,
   type LocalizedTextRecord,
   type LocalizedTextValue,
 } from "./localized-text";
@@ -24,9 +29,10 @@ function pushTranslationItem(
   entityType: MenuTranslationEntity,
   entityId: string,
   field: MenuTranslationField,
-  value: LocalizedTextValue
+  value: LocalizedTextValue,
+  targetLang: MenuContentLanguage
 ) {
-  const text = resolveLocalizedText(value, "en").trim();
+  const text = collectTextForTranslation(value, targetLang);
   if (!text) return;
 
   items.push({
@@ -38,37 +44,40 @@ function pushTranslationItem(
   });
 }
 
-export function collectMenuTranslationItems(tree: MenuBuilderTree): MenuTranslationItem[] {
+export function collectMenuTranslationItems(
+  tree: MenuBuilderTree,
+  targetLang: MenuContentLanguage
+): MenuTranslationItem[] {
   const items: MenuTranslationItem[] = [];
 
   for (const section of tree.sections) {
-    pushTranslationItem(items, "category", section.id, "name", section.name);
+    pushTranslationItem(items, "category", section.id, "name", section.name, targetLang);
     if (section.description) {
-      pushTranslationItem(items, "category", section.id, "description", section.description);
+      pushTranslationItem(items, "category", section.id, "description", section.description, targetLang);
     }
 
     for (const category of section.categories) {
-      pushTranslationItem(items, "category", category.id, "name", category.name);
+      pushTranslationItem(items, "category", category.id, "name", category.name, targetLang);
       if (category.description) {
-        pushTranslationItem(items, "category", category.id, "description", category.description);
+        pushTranslationItem(items, "category", category.id, "description", category.description, targetLang);
       }
 
       for (const dish of category.dishes) {
-        pushTranslationItem(items, "dish", dish.id, "name", dish.name);
-        pushTranslationItem(items, "dish", dish.id, "description", dish.description);
+        pushTranslationItem(items, "dish", dish.id, "name", dish.name, targetLang);
+        pushTranslationItem(items, "dish", dish.id, "description", dish.description, targetLang);
       }
     }
   }
 
   for (const category of tree.orphanCategories) {
-    pushTranslationItem(items, "category", category.id, "name", category.name);
+    pushTranslationItem(items, "category", category.id, "name", category.name, targetLang);
     if (category.description) {
-      pushTranslationItem(items, "category", category.id, "description", category.description);
+      pushTranslationItem(items, "category", category.id, "description", category.description, targetLang);
     }
 
     for (const dish of category.dishes) {
-      pushTranslationItem(items, "dish", dish.id, "name", dish.name);
-      pushTranslationItem(items, "dish", dish.id, "description", dish.description);
+      pushTranslationItem(items, "dish", dish.id, "name", dish.name, targetLang);
+      pushTranslationItem(items, "dish", dish.id, "description", dish.description, targetLang);
     }
   }
 
@@ -114,22 +123,28 @@ function getDishFieldValue(
   return "";
 }
 
+interface TranslationApiResult {
+  translations: string[];
+  detectedSourceLanguages: string[];
+}
+
 async function callTranslateApi(
   texts: string[],
-  targetLang: string
-): Promise<string[]> {
+  targetLang: MenuContentLanguage
+): Promise<TranslationApiResult> {
   const response = await fetch("/api/translate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       texts,
       source_lang: "auto",
-      target_lang: targetLang,
+      target_lang: getMenuContentLanguageMeta(targetLang).deeplCode,
     }),
   });
 
   const payload = (await response.json()) as {
     translations?: string[];
+    detected_source_languages?: string[];
     error?: string;
   };
 
@@ -141,17 +156,20 @@ async function callTranslateApi(
     throw new Error("Translation response was incomplete.");
   }
 
-  return payload.translations;
+  return {
+    translations: payload.translations,
+    detectedSourceLanguages: payload.detected_source_languages ?? [],
+  };
 }
 
 export async function translateMenuTreeToLanguage(
   tree: MenuBuilderTree,
-  targetLang: string
+  targetLang: MenuContentLanguage
 ): Promise<MenuBuilderTree> {
-  const items = collectMenuTranslationItems(tree);
+  const items = collectMenuTranslationItems(tree, targetLang);
   if (items.length === 0) return tree;
 
-  const translations = await callTranslateApi(
+  const { translations, detectedSourceLanguages } = await callTranslateApi(
     items.map((item) => item.text),
     targetLang
   );
@@ -169,9 +187,12 @@ export async function translateMenuTreeToLanguage(
     const translated = translations[index]?.trim() ?? "";
     if (!translated) return;
 
+    const detectedBase = deeplCodeToMenuLanguage(detectedSourceLanguages[index]);
+    if (detectedBase === targetLang) return;
+
     if (item.entityType === "category") {
       const current = getCategoryFieldValue(tree, item.entityId, item.field);
-      const merged = mergeLocalizedText(current, targetLang, translated);
+      const merged = mergeLocalizedText(current, targetLang, translated, detectedBase);
       const patch = categoryPatches.get(item.entityId) ?? {};
       patch[item.field] = merged;
       categoryPatches.set(item.entityId, patch);
@@ -179,7 +200,7 @@ export async function translateMenuTreeToLanguage(
     }
 
     const current = getDishFieldValue(tree, item.entityId, item.field);
-    const merged = mergeLocalizedText(current, targetLang, translated);
+    const merged = mergeLocalizedText(current, targetLang, translated, detectedBase);
     const patch = dishPatches.get(item.entityId) ?? {};
     patch[item.field] = merged;
     dishPatches.set(item.entityId, patch);

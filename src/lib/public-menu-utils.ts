@@ -1,5 +1,6 @@
 import type { PublicMenuDish } from "@/components/public/dish-card";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
+import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/localized-text";
 import { isFilterableTag } from "@/lib/dietary-tags";
 
 export function sanitizePublicMenuDish(dish: PublicMenuDish): PublicMenuDish {
@@ -59,5 +60,48 @@ export function filterDishesByTags(
   if (activeFilters.size === 0) return dishes;
   return dishes.filter((dish) =>
     (dish.tags ?? []).some((tag) => isFilterableTag(tag) && activeFilters.has(tag))
+  );
+}
+
+function collectMenuTextFields(
+  menu: PublicMenuParentCategory[],
+  flatCategories: PublicMenuSubcategory[],
+  hasNestedStructure: boolean
+): LocalizedTextValue[] {
+  const fields: LocalizedTextValue[] = [];
+
+  if (hasNestedStructure) {
+    for (const parent of menu) {
+      fields.push(parent.name);
+      for (const subcategory of parent.subcategories) {
+        fields.push(subcategory.name);
+        if (subcategory.description) fields.push(subcategory.description);
+        for (const dish of subcategory.dishes) {
+          fields.push(dish.name, dish.description);
+        }
+      }
+    }
+    return fields;
+  }
+
+  for (const category of flatCategories) {
+    fields.push(category.name);
+    if (category.description) fields.push(category.description);
+    for (const dish of category.dishes) {
+      fields.push(dish.name, dish.description);
+    }
+  }
+
+  return fields;
+}
+
+/** Show the public language toggle only after at least one menu field has been translated. */
+export function menuHasGuestTranslations(
+  menu: PublicMenuParentCategory[],
+  flatCategories: PublicMenuSubcategory[],
+  hasNestedStructure: boolean
+): boolean {
+  return collectMenuTextFields(menu, flatCategories, hasNestedStructure).some(
+    fieldHasGuestTranslations
   );
 }

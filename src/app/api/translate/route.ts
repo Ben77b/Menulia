@@ -46,7 +46,7 @@ async function translateBatch(
   texts: string[],
   sourceLang: string | undefined,
   targetLang: string
-): Promise<string[]> {
+): Promise<Array<{ text: string; detectedSourceLanguage?: string }>> {
   const endpoint = getDeepLEndpoint(apiKey);
   const body = new URLSearchParams();
   texts.forEach((text) => body.append("text", text));
@@ -73,7 +73,7 @@ async function translateBatch(
   }
 
   const payload = (await response.json()) as {
-    translations?: Array<{ text?: string }>;
+    translations?: Array<{ text?: string; detected_source_language?: string }>;
   };
 
   const translations = payload.translations ?? [];
@@ -81,7 +81,10 @@ async function translateBatch(
     throw new Error("DeepL returned an unexpected number of translations");
   }
 
-  return translations.map((entry, index) => entry.text ?? texts[index] ?? "");
+  return translations.map((entry, index) => ({
+    text: entry.text ?? texts[index] ?? "",
+    detectedSourceLanguage: entry.detected_source_language,
+  }));
 }
 
 export async function POST(request: Request) {
@@ -112,14 +115,18 @@ export async function POST(request: Request) {
 
     const { texts, source_lang, target_lang } = parsed.data;
     const translations: string[] = [];
+    const detectedSourceLanguages: string[] = [];
 
     for (let index = 0; index < texts.length; index += DEEPL_BATCH_SIZE) {
       const chunk = texts.slice(index, index + DEEPL_BATCH_SIZE);
       const chunkTranslations = await translateBatch(apiKey, chunk, source_lang, target_lang);
-      translations.push(...chunkTranslations);
+      translations.push(...chunkTranslations.map((entry) => entry.text));
+      detectedSourceLanguages.push(
+        ...chunkTranslations.map((entry) => entry.detectedSourceLanguage ?? "")
+      );
     }
 
-    return NextResponse.json({ translations });
+    return NextResponse.json({ translations, detected_source_languages: detectedSourceLanguages });
   } catch (error) {
     console.error("[translate]", error);
     return NextResponse.json(
