@@ -15,7 +15,6 @@ import {
 } from "@/lib/dietary-tags";
 import { parsePriceInput } from "@/lib/price-input";
 import { resolveLocalizedText } from "@/lib/localized-text";
-import type { MenuContentLanguage } from "@/lib/menu-content-languages";
 
 export interface DishDetailDraft {
   name: string;
@@ -40,7 +39,6 @@ interface DishDetailSheetProps {
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
   restaurantName?: string;
   categoryName?: string;
-  contentLanguage?: MenuContentLanguage;
 }
 
 export function DishDetailSheet({
@@ -54,7 +52,6 @@ export function DishDetailSheet({
   onAvailabilityChange,
   restaurantName = "",
   categoryName = "",
-  contentLanguage = "en",
 }: DishDetailSheetProps) {
   const toast = useToast();
   const [generatingDescription, setGeneratingDescription] = useState(false);
@@ -83,8 +80,8 @@ export function DishDetailSheet({
     dishIdRef.current = dish.id;
     const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
     setDraft({
-      name: resolveLocalizedText(dish.name, contentLanguage),
-      description: resolveLocalizedText(dish.description, contentLanguage),
+      name: resolveLocalizedText(dish.name, "en"),
+      description: resolveLocalizedText(dish.description, "en"),
       price: String(dish.price),
       hide_price: Boolean(dish.hide_price),
       image_url: dish.image_url,
@@ -92,7 +89,7 @@ export function DishDetailSheet({
       allergens: normalized.allergens,
       is_available: dish.is_available !== false,
     });
-  }, [open, dish, contentLanguage]);
+  }, [open, dish]);
 
   async function handleAvailabilityToggle(checked: boolean) {
     setDraft((prev) => ({ ...prev, is_available: checked }));
