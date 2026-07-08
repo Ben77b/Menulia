@@ -3,8 +3,13 @@ import { LANGUAGES } from "./languages";
 
 export type PublicMenuLocale = LanguageCode;
 
+/** Languages available on the public menu content + UI toggle */
+export const PUBLIC_MENU_LANGUAGES = LANGUAGES.filter(
+  (language) => language.code === "en" || language.code === "es"
+);
+
 /** Languages shown in the public menu header dropdown */
-export const HEADER_LANGUAGES = LANGUAGES;
+export const HEADER_LANGUAGES = PUBLIC_MENU_LANGUAGES;
 
 const UI_STRINGS: Record<string, Record<string, string>> = {
   en: {

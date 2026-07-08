@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, Pencil, Check, X, Sparkles } from "lucide-react";
+import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, Pencil, Check, X } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { useSessionPersistedState } from "@/hooks/use-session-persisted-state";
@@ -52,7 +52,6 @@ import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
 import { computeNextDishDisplayOrder } from "@/lib/menu-dish-order";
 import { mergeLocalizedText, resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
-import { translateMenuTreeToLanguage } from "@/lib/menu-translation";
 
 function isBenignMenuBuilderError(error: unknown): boolean {
   if (error instanceof TypeError) return true;
@@ -285,7 +284,6 @@ export function MenuBuilder() {
   } | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
-  const [translating, setTranslating] = useState(false);
 
   const selectedCategory = useMemo(
     () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
@@ -813,54 +811,17 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleTranslateMenu() {
-    if (translating || busy) return;
-
-    setTranslating(true);
-    setError(null);
-    try {
-      const updated = await translateMenuTreeToLanguage(tree, "es");
-      setTree(updated);
-      toast.success("✨ Menu translated to Spanish");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : formatSupabaseError(err);
-      setError(message);
-      toast.error(message);
-    } finally {
-      setTranslating(false);
-    }
-  }
-
   if (loading) {
     return <MenuBuilderSkeleton />;
   }
 
   return (
     <div className="air-page">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="air-page-title">Menu Builder</h1>
-          <p className="air-page-subtitle">
-            Sections → Categories → Dishes. Tab to price, Enter to save.
-          </p>
-        </div>
-        {tree.sections.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => void handleTranslateMenu()}
-            disabled={busy || translating}
-          >
-            {translating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            Translate Menu to Spanish
-          </Button>
-        )}
+      <div>
+        <h1 className="air-page-title">Menu Builder</h1>
+        <p className="air-page-subtitle">
+          Sections → Categories → Dishes. Tab to price, Enter to save.
+        </p>
       </div>
 
       {error && (

@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { HoursScheduleBuilder } from "@/components/dashboard/hours-schedule-builder";
 import { SettingsSubNav } from "@/components/dashboard/settings-sub-nav";
+import { SettingsLanguagesPanel } from "@/components/dashboard/settings-languages-panel";
 import {
   SettingsMenuPreview,
 } from "@/components/dashboard/settings-menu-preview";
@@ -36,16 +37,23 @@ import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useSettingsFormDraft } from "@/hooks/use-settings-form-draft";
 
-type SettingsTab = "general" | "hours-location" | "social-links" | "danger";
+type SettingsTab = "general" | "hours-location" | "social-links" | "languages" | "danger";
 
 const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "hours-location", label: "Hours & Location" },
   { id: "social-links", label: "Social & Links" },
+  { id: "languages", label: "Languages" },
   { id: "danger", label: "Danger Zone" },
 ];
 
-const SETTINGS_TAB_IDS: SettingsTab[] = ["general", "hours-location", "social-links", "danger"];
+const SETTINGS_TAB_IDS: SettingsTab[] = [
+  "general",
+  "hours-location",
+  "social-links",
+  "languages",
+  "danger",
+];
 
 function SettingsPageContent() {
   const router = useRouter();
@@ -242,7 +250,7 @@ function SettingsPageContent() {
             Manage profile, contact details, hours, and links for this restaurant
           </p>
         </div>
-        {activeTab !== "danger" && (
+        {activeTab !== "danger" && activeTab !== "languages" && (
           <Button
             size="lg"
             onClick={saveChanges}
@@ -464,6 +472,10 @@ function SettingsPageContent() {
             </div>
           )}
 
+          {activeTab === "languages" && (
+            <SettingsLanguagesPanel restaurantId={activeRestaurant.id} />
+          )}
+
           {activeTab === "danger" && (
             <div className="rounded-xl border-2 border-red-200 bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-3">
@@ -497,7 +509,7 @@ function SettingsPageContent() {
             </div>
           )}
 
-          {activeTab !== "danger" && (
+          {activeTab !== "danger" && activeTab !== "languages" && (
             <div className="flex justify-end border-t border-gray-100 pt-6 lg:hidden">
               <Button
                 size="lg"
