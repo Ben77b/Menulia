@@ -13,11 +13,11 @@ interface LegalDocumentLayoutProps {
 
 export function LegalDocumentLayout({ title, lastUpdated, children }: LegalDocumentLayoutProps) {
   return (
-    <div className="air-landing min-h-screen bg-white font-sans text-slate-900">
-      <header className="border-b border-border bg-white">
+    <div className="air-landing public-site-grid min-h-screen bg-white font-sans text-slate-900">
+      <header className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-3xl items-center px-6 py-6 sm:px-10">
-          <Link href="/" className="air-link">
-            ← menulia.net
+          <Link href="/" className="air-link hover:text-[#22c55e]">
+            ← Menulia
           </Link>
         </div>
       </header>
@@ -28,7 +28,7 @@ export function LegalDocumentLayout({ title, lastUpdated, children }: LegalDocum
         <div className="mt-14 space-y-14">{children}</div>
       </article>
 
-      <footer className="border-t border-border bg-white px-6 py-10">
+      <footer className="border-t border-slate-200 bg-white px-6 py-10">
         <div className="mx-auto max-w-3xl">
           <PublicSiteLegalLinks />
           <PublicSiteFooterBar className="mt-6" tone="dark" />

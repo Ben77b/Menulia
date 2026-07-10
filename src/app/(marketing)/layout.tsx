@@ -6,7 +6,7 @@ import { softwareApplicationJsonLd } from "@/lib/marketing/seo";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="air-dashboard air-landing min-h-screen bg-slate-950 text-slate-100">
+    <div className="air-landing public-site-grid min-h-screen text-slate-900">
       <JsonLd data={softwareApplicationJsonLd()} />
       <MarketingHeader />
       <main className="scroll-smooth">{children}</main>

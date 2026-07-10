@@ -23,6 +23,12 @@
   --color-accent: #ff6b4a;
   --color-accent-dark: #e85a3a;
 
+  /* Public site — digital neon minimalism */
+  --color-neon: #22c55e;
+  --color-neon-dark: #16a34a;
+  --color-neon-glow: rgba(34, 197, 94, 0.45);
+  --color-neon-glow-soft: rgba(34, 197, 94, 0.12);
+
   --color-air-bg: #f5f5f7;
   --color-air-border: #e5e5ea;
   --color-air-muted: #86868b;
@@ -74,6 +80,57 @@
 
   .air-landing {
     background-color: #ffffff;
+  }
+
+  /* ——— Public site: digital neon minimalism ——— */
+
+  .public-site-grid {
+    background-color: #ffffff;
+    background-image:
+      linear-gradient(to right, rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+    background-size: 2rem 2rem;
+  }
+
+  .neon-text {
+    color: var(--color-neon);
+  }
+
+  .neon-link {
+    @apply font-medium transition-colors duration-200;
+    color: inherit;
+  }
+
+  .neon-link:hover {
+    color: var(--color-neon);
+  }
+
+  .neon-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 font-semibold text-white transition-all duration-200;
+    background-color: var(--color-neon);
+    box-shadow:
+      0 0 20px var(--color-neon-glow),
+      0 4px 14px rgba(34, 197, 94, 0.25);
+  }
+
+  .neon-btn-primary:hover {
+    background-color: var(--color-neon-dark);
+    box-shadow:
+      0 0 28px rgba(34, 197, 94, 0.55),
+      0 6px 20px rgba(34, 197, 94, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .neon-btn-outline {
+    @apply inline-flex items-center justify-center gap-2 border-2 bg-white font-semibold transition-all duration-200;
+    border-color: var(--color-neon);
+    color: var(--color-neon);
+  }
+
+  .neon-btn-outline:hover {
+    background-color: var(--color-neon-glow-soft);
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.35);
+    transform: translateY(-1px);
   }
 }
 

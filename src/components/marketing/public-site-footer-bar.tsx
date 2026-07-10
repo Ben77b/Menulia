@@ -8,12 +8,12 @@ type PublicSiteFooterBarProps = {
 };
 
 export function PublicSiteFooterBar({ className, tone = "dark" }: PublicSiteFooterBarProps) {
-  const muted = tone === "light" ? "text-slate-500" : "text-slate-400";
+  const muted = tone === "light" ? "text-slate-500" : "text-slate-500";
 
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-between gap-3 border-t border-slate-200/80 pt-6 sm:flex-row",
+        "flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-6 sm:flex-row",
         className
       )}
     >
@@ -26,7 +26,7 @@ export function PublicSiteFooterBar({ className, tone = "dark" }: PublicSiteFoot
           href="https://benjy.es"
           target="_blank"
           rel="noopener"
-          className="font-medium transition-colors hover:text-indigo-500"
+          className="font-medium transition-colors hover:text-[#22c55e]"
         >
           Benjy.es
         </a>
@@ -38,13 +38,13 @@ export function PublicSiteFooterBar({ className, tone = "dark" }: PublicSiteFoot
 export function PublicSiteLegalLinks({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-x-8 gap-y-3", className)}>
-      <Link href="/legal" className="air-link">
+      <Link href="/legal" className="air-link hover:text-[#22c55e]">
         Aviso Legal
       </Link>
-      <Link href="/privacy" className="air-link">
+      <Link href="/privacy" className="air-link hover:text-[#22c55e]">
         Política de Privacidad
       </Link>
-      <Link href="/terms" className="air-link">
+      <Link href="/terms" className="air-link hover:text-[#22c55e]">
         Términos del Servicio
       </Link>
     </div>

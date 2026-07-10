@@ -21,16 +21,16 @@ export function MarketingHeader() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 h-16 border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md transition-all duration-300",
-        scrolled && "shadow-[0_4px_30px_rgba(0,0,0,0.25)]"
+        "fixed inset-x-0 top-0 z-50 h-16 border-b border-slate-200/80 bg-white/85 backdrop-blur-md transition-all duration-300",
+        scrolled && "shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
       )}
     >
       <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/#top" className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-indigo-500 text-sm font-bold text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#22c55e] text-sm font-bold text-white shadow-[0_0_16px_rgba(34,197,94,0.35)]">
             M
           </span>
-          <span className="text-sm font-semibold tracking-tight text-white">Menulia</span>
+          <span className="text-sm font-semibold tracking-tight text-slate-900">Menulia</span>
         </Link>
 
         <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
@@ -38,7 +38,7 @@ export function MarketingHeader() {
             <a
               key={item.href}
               href={item.href}
-              className="text-sm text-slate-400 transition-colors hover:text-white"
+              className="text-sm text-slate-600 transition-colors hover:text-[#22c55e]"
             >
               {item.label}
             </a>
@@ -47,16 +47,12 @@ export function MarketingHeader() {
 
         <div className="hidden items-center gap-2 md:flex">
           <Link href="/login">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-slate-300 hover:bg-white/10 hover:text-white"
-            >
+            <Button variant="ghost" size="sm" className="text-slate-700 hover:text-[#22c55e]">
               Iniciar sesión
             </Button>
           </Link>
           <Link href="/signup">
-            <Button size="sm" className="bg-white text-slate-900 hover:bg-slate-100">
+            <Button size="sm" className="rounded-[10px] neon-btn-primary">
               Empezar gratis
             </Button>
           </Link>
@@ -64,7 +60,7 @@ export function MarketingHeader() {
 
         <button
           type="button"
-          className="rounded-[10px] p-2 text-slate-300 hover:bg-white/10 md:hidden"
+          className="rounded-[10px] p-2 text-slate-700 hover:bg-slate-100 md:hidden"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
         >
@@ -74,7 +70,7 @@ export function MarketingHeader() {
 
       <div
         className={cn(
-          "border-t border-slate-800 bg-slate-950/95 backdrop-blur-md md:hidden",
+          "border-t border-slate-200 bg-white/95 backdrop-blur-md md:hidden",
           open ? "block" : "hidden"
         )}
       >
@@ -83,7 +79,7 @@ export function MarketingHeader() {
             <a
               key={item.href}
               href={item.href}
-              className="rounded-[10px] px-3 py-2.5 text-sm text-slate-300 hover:bg-white/5"
+              className="rounded-[10px] px-3 py-2.5 text-sm text-slate-700 hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
               onClick={() => setOpen(false)}
             >
               {item.label}
@@ -91,16 +87,12 @@ export function MarketingHeader() {
           ))}
           <div className="mt-2 flex gap-2">
             <Link href="/login" className="flex-1">
-              <Button
-                variant="ghost"
-                className="w-full border border-slate-700 text-slate-200 hover:bg-white/5"
-                size="sm"
-              >
+              <Button variant="ghost" className="w-full border border-slate-200" size="sm">
                 Iniciar sesión
               </Button>
             </Link>
             <Link href="/signup" className="flex-1">
-              <Button className="w-full bg-white text-slate-900 hover:bg-slate-100" size="sm">
+              <Button className="w-full rounded-[10px] neon-btn-primary" size="sm">
                 Empezar gratis
               </Button>
             </Link>
