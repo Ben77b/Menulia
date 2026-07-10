@@ -1,184 +1,181 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ContactForm } from "@/components/marketing/contact-form";
-import { LandingDevicePreview } from "@/components/marketing/landing-device-preview";
-import { LandingFeaturesSticky } from "@/components/marketing/landing-features-sticky";
-import { LandingDemoCanvas } from "@/components/marketing/landing-demo-canvas";
-import { LandingFaqAccordion } from "@/components/marketing/landing-faq-accordion";
 import { JsonLd } from "@/components/marketing/json-ld";
-import { faqPageJsonLd, marketingPageMetadata } from "@/lib/marketing/seo";
-import { LANDING_FAQ_ITEMS } from "@/lib/marketing/faq";
-import { Check } from "lucide-react";
+import { DEMO_MENU_SLUG } from "@/components/marketing/footer";
+import { marketingPageMetadata } from "@/lib/marketing/seo";
+import {
+  ArrowRight,
+  Languages,
+  QrCode,
+  ShieldCheck,
+  UtensilsCrossed,
+} from "lucide-react";
 
 export const metadata = marketingPageMetadata({
-  title: "Menus with Main Character Energy",
+  title: "Menulia — Menú digital premium para restaurantes",
   description:
-    "menulia.net — digital menus, live design studio, and real-time mobile previews for modern restaurants.",
+    "Crea un menú interactivo, elegante y adaptado a la normativa de alérgenos en menos de 5 minutos. Multilingüe, con QR y diseño profesional.",
   path: "/",
 });
 
-const PLANS = [
+const STEPS = [
   {
-    name: "Free",
-    price: "€0",
-    period: "forever",
-    description: "Launch a polished digital menu today.",
-    features: ["Menu builder", "Design studio", "Mobile preview", "28+ languages", "QR codes"],
-    cta: "Start free",
-    href: "/signup",
-    featured: false,
+    icon: UtensilsCrossed,
+    title: "Sube tus platos",
+    description: "Control total de precios, categorías y variaciones.",
   },
   {
-    name: "Premium",
-    price: "€49",
-    period: "/month",
-    description: "Reservations, AI import, and analytics for growing teams.",
-    features: [
-      "Everything in Free",
-      "Reservations",
-      "AI menu import",
-      "Analytics suite",
-      "Priority support",
-    ],
-    cta: "Get Premium",
-    href: "/signup",
-    featured: true,
+    icon: Languages,
+    title: "Traduce al instante",
+    description: "Cambia entre idiomas con un solo clic con nuestro motor optimizado.",
   },
-];
+  {
+    icon: QrCode,
+    title: "Descarga tu QR",
+    description: "Imprime y comparte tu menú al instante con tus comensales.",
+  },
+] as const;
 
 export default function LandingPage() {
   return (
     <>
-      <JsonLd data={faqPageJsonLd(LANDING_FAQ_ITEMS)} />
-      {/* Inverted floating hero capsule */}
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "Menulia — Menú digital premium",
+          description:
+            "Menú digital interactivo, multilingüe y conforme con la normativa de alérgenos UE.",
+          url: "https://menulia.net",
+        }}
+      />
+
+      {/* Hero */}
       <section
         id="top"
         aria-labelledby="hero-heading"
-        className="flex min-h-[100dvh] flex-col bg-white px-4 pb-12 pt-20 sm:px-6 md:pb-16 md:pt-24"
+        className="relative overflow-hidden px-4 pb-24 pt-28 sm:px-6 md:pb-32 md:pt-36"
       >
-        <div className="mx-auto flex w-full max-w-7xl flex-1 items-center">
-          <div
-            className="w-full rounded-[32px] bg-slate-900 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.14)] md:p-12 lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:p-14 xl:gap-16"
-          >
-            <div className="flex flex-col items-center justify-center text-center md:items-start md:text-left">
-              <h1
-                id="hero-heading"
-                className="text-5xl font-extrabold tracking-tighter text-white md:text-6xl lg:text-7xl lg:leading-[1.02]"
-              >
-                Menus with main{" "}
-                <span className="air-display-serif">character</span> energy
-              </h1>
-              <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/70 md:mx-0 md:mt-8 md:text-xl">
-                Replace the PDF with a mobile-first menu your guests actually enjoy — built,
-                styled, and previewed in the same workspace your team trusts every day.
-              </p>
-              <div className="mt-9 flex flex-wrap items-center justify-center gap-2 md:mt-10 md:justify-start">
-                <Link href="/signup">
-                  <Button variant="light">Start free</Button>
-                </Link>
-                <a href="#demo">
-                  <Button variant="light">See how it works</Button>
-                </a>
-              </div>
-            </div>
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(99,102,241,0.22),transparent)]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,#000_60%,transparent_100%)]"
+          aria-hidden
+        />
 
-            <div className="mt-12 flex items-center justify-center lg:mt-0">
-              <LandingDevicePreview tone="dark" className="lg:mx-0 lg:ml-auto" />
-            </div>
+        <div className="relative mx-auto max-w-4xl text-center">
+          <p className="mb-6 inline-flex items-center rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-200">
+            Menús digitales · Multilingüe · Normativa UE
+          </p>
+
+          <h1
+            id="hero-heading"
+            className="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl md:leading-[1.08]"
+          >
+            El menú digital que tu restaurante merece.
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-slate-400 sm:text-lg md:mt-8">
+            Crea un menú interactivo, elegante y adaptado a la normativa de alérgenos en menos de
+            5 minutos. Sin complicaciones.
+          </p>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <Link href="/signup">
+              <Button
+                size="lg"
+                className="min-w-[180px] bg-white text-slate-900 hover:bg-slate-100"
+              >
+                Empezar gratis
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href={`/menu/${DEMO_MENU_SLUG}`} target="_blank" rel="noopener">
+              <Button
+                variant="outline"
+                size="lg"
+                className="min-w-[180px] border-slate-600 bg-transparent text-white hover:border-slate-500 hover:bg-white/5"
+              >
+                Ver ejemplo
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
-      <LandingFeaturesSticky />
-      <LandingDemoCanvas />
-
-      {/* Pricing */}
+      {/* 3-step flow */}
       <section
-        id="pricing"
-        aria-labelledby="pricing-heading"
-        className="border-b border-border bg-white py-28 max-md:text-center md:py-32"
+        id="como-funciona"
+        aria-labelledby="steps-heading"
+        className="border-t border-slate-800/80 px-4 py-20 sm:px-6 md:py-28"
       >
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl">
           <header className="mx-auto max-w-2xl text-center">
-            <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Pricing
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-400">
+              Cómo funciona
             </p>
             <h2
-              id="pricing-heading"
-              className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl"
+              id="steps-heading"
+              className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl"
             >
-              Simple launch <span className="air-display-serif">tiers</span>
+              Tres pasos. Menú listo.
             </h2>
-            <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-              Start free. Upgrade when your restaurant is ready for more.
+            <p className="mt-4 text-sm leading-relaxed text-slate-400 sm:text-base">
+              Diseñado para dueños de restaurante que quieren lanzar rápido sin sacrificar calidad.
             </p>
           </header>
 
-          <div className="mt-14 grid gap-6 lg:grid-cols-2">
-            {PLANS.map((plan) => (
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {STEPS.map((step, index) => (
               <article
-                key={plan.name}
-                className={`air-card flex h-full flex-col air-card-pad ${
-                  plan.featured ? "border-slate-900 ring-1 ring-slate-900" : ""
-                }`}
+                key={step.title}
+                className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-8 transition-all duration-300 hover:border-indigo-500/40 hover:bg-slate-900/80 hover:shadow-[0_0_40px_rgba(99,102,241,0.08)]"
               >
-                {plan.featured && (
-                  <span className="mb-5 inline-flex w-fit rounded-full bg-slate-900 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white max-md:mx-auto">
-                    Most popular
-                  </span>
-                )}
-                <h3 className="text-2xl font-semibold tracking-tight text-slate-900">
-                  {plan.name}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {plan.description}
+                <span className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300 ring-1 ring-indigo-500/20 transition-colors group-hover:bg-indigo-500/25">
+                  <step.icon className="h-6 w-6" aria-hidden />
+                </span>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                  Paso {index + 1}
                 </p>
-                <p className="mt-6">
-                  <span className="text-5xl font-bold tracking-tight text-slate-900">
-                    {plan.price}
-                  </span>
-                  <span className="text-muted-foreground">{plan.period}</span>
-                </p>
-                <ul className="mt-8 flex-1 space-y-3">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start justify-center gap-3 text-sm text-slate-800 md:justify-start">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-slate-900" aria-hidden />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={plan.href} className="mt-10 block">
-                  <Button className="w-full" variant={plan.featured ? "dark" : "light"}>
-                    {plan.cta}
-                  </Button>
-                </Link>
+                <h3 className="mt-2 text-lg font-semibold text-white">{step.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-400">{step.description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ */}
-      <LandingFaqAccordion />
+      {/* Compliance banner */}
+      <section aria-labelledby="compliance-heading" className="px-4 pb-24 sm:px-6 md:pb-32">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex flex-col items-center gap-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-6 py-8 text-center sm:flex-row sm:gap-6 sm:px-10 sm:text-left">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25">
+              <ShieldCheck className="h-7 w-7" aria-hidden />
+            </span>
+            <div>
+              <h2 id="compliance-heading" className="text-lg font-semibold text-white">
+                100% conforme con la normativa española y los 14 alérgenos UE
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                Menulia incluye el motor de alérgenos según el Reglamento UE 1169/2011, para que tu
+                menú cumpla con la legislación alimentaria española y europea desde el primer día.
+              </p>
+            </div>
+          </div>
 
-      {/* Contact */}
-      <section id="contact" aria-labelledby="contact-heading" className="bg-white py-28 md:py-32">
-        <div className="mx-auto max-w-xl px-4 sm:px-6">
-          <header className="mb-10 text-center">
-            <p className="mb-4 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Contact
-            </p>
-            <h2
-              id="contact-heading"
-              className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl"
-            >
-              Get in <span className="air-display-serif">touch</span>
-            </h2>
-            <p className="mx-auto mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-              Questions about onboarding or Premium? We typically reply within 24 hours.
-            </p>
-          </header>
-          <ContactForm />
+          <div className="mt-12 text-center">
+            <Link href="/signup">
+              <Button
+                size="lg"
+                className="min-w-[200px] bg-indigo-500 text-white hover:bg-indigo-400"
+              >
+                Crear mi menú ahora
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
     </>

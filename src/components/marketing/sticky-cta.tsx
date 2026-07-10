@@ -19,10 +19,10 @@ export function StickyCta() {
 
   return (
     <div className="fixed bottom-6 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 air-card p-3 shadow-[0_8px_40px_rgba(0,0,0,0.1)] backdrop-blur-md">
-      <p className="flex-1 text-sm font-medium text-slate-900">Ready to launch your menu?</p>
+      <p className="flex-1 text-sm font-medium text-slate-900">¿Listo para lanzar tu menú?</p>
       <Link href="/signup">
         <Button variant="dark" size="sm">
-          Get started
+          Empezar gratis
         </Button>
       </Link>
       <button

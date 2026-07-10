@@ -1,5 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import {
+  PublicSiteFooterBar,
+  PublicSiteLegalLinks,
+} from "@/components/marketing/public-site-footer-bar";
 
 interface LegalDocumentLayoutProps {
   title: string;
@@ -25,20 +29,10 @@ export function LegalDocumentLayout({ title, lastUpdated, children }: LegalDocum
       </article>
 
       <footer className="border-t border-border bg-white px-6 py-10">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-8 gap-y-3">
-          <Link href="/legal" className="air-link">
-            Aviso Legal
-          </Link>
-          <Link href="/privacy" className="air-link">
-            Política de Privacidad
-          </Link>
-          <Link href="/terms" className="air-link">
-            Términos del Servicio
-          </Link>
+        <div className="mx-auto max-w-3xl">
+          <PublicSiteLegalLinks />
+          <PublicSiteFooterBar className="mt-6" tone="dark" />
         </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} menulia.net
-        </p>
       </footer>
     </div>
   );
