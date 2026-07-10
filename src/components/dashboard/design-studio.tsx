@@ -89,7 +89,7 @@ const MOCK_FLAT: PublicMenuSubcategory[] = [
         hide_price: false,
         image: null,
         tags: ["Gluten-Free"],
-        allergens: ["Fish"],
+        allergens: ["fish"],
       },
     ],
   },

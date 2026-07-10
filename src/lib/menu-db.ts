@@ -1,4 +1,4 @@
-import { parseDishTagsFromDb, serializeDishTagsForDb } from "./dietary-tags";
+import { parseDishTagsFromDb, serializeAllergensForDb, serializeDishTagsForDb } from "./dietary-tags";
 import {
   parseLocalizedFieldFromDb,
   resolveLocalizedText,
@@ -43,6 +43,12 @@ async function insertDishRow(
       continue;
     }
 
+    if ("allergens" in current) {
+      const { allergens: _ignored, ...withoutAllergens } = current;
+      current = withoutAllergens;
+      continue;
+    }
+
     if ("display_order" in current) {
       const { display_order: _ignored, ...withoutOrder } = current;
       current = withoutOrder;
@@ -65,7 +71,16 @@ async function updateDishRow(
   if (result.error && isMissingColumnError(result.error)) {
     const hasHidePrice = "hide_price" in payload;
     const hasLockTitleTranslation = "lock_title_translation" in payload;
+    const hasAllergens = "allergens" in payload;
     const hasAvailability = "is_available" in payload;
+
+    if (hasAllergens) {
+      const { allergens: _ignored, ...withoutAllergens } = payload;
+      result = await supabase.from("dishes").update(withoutAllergens).eq("id", dishId);
+      if (!result.error) {
+        return { error: result.error, availabilityPersisted: !result.error && hasAvailability };
+      }
+    }
 
     // Retry without `hide_price` first to preserve `is_available` updates.
     if (hasHidePrice) {
@@ -375,6 +390,7 @@ export async function createMenuDish(
   options?: { displayOrder?: number }
 ): Promise<MenuDishRecord> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
+  const allergensForDb = serializeAllergensForDb(allergens, tags);
   const displayOrder =
     options?.displayOrder ?? (await getNextDishDisplayOrder(categoryId));
 
@@ -385,6 +401,7 @@ export async function createMenuDish(
     price: String(price),
     image,
     tags: tagsForDb,
+    allergens: allergensForDb,
     is_available: true,
     hide_price: hidePrice,
     display_order: displayOrder,
@@ -411,6 +428,7 @@ export async function updateMenuDish(
   lockTitleTranslation: boolean = false
 ): Promise<void> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
+  const allergensForDb = serializeAllergensForDb(allergens, tags);
 
   const { error } = await updateDishRow(dishId, {
     name: serializeLocalizedFieldForDb(name),
@@ -418,6 +436,7 @@ export async function updateMenuDish(
     price: String(price),
     image,
     tags: tagsForDb,
+    allergens: allergensForDb,
     is_available: isAvailable,
     hide_price: hidePrice,
     lock_title_translation: lockTitleTranslation,
@@ -485,6 +504,7 @@ async function cloneDishToCategory(
 ): Promise<MenuDishRecord> {
   const normalized = parseDishTagsFromDb(source);
   const tagsForDb = serializeDishTagsForDb(normalized.tags, normalized.allergens);
+  const allergensForDb = serializeAllergensForDb(normalized.allergens, normalized.tags);
 
   const { data, error: insertError } = await insertDishRow({
     category_id: categoryId,
@@ -493,6 +513,7 @@ async function cloneDishToCategory(
     price: String(source.price ?? "0"),
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
+    allergens: allergensForDb,
     is_available: readIsAvailable(source),
     hide_price: Boolean(source.hide_price),
     lock_title_translation: Boolean(source.lock_title_translation),
@@ -518,6 +539,7 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
 
   const normalized = parseDishTagsFromDb(source);
   const tagsForDb = serializeDishTagsForDb(normalized.tags, normalized.allergens);
+  const allergensForDb = serializeAllergensForDb(normalized.allergens, normalized.tags);
 
   const displayOrder = await getNextDishDisplayOrder(source.category_id as string);
 
@@ -528,6 +550,7 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     price: String(source.price ?? "0"),
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
+    allergens: allergensForDb,
     is_available: readIsAvailable(source as Record<string, unknown>),
     hide_price: Boolean((source as Record<string, unknown>).hide_price),
     lock_title_translation: Boolean(
@@ -583,7 +606,8 @@ export async function duplicateMenuCategory(
             description: dish.description,
             price: dish.price,
             image: dish.image_url,
-            tags: serializeDishTagsForDb(dish.tags, dish.allergens),
+            tags: dish.tags,
+            allergens: dish.allergens,
             is_available: dish.is_available,
             hide_price: dish.hide_price,
             lock_title_translation: dish.lock_title_translation,

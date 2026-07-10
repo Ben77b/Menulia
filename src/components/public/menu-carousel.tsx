@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { ALLERGEN_ICONS } from "@/lib/types";
-import { DIETARY_FILTERS } from "@/lib/dietary-tags";
+import { DIETARY_FILTERS, getAllergenTagMeta } from "@/lib/dietary-tags";
 import type { RestaurantDesign } from "@/lib/restaurant-design";
 
 interface CarouselItem {
@@ -22,9 +21,10 @@ interface CarouselItem {
 interface MenuCarouselProps {
   items: CarouselItem[];
   design: RestaurantDesign;
+  allergenLocale?: "en" | "es";
 }
 
-export function MenuCarousel({ items, design }: MenuCarouselProps) {
+export function MenuCarousel({ items, design, allergenLocale = "en" }: MenuCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(items.length);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -141,11 +141,14 @@ export function MenuCarousel({ items, design }: MenuCarouselProps) {
                   )}
                   {isActive && item.allergens.length > 0 && (
                     <div className="mt-1 flex justify-center gap-0.5">
-                      {item.allergens.map((a: string) => (
-                        <span key={a} className="text-xs" title={a}>
-                          {ALLERGEN_ICONS[a] ?? "⚠️"}
-                        </span>
-                      ))}
+                      {item.allergens.map((a: string) => {
+                        const meta = getAllergenTagMeta(a, allergenLocale);
+                        return (
+                          <span key={a} className="text-xs" title={meta.label}>
+                            {meta.icon}
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

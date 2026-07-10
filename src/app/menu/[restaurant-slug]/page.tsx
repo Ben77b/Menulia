@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { notFound } from "next/navigation";
 import { parseMenuThemeColors } from "@/lib/theme-colors";
 import {
   resolveUnifiedMenuTheme,
@@ -24,18 +25,6 @@ import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 
 interface PageProps {
   params: Promise<{ "restaurant-slug": string }>;
-}
-
-function MenuAwaitingSync({ slugParam }: { slugParam: string }) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
-      <div className="max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-lg font-medium text-gray-900">
-          Menu Route Connected. Awaiting database sync for slug: {slugParam}
-        </p>
-      </div>
-    </div>
-  );
 }
 
 function resolveFonts(typography: Record<string, unknown> | null | undefined) {
@@ -65,7 +54,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
   const slugParam = resolvedParams["restaurant-slug"];
 
   const restaurant = await getPublicRestaurantRow(slugParam);
-  if (!restaurant) return <MenuAwaitingSync slugParam={slugParam} />;
+  if (!restaurant) notFound();
 
   const profile = restaurantRowToProfile(restaurant, slugParam);
   const restaurantId = profile.id;

@@ -127,12 +127,4 @@ export { LANGUAGES } from "./languages";
 
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-export const ALLERGEN_ICONS: Record<string, string> = {
-  Gluten: "🌾",
-  Nuts: "🥜",
-  Dairy: "🥛",
-  Eggs: "🥚",
-  Shellfish: "🦐",
-  Soy: "🫘",
-  Fish: "🐟",
-};
+export { ALLERGEN_ICONS } from "./dietary-tags";

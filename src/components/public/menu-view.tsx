@@ -4,11 +4,10 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { RestaurantFull, LanguageCode } from "@/lib/types";
 import type { RestaurantDesign } from "@/lib/restaurant-design";
-import { DIETARY_FILTERS } from "@/lib/dietary-tags";
+import { DIETARY_FILTERS, getAllergenTagMeta } from "@/lib/dietary-tags";
 import { cn } from "@/lib/utils";
 import { MenuCarousel } from "./menu-carousel";
 import { formatPrice } from "@/lib/utils";
-import { ALLERGEN_ICONS } from "@/lib/types";
 
 interface MenuViewProps {
   restaurant: RestaurantFull;
@@ -18,6 +17,7 @@ interface MenuViewProps {
 }
 
 export function MenuView({ restaurant, language, design, fontClasses }: MenuViewProps) {
+  const allergenLocale = language === "es" ? "es" : "en";
   const [categories, setCategories] = useState(restaurant.categories);
   const [activeCategory, setActiveCategory] = useState(
     restaurant.categories[0]?.id ?? ""
@@ -152,7 +152,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
 
             {cat.layout_type === 'carousel' ? (
               <div className="py-4">
-                <MenuCarousel items={cat.items} design={design} />
+                <MenuCarousel items={cat.items} design={design} allergenLocale={allergenLocale} />
               </div>
             ) : (
               <div className="space-y-4">
@@ -206,11 +206,14 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                         </div>
                         {item.allergens.length > 0 && (
                           <div className="mt-2 flex gap-1">
-                            {item.allergens.map((a: string) => (
-                              <span key={a} className="text-xs" title={a}>
-                                {ALLERGEN_ICONS[a] ?? "⚠️"}
-                              </span>
-                            ))}
+                            {item.allergens.map((a: string) => {
+                              const meta = getAllergenTagMeta(a, allergenLocale);
+                              return (
+                                <span key={a} className="text-xs" title={meta.label}>
+                                  {meta.icon}
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

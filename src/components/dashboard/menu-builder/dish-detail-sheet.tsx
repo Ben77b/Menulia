@@ -11,6 +11,7 @@ import type { MenuBuilderDish } from "@/lib/menu-builder-types";
 import {
   ALLERGEN_TAG_OPTIONS,
   FILTERABLE_TAG_OPTIONS,
+  getAllergenEditorLabel,
   normalizeDishTagFields,
 } from "@/lib/dietary-tags";
 import { parsePriceInput } from "@/lib/price-input";
@@ -363,7 +364,7 @@ export function DishDetailSheet({
               Informational only — shown on dish cards, not used for menu filtering.
             </p>
             <div className="flex flex-wrap gap-2">
-              {ALLERGEN_TAG_OPTIONS.map(({ tag, label }) => (
+              {ALLERGEN_TAG_OPTIONS.map(({ tag }) => (
                 <button
                   key={tag}
                   type="button"
@@ -375,7 +376,7 @@ export function DishDetailSheet({
                       : "border-border text-muted-foreground"
                   )}
                 >
-                  {label}
+                  {getAllergenEditorLabel(tag)}
                 </button>
               ))}
             </div>

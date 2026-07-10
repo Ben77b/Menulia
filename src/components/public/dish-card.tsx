@@ -108,6 +108,7 @@ export function DishCard({
   const localizedName = resolveLocalizedText(dish.name, lang);
   const localizedDescription = resolveLocalizedText(dish.description, lang);
   const imageAlt = `${localizedName} at ${restaurantName}`;
+  const allergenLocale = lang === "es" ? "es" : "en";
 
   const imageBlock =
     showImage && dish.image ? (
@@ -170,7 +171,7 @@ export function DishCard({
       {display.showDietary && (dish.allergens ?? []).length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5">
           {(dish.allergens ?? []).map((allergen) => {
-            const meta = getAllergenTagMeta(allergen);
+            const meta = getAllergenTagMeta(allergen, allergenLocale);
             return (
               <TagBadge
                 key={allergen}

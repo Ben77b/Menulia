@@ -1,6 +1,6 @@
 "use client";
 
-import { ALLERGEN_TAG_OPTIONS } from "@/lib/dietary-tags";
+import { ALLERGEN_TAG_OPTIONS, getAllergenLabel } from "@/lib/dietary-tags";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 
 interface PublicMenuAllergenLegendProps {
@@ -52,7 +52,7 @@ export function PublicMenuAllergenLegend({
             }}
           >
             <span aria-hidden>{icon}</span>
-            <span>{tag}</span>
+            <span>{getAllergenLabel(tag, locale)}</span>
           </span>
         ))}
       </div>
