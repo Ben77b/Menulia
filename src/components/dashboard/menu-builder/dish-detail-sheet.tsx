@@ -24,6 +24,7 @@ import {
 } from "@/lib/menu-content-languages";
 import { SecondaryLanguageField } from "./secondary-language-field";
 import { AllergenPopoverField } from "./allergen-popover-field";
+import { CurrencyInput } from "@/components/ui/currency-input";
 
 export interface PriceVariationDraft {
   label: string;
@@ -354,25 +355,18 @@ export function DishDetailSheet({
             {!draft.usePriceVariations ? (
               <>
                 <label className="air-label">Price</label>
-                <div className="relative mt-1.5">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#86868B]">
-                    €
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={draft.price}
-                    onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))}
-                    onBlur={() =>
-                      setDraft((p) => {
-                        if (!p.price.trim()) return p;
-                        return { ...p, price: parsePriceInput(p.price).toFixed(2) };
-                      })
-                    }
-                    placeholder="12.50"
-                    className="air-input pl-8"
-                  />
-                </div>
+                <CurrencyInput
+                  value={draft.price}
+                  onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))}
+                  onBlur={() =>
+                    setDraft((p) => {
+                      if (!p.price.trim()) return p;
+                      return { ...p, price: parsePriceInput(p.price).toFixed(2) };
+                    })
+                  }
+                  placeholder="12.50"
+                  wrapperClassName="mt-1.5"
+                />
                 <button
                   type="button"
                   onClick={enablePriceVariations}
@@ -410,26 +404,19 @@ export function DishDetailSheet({
                         placeholder="Size or portion"
                         className="air-input min-w-0 flex-1"
                       />
-                      <div className="relative w-28 shrink-0">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#86868B]">
-                          €
-                        </span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={row.price}
-                          onChange={(e) => updatePriceVariation(index, { price: e.target.value })}
-                          onBlur={() =>
-                            updatePriceVariation(index, {
-                              price: row.price.trim()
-                                ? parsePriceInput(row.price).toFixed(2)
-                                : row.price,
-                            })
-                          }
-                          placeholder="0.00"
-                          className="air-input pl-8"
-                        />
-                      </div>
+                      <CurrencyInput
+                        value={row.price}
+                        onChange={(e) => updatePriceVariation(index, { price: e.target.value })}
+                        onBlur={() =>
+                          updatePriceVariation(index, {
+                            price: row.price.trim()
+                              ? parsePriceInput(row.price).toFixed(2)
+                              : row.price,
+                          })
+                        }
+                        placeholder="0.00"
+                        wrapperClassName="w-28 shrink-0"
+                      />
                       {draft.priceVariations.length > 1 && (
                         <button
                           type="button"

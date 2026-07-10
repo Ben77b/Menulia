@@ -29,10 +29,10 @@ export function ThemeColorGroupSection({
   const [advancedOpen, setAdvancedOpen] = useState(defaultExpanded);
 
   return (
-    <section className="air-card overflow-hidden">
-      <div className="border-b border-[#F5F5F7] px-5 py-4">
+    <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <div className="border-b border-slate-100 px-5 py-4 md:px-6">
         <h3 className="text-sm font-semibold tracking-tight text-slate-900">{group.title}</h3>
-        <p className="mt-0.5 text-xs text-[#86868B]">{group.parentDescription}</p>
+        <p className="mt-1 text-xs text-slate-400">{group.parentDescription}</p>
       </div>
 
       <div className="border-b border-[#F5F5F7] p-4">

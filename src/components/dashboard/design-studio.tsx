@@ -376,10 +376,10 @@ export function DesignStudio() {
         )}
 
         {activeTab === "colours" && (
-          <div className="air-card air-card-pad mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto">
+          <div className="mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
             <div className="mb-6">
-              <h2 className="air-section-title">Colours</h2>
-              <p className="air-page-subtitle">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">Colours</h2>
+              <p className="mt-1 text-xs text-slate-400">
                 Each section has a parent colour that controls the whole region. Expand advanced
                 controls to override individual elements — changes sync instantly with the preview.
               </p>
@@ -402,20 +402,37 @@ export function DesignStudio() {
         )}
 
         {activeTab === "fonts" && (
-          <div className="air-card air-card-pad mx-auto max-w-2xl">
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+            <div className="mb-6">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">Typography</h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Pick a curated font pairing or fine-tune title, category, and body fonts.
+              </p>
+            </div>
             <DesignTypographySection showHeading={false} />
           </div>
         )}
 
         {activeTab === "display" && (
-          <div className="air-card air-card-pad mx-auto max-w-2xl">
-            <h2 className="air-section-title mb-2">Display Options</h2>
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+            <div className="mb-6">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">Display Options</h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Control what guests see on your public menu — prices, descriptions, images, and dietary info.
+              </p>
+            </div>
             <DesignDisplaySection />
           </div>
         )}
 
         {activeTab === "logo-seo" && (
-          <div className="air-card air-card-pad mx-auto max-w-2xl">
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+            <div className="mb-6">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">Logo & SEO</h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Upload your logo and set search preview title and description.
+              </p>
+            </div>
             <DesignLogoSeoSection showHeading={false} />
           </div>
         )}

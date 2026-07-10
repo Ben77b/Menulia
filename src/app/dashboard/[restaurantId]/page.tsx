@@ -137,26 +137,27 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 sm:grid-cols-3 mb-8">
-        <div className="air-card p-5">
+      <div className="grid gap-6 sm:grid-cols-3 mb-8">
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <UtensilsCrossed className="h-5 w-5 text-slate-600" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalCategories ?? 0}</p>
-          <p className="text-sm text-[#86868B]">Total Menu Categories</p>
+          <p className="mt-1 text-xs text-slate-400">Total Menu Categories</p>
         </div>
-        <div className="air-card p-5">
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <LayoutTemplate className="h-5 w-5 text-slate-600" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalDishes ?? 0}</p>
-          <p className="text-sm text-[#86868B]">Total Active Dishes</p>
+          <p className="mt-1 text-xs text-slate-400">Total Active Dishes</p>
         </div>
-        <div className="air-card p-5">
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <QrCode className="h-5 w-5 text-slate-600" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalLinks ?? 0}</p>
-          <p className="text-sm text-[#86868B]">Dynamic Link Count</p>
+          <p className="mt-1 text-xs text-slate-400">Dynamic Link Count</p>
         </div>
       </div>
 
-      <div className="air-card air-card-pad">
-        <h2 className="air-section-title mb-4">Get Started</h2>
+      <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+        <h2 className="text-base font-semibold text-slate-900">Get Started</h2>
+        <p className="mt-1 mb-4 text-xs text-slate-400">Complete these steps to launch your digital menu.</p>
         <div className="space-y-4">
           {quickSteps.map((step, index) => (
             <Link

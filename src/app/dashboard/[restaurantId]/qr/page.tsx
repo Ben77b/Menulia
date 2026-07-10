@@ -81,14 +81,16 @@ export default function ShareMenuPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <div className="air-card air-card-pad xl:col-span-2">
-          <div className="mb-6 flex items-center gap-3">
-            <QrCode className="h-5 w-5 text-muted-foreground" />
-            <h2 className="air-section-title">Menu QR Code</h2>
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8 xl:col-span-2">
+          <div className="mb-6">
+            <div className="flex items-center gap-3">
+              <QrCode className="h-5 w-5 text-slate-500" />
+              <h2 className="text-base font-semibold text-slate-900">Menu QR Code</h2>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              Print this code for tables, menus, or signage. Guests scan to open your live digital menu.
+            </p>
           </div>
-          <p className="mb-6 text-sm text-muted-foreground">
-            Print this code for tables, menus, or signage. Guests scan to open your live digital menu.
-          </p>
 
           <div className="flex flex-col items-start gap-8 lg:flex-row">
             <div className="air-card p-6">
@@ -124,14 +126,16 @@ export default function ShareMenuPage() {
           </div>
         </div>
 
-        <div className="air-card air-card-pad">
-          <div className="mb-4 flex items-center gap-3">
-            <Link2 className="h-5 w-5 text-muted-foreground" />
-            <h2 className="air-section-title">Direct Link</h2>
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+          <div className="mb-4">
+            <div className="flex items-center gap-3">
+              <Link2 className="h-5 w-5 text-slate-500" />
+              <h2 className="text-base font-semibold text-slate-900">Direct Link</h2>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              Share this URL in messages, social posts, or your Google Business profile.
+            </p>
           </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Share this URL in messages, social posts, or your Google Business profile.
-          </p>
           <div className="rounded-[10px] border border-border bg-muted p-3">
             <code className="break-all text-sm text-slate-700">{restaurantUrl}</code>
           </div>
@@ -146,14 +150,16 @@ export default function ShareMenuPage() {
           </Button>
         </div>
 
-        <div className="air-card air-card-pad">
-          <div className="mb-4 flex items-center gap-3">
-            <Code2 className="h-5 w-5 text-muted-foreground" />
-            <h2 className="air-section-title">Website Embed</h2>
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+          <div className="mb-4">
+            <div className="flex items-center gap-3">
+              <Code2 className="h-5 w-5 text-slate-500" />
+              <h2 className="text-base font-semibold text-slate-900">Website Embed</h2>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">
+              Paste this iframe into your website builder or HTML to embed your live menu.
+            </p>
           </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Paste this iframe into your website builder or HTML to embed your live menu.
-          </p>
           <pre className="max-h-40 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
             <code>{embedSnippet}</code>
           </pre>

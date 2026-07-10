@@ -16,6 +16,7 @@ import {
 } from "@/lib/menu-content-languages";
 import { saveRestaurantPrimaryLanguage } from "@/lib/restaurant-settings";
 import { cn } from "@/lib/utils";
+import { DashboardSectionCard } from "@/components/dashboard/dashboard-section-card";
 
 interface SettingsLanguagesPanelProps {
   restaurantId: string;
@@ -104,90 +105,99 @@ export function SettingsLanguagesPanel({
 
   return (
     <div className="space-y-6">
-      <div className="air-card air-card-pad">
-        <div className="mb-6 flex items-start gap-3">
-          <Globe className="mt-0.5 h-5 w-5 shrink-0 text-gray-600" />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Menu Languages</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Choose the primary language you write your menu in. The builder and public menu default
-              to this language first.
-            </p>
+      <DashboardSectionCard
+        title="Menu Languages"
+        description="Choose the primary language you write your menu in. The builder and public menu default to this language first."
+        icon={<Globe className="h-5 w-5" />}
+      >
+        <div>
+          <p className="mb-3 text-sm font-medium text-slate-700">
+            Idioma Principal del Menú / Primary Menu Language
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {MENU_CONTENT_LANGUAGES.map((language) => {
+              const selected = primaryLanguage === language.code;
+              return (
+                <button
+                  key={language.code}
+                  type="button"
+                  disabled={savingPrimary}
+                  onClick={() => onPrimaryLanguageChange(language.code)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-200",
+                    selected
+                      ? "scale-[1.02] border-indigo-300 bg-indigo-50/80 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                    savingPrimary && "cursor-not-allowed opacity-60"
+                  )}
+                >
+                  <span className="text-xl" aria-hidden>
+                    {language.flag}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      selected ? "font-medium text-indigo-900" : "text-slate-700"
+                    )}
+                  >
+                    {language.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="primary-menu-language" className="air-label">
-              Idioma Principal del Menú / Primary Menu Language
-            </label>
-            <select
-              id="primary-menu-language"
-              value={primaryLanguage}
-              onChange={(event) =>
-                onPrimaryLanguageChange(event.target.value as MenuContentLanguage)
-              }
-              disabled={savingPrimary}
-              className="air-select mt-1.5 max-w-md"
-            >
-              {MENU_CONTENT_LANGUAGES.map((language) => (
-                <option key={language.code} value={language.code}>
-                  {language.flag} {language.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-xs text-[#86868B]">
-              Secondary language for quick translations:{" "}
-              {getMenuContentLanguageMeta(secondaryLanguage).label}
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void handleSavePrimaryLanguage()}
-            disabled={savingPrimary}
-          >
-            {savingPrimary ? "Saving..." : "Save primary language"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="air-card air-card-pad">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Auto-translate with DeepL</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            DeepL detects each item automatically. Select only the languages you want to add — skip
-            your primary language ({getMenuContentLanguageMeta(primaryLanguage).label}).
+          <p className="mt-3 text-xs text-slate-400">
+            Secondary language for quick translations:{" "}
+            {getMenuContentLanguageMeta(secondaryLanguage).label}
           </p>
         </div>
 
-        <div className="mb-6">
-          <p className="mb-3 text-sm font-medium text-gray-700">Translate into</p>
-          <div className="flex flex-wrap gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void handleSavePrimaryLanguage()}
+          disabled={savingPrimary}
+        >
+          {savingPrimary ? "Saving..." : "Save primary language"}
+        </Button>
+      </DashboardSectionCard>
+
+      <DashboardSectionCard
+        title="Auto-translate with DeepL"
+        description={`DeepL detects each item automatically. Select languages to add — skip your primary (${getMenuContentLanguageMeta(primaryLanguage).label}).`}
+        icon={<Sparkles className="h-5 w-5" />}
+      >
+        <div>
+          <p className="mb-3 text-sm font-medium text-slate-700">Translate into</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {translationTargets.map((language) => {
               const isChecked = targetLanguages.has(language.code);
 
               return (
-                <label
+                <button
                   key={language.code}
+                  type="button"
+                  disabled={translating}
+                  onClick={() => toggleTargetLanguage(language.code)}
                   className={cn(
-                    "inline-flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-200",
                     isChecked
-                      ? "border-slate-900 bg-slate-900 text-white"
-                      : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                      ? "scale-[1.02] border-indigo-300 bg-indigo-50/80 shadow-sm"
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                   )}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    disabled={translating}
-                    onChange={() => toggleTargetLanguage(language.code)}
-                    className="sr-only"
-                  />
-                  <span>{language.flag}</span>
-                  <span>{language.label}</span>
-                </label>
+                  <span className="text-lg" aria-hidden>
+                    {language.flag}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs leading-tight",
+                      isChecked ? "font-medium text-indigo-900" : "text-slate-700"
+                    )}
+                  >
+                    {language.label}
+                  </span>
+                </button>
               );
             })}
           </div>
@@ -206,7 +216,7 @@ export function SettingsLanguagesPanel({
           )}
           Translate Menu
         </Button>
-      </div>
+      </DashboardSectionCard>
     </div>
   );
 }

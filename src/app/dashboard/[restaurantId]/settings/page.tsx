@@ -19,7 +19,6 @@ import {
   Plus,
   Building2,
   AlertTriangle,
-  MapPin,
   Phone,
 } from "lucide-react";
 import {
@@ -36,6 +35,10 @@ import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useSettingsFormDraft } from "@/hooks/use-settings-form-draft";
+import {
+  DashboardFieldLabel,
+  DashboardSectionCard,
+} from "@/components/dashboard/dashboard-section-card";
 
 type SettingsTab = "general" | "hours-location" | "social-links" | "languages" | "danger";
 
@@ -275,202 +278,192 @@ function SettingsPageContent() {
       <div className="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-8">
         <div className="min-w-0 space-y-6 pb-8">
           {activeTab === "general" && (
-            <div className="air-card air-card-pad">
-              <div className="mb-4 flex items-center gap-3">
-                <Building2 className="h-5 w-5 text-gray-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Restaurant Name & Tagline</h2>
+            <DashboardSectionCard
+              title="Restaurant Name & Tagline"
+              description="Your public identity — name, tagline, and menu URL slug."
+              icon={<Building2 className="h-5 w-5" />}
+            >
+              <div>
+                <DashboardFieldLabel label="Restaurant Name" />
+                <input
+                  type="text"
+                  value={restaurantName}
+                  onChange={(e) => patchDraft({ restaurantName: e.target.value })}
+                  className="air-input"
+                  placeholder="Your Restaurant Name"
+                />
               </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Restaurant Name
-                  </label>
+              <div>
+                <DashboardFieldLabel
+                  label="Tagline"
+                  hint="Short description shown in search previews and metadata"
+                />
+                <input
+                  type="text"
+                  value={restaurantTagline}
+                  onChange={(e) => patchDraft({ restaurantTagline: e.target.value })}
+                  className="air-input"
+                  placeholder="Fresh seasonal cuisine in the heart of the city"
+                />
+              </div>
+              <div>
+                <DashboardFieldLabel
+                  label="Public Menu URL"
+                  hint="The slug guests use at menulia.net/menu/your-slug"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400">menulia.net/menu/</span>
                   <input
                     type="text"
-                    value={restaurantName}
-                    onChange={(e) => patchDraft({ restaurantName: e.target.value })}
-                    className="air-input"
-                    placeholder="Your Restaurant Name"
+                    value={restaurantSlug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
+                    className="air-input flex-1"
+                    placeholder="your-restaurant-slug"
                   />
                 </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">Tagline</label>
-                  <input
-                    type="text"
-                    value={restaurantTagline}
-                    onChange={(e) => patchDraft({ restaurantTagline: e.target.value })}
-                    className="air-input"
-                    placeholder="Fresh seasonal cuisine in the heart of the city"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Short description shown in search previews and metadata
-                  </p>
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Public Menu URL
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">menulia.net/menu/</span>
-                    <input
-                      type="text"
-                      value={restaurantSlug}
-                      onChange={(e) => handleSlugChange(e.target.value)}
-                      className="air-input flex-1"
-                      placeholder="your-restaurant-slug"
-                    />
-                  </div>
-                  {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
-                </div>
+                {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
               </div>
-            </div>
+            </DashboardSectionCard>
           )}
 
           {activeTab === "hours-location" && (
             <>
-              <div className="air-card air-card-pad">
-                <div className="mb-4 flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-gray-600" />
-                  <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+              <DashboardSectionCard
+                title="Contact Information"
+                description="Address, phone, and email shown on your public menu footer."
+                icon={<Phone className="h-5 w-5" />}
+              >
+                <div>
+                  <DashboardFieldLabel
+                    label="Physical Location"
+                    hint="Street address or neighborhood guests can find you"
+                  />
+                  <input
+                    type="text"
+                    value={restaurantLocation}
+                    onChange={(e) => patchDraft({ restaurantLocation: e.target.value })}
+                    className="air-input"
+                    placeholder="123 Main Street, Dublin"
+                  />
                 </div>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
-                        Physical Location
-                      </span>
-                    </label>
+                    <DashboardFieldLabel label="Phone Number" />
                     <input
-                      type="text"
-                      value={restaurantLocation}
-                      onChange={(e) => patchDraft({ restaurantLocation: e.target.value })}
+                      type="tel"
+                      value={restaurantPhone}
+                      onChange={(e) => patchDraft({ restaurantPhone: e.target.value })}
                       className="air-input"
-                      placeholder="123 Main Street, Dublin"
+                      placeholder="+1 234 567 890"
                     />
                   </div>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        value={restaurantPhone}
-                        onChange={(e) => patchDraft({ restaurantPhone: e.target.value })}
-                        className="air-input"
-                        placeholder="+1 234 567 890"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-gray-700">
-                        Contact Email
-                      </label>
-                      <input
-                        type="email"
-                        value={restaurantEmail}
-                        onChange={(e) => patchDraft({ restaurantEmail: e.target.value })}
-                        className="air-input"
-                        placeholder="hello@restaurant.com"
-                      />
-                    </div>
+                  <div>
+                    <DashboardFieldLabel label="Contact Email" />
+                    <input
+                      type="email"
+                      value={restaurantEmail}
+                      onChange={(e) => patchDraft({ restaurantEmail: e.target.value })}
+                      className="air-input"
+                      placeholder="hello@restaurant.com"
+                    />
                   </div>
                 </div>
-              </div>
+              </DashboardSectionCard>
 
-              <div className="air-card air-card-pad">
-                <div className="mb-4 flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-gray-600" />
-                  <h2 className="text-lg font-semibold text-gray-900">Opening Hours</h2>
-                </div>
-                <p className="mb-4 text-sm text-gray-600">
-                  Set weekly schedules — saved as your public menu hours line.
-                </p>
+              <DashboardSectionCard
+                title="Opening Hours"
+                description="Weekly schedule saved as your public menu hours line."
+                icon={<Clock className="h-5 w-5" />}
+              >
                 <HoursScheduleBuilder blocks={scheduleBlocks} onChange={setScheduleBlocks} />
-              </div>
+              </DashboardSectionCard>
             </>
           )}
 
           {activeTab === "social-links" && (
-            <div className="air-card air-card-pad">
-              <div className="mb-4 flex items-center gap-3">
-                <Link2 className="h-5 w-5 text-gray-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Links & Custom Footer Notes</h2>
+            <DashboardSectionCard
+              title="Links & Custom Footer Notes"
+              description="Footer note and custom links shown at the bottom of your public menu."
+              icon={<Link2 className="h-5 w-5" />}
+            >
+              <div>
+                <DashboardFieldLabel
+                  label="Footer Note"
+                  hint="A short message or policy note for guests"
+                />
+                <textarea
+                  value={footerSlogan}
+                  onChange={(e) => patchDraft({ footerSlogan: e.target.value })}
+                  placeholder="We recommend reservations after 12 PM"
+                  rows={6}
+                  className="air-textarea"
+                />
               </div>
-              <div className="flex flex-col gap-8">
-                <div>
-                  <h3 className="mb-3 text-sm font-medium text-gray-700">Footer Note</h3>
-                  <textarea
-                    value={footerSlogan}
-                    onChange={(e) => patchDraft({ footerSlogan: e.target.value })}
-                    placeholder="We recommend reservations after 12 PM"
-                    rows={6}
-                    className="air-textarea"
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <DashboardFieldLabel
+                    label="Custom Links"
+                    hint="TripAdvisor, reservations, social profiles, and more"
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomLink}
+                    className="gap-1"
+                    disabled={customLinks.length >= MAX_CUSTOM_LINKS}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Link
+                  </Button>
                 </div>
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-700">Custom Links</h3>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addCustomLink}
-                      className="gap-1"
-                      disabled={customLinks.length >= MAX_CUSTOM_LINKS}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Link
-                    </Button>
-                  </div>
-                  {customLinks.length === 0 ? (
-                    <p className="text-xs italic text-gray-500">No custom links added yet</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {customLinks.map((link) => (
-                        <div
-                          key={link.id}
-                          className="air-card flex items-start gap-2 p-3"
-                        >
-                          <div className="flex-1 space-y-2">
-                            <input
-                              type="text"
-                              value={link.label}
-                              onChange={(e) =>
-                                updateCustomLink(
-                                  link.id,
-                                  "label",
-                                  e.target.value.slice(0, MAX_LINK_LABEL_LENGTH)
-                                )
-                              }
-                              maxLength={MAX_LINK_LABEL_LENGTH}
-                              placeholder="Link label (e.g., TripAdvisor)"
-                              className="air-input h-9"
-                            />
-                            <input
-                              type="url"
-                              value={link.url}
-                              onChange={(e) => updateCustomLink(link.id, "url", e.target.value)}
-                              placeholder="https://..."
-                              className="air-input h-9"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeCustomLink(link.id)}
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                {customLinks.length === 0 ? (
+                  <p className="text-xs italic text-slate-400">No custom links added yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {customLinks.map((link) => (
+                      <div
+                        key={link.id}
+                        className="flex items-start gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
+                      >
+                        <div className="flex-1 space-y-2">
+                          <input
+                            type="text"
+                            value={link.label}
+                            onChange={(e) =>
+                              updateCustomLink(
+                                link.id,
+                                "label",
+                                e.target.value.slice(0, MAX_LINK_LABEL_LENGTH)
+                              )
+                            }
+                            maxLength={MAX_LINK_LABEL_LENGTH}
+                            placeholder="Link label (e.g., TripAdvisor)"
+                            className="air-input h-9"
+                          />
+                          <input
+                            type="url"
+                            value={link.url}
+                            onChange={(e) => updateCustomLink(link.id, "url", e.target.value)}
+                            placeholder="https://..."
+                            className="air-input h-9"
+                          />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCustomLink(link.id)}
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            </DashboardSectionCard>
           )}
 
           {activeTab === "languages" && (
@@ -487,18 +480,22 @@ function SettingsPageContent() {
           )}
 
           {activeTab === "danger" && (
-            <div className="rounded-xl border-2 border-red-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-                <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
+            <section className="rounded-2xl border-2 border-red-200 bg-white p-6 shadow-sm md:p-8">
+              <div className="mb-6 flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-red-900">Danger Zone</h2>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Permanently delete this restaurant, its menu, and all associated data.
+                  </p>
+                </div>
               </div>
-              <p className="mb-4 text-sm text-gray-600">
-                Permanently delete this restaurant, its menu, and all associated data.
-              </p>
-              <div className="air-card flex items-center justify-between border-red-100 bg-red-50 p-4">
+              <div className="flex items-center justify-between rounded-xl border border-red-100 bg-red-50/80 p-4">
                 <div>
                   <h3 className="text-sm font-medium text-red-900">Delete Restaurant</h3>
-                  <p className="text-xs text-gray-600">
+                  <p className="mt-1 text-xs text-slate-400">
                     This action cannot be undone. All categories, dishes, and design settings will
                     be removed.
                   </p>
@@ -516,7 +513,7 @@ function SettingsPageContent() {
                   Delete Restaurant
                 </Button>
               </div>
-            </div>
+            </section>
           )}
 
           {activeTab !== "danger" && activeTab !== "languages" && (

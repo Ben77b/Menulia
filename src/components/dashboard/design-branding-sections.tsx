@@ -132,18 +132,22 @@ function SectionColorPicker({
 
   return (
     <div>
-      <label className="air-label">{label}</label>
-      <div className="flex items-center gap-3">
-        <div className="relative h-10 w-10 overflow-hidden rounded-[10px] border border-[#E5E5EA]">
-          <input
-            type="color"
-            value={safeValue}
-            onChange={(e) => onChange(e.target.value)}
-            className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
-          />
-        </div>
-        <span className="font-mono text-xs text-gray-600">{safeValue}</span>
-      </div>
+      <p className="air-label">{label}</p>
+      <label className="mt-2 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-slate-300 hover:shadow-sm">
+        <span
+          className="h-12 w-12 shrink-0 rounded-lg border border-slate-200 shadow-inner"
+          style={{ backgroundColor: safeValue }}
+          aria-hidden
+        />
+        <span className="font-mono text-sm text-slate-600">{safeValue}</span>
+        <input
+          type="color"
+          value={safeValue}
+          onChange={(e) => onChange(e.target.value)}
+          className="sr-only"
+          aria-label={label}
+        />
+      </label>
     </div>
   );
 }
@@ -329,10 +333,10 @@ export function DesignTypographySection({ showHeading = true }: { showHeading?: 
               type="button"
               onClick={() => updateDesign(typographyPresetToDesignPatch(preset))}
               className={cn(
-                "rounded-xl border p-4 text-left transition-all hover:shadow-md",
+                "rounded-xl border p-4 text-left transition-all duration-200 hover:shadow-md",
                 activePresetId === preset.id
-                  ? "border-slate-400 bg-muted ring-2 ring-slate-200"
-                  : "border-border bg-card hover:border-slate-300"
+                  ? "scale-[1.02] border-indigo-300 bg-indigo-50/50 shadow-sm ring-1 ring-indigo-200"
+                  : "border-slate-200 bg-white hover:border-slate-300"
               )}
             >
               <p className="text-sm font-semibold text-gray-900">{preset.name}</p>

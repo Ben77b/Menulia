@@ -53,21 +53,22 @@ export function ThemeColorFieldCard({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div
+      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3 transition-all hover:border-slate-300 hover:shadow-sm">
+        <span
           className={cn(
-            "relative shrink-0 overflow-hidden rounded-[10px] border border-[#E5E5EA]",
-            isPopover ? "h-9 w-9" : "h-10 w-10"
+            "relative shrink-0 overflow-hidden rounded-xl border border-slate-200 shadow-inner",
+            isPopover ? "h-10 w-10" : "h-14 w-14"
           )}
-        >
-          <input
-            type="color"
-            value={safeColor}
-            onChange={(e) => onChange(e.target.value)}
-            className="absolute inset-0 h-full w-full cursor-pointer border-0 p-0"
-            aria-label={label}
-          />
-        </div>
+          style={{ backgroundColor: safeColor }}
+          aria-hidden
+        />
+        <input
+          type="color"
+          value={safeColor}
+          onChange={(e) => onChange(e.target.value)}
+          className="sr-only"
+          aria-label={label}
+        />
 
         {isPopover ? (
           <input
@@ -84,9 +85,9 @@ export function ThemeColorFieldCard({
             aria-label={`${label} hex value`}
           />
         ) : (
-          <span className="font-mono text-xs text-[#86868B]">{safeColor}</span>
+          <span className="font-mono text-xs text-slate-500">{safeColor}</span>
         )}
-      </div>
+      </label>
     </div>
   );
 }
