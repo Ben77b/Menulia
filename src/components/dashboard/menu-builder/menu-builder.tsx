@@ -436,11 +436,17 @@ export function MenuBuilder() {
       primaryLanguage
     );
 
+    const resolvedPrice = draft.usePriceVariations
+      ? parsePriceInput(
+          draft.priceVariations.find((row) => row.price.trim())?.price ?? draft.price
+        )
+      : parsePriceInput(draft.price);
+
     const optimisticDish: MenuBuilderDish = {
       ...dish,
       name: mergedName,
       description: mergedDescription,
-      price: parsePriceInput(draft.price),
+      price: resolvedPrice,
       image_url: draft.image_url,
       tags: draft.filterableTags,
       allergens: draft.allergens,
@@ -457,7 +463,7 @@ export function MenuBuilder() {
         dish.id,
         optimisticDish.name,
         optimisticDish.description,
-        parsePriceInput(draft.price),
+        resolvedPrice,
         draft.image_url,
         draft.filterableTags,
         draft.allergens,
@@ -840,6 +846,7 @@ export function MenuBuilder() {
             />
             {tree.sections.length > 1 && activeSection?.id && (
               <ReorderButtons
+                revealOnHover
                 onMoveUp={() => handleReorderSection(activeSection.id, -1)}
                 onMoveDown={() => handleReorderSection(activeSection.id, 1)}
                 canMoveUp={activeSectionIndex > 0}
@@ -863,7 +870,7 @@ export function MenuBuilder() {
 
           {activeSection && (
             <div className="space-y-4">
-              <div className="flex items-start justify-between gap-3">
+              <div className="group flex items-start justify-between gap-3">
                 <LocalizedTitleEditor
                   name={activeSection.name}
                   primaryLanguage={primaryLanguage}
@@ -879,7 +886,7 @@ export function MenuBuilder() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-red-600 hover:text-red-700"
+                  className="shrink-0 text-red-600 opacity-0 transition-opacity hover:text-red-700 group-hover:opacity-100 max-sm:opacity-100"
                   onClick={() => handleDeleteSection(activeSection)}
                   disabled={busy}
                 >
@@ -1050,16 +1057,17 @@ function CategoryBlock({
 
   return (
     <div id={categoryCardId(categoryId)} className="air-card overflow-hidden scroll-mt-24">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#F5F5F7]/80 px-6 py-5">
+      <div className="group flex flex-wrap items-start justify-between gap-3 border-b border-[#F5F5F7]/80 px-6 py-5">
         <div className="flex min-w-0 flex-1 items-start gap-2">
           <ReorderButtons
+            revealOnHover
             onMoveUp={() => onMoveCategory(-1)}
             onMoveDown={() => onMoveCategory(1)}
             canMoveUp={categoryIndex > 0}
             canMoveDown={categoryIndex < categoryCount - 1}
             disabled={busy || duplicating}
           />
-          <LayoutGrid className="mt-1 h-4 w-4 shrink-0 text-slate-500" />
+          <LayoutGrid className="mt-1 h-4 w-4 shrink-0 text-slate-500 opacity-80 transition-opacity group-hover:opacity-100" />
           <LocalizedTitleEditor
             name={category.name}
             primaryLanguage={primaryLanguage}
@@ -1069,7 +1077,7 @@ function CategoryBlock({
             onTranslationChange={onTranslationChange}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100">
           <span className="shrink-0 text-xs text-[#86868B]">
             {category.dishes?.length ?? 0} dishes
           </span>
@@ -1143,12 +1151,12 @@ function CategoryBlock({
             )}
           >
             <ReorderButtons
+              revealOnHover
               onMoveUp={() => dish?.id && onMoveDish(dish.id, -1)}
               onMoveDown={() => dish?.id && onMoveDish(dish.id, 1)}
               canMoveUp={dishIndex > 0}
               canMoveDown={dishIndex < (category.dishes?.length ?? 0) - 1}
               disabled={busy}
-              className="opacity-0 transition-opacity group-hover:opacity-100"
             />
             {dish?.image_url ? (
               <img
@@ -1185,7 +1193,7 @@ function CategoryBlock({
               }}
               disabled={busy || !dish}
               aria-label={`Duplicate ${resolveBuilderSourceText(dish?.name, primaryLanguage) || "dish"}`}
-              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-slate-600 group-hover:opacity-100 disabled:opacity-40"
+              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 max-sm:opacity-100 disabled:opacity-40"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -1195,7 +1203,7 @@ function CategoryBlock({
                 e.stopPropagation();
                 if (dish) onDeleteDish(dish);
               }}
-              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-red-500 group-hover:opacity-100"
+              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 max-sm:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
             </button>

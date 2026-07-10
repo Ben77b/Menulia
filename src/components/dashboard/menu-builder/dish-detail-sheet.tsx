@@ -9,9 +9,7 @@ import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import type { MenuBuilderDish } from "@/lib/menu-builder-types";
 import {
-  ALLERGEN_TAG_OPTIONS,
   FILTERABLE_TAG_OPTIONS,
-  getAllergenEditorLabel,
   normalizeDishTagFields,
 } from "@/lib/dietary-tags";
 import { parsePriceInput } from "@/lib/price-input";
@@ -25,6 +23,12 @@ import {
   type MenuContentLanguage,
 } from "@/lib/menu-content-languages";
 import { SecondaryLanguageField } from "./secondary-language-field";
+import { AllergenPopoverField } from "./allergen-popover-field";
+
+export interface PriceVariationDraft {
+  label: string;
+  price: string;
+}
 
 export interface DishDetailDraft {
   name: string;
@@ -32,6 +36,8 @@ export interface DishDetailDraft {
   description: string;
   descriptionTranslation: string;
   price: string;
+  usePriceVariations: boolean;
+  priceVariations: PriceVariationDraft[];
   /** When enabled, this dish will be rendered without a price on the public menu */
   hide_price: boolean;
   /** When enabled, DeepL will not translate the dish title */
@@ -77,6 +83,8 @@ export function DishDetailSheet({
     description: "",
     descriptionTranslation: "",
     price: "",
+    usePriceVariations: false,
+    priceVariations: [{ label: "", price: "" }],
     hide_price: false,
     lock_title_translation: false,
     image_url: null,
@@ -110,6 +118,8 @@ export function DishDetailSheet({
         getSecondaryLanguage(primaryLanguage)
       ),
       price: String(dish.price),
+      usePriceVariations: false,
+      priceVariations: [{ label: "", price: String(dish.price) }],
       hide_price: Boolean(dish.hide_price),
       lock_title_translation: Boolean(dish.lock_title_translation),
       image_url: dish.image_url,
@@ -156,6 +166,52 @@ export function DishDetailSheet({
     if (!file) return;
     const url = await onImageUpload(file);
     if (url) setDraft((prev) => ({ ...prev, image_url: url }));
+  }
+
+  function addPriceVariation() {
+    setDraft((prev) => ({
+      ...prev,
+      usePriceVariations: true,
+      priceVariations: [
+        ...prev.priceVariations,
+        { label: "", price: "" },
+      ],
+    }));
+  }
+
+  function updatePriceVariation(index: number, patch: Partial<PriceVariationDraft>) {
+    setDraft((prev) => ({
+      ...prev,
+      priceVariations: prev.priceVariations.map((row, i) =>
+        i === index ? { ...row, ...patch } : row
+      ),
+    }));
+  }
+
+  function removePriceVariation(index: number) {
+    setDraft((prev) => {
+      const next = prev.priceVariations.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        return {
+          ...prev,
+          usePriceVariations: false,
+          price: prev.priceVariations[0]?.price ?? prev.price,
+          priceVariations: [{ label: "", price: prev.price }],
+        };
+      }
+      return { ...prev, priceVariations: next };
+    });
+  }
+
+  function enablePriceVariations() {
+    setDraft((prev) => ({
+      ...prev,
+      usePriceVariations: true,
+      priceVariations: [
+        { label: "Regular", price: prev.price },
+        { label: "", price: "" },
+      ],
+    }));
   }
 
   async function handleGenerateDescription() {
@@ -295,21 +351,107 @@ export function DishDetailSheet({
           </div>
 
           <div>
-            <label className="air-label">Price (€)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={draft.price}
-              onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))}
-              onBlur={() =>
-                setDraft((p) => {
-                  if (!p.price.trim()) return p;
-                  return { ...p, price: parsePriceInput(p.price).toFixed(2) };
-                })
-              }
-              placeholder="12.50"
-              className="air-input"
-            />
+            {!draft.usePriceVariations ? (
+              <>
+                <label className="air-label">Price</label>
+                <div className="relative mt-1.5">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#86868B]">
+                    €
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={draft.price}
+                    onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))}
+                    onBlur={() =>
+                      setDraft((p) => {
+                        if (!p.price.trim()) return p;
+                        return { ...p, price: parsePriceInput(p.price).toFixed(2) };
+                      })
+                    }
+                    placeholder="12.50"
+                    className="air-input pl-8"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={enablePriceVariations}
+                  className="mt-2 text-xs font-medium text-slate-600 transition-colors hover:text-slate-900"
+                >
+                  + Añadir variaciones de precio (tamaños, raciones...) / Add price variations
+                </button>
+              </>
+            ) : (
+              <div className="space-y-3 rounded-xl border border-[#E5E5EA] bg-[#FAFAFA]/60 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="air-label mb-0">Price variations</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        usePriceVariations: false,
+                        price:
+                          prev.priceVariations.find((row) => row.price.trim())?.price ?? prev.price,
+                        priceVariations: [{ label: "", price: prev.price }],
+                      }))
+                    }
+                    className="text-xs text-[#86868B] transition-colors hover:text-slate-700"
+                  >
+                    Use single price
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {draft.priceVariations.map((row, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        value={row.label}
+                        onChange={(e) => updatePriceVariation(index, { label: e.target.value })}
+                        placeholder="Size or portion"
+                        className="air-input min-w-0 flex-1"
+                      />
+                      <div className="relative w-28 shrink-0">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#86868B]">
+                          €
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={row.price}
+                          onChange={(e) => updatePriceVariation(index, { price: e.target.value })}
+                          onBlur={() =>
+                            updatePriceVariation(index, {
+                              price: row.price.trim()
+                                ? parsePriceInput(row.price).toFixed(2)
+                                : row.price,
+                            })
+                          }
+                          placeholder="0.00"
+                          className="air-input pl-8"
+                        />
+                      </div>
+                      {draft.priceVariations.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePriceVariation(index)}
+                          className="rounded-lg p-1 text-[#C7C7CC] hover:text-red-500"
+                          aria-label="Remove price variation"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addPriceVariation}
+                  className="text-xs font-medium text-slate-600 transition-colors hover:text-slate-900"
+                >
+                  + Add another variation
+                </button>
+              </div>
+            )}
           </div>
 
           <ToggleSwitch
@@ -404,29 +546,11 @@ export function DishDetailSheet({
             </div>
           </div>
 
-          <div>
-            <label className="air-label">Allergens</label>
-            <p className="air-helper mb-3">
-              Informational only — shown on dish cards, not used for menu filtering.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {ALLERGEN_TAG_OPTIONS.map(({ tag }) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleAllergen(tag)}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium",
-                    draft.allergens.includes(tag)
-                      ? "border-slate-300 bg-[#F5F5F7] text-slate-900"
-                      : "border-border text-muted-foreground"
-                  )}
-                >
-                  {getAllergenEditorLabel(tag)}
-                </button>
-              ))}
-            </div>
-          </div>
+          <AllergenPopoverField
+            selected={draft.allergens}
+            onToggle={toggleAllergen}
+            disabled={Boolean(saving)}
+          />
         </div>
 
         <StickyActionBar>

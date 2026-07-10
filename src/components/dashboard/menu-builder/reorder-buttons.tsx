@@ -8,6 +8,8 @@ interface ReorderButtonsProps {
   canMoveDown: boolean;
   disabled?: boolean;
   className?: string;
+  /** Fade in on parent `.group` hover; always visible on small screens */
+  revealOnHover?: boolean;
 }
 
 export function ReorderButtons({
@@ -17,9 +19,16 @@ export function ReorderButtons({
   canMoveDown,
   disabled = false,
   className,
+  revealOnHover = false,
 }: ReorderButtonsProps) {
   return (
-    <div className={cn("flex shrink-0 flex-col", className)}>
+    <div
+      className={cn(
+        "flex shrink-0 flex-col",
+        revealOnHover && "opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100",
+        className
+      )}
+    >
       <button
         type="button"
         onClick={(event) => {
