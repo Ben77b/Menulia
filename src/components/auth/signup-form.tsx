@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { getSiteUrl } from "@/lib/site-url";
 import { buildUserProfile, syncUserProfileRecord } from "@/lib/auth/profile";
@@ -128,14 +129,12 @@ export function SignupForm() {
         <label htmlFor="signup-password" className="air-label">
           Password
         </label>
-        <input
+        <PasswordInput
           id="signup-password"
-          type="password"
           autoComplete="new-password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={setPassword}
           placeholder="At least 8 characters"
-          className="air-input"
         />
       </div>
 

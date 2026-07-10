@@ -1,5 +1,7 @@
 export type MenuContentLanguage = "en" | "es";
 
+export const DEFAULT_PRIMARY_LANGUAGE: MenuContentLanguage = "es";
+
 export const MENU_CONTENT_LANGUAGES: {
   code: MenuContentLanguage;
   label: string;
@@ -18,4 +20,12 @@ export function deeplCodeToMenuLanguage(code: string | undefined): MenuContentLa
   const normalized = code?.trim().toUpperCase();
   if (normalized === "ES") return "es";
   return "en";
+}
+
+export function normalizePrimaryLanguage(value: unknown): MenuContentLanguage {
+  return value === "en" ? "en" : "es";
+}
+
+export function getSecondaryLanguage(primary: MenuContentLanguage): MenuContentLanguage {
+  return primary === "en" ? "es" : "en";
 }

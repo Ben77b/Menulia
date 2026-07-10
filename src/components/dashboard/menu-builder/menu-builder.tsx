@@ -58,6 +58,7 @@ import {
   type LocalizedTextValue,
 } from "@/lib/localized-text";
 import type { MenuContentLanguage } from "@/lib/menu-content-languages";
+import { getSecondaryLanguage, normalizePrimaryLanguage } from "@/lib/menu-content-languages";
 
 function isBenignMenuBuilderError(error: unknown): boolean {
   if (error instanceof TypeError) return true;
@@ -132,6 +133,7 @@ function categoryCardId(categoryId: string): string {
 
 export function MenuBuilder() {
   const { currentRestaurant } = useRestaurant();
+  const primaryLanguage = normalizePrimaryLanguage(currentRestaurant?.primary_language);
   const toast = useToast();
   const [tree, setTree] = useState(flatRecordsToMenuTree([]));
   const [sectionParam, setSectionParam] = useDashboardSearchParam("section", null, "");
@@ -314,7 +316,7 @@ export function MenuBuilder() {
 
   async function handleDeleteSection(section: MenuBuilderSection) {
     const { categories, dishes } = countSectionContents(section);
-    const message = `Delete section "${resolveBuilderSourceText(section.name, "en")}" and all ${categories} categories with ${dishes} dishes? This cannot be undone.`;
+    const message = `Delete section "${resolveBuilderSourceText(section.name, primaryLanguage)}" and all ${categories} categories with ${dishes} dishes? This cannot be undone.`;
     if (!confirm(message)) return;
 
     const previousTree = tree;
@@ -361,7 +363,7 @@ export function MenuBuilder() {
   }
 
   async function handleDeleteCategory(sectionId: string, category: MenuBuilderCategory) {
-    const message = `Delete category "${resolveBuilderSourceText(category.name, "en")}" and its ${category.dishes.length} dishes?`;
+    const message = `Delete category "${resolveBuilderSourceText(category.name, primaryLanguage)}" and its ${category.dishes.length} dishes?`;
     if (!confirm(message)) return;
 
     const previousTree = tree;
@@ -418,10 +420,26 @@ export function MenuBuilder() {
     const { dish, categoryId } = selectedDish;
     const previousTree = tree;
 
+    const secondaryLanguage = getSecondaryLanguage(primaryLanguage);
+    let mergedName = mergeLocalizedText(dish.name, primaryLanguage, draft.name.trim(), primaryLanguage);
+    mergedName = mergeLocalizedText(mergedName, secondaryLanguage, draft.nameTranslation.trim(), primaryLanguage);
+    let mergedDescription = mergeLocalizedText(
+      dish.description,
+      primaryLanguage,
+      draft.description.trim(),
+      primaryLanguage
+    );
+    mergedDescription = mergeLocalizedText(
+      mergedDescription,
+      secondaryLanguage,
+      draft.descriptionTranslation.trim(),
+      primaryLanguage
+    );
+
     const optimisticDish: MenuBuilderDish = {
       ...dish,
-      name: mergeLocalizedText(dish.name, "en", draft.name.trim(), "en"),
-      description: mergeLocalizedText(dish.description, "en", draft.description.trim(), "en"),
+      name: mergedName,
+      description: mergedDescription,
       price: parsePriceInput(draft.price),
       image_url: draft.image_url,
       tags: draft.filterableTags,
@@ -486,7 +504,7 @@ export function MenuBuilder() {
   }
 
   async function handleDeleteDish(dish: MenuBuilderDish, categoryId: string) {
-    if (!confirm(`Delete "${resolveBuilderSourceText(dish.name, "en")}"?`)) return;
+    if (!confirm(`Delete "${resolveBuilderSourceText(dish.name, primaryLanguage)}"?`)) return;
 
     const previousTree = tree;
     setTree((prev) => removeDishFromCategory(prev, categoryId, dish.id));
@@ -554,7 +572,7 @@ export function MenuBuilder() {
     try {
       const created = await duplicateMenuDish(dish.id);
       setTree((prev) => addDishToCategory(prev, categoryId, created));
-      toast.success(`"${resolveBuilderSourceText(dish.name, "en")}" duplicated`);
+      toast.success(`"${resolveBuilderSourceText(dish.name, primaryLanguage)}" duplicated`);
     } catch (err) {
       const message = formatSupabaseError(err);
       setError(message);
@@ -570,7 +588,12 @@ export function MenuBuilder() {
     const section = tree.sections.find((entry) => entry.id === categoryId);
     const category = section ?? findCategory(tree, categoryId);
     const currentDescription = section?.description ?? category?.description ?? "";
-    const mergedDescription = mergeLocalizedText(currentDescription, "en", trimmed, "en");
+    const mergedDescription = mergeLocalizedText(
+      currentDescription,
+      primaryLanguage,
+      trimmed,
+      primaryLanguage
+    );
 
     setTree((prev) =>
       patchCategoryInTree(prev, categoryId, {
@@ -599,11 +622,11 @@ export function MenuBuilder() {
       toast.error("Category name cannot be empty");
       return false;
     }
-    if (trimmed === resolveBuilderSourceText(currentName, "en").trim()) {
+    if (trimmed === resolveBuilderSourceText(currentName, primaryLanguage).trim()) {
       return true;
     }
 
-    const mergedName = mergeLocalizedText(currentName, "en", trimmed, "en");
+    const mergedName = mergeLocalizedText(currentName, primaryLanguage, trimmed, primaryLanguage);
     const previousTree = tree;
     setTree((prev) => renameCategoryInTree(prev, id, mergedName));
 
@@ -627,7 +650,7 @@ export function MenuBuilder() {
     nextText: string
   ) {
     const trimmed = nextText.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
-    const mergedName = mergeLocalizedText(currentName, lang, trimmed, "en");
+    const mergedName = mergeLocalizedText(currentName, lang, trimmed, primaryLanguage);
     const previousTree = tree;
     setTree((prev) => renameCategoryInTree(prev, id, mergedName));
 
@@ -806,7 +829,7 @@ export function MenuBuilder() {
                 .filter((section): section is MenuBuilderSection => Boolean(section?.id))
                 .map((section) => ({
                   id: section.id,
-                  label: `${resolveBuilderSourceText(section.name, "en") || "Section"} (${section.categories?.length ?? 0})`,
+                  label: `${resolveBuilderSourceText(section.name, primaryLanguage) || "Section"} (${section.categories?.length ?? 0})`,
                 }))}
               active={activeSection?.id ?? tree.sections?.[0]?.id ?? ""}
               onChange={(sectionId) => {
@@ -843,6 +866,7 @@ export function MenuBuilder() {
               <div className="flex items-start justify-between gap-3">
                 <LocalizedTitleEditor
                   name={activeSection.name}
+                  primaryLanguage={primaryLanguage}
                   titleClassName="air-section-title"
                   disabled={busy}
                   onRename={(nextName) =>
@@ -912,6 +936,7 @@ export function MenuBuilder() {
                   .map((category, categoryIndex) => (
                   <CategoryBlock
                     key={category.id}
+                    primaryLanguage={primaryLanguage}
                     categoryId={category.id}
                     category={category}
                     categoryIndex={categoryIndex}
@@ -951,10 +976,11 @@ export function MenuBuilder() {
       <DishDetailSheet
         open={Boolean(selectedDish)}
         dish={selectedDish?.dish ?? null}
+        primaryLanguage={primaryLanguage}
         saving={busy}
         uploadingImage={uploadingImage}
         restaurantName={currentRestaurant?.name ?? ""}
-        categoryName={resolveBuilderSourceText(selectedCategory?.name, "en")}
+        categoryName={resolveBuilderSourceText(selectedCategory?.name, primaryLanguage)}
         onClose={() => setSelectedDish(null)}
         onSave={handleSaveDishDetail}
         onImageUpload={handleImageUpload}
@@ -965,6 +991,7 @@ export function MenuBuilder() {
 }
 
 function CategoryBlock({
+  primaryLanguage,
   categoryId,
   category,
   categoryIndex,
@@ -986,6 +1013,7 @@ function CategoryBlock({
   onMoveCategory,
   onMoveDish,
 }: {
+  primaryLanguage: MenuContentLanguage;
   categoryId: string;
   category: MenuBuilderCategory;
   categoryIndex: number;
@@ -1009,10 +1037,10 @@ function CategoryBlock({
 }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
-  const [noteDraft, setNoteDraft] = useState(resolveBuilderSourceText(category.description, "en"));
+  const [noteDraft, setNoteDraft] = useState(resolveBuilderSourceText(category.description, primaryLanguage));
 
   useEffect(() => {
-    setNoteDraft(resolveBuilderSourceText(category.description, "en"));
+    setNoteDraft(resolveBuilderSourceText(category.description, primaryLanguage));
   }, [category.id, category.description]);
 
   async function handleQuickAdd() {
@@ -1034,6 +1062,7 @@ function CategoryBlock({
           <LayoutGrid className="mt-1 h-4 w-4 shrink-0 text-slate-500" />
           <LocalizedTitleEditor
             name={category.name}
+            primaryLanguage={primaryLanguage}
             titleClassName="font-semibold text-slate-900"
             disabled={busy || duplicating}
             onRename={onRename}
@@ -1065,7 +1094,7 @@ function CategoryBlock({
             className="text-slate-500 hover:text-slate-700"
             onClick={onDuplicateCategory}
             disabled={busy || duplicating}
-            aria-label={`Duplicate ${resolveBuilderSourceText(category.name, "en")}`}
+            aria-label={`Duplicate ${resolveBuilderSourceText(category.name, primaryLanguage)}`}
           >
             {duplicating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -1091,7 +1120,7 @@ function CategoryBlock({
           onChange={(e) => setNoteDraft(e.target.value)}
           onBlur={() => {
             const trimmed = noteDraft.trim();
-            const saved = resolveBuilderSourceText(category.description, "en").trim();
+            const saved = resolveBuilderSourceText(category.description, primaryLanguage).trim();
             if (trimmed !== saved) {
               void onNoteChange(trimmed);
             }
@@ -1133,7 +1162,7 @@ function CategoryBlock({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <p className="truncate font-medium text-slate-900">
-                  {resolveBuilderSourceText(dish?.name, "en") || "Untitled dish"}
+                  {resolveBuilderSourceText(dish?.name, primaryLanguage) || "Untitled dish"}
                 </p>
                 {dish?.is_available === false && (
                   <span className="air-badge shrink-0">Hidden</span>
@@ -1141,7 +1170,7 @@ function CategoryBlock({
               </div>
               {dish?.description ? (
                 <p className="truncate text-xs text-[#86868B]">
-                  {resolveBuilderSourceText(dish.description, "en")}
+                  {resolveBuilderSourceText(dish.description, primaryLanguage)}
                 </p>
               ) : (
                 <p className="text-xs text-[#86868B]">Tap to add photo, description, and tags</p>
@@ -1155,7 +1184,7 @@ function CategoryBlock({
                 if (dish) onDuplicateDish(dish);
               }}
               disabled={busy || !dish}
-              aria-label={`Duplicate ${resolveBuilderSourceText(dish?.name, "en") || "dish"}`}
+              aria-label={`Duplicate ${resolveBuilderSourceText(dish?.name, primaryLanguage) || "dish"}`}
               className="rounded-lg p-1 text-[#C7C7CC] opacity-0 hover:text-slate-600 group-hover:opacity-100 disabled:opacity-40"
             >
               <Copy className="h-4 w-4" />

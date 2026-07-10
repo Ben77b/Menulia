@@ -20,6 +20,7 @@ import {
 } from "@/lib/public-menu-seo";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { parseDisplayOptions } from "@/lib/display-options";
+import { normalizePrimaryLanguage } from "@/lib/menu-content-languages";
 import { parseTypography } from "@/lib/typography";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 
@@ -73,6 +74,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
       ? (restaurant.typography as Record<string, unknown>)
       : undefined
   );
+  const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
 
   return (
     <div className="public-menu-enter">
@@ -90,6 +92,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
         hours={(restaurant.hours as string | null) ?? ""}
         contactInfo={(restaurant.contact_info as string | null) ?? ""}
         footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
+        defaultLocale={defaultLocale}
         theme={theme}
         titleFont={fonts.titleFont}
         bodyFont={fonts.textFont}

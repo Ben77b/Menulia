@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
@@ -80,6 +80,7 @@ function SettingsPageContent() {
     restaurantSlug,
     originalSlug,
     footerSlogan,
+    primaryLanguage,
     scheduleBlocks,
     customLinks,
   } = formDraft;
@@ -97,26 +98,9 @@ function SettingsPageContent() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [directLinkCopied, setDirectLinkCopied] = useState(false);
-  const [embedCopied, setEmbedCopied] = useState(false);
 
   const slugRegex = useMemo(() => /^[a-z0-9-]+$/, []);
   const supabase = getSupabaseBrowserClient();
-
-  async function copyToClipboard(
-    text: string,
-    setCopied: Dispatch<SetStateAction<boolean>>
-  ) {
-    try {
-      if (!text.trim()) return;
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch (e) {
-      // Clipboard can be blocked by browser permissions; fail silently.
-      console.error("[Settings:Clipboard] Failed", e);
-    }
-  }
 
   async function saveChanges() {
     if (!activeRestaurant?.id) return;
@@ -338,78 +322,6 @@ function SettingsPageContent() {
                   </div>
                   {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
                 </div>
-
-                <div className="border-t border-gray-100 pt-8">
-                  <h3 className="text-base font-semibold text-gray-900">🔗 Share & Embed Menu</h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Copy your public link or embed the menu directly on your website.
-                  </p>
-
-                  <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
-                      <h4 className="mb-3 text-sm font-medium text-slate-700">Direct Link</h4>
-                      <p className="break-all text-sm font-medium text-slate-900">
-                        https://www.menulia.net/menu/{restaurantSlug}
-                      </p>
-                      <p className="mt-1 text-xs text-[#86868B]">Share your public menu</p>
-
-                      <div className="mt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
-                          onClick={() =>
-                            void copyToClipboard(
-                              `https://www.menulia.net/menu/${restaurantSlug}`,
-                              setDirectLinkCopied
-                            )
-                          }
-                          aria-label="Copy public menu link"
-                        >
-                          {directLinkCopied ? (
-                            <span className="inline-flex items-center gap-2">
-                              <span className="text-emerald-700">✓</span> Copied
-                            </span>
-                          ) : (
-                            "📋 Copy Link"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-[#F5F5F7] bg-white p-6">
-                      <h4 className="mb-3 text-sm font-medium text-slate-700">HTML Website Embed</h4>
-                      {(() => {
-                        const embedSrc = `https://www.menulia.net/menu/${restaurantSlug}`;
-                        const embedCode = `<iframe src="${embedSrc}" style="width:100%; height:800px; border:none; border-radius:12px;" loading="lazy"></iframe>`;
-
-                        return (
-                          <>
-                            <pre className="min-w-0 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
-                              <code>{embedCode}</code>
-                            </pre>
-
-                            <div className="mt-4">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full transition-transform hover:-translate-y-0.5 hover:shadow-sm"
-                                onClick={() => void copyToClipboard(embedCode, setEmbedCopied)}
-                                aria-label="Copy embed HTML"
-                              >
-                                {embedCopied ? "✓ Copied" : "📋 Copy Embed Code"}
-                              </Button>
-                            </div>
-
-                            <p className="mt-2 text-xs text-[#86868B]">
-                              Paste this HTML into your website to embed your menu.
-                            </p>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -565,6 +477,12 @@ function SettingsPageContent() {
             <SettingsLanguagesPanel
               restaurantId={activeRestaurant.id}
               restaurantName={activeRestaurant.name}
+              primaryLanguage={primaryLanguage}
+              onPrimaryLanguageChange={(language) => patchDraft({ primaryLanguage: language })}
+              onPrimaryLanguageSaved={async () => {
+                await refreshRestaurants({ silent: true });
+                await loadDraftFromServer();
+              }}
             />
           )}
 

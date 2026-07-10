@@ -10,7 +10,7 @@ import {
   ChevronDown,
   Building2,
   X,
-  QrCode,
+  Share2,
   Check,
   Settings,
 } from "lucide-react";
@@ -68,7 +68,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
       ? [
           { icon: Home, label: "Home", href: `/dashboard/${activeRestaurantId}` },
           { icon: LayoutTemplate, label: "Menu Builder", href: `/dashboard/${activeRestaurantId}/menu` },
-          { icon: QrCode, label: "QR Code", href: `/dashboard/${activeRestaurantId}/qr` },
+          { icon: Share2, label: "Share the Menu", href: `/dashboard/${activeRestaurantId}/qr` },
           { icon: Settings, label: "Settings", href: `/dashboard/${activeRestaurantId}/settings` },
           {
             icon: Palette,

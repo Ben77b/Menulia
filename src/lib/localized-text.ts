@@ -1,3 +1,5 @@
+import type { MenuContentLanguage } from "./menu-content-languages";
+
 export type LocalizedTextRecord = Record<string, string>;
 export type LocalizedTextValue = string | LocalizedTextRecord | null | undefined;
 
@@ -54,13 +56,20 @@ export function mergeLocalizedText(
   };
 }
 
-/** Menu Builder always edits the primary source locale — never guest-language fallbacks. */
+/** @deprecated Use restaurant primary_language — kept for legacy imports */
 export const BUILDER_SOURCE_LANGUAGE = "en";
 
-export function resolveBuilderSourceText(value: LocalizedTextValue): string {
+export function resolveBuilderSourceText(
+  value: LocalizedTextValue,
+  sourceLang: string = "en"
+): string {
   if (typeof value === "string") return value;
   if (!isLocalizedTextRecord(value)) return "";
-  return normalizeText(value[BUILDER_SOURCE_LANGUAGE]);
+  return (
+    normalizeText(value[sourceLang]) ||
+    normalizeText(Object.values(value).find((text) => text.trim()) ?? "") ||
+    ""
+  );
 }
 
 export function resolveBuilderTranslationText(
@@ -109,7 +118,8 @@ export function fieldHasGuestTranslations(value: LocalizedTextValue): boolean {
 /** Pick the best source text to send for translation into `targetLang`. */
 export function collectTextForTranslation(
   value: LocalizedTextValue,
-  targetLang: string
+  targetLang: string,
+  primaryLang: string = "en"
 ): string {
   if (typeof value === "string") return value.trim();
   if (!isLocalizedTextRecord(value)) return "";
@@ -118,7 +128,7 @@ export function collectTextForTranslation(
     return "";
   }
 
-  const counterpart = targetLang === "en" ? "es" : "en";
+  const counterpart = targetLang === primaryLang ? (primaryLang === "en" ? "es" : "en") : primaryLang;
   if (normalizeText(value[counterpart]).trim()) {
     return value[counterpart].trim();
   }
@@ -156,6 +166,7 @@ export const GLOBAL_PROTECTED_BRANDS = [
 export interface TranslationBrandProtectionOptions {
   restaurantName?: string;
   additionalBrands?: string[];
+  primaryLanguage?: MenuContentLanguage;
 }
 
 function escapeRegExp(value: string): string {

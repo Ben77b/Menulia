@@ -15,6 +15,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { buildUserProfile, syncUserProfileRecord, type UserProfile } from "@/lib/auth/profile";
 import { logAuthDiagnostic } from "@/lib/auth/messages";
 import { parseCustomLinks, type RestaurantLink } from "@/lib/restaurant-links";
+import { normalizePrimaryLanguage, type MenuContentLanguage } from "@/lib/menu-content-languages";
 
 export interface RestaurantSummary {
   id: string;
@@ -28,6 +29,7 @@ export interface RestaurantSummary {
   contact_info: string;
   footer_slogan: string;
   custom_links: RestaurantLink[];
+  primary_language: MenuContentLanguage;
 }
 
 interface RestaurantContextType {
@@ -59,6 +61,7 @@ function toSummary(restaurant: Record<string, unknown>): RestaurantSummary {
     contact_info: typeof restaurant.contact_info === "string" ? restaurant.contact_info : "",
     footer_slogan: typeof restaurant.footer_slogan === "string" ? restaurant.footer_slogan : "",
     custom_links: parseCustomLinks(restaurant.custom_links),
+    primary_language: normalizePrimaryLanguage(restaurant.primary_language),
   };
 }
 

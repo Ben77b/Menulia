@@ -1,18 +1,42 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { getPublicMenuUrl } from "@/lib/site-url";
-import { EmbedMenuCard } from "@/components/dashboard/embed-menu-card";
+import { buildMenuEmbedSnippet } from "@/lib/menu-embed-snippet";
 import { Button } from "@/components/ui/button";
-import { QrCode, Download } from "lucide-react";
+import { Check, Code2, Copy, Download, Link2, QrCode, Share2 } from "lucide-react";
 import QRCode from "react-qr-code";
 
-export default function QrCodePage() {
+export default function ShareMenuPage() {
   const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
   const [qrColor, setQrColor] = useState("#000000");
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
+
+  const restaurantUrl = activeRestaurant
+    ? getPublicMenuUrl(activeRestaurant.slug)
+    : getPublicMenuUrl("demo");
+
+  const embedSnippet = useMemo(
+    () =>
+      activeRestaurant
+        ? buildMenuEmbedSnippet(activeRestaurant.slug, activeRestaurant.name)
+        : buildMenuEmbedSnippet("demo", "Restaurant"),
+    [activeRestaurant]
+  );
+
+  async function copyText(text: string, setCopied: (value: boolean) => void) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch (error) {
+      console.error("[ShareMenu:Clipboard]", error);
+    }
+  }
 
   function downloadQrCode() {
     if (!qrRef.current) return;
@@ -34,7 +58,7 @@ export default function QrCodePage() {
       const pngUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = pngUrl;
-      link.download = `qr-code-${activeRestaurant?.slug || "restaurant"}.png`;
+      link.download = `menu-qr-${activeRestaurant?.slug || "restaurant"}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -42,88 +66,116 @@ export default function QrCodePage() {
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   }
 
-  const restaurantUrl = activeRestaurant
-    ? getPublicMenuUrl(activeRestaurant.slug)
-    : getPublicMenuUrl("demo");
-
   if (awaitingWorkspace) {
-    return <LoadingSpinner label="Loading QR code…" />;
+    return <LoadingSpinner label="Loading share tools…" />;
   }
 
   return (
-    <div className="air-page">
+    <div className="air-page space-y-8">
       <div>
-        <h1 className="air-page-title">QR Code Generator</h1>
-        <p className="air-page-subtitle">Generate a QR code for your restaurant menu</p>
-      </div>
-
-      <div className="air-card air-card-pad">
-        <div className="mb-4 flex items-center gap-3">
-          <QrCode className="h-5 w-5 text-muted-foreground" />
-          <h2 className="air-section-title">Menu QR Code</h2>
-        </div>
-        <p className="mb-6 text-sm text-muted-foreground">
-          This QR code links to your restaurant&apos;s public menu page. Print it and place it on
-          your tables, menus, or marketing materials.
+        <h1 className="air-page-title">Share the Menu</h1>
+        <p className="air-page-subtitle">
+          QR codes, direct links, and website embeds — everything you need to put your menu in
+          guests&apos; hands.
         </p>
+      </div>
 
-        <div className="flex flex-col items-start gap-8 lg:flex-row">
-          <div className="air-card p-6">
-            <div ref={qrRef}>
-              <QRCode
-                value={restaurantUrl}
-                size={256}
-                fgColor={qrColor}
-                bgColor="transparent"
-                level="H"
-              />
-            </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div className="air-card air-card-pad xl:col-span-2">
+          <div className="mb-6 flex items-center gap-3">
+            <QrCode className="h-5 w-5 text-muted-foreground" />
+            <h2 className="air-section-title">Menu QR Code</h2>
           </div>
-          <div className="flex-1 space-y-4">
-            <div>
-              <label className="air-label">QR Code Color</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={qrColor}
-                  onChange={(e) => setQrColor(e.target.value)}
-                  className="h-10 w-16 cursor-pointer rounded-[10px] border border-input"
+          <p className="mb-6 text-sm text-muted-foreground">
+            Print this code for tables, menus, or signage. Guests scan to open your live digital menu.
+          </p>
+
+          <div className="flex flex-col items-start gap-8 lg:flex-row">
+            <div className="air-card p-6">
+              <div ref={qrRef}>
+                <QRCode
+                  value={restaurantUrl}
+                  size={256}
+                  fgColor={qrColor}
+                  bgColor="transparent"
+                  level="H"
                 />
-                <span className="text-sm text-muted-foreground">{qrColor}</span>
               </div>
             </div>
-
-            <div>
-              <label className="air-label">Menu URL</label>
-              <div className="rounded-[10px] border border-border bg-muted p-3">
-                <code className="break-all text-sm text-slate-700">{restaurantUrl}</code>
+            <div className="flex-1 space-y-4">
+              <div>
+                <label className="air-label">QR Code Color</label>
+                <div className="mt-1.5 flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={qrColor}
+                    onChange={(event) => setQrColor(event.target.value)}
+                    className="h-10 w-16 cursor-pointer rounded-[10px] border border-input"
+                  />
+                  <span className="text-sm text-muted-foreground">{qrColor}</span>
+                </div>
               </div>
-            </div>
 
-            <div className="rounded-2xl border border-border bg-muted p-4">
-              <h3 className="mb-2 text-sm font-medium text-slate-900">How to use</h3>
-              <ul className="space-y-1 text-xs text-muted-foreground">
-                <li>• Print this QR code and place it on your tables</li>
-                <li>• Customers scan to view your menu on their phones</li>
-                <li>• The QR code has a transparent background</li>
-                <li>• Customize the color to match your brand</li>
-              </ul>
+              <Button onClick={downloadQrCode} className="gap-2">
+                <Download className="h-4 w-4" />
+                Download QR Code
+              </Button>
             </div>
-
-            <Button onClick={downloadQrCode} className="gap-2">
-              <Download className="h-4 w-4" />
-              Download QR Code
-            </Button>
           </div>
+        </div>
+
+        <div className="air-card air-card-pad">
+          <div className="mb-4 flex items-center gap-3">
+            <Link2 className="h-5 w-5 text-muted-foreground" />
+            <h2 className="air-section-title">Direct Link</h2>
+          </div>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Share this URL in messages, social posts, or your Google Business profile.
+          </p>
+          <div className="rounded-[10px] border border-border bg-muted p-3">
+            <code className="break-all text-sm text-slate-700">{restaurantUrl}</code>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 w-full gap-2"
+            onClick={() => void copyText(restaurantUrl, setLinkCopied)}
+          >
+            {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {linkCopied ? "Copied!" : "Copy Link"}
+          </Button>
+        </div>
+
+        <div className="air-card air-card-pad">
+          <div className="mb-4 flex items-center gap-3">
+            <Code2 className="h-5 w-5 text-muted-foreground" />
+            <h2 className="air-section-title">Website Embed</h2>
+          </div>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Paste this iframe into your website builder or HTML to embed your live menu.
+          </p>
+          <pre className="max-h-40 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
+            <code>{embedSnippet}</code>
+          </pre>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 w-full gap-2"
+            onClick={() => void copyText(embedSnippet, setEmbedCopied)}
+          >
+            {embedCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {embedCopied ? "Copied!" : "Copy Embed Code"}
+          </Button>
         </div>
       </div>
 
-      {activeRestaurant && (
-        <EmbedMenuCard
-          slug={activeRestaurant.slug}
-          restaurantName={activeRestaurant.name}
-        />
-      )}
+      <div className="air-card flex items-start gap-3 border-[#E5E5EA] bg-[#FAFAFA] p-4">
+        <Share2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+        <p className="text-sm text-muted-foreground">
+          All share tools point to the same live public menu. Updates in Menu Builder appear
+          instantly — no need to regenerate links or QR codes.
+        </p>
+      </div>
     </div>
   );
 }

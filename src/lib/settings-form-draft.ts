@@ -9,6 +9,9 @@ export interface SettingsCustomLinkDraft {
   url: string;
 }
 
+import type { MenuContentLanguage } from "./menu-content-languages";
+import { normalizePrimaryLanguage } from "./menu-content-languages";
+
 export interface SettingsFormDraft {
   restaurantName: string;
   restaurantTagline: string;
@@ -18,6 +21,7 @@ export interface SettingsFormDraft {
   restaurantSlug: string;
   originalSlug: string;
   footerSlogan: string;
+  primaryLanguage: MenuContentLanguage;
   scheduleBlocks: HoursScheduleBlock[];
   customLinks: SettingsCustomLinkDraft[];
   dirty: boolean;
@@ -32,6 +36,7 @@ export const EMPTY_SETTINGS_FORM_DRAFT: SettingsFormDraft = {
   restaurantSlug: "",
   originalSlug: "",
   footerSlogan: "",
+  primaryLanguage: "es",
   scheduleBlocks: defaultScheduleBlocks(),
   customLinks: [],
   dirty: false,
@@ -71,6 +76,7 @@ export function normalizeSettingsFormDraft(value: unknown): SettingsFormDraft {
     restaurantSlug: typeof draft.restaurantSlug === "string" ? draft.restaurantSlug : "",
     originalSlug: typeof draft.originalSlug === "string" ? draft.originalSlug : "",
     footerSlogan: typeof draft.footerSlogan === "string" ? draft.footerSlogan : "",
+    primaryLanguage: normalizePrimaryLanguage(draft.primaryLanguage),
     scheduleBlocks,
     customLinks,
     dirty: Boolean(draft.dirty),
@@ -86,6 +92,7 @@ export function settingsDraftFromLoadedData(data: {
   contact_info: string;
   footer_slogan: string;
   custom_links?: Array<{ id?: string; label?: string; url?: string }>;
+  primary_language?: string;
 }): SettingsFormDraft {
   const contact = parseContactInfo(data.contact_info);
   const parsedHours = parseHoursSchedule(data.hours);
@@ -99,6 +106,7 @@ export function settingsDraftFromLoadedData(data: {
     restaurantSlug: data.slug ?? "",
     originalSlug: data.slug ?? "",
     footerSlogan: data.footer_slogan ?? "",
+    primaryLanguage: normalizePrimaryLanguage(data.primary_language),
     scheduleBlocks: parsedHours ?? defaultScheduleBlocks(),
     customLinks: (data.custom_links ?? []).map((link, index) => ({
       id: link.id?.trim() || `link-${index}`,
@@ -121,5 +129,6 @@ export function settingsDraftToSaveForm(draft: SettingsFormDraft): RestaurantSet
     scheduleBlocks: draft.scheduleBlocks,
     footerSlogan: draft.footerSlogan,
     links: draft.customLinks,
+    primaryLanguage: draft.primaryLanguage,
   };
 }

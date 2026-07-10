@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ForgotPasswordPanel } from "@/components/auth/forgot-password-panel";
+import { PasswordInput } from "@/components/ui/password-input";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { completeAuthenticatedLogin } from "@/lib/auth/profile";
 import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
@@ -124,14 +125,12 @@ export function LoginForm() {
             Forgot password?
           </button>
         </div>
-        <input
+        <PasswordInput
           id="login-password"
-          type="password"
           autoComplete="current-password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={setPassword}
           placeholder="Your password"
-          className="air-input"
         />
       </div>
 

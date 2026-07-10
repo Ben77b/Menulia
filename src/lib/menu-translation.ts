@@ -36,9 +36,13 @@ function pushTranslationItem(
   field: MenuTranslationField,
   value: LocalizedTextValue,
   targetLang: MenuContentLanguage,
-  options?: { lockTitleTranslation?: boolean }
+  options?: { lockTitleTranslation?: boolean; primaryLanguage?: MenuContentLanguage }
 ) {
-  const text = collectTextForTranslation(value, targetLang);
+  const text = collectTextForTranslation(
+    value,
+    targetLang,
+    options?.primaryLanguage ?? "en"
+  );
   if (!text) return;
 
   items.push({
@@ -54,46 +58,76 @@ function pushTranslationItem(
 function pushDishTranslationItems(
   items: MenuTranslationItem[],
   dish: MenuBuilderDish,
-  targetLang: MenuContentLanguage
+  targetLang: MenuContentLanguage,
+  primaryLanguage: MenuContentLanguage = "en"
 ) {
   pushTranslationItem(items, "dish", dish.id, "name", dish.name, targetLang, {
     lockTitleTranslation: dish.lock_title_translation,
+    primaryLanguage,
   });
-  pushTranslationItem(items, "dish", dish.id, "description", dish.description, targetLang);
+  pushTranslationItem(items, "dish", dish.id, "description", dish.description, targetLang, {
+    primaryLanguage,
+  });
 }
 
 export function collectMenuTranslationItems(
   tree: MenuBuilderTree,
-  targetLang: MenuContentLanguage
+  targetLang: MenuContentLanguage,
+  primaryLanguage: MenuContentLanguage = "en"
 ): MenuTranslationItem[] {
   const items: MenuTranslationItem[] = [];
+  const itemOptions = { primaryLanguage };
 
   for (const section of tree.sections) {
-    pushTranslationItem(items, "category", section.id, "name", section.name, targetLang);
+    pushTranslationItem(items, "category", section.id, "name", section.name, targetLang, itemOptions);
     if (section.description) {
-      pushTranslationItem(items, "category", section.id, "description", section.description, targetLang);
+      pushTranslationItem(
+        items,
+        "category",
+        section.id,
+        "description",
+        section.description,
+        targetLang,
+        itemOptions
+      );
     }
 
     for (const category of section.categories) {
-      pushTranslationItem(items, "category", category.id, "name", category.name, targetLang);
+      pushTranslationItem(items, "category", category.id, "name", category.name, targetLang, itemOptions);
       if (category.description) {
-        pushTranslationItem(items, "category", category.id, "description", category.description, targetLang);
+        pushTranslationItem(
+          items,
+          "category",
+          category.id,
+          "description",
+          category.description,
+          targetLang,
+          itemOptions
+        );
       }
 
       for (const dish of category.dishes) {
-        pushDishTranslationItems(items, dish, targetLang);
+        pushDishTranslationItems(items, dish, targetLang, primaryLanguage);
       }
     }
   }
 
   for (const category of tree.orphanCategories) {
-    pushTranslationItem(items, "category", category.id, "name", category.name, targetLang);
+    pushTranslationItem(items, "category", category.id, "name", category.name, targetLang, itemOptions);
     if (category.description) {
-      pushTranslationItem(items, "category", category.id, "description", category.description, targetLang);
+      pushTranslationItem(
+        items,
+        "category",
+        category.id,
+        "description",
+        category.description,
+        targetLang,
+        itemOptions
+      );
     }
 
     for (const dish of category.dishes) {
-      pushDishTranslationItems(items, dish, targetLang);
+      pushDishTranslationItems(items, dish, targetLang, primaryLanguage);
     }
   }
 
@@ -184,7 +218,8 @@ export async function translateMenuTreeToLanguage(
   targetLang: MenuContentLanguage,
   brandProtection: TranslationBrandProtectionOptions = {}
 ): Promise<MenuBuilderTree> {
-  const items = collectMenuTranslationItems(tree, targetLang);
+  const primaryLanguage = brandProtection.primaryLanguage ?? "en";
+  const items = collectMenuTranslationItems(tree, targetLang, primaryLanguage);
   if (items.length === 0) return tree;
 
   const protectedTexts = items.map((item) => {

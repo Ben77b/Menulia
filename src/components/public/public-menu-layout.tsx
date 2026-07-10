@@ -40,6 +40,7 @@ interface PublicMenuLayoutProps {
   hours: string;
   contactInfo: string;
   footerSlogan?: string;
+  defaultLocale?: PublicMenuLocale;
   theme: ResolvedMenuTheme;
   titleFont: string;
   bodyFont: string;
@@ -203,6 +204,7 @@ export function PublicMenuLayout({
   hours,
   contactInfo,
   footerSlogan = "",
+  defaultLocale = "en",
   theme,
   titleFont,
   bodyFont,
@@ -230,12 +232,16 @@ export function PublicMenuLayout({
     [safeMenu, safeFlatCategories, hasNestedStructure]
   );
 
-  const [locale, setLocale] = useState<PublicMenuLocale>("en");
+  const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
   const { activeFilters, toggleFilter } = usePublicMenuFilters();
   const [activeParentId, setActiveParentId] = useState(safeMenu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
     safeMenu[0]?.subcategories?.[0]?.id ?? safeFlatCategories[0]?.id ?? ""
   );
+
+  useEffect(() => {
+    setLocale(defaultLocale);
+  }, [defaultLocale]);
 
   useEffect(() => {
     if (hasNestedStructure) {

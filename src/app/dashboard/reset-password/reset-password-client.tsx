@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { completeAuthenticatedLogin } from "@/lib/auth/profile";
@@ -129,14 +130,12 @@ export function ResetPasswordClient() {
               <label htmlFor="new-password" className="air-label">
                 New password
               </label>
-              <input
+              <PasswordInput
                 id="new-password"
-                type="password"
                 autoComplete="new-password"
                 value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
+                onChange={setNewPassword}
                 placeholder="At least 8 characters"
-                className="air-input"
               />
             </div>
 
@@ -144,14 +143,12 @@ export function ResetPasswordClient() {
               <label htmlFor="confirm-password" className="air-label">
                 Confirm password
               </label>
-              <input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 autoComplete="new-password"
                 value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
+                onChange={setConfirmPassword}
                 placeholder="Repeat your new password"
-                className="air-input"
               />
             </div>
 

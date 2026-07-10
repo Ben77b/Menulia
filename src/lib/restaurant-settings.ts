@@ -1,6 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { compileHoursSchedule, type HoursScheduleBlock } from "./hours-schedule";
 import { formatContactInfo } from "./contact-info";
+import { normalizePrimaryLanguage } from "./menu-content-languages";
 import {
   CUSTOM_LINKS_SQL_HINT,
   parseCustomLinks,
@@ -20,6 +21,7 @@ export interface RestaurantSettingsForm {
   scheduleBlocks: HoursScheduleBlock[];
   footerSlogan: string;
   links: RestaurantLinkInput[];
+  primaryLanguage: string;
 }
 
 export interface RestaurantSettingsRecord {
@@ -31,10 +33,11 @@ export interface RestaurantSettingsRecord {
   contact_info: string;
   footer_slogan: string;
   custom_links: RestaurantLink[];
+  primary_language: string;
 }
 
 const EXTENDED_PROFILE_COLUMNS =
-  "id, name, slug, meta_description, location, hours, contact_info, footer_slogan, custom_links" as const;
+  "id, name, slug, meta_description, location, hours, contact_info, footer_slogan, custom_links, primary_language" as const;
 
 const CORE_PROFILE_COLUMNS = "id, name, slug, location, hours, contact_info" as const;
 
@@ -56,7 +59,7 @@ export function formatSchemaError(error: unknown): string {
     const match = message.match(/column\s+[\w.]+\.(\w+)\s+does not exist/i);
     const column = match?.[1];
 
-    if (column === "custom_links" || column === "footer_slogan") {
+    if (column === "custom_links" || column === "footer_slogan" || column === "primary_language") {
       return `Your database is missing the "${column}" column. ${CUSTOM_LINKS_SQL_HINT}`;
     }
 
@@ -112,6 +115,7 @@ export async function loadRestaurantSettings(
         contact_info: coreData.contact_info ?? "",
         footer_slogan: "",
         custom_links: [],
+        primary_language: "es",
       };
     }
 
@@ -131,6 +135,7 @@ export async function loadRestaurantSettings(
     contact_info: data.contact_info ?? "",
     footer_slogan: data.footer_slogan ?? "",
     custom_links: parseCustomLinks(data.custom_links),
+    primary_language: normalizePrimaryLanguage(data.primary_language),
   };
 }
 
@@ -156,6 +161,7 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
     contact_info: string;
     footer_slogan: string;
     custom_links: ReturnType<typeof serializeCustomLinks>;
+    primary_language: string;
     updated_at: string;
     slug?: string;
   } = {
@@ -166,6 +172,7 @@ export function buildRestaurantSettingsPayload(form: RestaurantSettingsForm): {
     contact_info: formatContactInfo(form.phone, form.email),
     footer_slogan: form.footerSlogan.trim(),
     custom_links: serializeCustomLinks(form.links),
+    primary_language: normalizePrimaryLanguage(form.primaryLanguage),
     updated_at: new Date().toISOString(),
   };
 
@@ -207,6 +214,29 @@ export async function saveFullRestaurantSettings(
     normalizedSlug: slugUnchanged ? undefined : normalizedSlug,
     slugUnchanged,
   };
+}
+
+export async function saveRestaurantPrimaryLanguage(
+  supabase: SupabaseClient,
+  restaurantId: string,
+  primaryLanguage: string
+): Promise<void> {
+  const { error } = await supabase
+    .from("restaurants")
+    .update({
+      primary_language: normalizePrimaryLanguage(primaryLanguage),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", restaurantId);
+
+  if (error) {
+    if (isMissingColumnError(error)) {
+      throw new Error(
+        'Your database is missing the "primary_language" column. Run supabase/migrations/20250710000000_restaurant_primary_language.sql in the Supabase SQL editor.'
+      );
+    }
+    throw new Error(formatSchemaError(error));
+  }
 }
 
 export async function deleteRestaurant(

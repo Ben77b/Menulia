@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronRight, Loader2, Pencil, X } from "lucide-react";
+import { Check, Globe, Loader2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
 import {
-  MENU_CONTENT_LANGUAGES,
+  getMenuContentLanguageMeta,
+  getSecondaryLanguage,
   type MenuContentLanguage,
 } from "@/lib/menu-content-languages";
 import {
@@ -15,15 +16,12 @@ import {
   type LocalizedTextValue,
 } from "@/lib/localized-text";
 
-const TRANSLATION_LANGUAGES = MENU_CONTENT_LANGUAGES.filter(
-  (language) => language.code !== "en"
-);
-
-const translationInputClassName =
+const fieldInputClassName =
   "h-11 w-full rounded-xl border border-[#E5E5EA] bg-white px-4 text-sm text-slate-900 transition-all placeholder:text-[#86868B] focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 disabled:opacity-50";
 
 interface LocalizedTitleEditorProps {
   name: LocalizedTextValue;
+  primaryLanguage: MenuContentLanguage;
   disabled?: boolean;
   titleClassName?: string;
   onRename: (nextName: string) => Promise<boolean>;
@@ -32,44 +30,50 @@ interface LocalizedTitleEditorProps {
 
 export function LocalizedTitleEditor({
   name,
+  primaryLanguage,
   disabled = false,
   titleClassName,
   onRename,
   onTranslationChange,
 }: LocalizedTitleEditorProps) {
-  const displayName = resolveBuilderSourceText(name);
+  const secondaryLanguage = getSecondaryLanguage(primaryLanguage);
+  const primaryMeta = getMenuContentLanguageMeta(primaryLanguage);
+  const secondaryMeta = getMenuContentLanguageMeta(secondaryLanguage);
+
+  const displayName = resolveBuilderSourceText(name, primaryLanguage);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(displayName);
   const [saving, setSaving] = useState(false);
-  const [translationsOpen, setTranslationsOpen] = useState(false);
-  const [translationDrafts, setTranslationDrafts] = useState<Record<string, string>>({});
-  const [savingTranslationLang, setSavingTranslationLang] = useState<MenuContentLanguage | null>(
-    null
-  );
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [translationDraft, setTranslationDraft] = useState("");
+  const [savingTranslation, setSavingTranslation] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const hasSavedTranslations = TRANSLATION_LANGUAGES.some((language) =>
-    resolveBuilderTranslationText(name, language.code).trim()
-  );
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!editing) setDraft(displayName);
   }, [displayName, editing]);
 
   useEffect(() => {
-    setTranslationDrafts(
-      Object.fromEntries(
-        TRANSLATION_LANGUAGES.map((language) => [
-          language.code,
-          resolveBuilderTranslationText(name, language.code),
-        ])
-      )
-    );
-  }, [name]);
+    setTranslationDraft(resolveBuilderTranslationText(name, secondaryLanguage));
+  }, [name, secondaryLanguage]);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!popoverRef.current?.contains(event.target as Node)) {
+        setPopoverOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [popoverOpen]);
 
   function cancelEdit() {
     setDraft(displayName);
@@ -87,21 +91,23 @@ export function LocalizedTitleEditor({
     }
   }
 
-  async function saveTranslation(lang: MenuContentLanguage) {
-    const trimmed = (translationDrafts[lang] ?? "").trim();
-    const saved = resolveBuilderTranslationText(name, lang).trim();
+  async function saveTranslation() {
+    const trimmed = translationDraft.trim();
+    const saved = resolveBuilderTranslationText(name, secondaryLanguage).trim();
     if (trimmed === saved) return;
 
-    setSavingTranslationLang(lang);
+    setSavingTranslation(true);
     try {
-      await onTranslationChange(lang, trimmed);
+      await onTranslationChange(secondaryLanguage, trimmed);
     } finally {
-      setSavingTranslationLang(null);
+      setSavingTranslation(false);
     }
   }
 
+  const hasTranslation = Boolean(resolveBuilderTranslationText(name, secondaryLanguage).trim());
+
   return (
-    <div className="min-w-0 flex-1 space-y-4">
+    <div className="min-w-0 flex-1">
       {editing ? (
         <div className="flex min-w-0 items-center gap-2">
           <input
@@ -117,8 +123,8 @@ export function LocalizedTitleEditor({
               }
               if (e.key === "Escape") cancelEdit();
             }}
-            className={cn(translationInputClassName, "min-w-0 flex-1")}
-            aria-label="English title"
+            className={cn(fieldInputClassName, "min-w-0 flex-1")}
+            aria-label={`${primaryMeta.label} title`}
           />
           <Button
             type="button"
@@ -155,85 +161,57 @@ export function LocalizedTitleEditor({
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
+
+          <div className="relative" ref={popoverRef}>
+            <button
+              type="button"
+              onClick={() => setPopoverOpen((open) => !open)}
+              disabled={disabled}
+              aria-label={`Manage ${secondaryMeta.label} translation`}
+              aria-expanded={popoverOpen}
+              className={cn(
+                "rounded-lg p-1 transition-colors hover:bg-[#F5F5F7] disabled:opacity-40",
+                hasTranslation ? "text-slate-600" : "text-[#C7C7CC] hover:text-slate-600"
+              )}
+            >
+              <Globe className="h-3.5 w-3.5" />
+            </button>
+
+            {popoverOpen && (
+              <div className="absolute left-0 top-full z-30 mt-2 w-72 rounded-2xl border border-[#E5E5EA] bg-white p-4 shadow-lg">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {secondaryMeta.label} ({secondaryLanguage.toUpperCase()})
+                </p>
+                <div className="relative mt-2">
+                  <input
+                    value={translationDraft}
+                    maxLength={MAX_CATEGORY_NAME_LENGTH}
+                    disabled={disabled || savingTranslation}
+                    onChange={(e) => setTranslationDraft(e.target.value)}
+                    onBlur={() => void saveTranslation()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void saveTranslation();
+                        setPopoverOpen(false);
+                      }
+                      if (e.key === "Escape") setPopoverOpen(false);
+                    }}
+                    placeholder={`${secondaryMeta.label} title`}
+                    className={fieldInputClassName}
+                  />
+                  {savingTranslation && (
+                    <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+                  )}
+                </div>
+                <p className="mt-2 text-[11px] leading-relaxed text-[#86868B]">
+                  Saves on blur or Enter. Primary field edits {primaryMeta.label}.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      <div className="overflow-hidden rounded-2xl border border-[#E5E5EA] bg-white shadow-sm">
-        <button
-          type="button"
-          onClick={() => setTranslationsOpen((open) => !open)}
-          disabled={disabled}
-          aria-expanded={translationsOpen}
-          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[#FAFAFA] disabled:opacity-50"
-        >
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-slate-900">Manage Translations</p>
-            <p className="mt-0.5 text-xs text-[#86868B]">
-              {hasSavedTranslations
-                ? "Custom translations saved"
-                : "Add Spanish for the public menu"}
-            </p>
-          </div>
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ease-out",
-              translationsOpen && "rotate-90"
-            )}
-          />
-        </button>
-
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows] duration-200 ease-out",
-            translationsOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="space-y-4 border-t border-[#F0F0F0] px-4 py-4">
-              {TRANSLATION_LANGUAGES.map((language) => (
-                <div key={language.code} className="space-y-2">
-                  <label
-                    htmlFor={`translation-${language.code}`}
-                    className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    {language.label} ({language.code.toUpperCase()})
-                  </label>
-                  <div className="relative">
-                    <input
-                      id={`translation-${language.code}`}
-                      value={translationDrafts[language.code] ?? ""}
-                      maxLength={MAX_CATEGORY_NAME_LENGTH}
-                      disabled={disabled || savingTranslationLang === language.code}
-                      onChange={(e) =>
-                        setTranslationDrafts((prev) => ({
-                          ...prev,
-                          [language.code]: e.target.value,
-                        }))
-                      }
-                      onBlur={() => void saveTranslation(language.code)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          void saveTranslation(language.code);
-                        }
-                      }}
-                      placeholder={`${language.label} title`}
-                      className={translationInputClassName}
-                    />
-                    {savingTranslationLang === language.code && (
-                      <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
-                    )}
-                  </div>
-                </div>
-              ))}
-              <p className="text-xs leading-relaxed text-[#86868B]">
-                Saves automatically on blur or Enter. Overrides auto-translations on the public
-                menu. The title above always edits English.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

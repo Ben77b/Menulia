@@ -15,11 +15,22 @@ import {
   normalizeDishTagFields,
 } from "@/lib/dietary-tags";
 import { parsePriceInput } from "@/lib/price-input";
-import { resolveBuilderSourceText } from "@/lib/localized-text";
+import {
+  resolveBuilderSourceText,
+  resolveBuilderTranslationText,
+} from "@/lib/localized-text";
+import {
+  getMenuContentLanguageMeta,
+  getSecondaryLanguage,
+  type MenuContentLanguage,
+} from "@/lib/menu-content-languages";
+import { SecondaryLanguageField } from "./secondary-language-field";
 
 export interface DishDetailDraft {
   name: string;
+  nameTranslation: string;
   description: string;
+  descriptionTranslation: string;
   price: string;
   /** When enabled, this dish will be rendered without a price on the public menu */
   hide_price: boolean;
@@ -34,6 +45,7 @@ export interface DishDetailDraft {
 interface DishDetailSheetProps {
   open: boolean;
   dish: MenuBuilderDish | null;
+  primaryLanguage: MenuContentLanguage;
   saving?: boolean;
   uploadingImage?: boolean;
   onClose: () => void;
@@ -47,6 +59,7 @@ interface DishDetailSheetProps {
 export function DishDetailSheet({
   open,
   dish,
+  primaryLanguage,
   saving,
   uploadingImage,
   onClose,
@@ -60,7 +73,9 @@ export function DishDetailSheet({
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [draft, setDraft] = useState<DishDetailDraft>({
     name: "",
+    nameTranslation: "",
     description: "",
+    descriptionTranslation: "",
     price: "",
     hide_price: false,
     lock_title_translation: false,
@@ -84,8 +99,16 @@ export function DishDetailSheet({
     dishIdRef.current = dish.id;
     const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
     setDraft({
-      name: resolveBuilderSourceText(dish.name),
-      description: resolveBuilderSourceText(dish.description),
+      name: resolveBuilderSourceText(dish.name, primaryLanguage),
+      nameTranslation: resolveBuilderTranslationText(
+        dish.name,
+        getSecondaryLanguage(primaryLanguage)
+      ),
+      description: resolveBuilderSourceText(dish.description, primaryLanguage),
+      descriptionTranslation: resolveBuilderTranslationText(
+        dish.description,
+        getSecondaryLanguage(primaryLanguage)
+      ),
       price: String(dish.price),
       hide_price: Boolean(dish.hide_price),
       lock_title_translation: Boolean(dish.lock_title_translation),
@@ -94,7 +117,9 @@ export function DishDetailSheet({
       allergens: normalized.allergens,
       is_available: dish.is_available !== false,
     });
-  }, [open, dish]);
+  }, [open, dish, primaryLanguage]);
+
+  const primaryMeta = getMenuContentLanguageMeta(primaryLanguage);
 
   async function handleAvailabilityToggle(checked: boolean) {
     setDraft((prev) => ({ ...prev, is_available: checked }));
@@ -252,7 +277,16 @@ export function DishDetailSheet({
           </div>
 
           <div>
-            <label className="air-label">Name</label>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="air-label mb-0">Name ({primaryMeta.label})</label>
+              <SecondaryLanguageField
+                primaryLanguage={primaryLanguage}
+                label="name"
+                value={draft.nameTranslation}
+                onChange={(value) => setDraft((prev) => ({ ...prev, nameTranslation: value }))}
+                onSave={async () => undefined}
+              />
+            </div>
             <input
               value={draft.name}
               onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
@@ -296,21 +330,33 @@ export function DishDetailSheet({
 
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <label className="air-label mb-0">Description</label>
-              <button
-                type="button"
-                onClick={() => void handleGenerateDescription()}
-                disabled={generatingDescription || saving}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-[#F5F5F7] hover:text-slate-900 disabled:opacity-50"
-                aria-label="Generate description with AI"
-              >
-                {generatingDescription ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
-                )}
-                <span>{generatingDescription ? "Writing…" : "AI write"}</span>
-              </button>
+              <label className="air-label mb-0">Description ({primaryMeta.label})</label>
+              <div className="flex items-center gap-1">
+                <SecondaryLanguageField
+                  primaryLanguage={primaryLanguage}
+                  label="description"
+                  value={draft.descriptionTranslation}
+                  multiline
+                  onChange={(value) =>
+                    setDraft((prev) => ({ ...prev, descriptionTranslation: value }))
+                  }
+                  onSave={async () => undefined}
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleGenerateDescription()}
+                  disabled={generatingDescription || saving}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-[#F5F5F7] hover:text-slate-900 disabled:opacity-50"
+                  aria-label="Generate description with AI"
+                >
+                  {generatingDescription ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  <span>{generatingDescription ? "Writing…" : "AI write"}</span>
+                </button>
+              </div>
             </div>
             <div className="relative">
               <textarea
