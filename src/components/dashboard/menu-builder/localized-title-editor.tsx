@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Loader2, Pencil, X } from "lucide-react";
+import { Check, ChevronRight, Loader2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
@@ -18,6 +18,9 @@ import {
 const TRANSLATION_LANGUAGES = MENU_CONTENT_LANGUAGES.filter(
   (language) => language.code !== "en"
 );
+
+const translationInputClassName =
+  "h-11 w-full rounded-xl border border-[#E5E5EA] bg-white px-4 text-sm text-slate-900 transition-all placeholder:text-[#86868B] focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 disabled:opacity-50";
 
 interface LocalizedTitleEditorProps {
   name: LocalizedTextValue;
@@ -65,10 +68,6 @@ export function LocalizedTitleEditor({
   }, [name]);
 
   useEffect(() => {
-    if (hasSavedTranslations) setTranslationsOpen(true);
-  }, [hasSavedTranslations]);
-
-  useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
@@ -102,7 +101,7 @@ export function LocalizedTitleEditor({
   }
 
   return (
-    <div className="min-w-0 flex-1 space-y-3">
+    <div className="min-w-0 flex-1 space-y-4">
       {editing ? (
         <div className="flex min-w-0 items-center gap-2">
           <input
@@ -118,8 +117,8 @@ export function LocalizedTitleEditor({
               }
               if (e.key === "Escape") cancelEdit();
             }}
-            className="air-input min-w-0 flex-1 py-1.5 text-sm"
-            aria-label="Title"
+            className={cn(translationInputClassName, "min-w-0 flex-1")}
+            aria-label="English title"
           />
           <Button
             type="button"
@@ -159,57 +158,81 @@ export function LocalizedTitleEditor({
         </div>
       )}
 
-      <div className="rounded-xl border border-[#F5F5F7] bg-[#FAFAFA]/80">
+      <div className="overflow-hidden rounded-2xl border border-[#E5E5EA] bg-white shadow-sm">
         <button
           type="button"
           onClick={() => setTranslationsOpen((open) => !open)}
           disabled={disabled}
-          className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-[#F5F5F7]/80 disabled:opacity-50"
+          aria-expanded={translationsOpen}
+          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[#FAFAFA] disabled:opacity-50"
         >
-          <span>🌐 Manage Translations</span>
-          <ChevronDown
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-slate-900">Manage Translations</p>
+            <p className="mt-0.5 text-xs text-[#86868B]">
+              {hasSavedTranslations
+                ? "Custom translations saved"
+                : "Add Spanish for the public menu"}
+            </p>
+          </div>
+          <ChevronRight
             className={cn(
-              "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-              translationsOpen && "rotate-180"
+              "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ease-out",
+              translationsOpen && "rotate-90"
             )}
           />
         </button>
 
-        {translationsOpen && (
-          <div className="space-y-3 border-t border-[#F5F5F7] px-3 py-3">
-            {TRANSLATION_LANGUAGES.map((language) => (
-              <div key={language.code}>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">
-                  {language.label} Translation ({language.code.toUpperCase()})
-                </label>
-                <input
-                  value={translationDrafts[language.code] ?? ""}
-                  maxLength={MAX_CATEGORY_NAME_LENGTH}
-                  disabled={disabled || savingTranslationLang === language.code}
-                  onChange={(e) =>
-                    setTranslationDrafts((prev) => ({
-                      ...prev,
-                      [language.code]: e.target.value,
-                    }))
-                  }
-                  onBlur={() => void saveTranslation(language.code)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void saveTranslation(language.code);
-                    }
-                  }}
-                  placeholder={`${language.label} title`}
-                  className="air-input py-1.5 text-sm"
-                />
-              </div>
-            ))}
-            <p className="text-xs text-[#86868B]">
-              Overrides auto-translations for the public menu. The title field above always edits
-              English.
-            </p>
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out",
+            translationsOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          )}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-4 border-t border-[#F0F0F0] px-4 py-4">
+              {TRANSLATION_LANGUAGES.map((language) => (
+                <div key={language.code} className="space-y-2">
+                  <label
+                    htmlFor={`translation-${language.code}`}
+                    className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    {language.label} ({language.code.toUpperCase()})
+                  </label>
+                  <div className="relative">
+                    <input
+                      id={`translation-${language.code}`}
+                      value={translationDrafts[language.code] ?? ""}
+                      maxLength={MAX_CATEGORY_NAME_LENGTH}
+                      disabled={disabled || savingTranslationLang === language.code}
+                      onChange={(e) =>
+                        setTranslationDrafts((prev) => ({
+                          ...prev,
+                          [language.code]: e.target.value,
+                        }))
+                      }
+                      onBlur={() => void saveTranslation(language.code)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void saveTranslation(language.code);
+                        }
+                      }}
+                      placeholder={`${language.label} title`}
+                      className={translationInputClassName}
+                    />
+                    {savingTranslationLang === language.code && (
+                      <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+                    )}
+                  </div>
+                </div>
+              ))}
+              <p className="text-xs leading-relaxed text-[#86868B]">
+                Saves automatically on blur or Enter. Overrides auto-translations on the public
+                menu. The title above always edits English.
+              </p>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

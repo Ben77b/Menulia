@@ -54,11 +54,14 @@ export function MarketingFooter() {
         </div>
         <div className="mt-10 border-t border-border pt-6">
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+            <Link href="/legal" className="air-link">
+              Aviso Legal
+            </Link>
             <Link href="/privacy" className="air-link">
-              Privacy Policy
+              Política de Privacidad
             </Link>
             <Link href="/terms" className="air-link">
-              Terms of Service
+              Términos del Servicio
             </Link>
           </div>
           <p className="mt-5 text-center text-xs text-muted-foreground">

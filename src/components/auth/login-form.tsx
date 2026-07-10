@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ForgotPasswordPanel } from "@/components/auth/forgot-password-panel";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { completeAuthenticatedLogin } from "@/lib/auth/profile";
 import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
@@ -14,6 +15,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -110,9 +112,18 @@ export function LoginForm() {
       </div>
 
       <div>
-        <label htmlFor="login-password" className="air-label">
-          Password
-        </label>
+        <div className="mb-1.5 flex items-center justify-between gap-3">
+          <label htmlFor="login-password" className="air-label mb-0">
+            Password
+          </label>
+          <button
+            type="button"
+            onClick={() => setForgotOpen(true)}
+            className="text-xs text-muted-foreground transition-colors hover:text-slate-900"
+          >
+            Forgot password?
+          </button>
+        </div>
         <input
           id="login-password"
           type="password"
@@ -136,6 +147,10 @@ export function LoginForm() {
           Create an account
         </Link>
       </p>
+
+      {forgotOpen && (
+        <ForgotPasswordPanel defaultEmail={email} onClose={() => setForgotOpen(false)} />
+      )}
     </form>
   );
 }

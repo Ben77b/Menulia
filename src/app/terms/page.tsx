@@ -2,106 +2,100 @@ import { LegalDocumentLayout, LegalSection } from "@/components/marketing/legal-
 import { marketingPageMetadata } from "@/lib/marketing/seo";
 
 export const metadata = marketingPageMetadata({
-  title: "Terms of Service",
+  title: "Términos del Servicio",
   description:
-    "Terms governing your use of the menulia.net digital menu platform, including accounts, content, billing, and liability.",
+    "Condiciones de uso de Menulia, plataforma técnica de visualización de menús digitales para hostelería.",
   path: "/terms",
 });
 
-const LAST_UPDATED = "June 27, 2025";
+const LAST_UPDATED = "July 10, 2026";
 
 export default function TermsOfServicePage() {
   return (
-    <LegalDocumentLayout title="Terms of Service" lastUpdated={LAST_UPDATED}>
+    <LegalDocumentLayout title="Términos del Servicio" lastUpdated={LAST_UPDATED}>
       <p className="text-[15px] leading-7 text-slate-600">
-        These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of menulia.net
-        (&ldquo;Menulia,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;). By
-        creating an account or using the platform, you agree to these Terms. If you do not agree,
-        please do not use the service.
+        Estos Términos del Servicio regulan el acceso y uso de Menulia (menulia.net). Al crear una
+        cuenta o utilizar la plataforma, usted acepta quedar vinculado por estos Términos. Si no
+        está de acuerdo, no utilice el servicio.
       </p>
 
-      <LegalSection number={1} title="Account Responsibilities">
+      <LegalSection number={1} title="Naturaleza del servicio">
         <p>
-          You are responsible for maintaining the confidentiality of your login credentials and for
-          all activity that occurs under your account. You agree to provide accurate registration
-          information and to keep it up to date.
+          Menulia proporciona servicios técnicos de visualización y gestión de menús digitales en
+          la nube para establecimientos de hostelería. El servicio se ofrece &ldquo;tal cual&rdquo;
+          y &ldquo;según disponibilidad&rdquo;, sin garantías implícitas de idoneidad para un
+          propósito particular.
         </p>
         <p>
-          You must promptly notify us of any unauthorized access or security breach related to your
-          account. We reserve the right to suspend or restrict accounts that appear compromised or
-          used in violation of these Terms.
+          Menulia no es un restaurante, operador de alimentación ni asesor legal o sanitario. La
+          plataforma facilita la publicación de contenido introducido por el titular de cada cuenta.
         </p>
       </LegalSection>
 
-      <LegalSection number={2} title="Acceptable Content Use">
+      <LegalSection number={2} title="Responsabilidad exclusiva del establecimiento">
         <p>
-          You may upload and publish menu content, branding, and restaurant information that you own
-          or have the right to use. You agree not to upload content that:
+          El titular de la cuenta del restaurante asume el{" "}
+          <strong className="font-semibold text-slate-800">
+            100% de la responsabilidad exclusiva
+          </strong>{" "}
+          sobre la exactitud, legalidad y actualización de toda la información publicada en su menú
+          digital, incluyendo de forma enunciativa pero no limitativa:
         </p>
         <ul className="list-disc space-y-2 pl-5">
-          <li>Infringes copyright, trademark, or other intellectual property rights of third parties.</li>
-          <li>Contains menus, images, or materials copied without authorization from other businesses.</li>
-          <li>Is unlawful, misleading, defamatory, or harmful to guests or other users.</li>
-          <li>Contains malware, spam, or attempts to disrupt the platform.</li>
+          <li>Nombres, descripciones e imágenes de los productos.</li>
+          <li>Precios, impuestos aplicables y disponibilidad de los platos.</li>
+          <li>
+            La declaración legal de los{" "}
+            <strong className="font-semibold text-slate-800">
+              14 alérgenos obligatorios de la Unión Europea
+            </strong>{" "}
+            conforme a la normativa aplicable, incluido el Reglamento (UE) 1169/2011.
+          </li>
         </ul>
         <p>
-          You retain ownership of your content. By publishing through Menulia, you grant us a limited
-          license to host, display, and distribute your content solely to operate and improve the
-          service.
+          Menulia no verifica de forma independiente el contenido del menú ni asume responsabilidad
+          por errores, omisiones o incumplimientos normativos derivados de la información
+          introducida por el establecimiento.
         </p>
       </LegalSection>
 
-      <LegalSection number={3} title="Termination of Service">
+      <LegalSection number={3} title="Cuenta y uso aceptable">
         <p>
-          You may cancel your account at any time through the dashboard or by contacting support.
-          We may suspend or terminate access if you breach these Terms, fail to pay applicable fees,
-          or if continued provision of the service becomes impractical for legal or operational
-          reasons.
-        </p>
-        <p>
-          Upon termination, your right to use the platform ceases. We may retain certain data as
-          required by law or for legitimate business purposes, consistent with our Privacy Policy.
+          Usted es responsable de mantener la confidencialidad de sus credenciales y de toda
+          actividad realizada bajo su cuenta. Debe proporcionar información veraz y actualizada, y
+          abstenerse de publicar contenido ilícito, engañoso, infractor de derechos de terceros o
+          que pueda causar daño a los consumidores.
         </p>
       </LegalSection>
 
-      <LegalSection number={4} title="Liability Limitations">
+      <LegalSection number={4} title="Limitación de responsabilidad">
         <p>
-          Menulia is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis. To the
-          fullest extent permitted by law, we disclaim all warranties, express or implied, including
-          fitness for a particular purpose and non-infringement.
+          En la máxima medida permitida por la ley aplicable, Menulia no será responsable de daños
+          indirectos, incidentales, especiales, consecuenciales o punitivos, ni de pérdidas de
+          beneficios, ingresos, datos o reputación derivadas del uso del servicio.
         </p>
         <p>
-          We are not liable for indirect, incidental, special, consequential, or punitive damages,
-          or for any loss of profits, revenue, data, or goodwill arising from your use of the
-          service. Our total liability for any claim related to the service is limited to the amount
-          you paid us in the twelve (12) months preceding the claim, or €100, whichever is greater.
-        </p>
-      </LegalSection>
-
-      <LegalSection number={5} title="Billing Policies">
-        <p>
-          Free plans are offered at no charge subject to feature limits described on our website.
-          Premium subscriptions are billed monthly (or as otherwise stated at checkout) and renew
-          automatically until canceled.
-        </p>
-        <p>
-          Fees are non-refundable except where required by applicable law. You may upgrade, downgrade,
-          or cancel through your account settings; changes take effect according to the billing cycle
-          shown at the time of purchase. We may change pricing with reasonable notice before it applies
-          to your next renewal.
+          La responsabilidad total de Menulia por cualquier reclamación relacionada con el servicio
+          se limitará al importe abonado por el usuario en los doce meses anteriores a la
+          reclamación, o a 100 euros, lo que sea mayor, salvo que la ley imperativa disponga lo
+          contrario.
         </p>
       </LegalSection>
 
-      <LegalSection number={6} title="General & Contact">
+      <LegalSection number={5} title="Suspensión y terminación">
         <p>
-          These Terms constitute the entire agreement between you and Menulia regarding the service.
-          If any provision is found unenforceable, the remaining provisions remain in effect. We may
-          update these Terms from time to time; continued use after changes constitutes acceptance.
+          Podemos suspender o cancelar el acceso al servicio si se incumplen estos Términos, si
+          existe riesgo para la seguridad de la plataforma o si la prestación del servicio deja de
+          ser viable por motivos legales u operativos. El usuario puede cancelar su cuenta en
+          cualquier momento contactando con soporte.
         </p>
+      </LegalSection>
+
+      <LegalSection number={6} title="Contacto">
         <p>
-          Questions about these Terms? Contact us at{" "}
-          <a href="mailto:legal@menulia.net" className="air-link">
-            legal@menulia.net
+          Para consultas sobre estos Términos, escríbanos a{" "}
+          <a href="mailto:soporte@menulia.net" className="air-link">
+            soporte@menulia.net
           </a>
           .
         </p>

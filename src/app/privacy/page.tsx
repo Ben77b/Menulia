@@ -2,110 +2,104 @@ import { LegalDocumentLayout, LegalSection } from "@/components/marketing/legal-
 import { marketingPageMetadata } from "@/lib/marketing/seo";
 
 export const metadata = marketingPageMetadata({
-  title: "Privacy Policy",
+  title: "Política de Privacidad",
   description:
-    "How menulia.net collects, secures, and processes your account and restaurant menu data.",
+    "Cómo Menulia recopila, protege y trata los datos de cuentas y menús digitales conforme al RGPD.",
   path: "/privacy",
 });
 
-const LAST_UPDATED = "June 27, 2025";
+const LAST_UPDATED = "July 10, 2026";
 
 export default function PrivacyPolicyPage() {
   return (
-    <LegalDocumentLayout title="Privacy Policy" lastUpdated={LAST_UPDATED}>
+    <LegalDocumentLayout title="Política de Privacidad" lastUpdated={LAST_UPDATED}>
       <p className="text-[15px] leading-7 text-slate-600">
-        menulia.net (&ldquo;Menulia,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) provides a
-        software-as-a-service platform for restaurants to create and publish digital menus. This
-        Privacy Policy explains what information we collect, how we use it, and the choices you have.
+        Menulia (menulia.net) es una plataforma de software en la nube para la gestión y
+        visualización de menús digitales en el sector de la hostelería. Esta Política de Privacidad
+        explica qué datos tratamos, con qué finalidad y qué derechos le asisten conforme al
+        Reglamento General de Protección de Datos (RGPD).
       </p>
 
-      <LegalSection number={1} title="Data We Collect">
+      <LegalSection number={1} title="Responsable del tratamiento">
         <p>
-          We collect information you provide when you create an account, manage a restaurant, or
-          contact us for support. This may include:
+          Responsable: <strong className="font-semibold text-slate-800">Menulia</strong>
         </p>
+        <p>
+          Contacto de privacidad:{" "}
+          <a href="mailto:soporte@menulia.net" className="air-link">
+            soporte@menulia.net
+          </a>
+        </p>
+        <p>
+          Menulia trata los datos personales estrictamente para mantener cuentas de usuario,
+          permitir la gestión de restaurantes y mostrar menús digitales a los clientes finales de
+          cada establecimiento.
+        </p>
+      </LegalSection>
+
+      <LegalSection number={2} title="Datos que tratamos">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong className="font-semibold text-slate-800">Account information</strong> — your
-            email address, display name, and authentication credentials managed through our identity
-            provider.
+            <strong className="font-semibold text-slate-800">Datos de cuenta</strong> — dirección
+            de correo electrónico, nombre de usuario y credenciales de acceso gestionadas a través
+            de nuestro proveedor de autenticación.
           </li>
           <li>
-            <strong className="font-semibold text-slate-800">Restaurant and menu data</strong> —
-            restaurant names, branding, menu categories, dish names, descriptions, prices, images,
-            dietary tags, allergens, hours, contact details, and related content you upload or
-            configure in the dashboard.
+            <strong className="font-semibold text-slate-800">Datos de restaurante y menú</strong> —
+            nombres comerciales, branding, categorías, platos, precios, imágenes, alérgenos,
+            horarios y datos de contacto configurados en el panel de control.
           </li>
           <li>
-            <strong className="font-semibold text-slate-800">Usage data</strong> — basic logs such as
-            page views, feature interactions, device type, and browser information to keep the
-            service reliable and secure.
+            <strong className="font-semibold text-slate-800">Datos técnicos</strong> — registros
+            básicos de uso, tipo de dispositivo y navegador necesarios para garantizar la seguridad
+            y el correcto funcionamiento del servicio.
           </li>
         </ul>
       </LegalSection>
 
-      <LegalSection number={2} title="How We Secure Your Data">
+      <LegalSection number={3} title="Finalidad y base legal">
         <p>
-          We store application data in Supabase secure cloud infrastructure with encryption in
-          transit (TLS) and at rest. Access to production systems is restricted to authorized
-          personnel, protected by role-based controls and industry-standard authentication practices.
-        </p>
-        <p>
-          While we implement reasonable safeguards, no method of transmission or storage is
-          completely secure. We encourage you to use a strong, unique password and enable any
-          additional security features we offer for your account.
+          Tratamos los datos para prestar el servicio contratado, autenticar usuarios, almacenar
+          contenido de menús, publicar la carta digital y mantener la seguridad de la plataforma.
+          La base legal principal es la ejecución del contrato de servicios y, cuando proceda, el
+          interés legítimo en proteger la infraestructura y mejorar la fiabilidad del producto.
         </p>
       </LegalSection>
 
-      <LegalSection number={3} title="Cookies">
+      <LegalSection number={4} title="Alojamiento y seguridad">
         <p>
-          We use essential cookies and similar technologies to keep you signed in, remember
-          preferences, and maintain session security. We may also use analytics cookies to understand
-          how the platform is used and to improve performance.
+          Todos los datos de usuario se alojan de forma segura en servidores en la nube ubicados
+          dentro de la Unión Europea (UE), bajo marcos estrictos de cumplimiento del RGPD y medidas
+          técnicas y organizativas adecuadas.
         </p>
         <p>
-          You can control non-essential cookies through your browser settings. Disabling certain
-          cookies may limit some features of the service.
-        </p>
-      </LegalSection>
-
-      <LegalSection number={4} title="Third-Party Processing">
-        <p>
-          We rely on trusted third-party providers to operate menulia.net. These may include:
-        </p>
-        <ul className="list-disc space-y-2 pl-5">
-          <li>
-            <strong className="font-semibold text-slate-800">Supabase</strong> — authentication,
-            database, and file storage.
-          </li>
-          <li>
-            <strong className="font-semibold text-slate-800">Analytics providers</strong> — to
-            measure product usage and diagnose issues (aggregated where possible).
-          </li>
-          <li>
-            <strong className="font-semibold text-slate-800">Payment processors</strong> — to handle
-            subscription billing for Premium plans. We do not store full payment card numbers on our
-            servers.
-          </li>
-        </ul>
-        <p>
-          Each provider processes data according to its own privacy policy and only to the extent
-          necessary to deliver the service on our behalf.
+          Aplicamos cifrado en tránsito, controles de acceso restringidos y prácticas de
+          autenticación conforme a estándares del sector para proteger la confidencialidad e
+          integridad de la información.
         </p>
       </LegalSection>
 
-      <LegalSection number={5} title="Your Rights & Contact">
+      <LegalSection number={5} title="Encargados y terceros">
         <p>
-          Depending on your location, you may have rights to access, correct, export, or delete your
-          personal data. To exercise these rights or ask questions about this policy, contact us at{" "}
-          <a href="mailto:privacy@menulia.net" className="air-link">
-            privacy@menulia.net
+          Utilizamos proveedores de confianza para operar la plataforma, incluidos servicios de
+          autenticación, base de datos, almacenamiento de archivos y, cuando corresponda, analítica
+          o traducción. Estos proveedores tratan los datos únicamente siguiendo nuestras
+          instrucciones y con las garantías contractuales exigidas por el RGPD.
+        </p>
+      </LegalSection>
+
+      <LegalSection number={6} title="Sus derechos">
+        <p>
+          Puede solicitar acceso, rectificación, supresión, limitación, portabilidad u oposición al
+          tratamiento de sus datos personales, así como presentar una reclamación ante la
+          autoridad de control competente.
+        </p>
+        <p>
+          Para ejercer sus derechos, contacte con{" "}
+          <a href="mailto:soporte@menulia.net" className="air-link">
+            soporte@menulia.net
           </a>
           .
-        </p>
-        <p>
-          We may update this Privacy Policy from time to time. Material changes will be reflected
-          on this page with a revised &ldquo;Last updated&rdquo; date.
         </p>
       </LegalSection>
     </LegalDocumentLayout>
