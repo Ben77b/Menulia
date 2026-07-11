@@ -73,7 +73,7 @@ export function MarketingFooter({ locale }: MarketingFooterProps) {
 
         <div className="mt-10 border-t border-slate-200 pt-8">
           <PublicSiteLegalLinks className="[&_.air-link:hover]:text-[#22c55e]" />
-          <PublicSiteFooterBar className="mt-6 border-slate-200" tone="dark" />
+          <PublicSiteFooterBar className="mt-6 border-slate-200" tone="dark" locale={locale} />
         </div>
       </div>
     </footer>

@@ -4,6 +4,8 @@ import { applySecurityHeadersForPath } from "@/lib/security-headers";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
+const LOCALE_COOKIE = "menulia_locale";
+
 const LOCALE_SKIP_PREFIXES = [
   "/dashboard",
   "/login",
@@ -28,6 +30,32 @@ function shouldSkipLocale(pathname: string): boolean {
   );
 }
 
+function setLocaleCookie(response: NextResponse, locale: "en" | "es") {
+  response.cookies.set(LOCALE_COOKIE, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
+}
+
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie.name, cookie.value);
+  });
+}
+
+function prefersSpanish(request: NextRequest): boolean {
+  const accept = request.headers.get("accept-language") ?? "";
+  const primary = accept.split(",")[0]?.split(";")[0]?.trim().toLowerCase() ?? "";
+  return primary === "es" || primary.startsWith("es-");
+}
+
+function getStoredLocale(request: NextRequest): "en" | "es" | null {
+  const value = request.cookies.get(LOCALE_COOKIE)?.value;
+  if (value === "en" || value === "es") return value;
+  return null;
+}
+
 function withLocaleHeader(
   request: NextRequest,
   response: NextResponse,
@@ -39,11 +67,28 @@ function withLocaleHeader(
     request: { headers: requestHeaders },
   });
 
-  response.cookies.getAll().forEach((cookie) => {
-    next.cookies.set(cookie.name, cookie.value);
-  });
+  copyCookies(response, next);
+  setLocaleCookie(next, locale);
 
   return withSecurityHeaders(next, request.nextUrl.pathname);
+}
+
+function rewriteEnglish(
+  request: NextRequest,
+  response: NextResponse,
+  pathname: string,
+  internalPath: string
+): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = internalPath;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-locale", "en");
+  const rewrite = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+
+  copyCookies(response, rewrite);
+  setLocaleCookie(rewrite, "en");
+
+  return withSecurityHeaders(rewrite, pathname);
 }
 
 function handleMarketingLocale(request: NextRequest, response: NextResponse): NextResponse | null {
@@ -56,25 +101,32 @@ function handleMarketingLocale(request: NextRequest, response: NextResponse): Ne
   if (pathname === "/en" || pathname.startsWith("/en/")) {
     const url = request.nextUrl.clone();
     url.pathname = pathname.replace(/^\/en/, "") || "/";
-    return withSecurityHeaders(NextResponse.redirect(url), pathname);
+    const redirect = NextResponse.redirect(url);
+    setLocaleCookie(redirect, "en");
+    return withSecurityHeaders(redirect, pathname);
   }
 
   if (pathname === "/es" || pathname.startsWith("/es/")) {
     return withLocaleHeader(request, response, "es");
   }
 
-  if (pathname === "/" || pathname === "/testimonials") {
-    const url = request.nextUrl.clone();
-    url.pathname = pathname === "/" ? "/en" : "/en/testimonials";
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-locale", "en");
-    const rewrite = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+  if (pathname === "/") {
+    const stored = getStoredLocale(request);
 
-    response.cookies.getAll().forEach((cookie) => {
-      rewrite.cookies.set(cookie.name, cookie.value);
-    });
+    if (stored === "es" || (!stored && prefersSpanish(request))) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/es";
+      const redirect = NextResponse.redirect(url);
+      copyCookies(response, redirect);
+      setLocaleCookie(redirect, "es");
+      return withSecurityHeaders(redirect, pathname);
+    }
 
-    return withSecurityHeaders(rewrite, pathname);
+    return rewriteEnglish(request, response, pathname, "/en");
+  }
+
+  if (pathname === "/testimonials") {
+    return rewriteEnglish(request, response, pathname, "/en/testimonials");
   }
 
   return null;

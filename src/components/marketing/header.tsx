@@ -6,7 +6,6 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LANDING_COPY, marketingHref, type MarketingLocale } from "@/lib/marketing/locale";
-import { MarketingLanguageSelector } from "@/components/marketing/marketing-language-selector";
 
 type MarketingHeaderProps = {
   locale: MarketingLocale;
@@ -46,7 +45,7 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
         scrolled && "shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
       )}
     >
-      <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-4 sm:px-6 lg:px-8">
         <Link href={`${homeHref}#top`} className="flex items-center gap-2.5 justify-self-start">
           <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#22c55e] text-sm font-bold text-white shadow-[0_0_16px_rgba(34,197,94,0.35)]">
             M
@@ -54,13 +53,16 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
           <span className="text-sm font-semibold tracking-tight text-slate-900">Menulia</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 justify-self-center lg:flex" aria-label="Primary">
+        <nav
+          className="hidden items-center gap-8 justify-self-center lg:flex"
+          aria-label="Primary"
+        >
           {navItems.map((item) =>
             item.isPage ? (
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm text-slate-600 transition-colors hover:text-[#22c55e]"
+                className="text-sm tracking-wide text-slate-600 transition-colors hover:text-[#22c55e]"
               >
                 {item.label}
               </Link>
@@ -68,7 +70,7 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
               <a
                 key={item.href}
                 href={item.href}
-                className="text-sm text-slate-600 transition-colors hover:text-[#22c55e]"
+                className="text-sm tracking-wide text-slate-600 transition-colors hover:text-[#22c55e]"
               >
                 {item.label}
               </a>
@@ -76,23 +78,22 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
           )}
         </nav>
 
-        <div className="hidden items-center gap-2 justify-self-end lg:flex">
+        <div className="hidden items-center gap-4 justify-self-end lg:flex">
           <Link href="/login">
-            <Button variant="ghost" size="sm" className="text-slate-700 hover:text-[#22c55e]">
+            <Button variant="ghost" size="sm" className="px-4 text-slate-700 hover:text-[#22c55e]">
               {copy.signIn}
             </Button>
           </Link>
           <Link href="/signup">
-            <Button size="sm" className="rounded-[10px] neon-btn-primary">
+            <Button size="sm" className="rounded-[10px] px-4 neon-btn-primary">
               {copy.startFree}
             </Button>
           </Link>
-          <MarketingLanguageSelector locale={locale} />
         </div>
 
         <button
           type="button"
-          className="col-start-3 justify-self-end rounded-[10px] p-2 text-slate-700 transition-transform hover:bg-slate-100 active:scale-95 lg:hidden"
+          className="col-start-3 justify-self-end rounded-[10px] p-2.5 text-slate-700 transition-transform hover:bg-slate-100 active:scale-95 lg:hidden"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
@@ -119,17 +120,17 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
 
         <div
           className={cn(
-            "relative border-b border-slate-200 bg-white px-6 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition-all duration-300 ease-out",
+            "relative border-b border-slate-200 bg-white px-6 py-10 shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition-all duration-300 ease-out",
             open ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
           )}
         >
-          <nav className="flex flex-col gap-1" aria-label="Mobile">
+          <nav className="flex flex-col gap-2" aria-label="Mobile">
             {navItems.map((item) =>
               item.isPage ? (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-xl px-3 py-3 text-base text-slate-800 transition-colors hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
+                  className="rounded-xl px-4 py-3.5 text-base tracking-wide text-slate-800 transition-colors hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -138,7 +139,7 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
                 <a
                   key={item.href}
                   href={item.href}
-                  className="rounded-xl px-3 py-3 text-base text-slate-800 transition-colors hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
+                  className="rounded-xl px-4 py-3.5 text-base tracking-wide text-slate-800 transition-colors hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -147,22 +148,22 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
             )}
           </nav>
 
-          <div className="mt-8 space-y-3">
-            <Link href="/login" onClick={() => setOpen(false)}>
-              <Button variant="ghost" className="h-11 w-full justify-center border border-slate-200">
+          <div className="my-8 border-t border-slate-100" aria-hidden />
+
+          <div className="flex flex-col gap-5">
+            <Link href="/login" onClick={() => setOpen(false)} className="block w-full">
+              <Button
+                variant="ghost"
+                className="h-12 min-h-12 w-full justify-center border border-slate-200 text-base tracking-wide"
+              >
                 {copy.signIn}
               </Button>
             </Link>
-            <Link href="/signup" onClick={() => setOpen(false)}>
-              <Button className="h-11 w-full rounded-xl neon-btn-primary">{copy.startFree}</Button>
+            <Link href="/signup" onClick={() => setOpen(false)} className="block w-full">
+              <Button className="h-12 min-h-12 w-full rounded-xl text-base tracking-wide neon-btn-primary">
+                {copy.startFree}
+              </Button>
             </Link>
-          </div>
-
-          <div className="mt-6 border-t border-slate-100 pt-6">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-400">
-              {locale === "es" ? "Idioma" : "Language"}
-            </p>
-            <MarketingLanguageSelector locale={locale} className="w-full" onSelect={() => setOpen(false)} />
           </div>
         </div>
       </div>
