@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  LANDING_COPY,
-  alternateMarketingLocale,
-  marketingHref,
-  type MarketingLocale,
-} from "@/lib/marketing/locale";
+import { LANDING_COPY, marketingHref, type MarketingLocale } from "@/lib/marketing/locale";
+import { MarketingLanguageSelector } from "@/components/marketing/marketing-language-selector";
 
 type MarketingHeaderProps = {
   locale: MarketingLocale;
@@ -18,10 +14,8 @@ type MarketingHeaderProps = {
 
 export function MarketingHeader({ locale }: MarketingHeaderProps) {
   const copy = LANDING_COPY[locale];
-  const altLocale = alternateMarketingLocale(locale);
   const homeHref = marketingHref(locale);
   const testimonialsHref = marketingHref(locale, "testimonials");
-  const langSwitchHref = marketingHref(altLocale);
 
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -32,27 +26,35 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   const navItems = [
-    { href: `${homeHref}#como-funciona`, label: copy.navHowItWorks },
+    { href: `${homeHref}#como-funciona`, label: copy.navHowItWorks, isPage: false },
+    { href: `${homeHref}#analytics`, label: copy.navAnalytics, isPage: false },
     { href: testimonialsHref, label: copy.navTestimonials, isPage: true },
   ];
 
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 h-16 border-b border-slate-200/80 bg-white/85 backdrop-blur-md transition-all duration-300",
+        "fixed inset-x-0 top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur-md transition-all duration-300",
         scrolled && "shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
       )}
     >
-      <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href={`${homeHref}#top`} className="flex items-center gap-2.5">
+      <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6">
+        <Link href={`${homeHref}#top`} className="flex items-center gap-2.5 justify-self-start">
           <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#22c55e] text-sm font-bold text-white shadow-[0_0_16px_rgba(34,197,94,0.35)]">
             M
           </span>
           <span className="text-sm font-semibold tracking-tight text-slate-900">Menulia</span>
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-6 justify-self-center lg:flex" aria-label="Primary">
           {navItems.map((item) =>
             item.isPage ? (
               <Link
@@ -72,16 +74,9 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
               </a>
             )
           )}
-          <Link
-            href={langSwitchHref}
-            className="text-sm font-medium text-[#22c55e] transition-opacity hover:opacity-80"
-            hrefLang={altLocale}
-          >
-            {copy.langSwitch}
-          </Link>
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 justify-self-end lg:flex">
           <Link href="/login">
             <Button variant="ghost" size="sm" className="text-slate-700 hover:text-[#22c55e]">
               {copy.signIn}
@@ -92,13 +87,15 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
               {copy.startFree}
             </Button>
           </Link>
+          <MarketingLanguageSelector locale={locale} />
         </div>
 
         <button
           type="button"
-          className="rounded-[10px] p-2 text-slate-700 hover:bg-slate-100 md:hidden"
-          onClick={() => setOpen(!open)}
-          aria-label="Toggle menu"
+          className="col-start-3 justify-self-end rounded-[10px] p-2 text-slate-700 transition-transform hover:bg-slate-100 active:scale-95 lg:hidden"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-label={open ? "Close menu" : "Open menu"}
         >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -106,53 +103,68 @@ export function MarketingHeader({ locale }: MarketingHeaderProps) {
 
       <div
         className={cn(
-          "border-t border-slate-200 bg-white/95 backdrop-blur-md md:hidden",
-          open ? "block" : "hidden"
+          "fixed inset-x-0 top-16 bottom-0 z-40 lg:hidden",
+          open ? "pointer-events-auto" : "pointer-events-none"
         )}
       >
-        <nav className="flex flex-col gap-1 px-4 py-3" aria-label="Mobile">
-          {navItems.map((item) =>
-            item.isPage ? (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-[10px] px-3 py-2.5 text-sm text-slate-700 hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <a
-                key={item.href}
-                href={item.href}
-                className="rounded-[10px] px-3 py-2.5 text-sm text-slate-700 hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
-                onClick={() => setOpen(false)}
-              >
-                {item.label}
-              </a>
-            )
+        <button
+          type="button"
+          aria-label="Close menu overlay"
+          className={cn(
+            "absolute inset-0 bg-slate-900/25 backdrop-blur-[2px] transition-opacity duration-300",
+            open ? "opacity-100" : "opacity-0"
           )}
-          <Link
-            href={langSwitchHref}
-            className="rounded-[10px] px-3 py-2.5 text-sm font-medium text-[#22c55e]"
-            onClick={() => setOpen(false)}
-            hrefLang={altLocale}
-          >
-            {copy.langSwitch}
-          </Link>
-          <div className="mt-2 flex gap-2">
-            <Link href="/login" className="flex-1">
-              <Button variant="ghost" className="w-full border border-slate-200" size="sm">
+          onClick={() => setOpen(false)}
+        />
+
+        <div
+          className={cn(
+            "relative border-b border-slate-200 bg-white px-6 py-8 shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition-all duration-300 ease-out",
+            open ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+          )}
+        >
+          <nav className="flex flex-col gap-1" aria-label="Mobile">
+            {navItems.map((item) =>
+              item.isPage ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-xl px-3 py-3 text-base text-slate-800 transition-colors hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
+                  onClick={() => setOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-xl px-3 py-3 text-base text-slate-800 transition-colors hover:bg-[#22c55e]/8 hover:text-[#22c55e]"
+                  onClick={() => setOpen(false)}
+                >
+                  {item.label}
+                </a>
+              )
+            )}
+          </nav>
+
+          <div className="mt-8 space-y-3">
+            <Link href="/login" onClick={() => setOpen(false)}>
+              <Button variant="ghost" className="h-11 w-full justify-center border border-slate-200">
                 {copy.signIn}
               </Button>
             </Link>
-            <Link href="/signup" className="flex-1">
-              <Button className="w-full rounded-[10px] neon-btn-primary" size="sm">
-                {copy.startFree}
-              </Button>
+            <Link href="/signup" onClick={() => setOpen(false)}>
+              <Button className="h-11 w-full rounded-xl neon-btn-primary">{copy.startFree}</Button>
             </Link>
           </div>
-        </nav>
+
+          <div className="mt-6 border-t border-slate-100 pt-6">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-400">
+              {locale === "es" ? "Idioma" : "Language"}
+            </p>
+            <MarketingLanguageSelector locale={locale} className="w-full" onSelect={() => setOpen(false)} />
+          </div>
+        </div>
       </div>
     </header>
   );
