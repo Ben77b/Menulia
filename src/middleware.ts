@@ -4,8 +4,80 @@ import { applySecurityHeadersForPath } from "@/lib/security-headers";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
+const LOCALE_SKIP_PREFIXES = [
+  "/dashboard",
+  "/login",
+  "/signup",
+  "/logout",
+  "/onboarding",
+  "/menu",
+  "/api",
+  "/auth",
+  "/legal",
+  "/privacy",
+  "/terms",
+];
+
 function withSecurityHeaders(response: NextResponse, pathname: string): NextResponse {
   return applySecurityHeadersForPath(response, pathname);
+}
+
+function shouldSkipLocale(pathname: string): boolean {
+  return LOCALE_SKIP_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
+
+function withLocaleHeader(
+  request: NextRequest,
+  response: NextResponse,
+  locale: "en" | "es"
+): NextResponse {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-locale", locale);
+  const next = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+
+  response.cookies.getAll().forEach((cookie) => {
+    next.cookies.set(cookie.name, cookie.value);
+  });
+
+  return withSecurityHeaders(next, request.nextUrl.pathname);
+}
+
+function handleMarketingLocale(request: NextRequest, response: NextResponse): NextResponse | null {
+  const { pathname } = request.nextUrl;
+
+  if (shouldSkipLocale(pathname)) {
+    return null;
+  }
+
+  if (pathname === "/en" || pathname.startsWith("/en/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/^\/en/, "") || "/";
+    return withSecurityHeaders(NextResponse.redirect(url), pathname);
+  }
+
+  if (pathname === "/es" || pathname.startsWith("/es/")) {
+    return withLocaleHeader(request, response, "es");
+  }
+
+  if (pathname === "/" || pathname === "/testimonials") {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname === "/" ? "/en" : "/en/testimonials";
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-locale", "en");
+    const rewrite = NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+
+    response.cookies.getAll().forEach((cookie) => {
+      rewrite.cookies.set(cookie.name, cookie.value);
+    });
+
+    return withSecurityHeaders(rewrite, pathname);
+  }
+
+  return null;
 }
 
 export async function middleware(request: NextRequest) {
@@ -51,18 +123,16 @@ export async function middleware(request: NextRequest) {
     return withSecurityHeaders(response, pathname);
   }
 
+  const localeResponse = handleMarketingLocale(request, response);
+  if (localeResponse) {
+    return localeResponse;
+  }
+
   return withSecurityHeaders(response, pathname);
 }
 
 export const config = {
   matcher: [
-    "/dashboard",
-    "/dashboard/:path*",
-    "/login",
-    "/signup",
-    "/logout",
-    "/onboarding",
-    "/menu/:path*",
-    "/api/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

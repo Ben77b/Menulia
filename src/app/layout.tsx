@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Cormorant_Garamond, Inter, Instrument_Serif, Montserrat, Playfair_Display, Poppins, Roboto, Open_Sans, Lato, Merriweather, Oswald, Raleway, Source_Sans_3, Ubuntu } from "next/font/google";
 import "./globals.css";
 import { RestaurantProvider } from "@/contexts/restaurant-context";
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
   description:
     "Premium SaaS platform for restaurant owners to digitize menus, manage reservations, and delight diners with 28+ language interactive displays.",
   manifest: "/manifest.json",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.menulia.net"),
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -58,9 +59,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = await headers();
+  const locale = headersList.get("x-locale") === "es" ? "es" : "en";
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={`${inter.variable} ${instrumentSerif.variable} ${montserrat.variable} ${playfairDisplay.variable} ${poppins.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${merriweather.variable} ${oswald.variable} ${raleway.variable} ${sourceSans.variable} ${ubuntu.variable} ${cormorantGaramond.variable}`}>
         <RestaurantProvider>{children}</RestaurantProvider>
       </body>

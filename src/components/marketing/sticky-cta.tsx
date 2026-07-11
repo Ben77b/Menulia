@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { LANDING_COPY, type MarketingLocale } from "@/lib/marketing/locale";
 
-export function StickyCta() {
+type StickyCtaProps = {
+  locale: MarketingLocale;
+};
+
+export function StickyCta({ locale }: StickyCtaProps) {
+  const copy = LANDING_COPY[locale];
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -19,10 +25,10 @@ export function StickyCta() {
 
   return (
     <div className="fixed bottom-6 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_32px_rgba(0,0,0,0.08)] backdrop-blur-md">
-      <p className="flex-1 text-sm font-medium text-slate-900">¿Listo para lanzar tu menú?</p>
+      <p className="flex-1 text-sm font-medium text-slate-900">{copy.stickyCta}</p>
       <Link href="/signup">
         <Button size="sm" className="rounded-[10px] neon-btn-primary">
-          Empezar gratis
+          {copy.startFree}
         </Button>
       </Link>
       <button

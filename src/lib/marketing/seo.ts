@@ -1,4 +1,18 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://menulia.net";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.menulia.net";
+
+export function marketingAlternates(path: string) {
+  const normalized = path.startsWith("/es") ? path.replace(/^\/es/, "") || "/" : path || "/";
+  const enPath = normalized === "/" ? "" : normalized;
+  const esPath = normalized === "/" ? "/es" : `/es${normalized}`;
+
+  return {
+    canonical: `${SITE_URL}${path.startsWith("/es") ? esPath : enPath || "/"}`,
+    languages: {
+      en: `${SITE_URL}${enPath || "/"}`,
+      es: `${SITE_URL}${esPath}`,
+    },
+  };
+}
 
 export function faqPageJsonLd(items: { question: string; answer: string }[]) {
   return {
@@ -48,15 +62,19 @@ export function marketingPageMetadata({
   path?: string;
 }) {
   const url = `${SITE_URL}${path}`;
+  const alternates = marketingAlternates(path);
+
   return {
     title,
     description,
+    alternates,
     openGraph: {
       title,
       description,
       url,
-      siteName: "menulia.net",
+      siteName: "Menulia",
       type: "website" as const,
+      locale: path.startsWith("/es") ? "es_ES" : "en_US",
     },
     twitter: {
       card: "summary_large_image" as const,

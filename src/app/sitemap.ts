@@ -12,7 +12,6 @@ interface SitemapSlugRow {
 async function fetchActiveRestaurantSlugs(): Promise<SitemapSlugRow[]> {
   const supabase = createAnonClient();
 
-  // Preferred source requested for sitemap indexing.
   const { data: profileRows, error: profileError } = await supabase
     .from("restaurant_profiles")
     .select("slug, updated_at, is_active")
@@ -28,7 +27,6 @@ async function fetchActiveRestaurantSlugs(): Promise<SitemapSlugRow[]> {
       }));
   }
 
-  // Handle a profile table that doesn't yet expose `is_active`.
   if (isMissingColumnError(profileError)) {
     const { data: profileRowsNoStatus, error: profileNoStatusError } = await supabase
       .from("restaurant_profiles")
@@ -45,7 +43,6 @@ async function fetchActiveRestaurantSlugs(): Promise<SitemapSlugRow[]> {
     }
   }
 
-  // Backward-compatible fallback for deployments without restaurant_profiles.
   const { data: restaurantRows, error: restaurantError } = await supabase
     .from("restaurants")
     .select("slug, updated_at")
@@ -67,13 +64,14 @@ async function fetchActiveRestaurantSlugs(): Promise<SitemapSlugRow[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://www.menulia.net";
   const slugs = await fetchActiveRestaurantSlugs();
+  const now = new Date();
 
-  const homepageEntry: MetadataRoute.Sitemap[number] = {
-    url: base,
-    lastModified: new Date(),
-    changeFrequency: "daily",
-    priority: 1,
-  };
+  const marketingEntries: MetadataRoute.Sitemap = [
+    { url: base, lastModified: now, changeFrequency: "daily", priority: 1 },
+    { url: `${base}/es`, lastModified: now, changeFrequency: "daily", priority: 0.95 },
+    { url: `${base}/testimonials`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+    { url: `${base}/es/testimonials`, lastModified: now, changeFrequency: "daily", priority: 0.85 },
+  ];
 
   const menuEntries = slugs.map((entry) => ({
     url: `${base}/menu/${entry.slug}`,
@@ -82,5 +80,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [homepageEntry, ...menuEntries];
+  return [...marketingEntries, ...menuEntries];
 }
