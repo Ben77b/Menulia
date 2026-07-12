@@ -28,6 +28,7 @@ interface NestedCategoryNavProps {
   activeParentId: string;
   activeSubcategoryId: string;
   lang?: string;
+  fallbackLang?: string;
   showTier1: boolean;
   onParentChange: (parentId: string) => void;
   onSubcategoryChange: (subcategoryId: string) => void;
@@ -54,6 +55,7 @@ export function NestedCategoryNav({
   activeParentId,
   activeSubcategoryId,
   lang = "en",
+  fallbackLang = "en",
   showTier1,
   onParentChange,
   onSubcategoryChange,
@@ -128,7 +130,7 @@ export function NestedCategoryNav({
                       }
                 }
               >
-                {resolveLocalizedText(parent.name, lang)}
+                {resolveLocalizedText(parent.name, lang, fallbackLang)}
               </button>
             );
           })}
@@ -178,7 +180,7 @@ export function NestedCategoryNav({
                       }
                 }
               >
-                {resolveLocalizedText(subcategory.name, lang)}
+                {resolveLocalizedText(subcategory.name, lang, fallbackLang)}
               </button>
             );
           })}

@@ -20,6 +20,7 @@ interface FlatCategoryNavProps {
   categoryFontStyle?: "normal" | "italic";
   activeCategoryId: string;
   lang?: string;
+  fallbackLang?: string;
   onCategoryChange: (categoryId: string) => void;
 }
 
@@ -37,6 +38,7 @@ export function FlatCategoryNav({
   categoryFontStyle,
   activeCategoryId,
   lang = "en",
+  fallbackLang = "en",
   onCategoryChange,
 }: FlatCategoryNavProps) {
   const isPreview = usePreviewCanvas();
@@ -85,7 +87,7 @@ export function FlatCategoryNav({
                   }
             }
           >
-            {resolveLocalizedText(category.name, lang)}
+            {resolveLocalizedText(category.name, lang, fallbackLang)}
           </button>
         );
       })}

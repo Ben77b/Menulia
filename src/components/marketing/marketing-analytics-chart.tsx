@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
 
 type ChartLabels = {
-  months: string[];
+  periodLabel: string;
+  tickLabels: string[];
+  tickIndices: number[];
   qrScans: string;
   traffic: string;
   languageSwitches: string;
@@ -15,24 +16,49 @@ type MarketingAnalyticsChartProps = {
   locale: "en" | "es";
 };
 
-const SERIES = {
-  qr: [1200, 1850, 2600, 3400, 4700, 6200],
-  traffic: [820, 1180, 1650, 2280, 3100, 4100],
-  language: [390, 580, 860, 1180, 1620, 2240],
-} as const;
+/** Mon–Sun weekly pattern: low Mon/Tue, build Thu, peak Fri/Sat (table QR scans). */
+const WEEKLY_PATTERN = [48, 44, 72, 95, 168, 205, 112] as const;
+const WEEK_MULTIPLIERS = [1, 1.03, 1.06, 1.09, 1.11] as const;
+const CHART_DAYS = 30;
+const Y_MAX = 280;
+
+function buildDailySeries(
+  pattern: readonly number[],
+  multipliers: readonly number[],
+  count: number
+): number[] {
+  const values: number[] = [];
+  for (const multiplier of multipliers) {
+    for (const day of pattern) {
+      if (values.length >= count) break;
+      values.push(Math.round(day * multiplier));
+    }
+  }
+  return values.slice(0, count);
+}
+
+const QR_SERIES = buildDailySeries(WEEKLY_PATTERN, WEEK_MULTIPLIERS, CHART_DAYS);
+const TRAFFIC_SERIES = QR_SERIES.map((value) => Math.round(value * 0.72));
+const LANGUAGE_SERIES = QR_SERIES.map((value) => Math.round(value * 0.26));
+
+const DEFAULT_ACTIVE_INDEX = 26;
 
 const WIDTH = 800;
 const HEIGHT = 320;
 const PAD = { top: 24, right: 24, bottom: 40, left: 48 };
 
-function buildPoints(values: readonly number[]) {
-  const max = Math.max(...values);
+const DAY_NAMES = {
+  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  es: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+} as const;
+
+function buildPoints(values: readonly number[], yMax: number) {
   const innerW = WIDTH - PAD.left - PAD.right;
   const innerH = HEIGHT - PAD.top - PAD.bottom;
 
   return values.map((value, index) => {
     const x = PAD.left + (index / (values.length - 1)) * innerW;
-    const y = PAD.top + innerH - (value / max) * innerH;
+    const y = PAD.top + innerH - (value / yMax) * innerH;
     return { x, y, value };
   });
 }
@@ -49,13 +75,20 @@ function toArea(points: { x: number; y: number }[], baseline: number) {
   return `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`;
 }
 
-export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsChartProps) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(5);
+function formatDayLabel(index: number, locale: "en" | "es"): string {
+  const day = DAY_NAMES[locale][index % 7];
+  const week = Math.floor(index / 7) + 1;
+  return locale === "es" ? `${day} · Sem. ${week}` : `${day} · W${week}`;
+}
 
-  const qrPoints = useMemo(() => buildPoints(SERIES.qr), []);
-  const trafficPoints = useMemo(() => buildPoints(SERIES.traffic), []);
-  const languagePoints = useMemo(() => buildPoints(SERIES.language), []);
+export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsChartProps) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(DEFAULT_ACTIVE_INDEX);
+
+  const qrPoints = useMemo(() => buildPoints(QR_SERIES, Y_MAX), []);
+  const trafficPoints = useMemo(() => buildPoints(TRAFFIC_SERIES, Y_MAX), []);
+  const languagePoints = useMemo(() => buildPoints(LANGUAGE_SERIES, Y_MAX), []);
   const baseline = HEIGHT - PAD.bottom;
+  const hitWidth = (WIDTH - PAD.left - PAD.right) / CHART_DAYS;
 
   const gridLines = useMemo(() => {
     const innerH = HEIGHT - PAD.top - PAD.bottom;
@@ -66,15 +99,15 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
     activeIndex === null
       ? null
       : {
-          qr: SERIES.qr[activeIndex],
-          traffic: SERIES.traffic[activeIndex],
-          language: SERIES.language[activeIndex],
+          qr: QR_SERIES[activeIndex],
+          traffic: TRAFFIC_SERIES[activeIndex],
+          language: LANGUAGE_SERIES[activeIndex],
           x: qrPoints[activeIndex]?.x ?? 0,
-          month: labels.months[activeIndex] ?? "",
+          dayLabel: formatDayLabel(activeIndex, locale),
         };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_24px_rgba(0,0,0,0.04)] sm:p-6">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-4 shadow-[0_4px_24px_rgba(0,0,0,0.04)] sm:p-6">
       <div
         className="pointer-events-none absolute inset-0 opacity-40"
         style={{
@@ -87,10 +120,13 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
 
       {active && (
         <div
-          className="pointer-events-none absolute z-10 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm"
-          style={{ left: `calc(${(active.x / WIDTH) * 100}% - 4rem)`, top: "0.75rem" }}
+          className="pointer-events-none absolute z-10 max-w-[11rem] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm"
+          style={{
+            left: `clamp(0.5rem, calc(${(active.x / WIDTH) * 100}% - 5.5rem), calc(100% - 11.5rem))`,
+            top: "0.75rem",
+          }}
         >
-          <p className="font-semibold text-slate-900">{active.month}</p>
+          <p className="font-semibold text-slate-900">{active.dayLabel}</p>
           <p className="mt-1 text-[#22c55e]">
             {labels.qrScans}: {active.qr.toLocaleString(locale)}
           </p>
@@ -105,10 +141,11 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
 
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="relative z-[1] h-auto w-full"
+        className="relative z-[1] h-full w-full"
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={locale === "es" ? "Gráfico de rendimiento del menú" : "Menu performance chart"}
-        onMouseLeave={() => setActiveIndex(5)}
+        onMouseLeave={() => setActiveIndex(DEFAULT_ACTIVE_INDEX)}
       >
         {gridLines.map((y) => (
           <line
@@ -122,11 +159,7 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
           />
         ))}
 
-        <path
-          d={toArea(qrPoints, baseline)}
-          fill="url(#qrFill)"
-          opacity="0.35"
-        />
+        <path d={toArea(qrPoints, baseline)} fill="url(#qrFill)" opacity="0.35" />
         <path
           d={toPath(qrPoints)}
           fill="none"
@@ -159,9 +192,9 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
         {qrPoints.map((point, index) => (
           <g key={index}>
             <rect
-              x={point.x - 36}
+              x={point.x - hitWidth / 2}
               y={PAD.top}
-              width={72}
+              width={hitWidth}
               height={HEIGHT - PAD.top - PAD.bottom}
               fill="transparent"
               className="cursor-pointer"
@@ -170,7 +203,7 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
             <circle
               cx={point.x}
               cy={point.y}
-              r={activeIndex === index ? 7 : 4}
+              r={activeIndex === index ? 6 : 3}
               fill="#22c55e"
               stroke="white"
               strokeWidth="2"
@@ -184,17 +217,17 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
           </g>
         ))}
 
-        {labels.months.map((month, index) => {
+        {labels.tickIndices.map((index, tickIndex) => {
           const x = qrPoints[index]?.x ?? 0;
           return (
             <text
-              key={month}
+              key={`${index}-${labels.tickLabels[tickIndex]}`}
               x={x}
               y={HEIGHT - 12}
               textAnchor="middle"
-              className="fill-slate-400 text-[11px] font-medium"
+              className="fill-slate-400 text-[10px] font-medium sm:text-[11px]"
             >
-              {month}
+              {labels.tickLabels[tickIndex]}
             </text>
           );
         })}
@@ -207,7 +240,7 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
         </defs>
       </svg>
 
-      <div className="relative z-[1] mt-4 flex flex-wrap gap-4 text-xs font-medium text-slate-600">
+      <div className="relative z-[1] mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-medium text-slate-600 sm:mt-4">
         <span className="inline-flex items-center gap-2">
           <span className="h-0.5 w-6 rounded-full bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
           {labels.qrScans}
@@ -220,6 +253,7 @@ export function MarketingAnalyticsChart({ labels, locale }: MarketingAnalyticsCh
           <span className="h-0.5 w-6 rounded-full bg-[#4ade80]" />
           {labels.languageSwitches}
         </span>
+        <span className="w-full text-[10px] text-slate-400 sm:ml-auto sm:w-auto">{labels.periodLabel}</span>
       </div>
     </div>
   );

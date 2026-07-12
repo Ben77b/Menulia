@@ -23,6 +23,7 @@ export interface PublicMenuDish {
 interface DishCardProps {
   dish: PublicMenuDish;
   lang?: string;
+  fallbackLang?: string;
   restaurantName: string;
   titleFont: string;
   bodyFont: string;
@@ -83,6 +84,7 @@ function TagBadge({
 export function DishCard({
   dish,
   lang = "en",
+  fallbackLang = "en",
   restaurantName,
   titleFont,
   bodyFont,
@@ -105,8 +107,8 @@ export function DishCard({
   const resolvedDescription = descriptionColor ?? textColor;
   const resolvedPrice = priceColor ?? textColor;
 
-  const localizedName = resolveLocalizedText(dish.name, lang);
-  const localizedDescription = resolveLocalizedText(dish.description, lang);
+  const localizedName = resolveLocalizedText(dish.name, lang, fallbackLang);
+  const localizedDescription = resolveLocalizedText(dish.description, lang, fallbackLang);
   const imageAlt = `${localizedName} at ${restaurantName}`;
   const allergenLocale = lang === "es" ? "es" : "en";
 

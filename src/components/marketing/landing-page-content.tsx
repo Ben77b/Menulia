@@ -93,7 +93,7 @@ export function LandingPageContent({ locale }: LandingPageContentProps) {
             </p>
             <h2
               id="analytics-heading"
-              className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+              className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-5xl"
             >
               {copy.analytics.title}
             </h2>
@@ -133,7 +133,7 @@ export function LandingPageContent({ locale }: LandingPageContentProps) {
             </p>
             <h2
               id="steps-heading"
-              className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+              className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-5xl"
             >
               {copy.stepsTitle}
             </h2>
@@ -173,7 +173,7 @@ export function LandingPageContent({ locale }: LandingPageContentProps) {
         <article className="mx-auto max-w-3xl">
           <h2
             id="seo-rich-heading"
-            className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+            className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl"
           >
             {copy.seoRich.title}
           </h2>
@@ -199,7 +199,7 @@ export function LandingPageContent({ locale }: LandingPageContentProps) {
             </span>
             <h2
               id="online-heading"
-              className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+              className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl"
             >
               {copy.onlineDiscovery.title}
             </h2>
@@ -254,7 +254,7 @@ export function LandingPageContent({ locale }: LandingPageContentProps) {
             </span>
             <h2
               id="invenue-heading"
-              className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+              className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl"
             >
               {copy.inVenue.title}
             </h2>
@@ -266,7 +266,7 @@ export function LandingPageContent({ locale }: LandingPageContentProps) {
       {/* Final CTA */}
       <section className="px-4 pb-24 sm:px-6 md:pb-32">
         <div className="mx-auto max-w-3xl rounded-3xl border border-[#22c55e]/25 bg-white px-6 py-12 text-center shadow-[0_4px_24px_rgba(34,197,94,0.06)] sm:px-10">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
             {copy.ctaBottom}
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">

@@ -71,6 +71,7 @@ function DishSection({
   bodyFontWeight,
   bodyFontStyle,
   locale,
+  primaryLocale,
   activeFilters,
   display,
   previewInteractive,
@@ -86,6 +87,7 @@ function DishSection({
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
   locale: PublicMenuLocale;
+  primaryLocale: PublicMenuLocale;
   activeFilters: Set<string>;
   display: PublicMenuDisplayOptions;
   previewInteractive?: PreviewInteractiveConfig;
@@ -110,6 +112,7 @@ function DishSection({
     <CategorySectionHeader
       note={subcategory.description}
       lang={locale}
+      fallbackLang={primaryLocale}
       bodyFont={bodyFont}
       bodyFontWeight={bodyFontWeight}
       bodyFontStyle={bodyFontStyle}
@@ -118,7 +121,7 @@ function DishSection({
   );
 
   const categoryHeading = (
-    <h2 className="sr-only">{resolveLocalizedText(subcategory.name, locale)}</h2>
+    <h2 className="sr-only">{resolveLocalizedText(subcategory.name, locale, primaryLocale)}</h2>
   );
 
   if (subcategory.layout_type === "carousel") {
@@ -135,6 +138,7 @@ function DishSection({
         <DishCarousel
           dishes={filteredDishes}
           lang={locale}
+          fallbackLang={primaryLocale}
           restaurantName={restaurantName}
           accentColor={themedColor(isPreview, "carouselArrowBg", theme.carouselArrowBg)}
           arrowIconColor={themedColor(isPreview, "carouselArrowIcon", theme.carouselArrowIcon)}
@@ -171,6 +175,7 @@ function DishSection({
             key={dish.id}
             dish={dish}
             lang={locale}
+            fallbackLang={primaryLocale}
             restaurantName={restaurantName}
             titleFont={titleFont}
             bodyFont={bodyFont}
@@ -321,6 +326,7 @@ export function PublicMenuLayout({
           links={links ?? []}
           lang={locale}
           onLangChange={setLocale}
+          primaryLocale={defaultLocale}
           showLanguageSelector={showLanguageSelector}
         />
       </PreviewHotspot>
@@ -354,6 +360,7 @@ export function PublicMenuLayout({
             activeParentId={activeParentId}
             activeSubcategoryId={activeSubcategoryId}
             lang={locale}
+            fallbackLang={defaultLocale}
             showTier1
             onParentChange={handleParentChange}
             onSubcategoryChange={setActiveSubcategoryId}
@@ -373,6 +380,7 @@ export function PublicMenuLayout({
             categoryFontStyle={categoryFontStyle}
             activeCategoryId={activeSubcategoryId}
             lang={locale}
+            fallbackLang={defaultLocale}
             onCategoryChange={setActiveSubcategoryId}
           />
         )}
@@ -413,6 +421,7 @@ export function PublicMenuLayout({
               bodyFontWeight={bodyFontWeight}
               bodyFontStyle={bodyFontStyle}
               locale={locale}
+              primaryLocale={defaultLocale}
               activeFilters={activeFilters}
               display={display}
               previewInteractive={previewInteractive}

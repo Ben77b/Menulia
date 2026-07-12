@@ -14,6 +14,19 @@ export function marketingHref(locale: MarketingLocale, segment: "" | "testimonia
   return locale === "es" ? `/es${suffix}` : suffix || "/";
 }
 
+/** Map the current marketing pathname to the equivalent route in another locale. */
+export function marketingHrefFromPathname(pathname: string, target: MarketingLocale): string {
+  const normalized =
+    pathname === "/es" ? "/" : pathname.replace(/^\/es(\/|$)/, "/").replace(/\/$/, "") || "/";
+
+  const segment: "" | "testimonials" =
+    normalized === "/testimonials" || normalized.startsWith("/testimonials/")
+      ? "testimonials"
+      : "";
+
+  return marketingHref(target, segment);
+}
+
 export function alternateMarketingLocale(locale: MarketingLocale): MarketingLocale {
   return locale === "en" ? "es" : "en";
 }
@@ -45,7 +58,9 @@ export type LandingCopy = {
     subtitle: string;
     metrics: { label: string; value: string }[];
     chart: {
-      months: string[];
+      periodLabel: string;
+      tickLabels: string[];
+      tickIndices: number[];
       qrScans: string;
       traffic: string;
       languageSwitches: string;
@@ -124,15 +139,17 @@ export const LANDING_COPY: Record<MarketingLocale, LandingCopy> = {
       subtitle:
         "Track QR menu scans, guest traffic, and language switches as your interactive digital menu scales — the metrics that matter for modern restaurant mobile menus.",
       metrics: [
-        { label: "Avg. QR scans / month", value: "6.2k" },
-        { label: "Mobile menu sessions", value: "4.1k" },
-        { label: "Language switches", value: "2.2k" },
+        { label: "Avg. daily QR scans", value: "~94" },
+        { label: "Peak Fri / Sat scans", value: "210" },
+        { label: "Language toggles / day", value: "~24" },
       ],
       chart: {
-        months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        qrScans: "QR menu scans",
-        traffic: "Guest traffic",
-        languageSwitches: "Language switches",
+        periodLabel: "Last 30 days",
+        tickLabels: ["Mon", "Week 2", "Week 3", "Week 4", "Day 30"],
+        tickIndices: [0, 7, 14, 21, 29],
+        qrScans: "Table QR scans",
+        traffic: "Menu sessions",
+        languageSwitches: "Language toggles",
       },
     },
     seoRich: {
@@ -230,14 +247,16 @@ export const LANDING_COPY: Record<MarketingLocale, LandingCopy> = {
       subtitle:
         "Monitoriza escaneos QR, tráfico de comensales e idiomas seleccionados mientras tu menú digital para restaurantes crece.",
       metrics: [
-        { label: "Escaneos QR / mes", value: "6,2k" },
-        { label: "Sesiones móvil", value: "4,1k" },
-        { label: "Cambios de idioma", value: "2,2k" },
+        { label: "Escaneos QR diarios (media)", value: "~94" },
+        { label: "Pico vie / sáb", value: "210" },
+        { label: "Cambios de idioma / día", value: "~24" },
       ],
       chart: {
-        months: ["Ene", "Feb", "Mar", "Abr", "May", "Jun"],
-        qrScans: "Escaneos QR",
-        traffic: "Tráfico",
+        periodLabel: "Últimos 30 días",
+        tickLabels: ["Lun", "Sem. 2", "Sem. 3", "Sem. 4", "Día 30"],
+        tickIndices: [0, 7, 14, 21, 29],
+        qrScans: "Escaneos QR en mesa",
+        traffic: "Sesiones del menú",
         languageSwitches: "Cambios de idioma",
       },
     },

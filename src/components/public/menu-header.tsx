@@ -22,6 +22,7 @@ interface MenuHeaderProps {
   links: RestaurantLink[];
   lang: PublicMenuLocale;
   onLangChange: (lang: PublicMenuLocale) => void;
+  primaryLocale?: PublicMenuLocale;
   showLanguageSelector?: boolean;
 }
 
@@ -36,6 +37,7 @@ export function MenuHeader({
   links,
   lang,
   onLangChange,
+  primaryLocale,
   showLanguageSelector = false,
 }: MenuHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,7 +46,11 @@ export function MenuHeader({
     ? headerTextColor ?? pv("headerText")
     : headerTextColor ?? contrastingTextColor(headerBackgroundColor);
   const hasLinks = links.length > 0;
-  const localizedRestaurantName = resolveLocalizedText(restaurantName, lang);
+  const localizedRestaurantName = resolveLocalizedText(
+    restaurantName,
+    lang,
+    primaryLocale ?? "en"
+  );
 
   return (
     <>
@@ -52,7 +58,7 @@ export function MenuHeader({
         className="sticky top-0 z-50 px-4 py-4"
         style={{ backgroundColor: headerBackgroundColor, color: textColor }}
       >
-        <div className="mx-auto grid max-w-6xl grid-cols-[2.5rem_1fr_2.5rem] items-center gap-3">
+        <div className="mx-auto grid max-w-6xl grid-cols-[2.75rem_1fr_auto] items-center gap-3">
           <div className="flex justify-start">
             {hasLinks ? (
               <button
@@ -104,10 +110,11 @@ export function MenuHeader({
               <MenuLanguageSelector
                 lang={lang}
                 onLangChange={onLangChange}
+                primaryLocale={primaryLocale}
                 headerBackgroundColor={headerBackgroundColor}
               />
             ) : (
-              <span className="h-10 w-10" />
+              <span className="h-11 w-11" />
             )}
           </div>
         </div>

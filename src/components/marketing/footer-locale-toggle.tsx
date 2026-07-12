@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   MARKETING_LOCALES,
-  marketingHref,
+  marketingHrefFromPathname,
   type MarketingLocale,
 } from "@/lib/marketing/locale";
 
@@ -20,8 +20,7 @@ function resolveCurrentLocale(pathname: string, locale?: MarketingLocale): Marke
 }
 
 function resolveHref(pathname: string, target: MarketingLocale): string {
-  const onTestimonials = pathname.includes("/testimonials");
-  return marketingHref(target, onTestimonials ? "testimonials" : "");
+  return marketingHrefFromPathname(pathname, target);
 }
 
 export function FooterLocaleToggle({ locale }: FooterLocaleToggleProps) {

@@ -74,6 +74,10 @@ const UI_STRINGS: Record<string, Record<string, string>> = {
   },
 };
 
+export function getSecondaryMenuLocale(primary: PublicMenuLocale): PublicMenuLocale {
+  return primary === "es" ? "en" : "es";
+}
+
 export function menuUiString(locale: PublicMenuLocale, key: string): string {
   return UI_STRINGS[locale]?.[key] ?? UI_STRINGS.en[key] ?? key;
 }

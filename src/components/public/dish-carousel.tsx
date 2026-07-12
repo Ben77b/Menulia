@@ -12,6 +12,7 @@ import { DishCard, type PublicMenuDish } from "./dish-card";
 interface DishCarouselProps {
   dishes: PublicMenuDish[];
   lang: PublicMenuLocale;
+  fallbackLang?: PublicMenuLocale;
   restaurantName: string;
   accentColor: string;
   arrowIconColor?: string;
@@ -60,6 +61,7 @@ function CarouselCardFrame({
 export function DishCarousel({
   dishes,
   lang,
+  fallbackLang = "en",
   restaurantName,
   accentColor,
   arrowIconColor,
@@ -149,6 +151,7 @@ export function DishCarousel({
             <DishCard
               dish={dishes[0]}
               lang={lang}
+              fallbackLang={fallbackLang}
               restaurantName={restaurantName}
               titleFont={titleFont}
               bodyFont={bodyFont}
@@ -184,6 +187,7 @@ export function DishCarousel({
                   <DishCard
                     dish={slot.dish}
                     lang={lang}
+                    fallbackLang={fallbackLang}
                     restaurantName={restaurantName}
                     titleFont={titleFont}
                     bodyFont={bodyFont}
