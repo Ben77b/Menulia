@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, Camera, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { StickyActionBar } from "@/components/dashboard/sticky-action-bar";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
@@ -76,6 +78,7 @@ export function DishDetailSheet({
   restaurantName = "",
   categoryName = "",
 }: DishDetailSheetProps) {
+  const { t } = useDashboardLocale();
   const toast = useToast();
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [draft, setDraft] = useState<DishDetailDraft>({
@@ -254,43 +257,35 @@ export function DishDetailSheet({
   }
 
   return (
-    <>
-      <div
-        className={cn(
-          "fixed inset-0 z-40 bg-black/30 transition-opacity",
-          open ? "opacity-100" : "pointer-events-none opacity-0"
-        )}
-        onClick={onClose}
-        aria-hidden
-      />
-      <aside
-        className={cn(
-          "fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)] transition-transform duration-300",
-          open ? "translate-x-0" : "translate-x-full"
-        )}
-        aria-hidden={!open}
-      >
-        <div className="flex items-center justify-between border-b border-[#F5F5F7] px-5 py-4">
-          <h2 className="air-section-title text-lg">Edit Dish</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+    <MobileBottomSheet
+      open={open}
+      onClose={onClose}
+      title={t("dish.editTitle")}
+      footer={
+        <StickyActionBar>
+          <Button variant="outline" onClick={onClose} className="min-h-11">
+            {t("dish.cancel")}
+          </Button>
+          <Button
+            variant="dark"
+            disabled={saving || !draft.name.trim()}
+            onClick={() => onSave(draft)}
+            className="min-h-11"
           >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+            {saving ? t("dish.saving") : t("dish.save")}
+          </Button>
+        </StickyActionBar>
+      }
+    >
           <ToggleSwitch
-            label="Visible on Menu"
-            description="Turn off to hide this dish from your public menu when it is out of stock."
+            label={t("dish.visibleOnMenu")}
+            description={t("dish.visibleDescription")}
             checked={draft.is_available}
             onChange={handleAvailabilityToggle}
           />
 
           <div>
-            <label className="air-label">Photo</label>
+            <label className="air-label">{t("dish.photo")}</label>
             <div className="flex items-center gap-4">
               {draft.image_url ? (
                 <div className="relative">
@@ -302,7 +297,7 @@ export function DishDetailSheet({
                   <button
                     type="button"
                     onClick={() => setDraft((p) => ({ ...p, image_url: null }))}
-                    className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white"
+                    className="absolute -right-2 -top-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-red-500 text-white"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -321,7 +316,7 @@ export function DishDetailSheet({
                 className="gap-2"
               >
                 <Upload className="h-4 w-4" />
-                {uploadingImage ? "Uploading…" : "Upload"}
+                {uploadingImage ? t("dish.uploading") : t("dish.upload")}
               </Button>
               <input
                 ref={imageInputRef}
@@ -354,7 +349,7 @@ export function DishDetailSheet({
           <div>
             {!draft.usePriceVariations ? (
               <>
-                <label className="air-label">Price</label>
+                <label className="air-label">{t("dish.price")}</label>
                 <CurrencyInput
                   value={draft.price}
                   onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))}
@@ -370,15 +365,15 @@ export function DishDetailSheet({
                 <button
                   type="button"
                   onClick={enablePriceVariations}
-                  className="mt-2 text-xs font-medium text-slate-600 transition-colors hover:text-slate-900"
+                  className="mt-2 inline-flex min-h-11 items-center text-xs font-medium text-slate-600 transition-colors hover:text-slate-900"
                 >
-                  + Añadir variaciones de precio (tamaños, raciones...) / Add price variations
+                  {t("dish.addPriceVariations")}
                 </button>
               </>
             ) : (
               <div className="space-y-3 rounded-xl border border-[#E5E5EA] bg-[#FAFAFA]/60 p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <label className="air-label mb-0">Price variations</label>
+                  <label className="air-label mb-0">{t("dish.priceVariations")}</label>
                   <button
                     type="button"
                     onClick={() =>
@@ -392,7 +387,7 @@ export function DishDetailSheet({
                     }
                     className="text-xs text-[#86868B] transition-colors hover:text-slate-700"
                   >
-                    Use single price
+                    {t("dish.useSinglePrice")}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -421,7 +416,7 @@ export function DishDetailSheet({
                         <button
                           type="button"
                           onClick={() => removePriceVariation(index)}
-                          className="rounded-lg p-1 text-[#C7C7CC] hover:text-red-500"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] hover:text-red-500"
                           aria-label="Remove price variation"
                         >
                           <X className="h-4 w-4" />
@@ -433,24 +428,24 @@ export function DishDetailSheet({
                 <button
                   type="button"
                   onClick={addPriceVariation}
-                  className="text-xs font-medium text-slate-600 transition-colors hover:text-slate-900"
+                  className="inline-flex min-h-11 items-center text-xs font-medium text-slate-600 transition-colors hover:text-slate-900"
                 >
-                  + Add another variation
+                  {t("dish.addAnotherVariation")}
                 </button>
               </div>
             )}
           </div>
 
           <ToggleSwitch
-            label="Hide price on public menu"
-            description="Show the dish name and description, but omit its price."
+            label={t("dish.hidePrice")}
+            description={t("dish.hidePriceDescription")}
             checked={draft.hide_price}
             onChange={(checked) => setDraft((prev) => ({ ...prev, hide_price: checked }))}
           />
 
           <ToggleSwitch
-            label="Do not translate title"
-            description="Protects unique dish names from changing. Description will still be translated."
+            label={t("dish.lockTitle")}
+            description={t("dish.lockTitleDescription")}
             checked={draft.lock_title_translation}
             onChange={(checked) =>
               setDraft((prev) => ({ ...prev, lock_title_translation: checked }))
@@ -459,7 +454,7 @@ export function DishDetailSheet({
 
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <label className="air-label mb-0">Description ({primaryMeta.label})</label>
+              <label className="air-label mb-0">{t("dish.description")} ({primaryMeta.label})</label>
               <div className="flex items-center gap-1">
                 <SecondaryLanguageField
                   primaryLanguage={primaryLanguage}
@@ -475,7 +470,7 @@ export function DishDetailSheet({
                   type="button"
                   onClick={() => void handleGenerateDescription()}
                   disabled={generatingDescription || saving}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-[#F5F5F7] hover:text-slate-900 disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 transition-colors hover:bg-[#F5F5F7] hover:text-slate-900 disabled:opacity-50"
                   aria-label="Generate description with AI"
                 >
                   {generatingDescription ? (
@@ -483,7 +478,7 @@ export function DishDetailSheet({
                   ) : (
                     <Sparkles className="h-3.5 w-3.5" />
                   )}
-                  <span>{generatingDescription ? "Writing…" : "AI write"}</span>
+                  <span>{generatingDescription ? t("dish.aiWriting") : t("dish.aiWrite")}</span>
                 </button>
               </div>
             </div>
@@ -510,10 +505,8 @@ export function DishDetailSheet({
           </div>
 
           <div>
-            <label className="air-label">Filterable tags</label>
-            <p className="air-helper mb-3">
-              Guests can filter the menu by these four options.
-            </p>
+            <label className="air-label">{t("dish.filterableTags")}</label>
+            <p className="air-helper mb-3">{t("dish.filterableTagsHelp")}</p>
             <div className="flex flex-wrap gap-2">
               {FILTERABLE_TAG_OPTIONS.map(({ tag }) => (
                 <button
@@ -521,7 +514,7 @@ export function DishDetailSheet({
                   type="button"
                   onClick={() => toggleFilterableTag(tag)}
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium",
+                    "min-h-11 rounded-full border px-4 py-2 text-xs font-medium",
                     draft.filterableTags.includes(tag)
                       ? "border-slate-300 bg-[#F5F5F7] text-slate-900"
                       : "border-[#E5E5EA] text-[#86868B]"
@@ -538,21 +531,6 @@ export function DishDetailSheet({
             onToggle={toggleAllergen}
             disabled={Boolean(saving)}
           />
-        </div>
-
-        <StickyActionBar>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="dark"
-            disabled={saving || !draft.name.trim()}
-            onClick={() => onSave(draft)}
-          >
-            {saving ? "Saving…" : "Save Dish"}
-          </Button>
-        </StickyActionBar>
-      </aside>
-    </>
+    </MobileBottomSheet>
   );
 }

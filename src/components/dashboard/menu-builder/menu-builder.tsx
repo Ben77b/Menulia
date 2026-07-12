@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { LocalizedTitleEditor } from "./localized-title-editor";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
 import { computeNextDishDisplayOrder } from "@/lib/menu-dish-order";
 import {
@@ -1042,6 +1043,7 @@ function CategoryBlock({
   onMoveCategory: (direction: -1 | 1) => void;
   onMoveDish: (dishId: string, direction: -1 | 1) => void;
 }) {
+  const { t } = useDashboardLocale();
   const nameRef = useRef<HTMLInputElement>(null);
   const priceRef = useRef<HTMLInputElement>(null);
   const [noteDraft, setNoteDraft] = useState(resolveBuilderSourceText(category.description, primaryLanguage));
@@ -1088,7 +1090,7 @@ function CategoryBlock({
                 type="button"
                 onClick={() => onLayoutChange(layout)}
                 className={cn(
-                  "air-capsule-nav-item !px-3 !py-1.5 text-xs capitalize",
+                  "air-capsule-nav-item min-h-11 !px-4 !py-2 text-xs capitalize",
                   category.layout_type === layout && "air-capsule-nav-item-active"
                 )}
               >
@@ -1099,7 +1101,7 @@ function CategoryBlock({
           <Button
             size="sm"
             variant="ghost"
-            className="text-slate-500 hover:text-slate-700"
+            className="min-h-11 min-w-11 text-slate-500 hover:text-slate-700"
             onClick={onDuplicateCategory}
             disabled={busy || duplicating}
             aria-label={`Duplicate ${resolveBuilderSourceText(category.name, primaryLanguage)}`}
@@ -1110,7 +1112,7 @@ function CategoryBlock({
               <Copy className="h-4 w-4" />
             )}
           </Button>
-          <Button size="sm" variant="ghost" className="text-red-500" onClick={onDeleteCategory}>
+          <Button size="sm" variant="ghost" className="min-h-11 min-w-11 text-red-500" onClick={onDeleteCategory}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -1118,7 +1120,7 @@ function CategoryBlock({
 
       <div className="border-b border-[#F5F5F7]/80 px-6 py-4">
         <label className="mb-1.5 block text-xs font-medium text-slate-700">
-          Section Note / Subtitle
+          {t("builder.sectionNote")}
         </label>
         <input
           type="text"
@@ -1193,7 +1195,7 @@ function CategoryBlock({
               }}
               disabled={busy || !dish}
               aria-label={`Duplicate ${resolveBuilderSourceText(dish?.name, primaryLanguage) || "dish"}`}
-              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 max-sm:opacity-100 disabled:opacity-40"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 max-sm:opacity-100 disabled:opacity-40"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -1203,7 +1205,7 @@ function CategoryBlock({
                 e.stopPropagation();
                 if (dish) onDeleteDish(dish);
               }}
-              className="rounded-lg p-1 text-[#C7C7CC] opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 max-sm:opacity-100"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 max-sm:opacity-100"
             >
               <Trash2 className="h-4 w-4" />
             </button>

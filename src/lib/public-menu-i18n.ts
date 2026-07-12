@@ -23,6 +23,7 @@ const UI_STRINGS: Record<string, Record<string, string>> = {
     poweredBy: "Powered by Menulia.net",
     language: "Language",
     allDishes: "All dishes",
+    disclaimerLink: "Allergen & Liability Disclaimer",
   },
   es: {
     openHours: "Horario",
@@ -35,6 +36,7 @@ const UI_STRINGS: Record<string, Record<string, string>> = {
     poweredBy: "Powered by Menulia.net",
     language: "Idioma",
     allDishes: "Todos los platos",
+    disclaimerLink: "Aviso de Alérgenos y Responsabilidad",
   },
   de: {
     openHours: "Öffnungszeiten",

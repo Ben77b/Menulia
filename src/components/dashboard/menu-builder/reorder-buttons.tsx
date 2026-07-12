@@ -37,7 +37,7 @@ export function ReorderButtons({
         }}
         disabled={disabled || !canMoveUp}
         aria-label="Move up"
-        className="rounded-md p-0.5 text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-30"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-30"
       >
         <ChevronUp className="h-4 w-4" />
       </button>
@@ -49,7 +49,7 @@ export function ReorderButtons({
         }}
         disabled={disabled || !canMoveDown}
         aria-label="Move down"
-        className="rounded-md p-0.5 text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-30"
+        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-30"
       >
         <ChevronDown className="h-4 w-4" />
       </button>

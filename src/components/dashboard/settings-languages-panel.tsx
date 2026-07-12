@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Globe, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { fetchMenuCategories } from "@/lib/menu-db";
 import { flatRecordsToMenuTree } from "@/lib/menu-builder-tree";
@@ -33,6 +34,7 @@ export function SettingsLanguagesPanel({
   onPrimaryLanguageChange,
   onPrimaryLanguageSaved,
 }: SettingsLanguagesPanelProps) {
+  const { t } = useDashboardLocale();
   const toast = useToast();
   const [translating, setTranslating] = useState(false);
   const [savingPrimary, setSavingPrimary] = useState(false);
@@ -112,7 +114,7 @@ export function SettingsLanguagesPanel({
       >
         <div>
           <p className="mb-3 text-sm font-medium text-slate-700">
-            Idioma Principal del Menú / Primary Menu Language
+            {t("settings.primaryMenuLanguage")}
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {MENU_CONTENT_LANGUAGES.map((language) => {

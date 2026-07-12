@@ -70,7 +70,7 @@ export function SecondaryLanguageField({
         aria-label={`Manage ${secondaryMeta.label} translation for ${label}`}
         aria-expanded={popoverOpen}
         className={cn(
-          "rounded-lg p-1 transition-colors hover:bg-[#F5F5F7] disabled:opacity-40",
+          "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-colors hover:bg-[#F5F5F7] disabled:opacity-40",
           value.trim() ? "text-slate-600" : "text-[#C7C7CC] hover:text-slate-600"
         )}
       >

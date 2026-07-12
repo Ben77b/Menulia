@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { resolvePreferredLocale } from "@/lib/locale-detection";
 import { applySecurityHeadersForPath } from "@/lib/security-headers";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
@@ -45,9 +46,14 @@ function copyCookies(from: NextResponse, to: NextResponse) {
 }
 
 function prefersSpanish(request: NextRequest): boolean {
-  const accept = request.headers.get("accept-language") ?? "";
-  const primary = accept.split(",")[0]?.split(";")[0]?.trim().toLowerCase() ?? "";
-  return primary === "es" || primary.startsWith("es-");
+  return resolvePreferredLocale(request.headers.get("accept-language") ?? "") === "es";
+}
+
+function ensureLocaleCookie(request: NextRequest, response: NextResponse): NextResponse {
+  const stored = getStoredLocale(request);
+  const locale =
+    stored ?? resolvePreferredLocale(request.headers.get("accept-language") ?? "");
+  return withLocaleHeader(request, response, locale);
 }
 
 function getStoredLocale(request: NextRequest): "en" | "es" | null {
@@ -180,7 +186,7 @@ export async function middleware(request: NextRequest) {
     return localeResponse;
   }
 
-  return withSecurityHeaders(response, pathname);
+  return ensureLocaleCookie(request, response);
 }
 
 export const config = {

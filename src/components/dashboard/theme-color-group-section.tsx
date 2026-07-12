@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { ThemeHotspotGroup } from "@/lib/theme-inheritance";
 import type { AdvancedTheme } from "@/lib/advanced-theme";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { ThemeColorFieldCard } from "@/components/dashboard/theme-color-field-card";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ export function ThemeColorGroupSection({
   isChildOverridden,
   defaultExpanded = false,
 }: ThemeColorGroupSectionProps) {
+  const { t } = useDashboardLocale();
   const [advancedOpen, setAdvancedOpen] = useState(defaultExpanded);
 
   return (
@@ -54,7 +56,7 @@ export function ThemeColorGroupSection({
             className="flex w-full items-center justify-between border-b border-[#F5F5F7] px-5 py-3.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-[#FAFAFA]"
             aria-expanded={advancedOpen}
           >
-            <span>Advanced / Fine-tune Section</span>
+            <span>{t("theme.advancedFineTune")}</span>
             <ChevronDown
               className={cn(
                 "h-4 w-4 text-[#86868B] transition-transform",

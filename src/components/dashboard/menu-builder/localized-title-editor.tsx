@@ -157,7 +157,7 @@ export function LocalizedTitleEditor({
             onClick={() => setEditing(true)}
             disabled={disabled}
             aria-label={`Rename ${displayName || "title"}`}
-            className="rounded-lg p-1 text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-40"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] transition-colors hover:bg-[#F5F5F7] hover:text-slate-600 disabled:opacity-40"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
@@ -170,7 +170,7 @@ export function LocalizedTitleEditor({
               aria-label={`Manage ${secondaryMeta.label} translation`}
               aria-expanded={popoverOpen}
               className={cn(
-                "rounded-lg p-1 transition-colors hover:bg-[#F5F5F7] disabled:opacity-40",
+                "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-colors hover:bg-[#F5F5F7] disabled:opacity-40",
                 hasTranslation ? "text-slate-600" : "text-[#C7C7CC] hover:text-slate-600"
               )}
             >

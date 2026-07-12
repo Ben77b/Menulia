@@ -1,10 +1,10 @@
 import { cookies, headers } from "next/headers";
+import { resolvePreferredLocale } from "@/lib/locale-detection";
 
 export type LegalLocale = "en" | "es";
 
 function prefersSpanish(acceptLanguage: string): boolean {
-  const primary = acceptLanguage.split(",")[0]?.split(";")[0]?.trim().toLowerCase() ?? "";
-  return primary === "es" || primary.startsWith("es-");
+  return resolvePreferredLocale(acceptLanguage) === "es";
 }
 
 /** Resolve legal page locale from query param, session cookie, or Accept-Language. */

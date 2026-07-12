@@ -1,9 +1,28 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { UtensilsCrossed } from "lucide-react";
 import { DEFAULT_PUBLIC_MENU_SPLASH } from "@/lib/public-menu-cache";
+import { isDashboardLocale } from "@/lib/dashboard-i18n";
 
-export default function PublicMenuNotFound() {
+const COPY = {
+  en: {
+    title: "Oops! This menu isn't cooking anything yet.",
+    body: "The link may be wrong, or this restaurant hasn't published their menu yet.",
+    cta: "Back to Menulia",
+  },
+  es: {
+    title: "¡Ups! Este menú no está cocinando nada todavía.",
+    body: "El enlace puede ser incorrecto, o este restaurante aún no ha publicado su menú.",
+    cta: "Volver a Menulia",
+  },
+} as const;
+
+export default async function PublicMenuNotFound() {
   const splash = DEFAULT_PUBLIC_MENU_SPLASH;
+  const cookieStore = await cookies();
+  const stored = cookieStore.get("menulia_locale")?.value;
+  const locale = isDashboardLocale(stored) ? stored : "en";
+  const copy = COPY[locale];
 
   return (
     <div
@@ -19,22 +38,15 @@ export default function PublicMenuNotFound() {
         </div>
 
         <div className="space-y-3">
-          <h1 className="text-xl font-semibold text-slate-900">
-            ¡Ups! Este menú no está cocinando nada todavía
-          </h1>
-          <p className="text-base text-slate-600">
-            Oops! This menu isn&apos;t cooking anything yet.
-          </p>
-          <p className="text-sm text-[#86868B]">
-            The link may be wrong, or this restaurant hasn&apos;t published their menu yet.
-          </p>
+          <h1 className="text-xl font-semibold text-slate-900">{copy.title}</h1>
+          <p className="text-sm text-[#86868B]">{copy.body}</p>
         </div>
 
         <Link
           href="https://www.menulia.net"
-          className="rounded-full border border-[#E5E5EA] bg-white px-6 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          className="inline-flex min-h-11 items-center rounded-full border border-[#E5E5EA] bg-white px-6 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
         >
-          Volver a Menulia / Back to Menulia
+          {copy.cta}
         </Link>
       </div>
     </div>

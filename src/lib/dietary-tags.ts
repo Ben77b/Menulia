@@ -22,7 +22,7 @@ export const ALLERGEN_TAG_OPTIONS = [
   {
     tag: "milk",
     icon: "🥛",
-    labels: { en: "Milk / dairy", es: "Leche y derivados / Lactosa" },
+    labels: { en: "Milk and dairy", es: "Leche y derivados" },
   },
   {
     tag: "tree_nuts",
@@ -35,7 +35,7 @@ export const ALLERGEN_TAG_OPTIONS = [
   {
     tag: "sulphites",
     icon: "🍷",
-    labels: { en: "Sulphur dioxide / sulphites", es: "Dióxido de azufre y sulfitos" },
+    labels: { en: "Sulphur dioxide and sulphites", es: "Dióxido de azufre y sulfitos" },
   },
   { tag: "lupin", icon: "🌼", labels: { en: "Lupin", es: "Altramuces" } },
   { tag: "molluscs", icon: "🦑", labels: { en: "Molluscs", es: "Moluscos" } },

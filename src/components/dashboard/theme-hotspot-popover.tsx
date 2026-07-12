@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import type { ThemeHotspotGroup } from "@/lib/theme-inheritance";
 import type { AdvancedTheme } from "@/lib/advanced-theme";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { ThemeColorFieldCard } from "@/components/dashboard/theme-color-field-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ export function ThemeHotspotPopover({
   position,
   onClose,
 }: ThemeHotspotPopoverProps) {
+  const { t } = useDashboardLocale();
   const popoverRef = useRef<HTMLDivElement>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
@@ -124,7 +126,7 @@ export function ThemeHotspotPopover({
             className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
             aria-expanded={advancedOpen}
           >
-            <span>Advanced / Fine-tune Section</span>
+            <span>{t("theme.advancedFineTune")}</span>
             <ChevronDown
               className={cn(
                 "h-4 w-4 text-gray-400 transition-transform",

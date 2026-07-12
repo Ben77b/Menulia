@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
+import { DashboardLocaleProvider } from "@/contexts/dashboard-locale-context";
 import { ToastProvider } from "@/components/ui/toast";
 import { Menu as MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,8 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
 
   return (
     <DashboardAuthGuard>
-      <ToastProvider>
+      <DashboardLocaleProvider>
+        <ToastProvider>
         <div className="air-dashboard flex min-h-screen bg-[#FAFAFA]">
           <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 
@@ -33,7 +35,8 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
             <main className="mx-auto max-w-6xl p-6 pt-20 md:px-10 md:py-10 md:pt-10">{children}</main>
           </div>
         </div>
-      </ToastProvider>
+        </ToastProvider>
+      </DashboardLocaleProvider>
     </DashboardAuthGuard>
   );
 }

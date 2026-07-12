@@ -1,10 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { PublicMenuLocale } from "@/lib/public-menu-i18n";
-
-const LINK_LABEL =
-  "Aviso de Alérgenos y Responsabilidad / Allergen & Liability Disclaimer";
+import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 
 interface PublicMenuLegalDisclaimerProps {
   locale: PublicMenuLocale;
@@ -32,7 +29,7 @@ export function PublicMenuLegalDisclaimer({
         fontStyle: bodyFontStyle ?? "normal",
       }}
     >
-      {LINK_LABEL}
+      {menuUiString(locale, "disclaimerLink")}
     </Link>
   );
 }
