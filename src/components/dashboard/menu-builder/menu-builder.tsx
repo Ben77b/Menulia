@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2 } from "lucide-react";
+import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, GripVertical } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { useSessionPersistedState } from "@/hooks/use-session-persisted-state";
@@ -52,6 +52,9 @@ import { LocalizedTitleEditor } from "./localized-title-editor";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
+import { BuilderContextActionsSheet } from "./builder-context-actions-sheet";
+import { BuilderRowMoreButton } from "./builder-row-more-button";
+import type { BuilderContextTarget } from "./builder-context-target";
 import { computeNextDishDisplayOrder } from "@/lib/menu-dish-order";
 import {
   mergeLocalizedText,
@@ -134,6 +137,7 @@ function categoryCardId(categoryId: string): string {
 
 export function MenuBuilder() {
   const { currentRestaurant } = useRestaurant();
+  const { t } = useDashboardLocale();
   const primaryLanguage = normalizePrimaryLanguage(currentRestaurant?.primary_language);
   const toast = useToast();
   const [tree, setTree] = useState(flatRecordsToMenuTree([]));
@@ -190,6 +194,8 @@ export function MenuBuilder() {
   } | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [contextTarget, setContextTarget] = useState<BuilderContextTarget | null>(null);
 
   const selectedCategory = useMemo(
     () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
@@ -510,6 +516,37 @@ export function MenuBuilder() {
     }
   }
 
+  async function handleToggleDishVisibility(dish: MenuBuilderDish, categoryId: string) {
+    const isAvailable = !dish.is_available;
+    const previousTree = tree;
+
+    if (selectedDish?.dish.id === dish.id) {
+      setSelectedDish((prev) =>
+        prev ? { ...prev, dish: { ...prev.dish, is_available: isAvailable } } : null
+      );
+    }
+    setTree((prev) =>
+      updateDishInCategory(prev, categoryId, dish.id, { is_available: isAvailable })
+    );
+
+    try {
+      await updateMenuDishAvailability(dish.id, isAvailable);
+      toast.success(
+        isAvailable ? "Dish is now visible on your menu" : "Dish hidden from public menu"
+      );
+    } catch (err) {
+      setTree(previousTree);
+      if (selectedDish?.dish.id === dish.id) {
+        setSelectedDish((prev) =>
+          prev ? { ...prev, dish: { ...prev.dish, is_available: !isAvailable } } : null
+        );
+      }
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
+    }
+  }
+
   async function handleDeleteDish(dish: MenuBuilderDish, categoryId: string) {
     if (!confirm(`Delete "${resolveBuilderSourceText(dish.name, primaryLanguage)}"?`)) return;
 
@@ -772,13 +809,56 @@ export function MenuBuilder() {
     return <MenuBuilderSkeleton />;
   }
 
+  function openDishActions(dish: MenuBuilderDish, categoryId: string) {
+    setContextTarget({
+      kind: "dish",
+      dish,
+      categoryId,
+      title: resolveBuilderSourceText(dish.name, primaryLanguage) || "Untitled dish",
+    });
+  }
+
+  function openCategoryActions(category: MenuBuilderCategory) {
+    setContextTarget({
+      kind: "category",
+      category,
+      categoryId: category.id,
+      title: resolveBuilderSourceText(category.name, primaryLanguage) || "Category",
+    });
+  }
+
+  function openSectionActions(section: MenuBuilderSection) {
+    setContextTarget({
+      kind: "section",
+      section,
+      sectionId: section.id,
+      title: resolveBuilderSourceText(section.name, primaryLanguage) || "Section",
+    });
+  }
+
   return (
     <div className="air-page">
-      <div>
-        <h1 className="air-page-title">Menu Builder</h1>
-        <p className="air-page-subtitle">
-          Sections → Categories → Dishes. Tab to price, Enter to save.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="air-page-title">Menu Builder</h1>
+          <p className="air-page-subtitle">
+            Sections → Categories → Dishes. Tab to price, Enter to save.
+          </p>
+        </div>
+        {tree.sections.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setReorderMode((current) => !current)}
+            className={cn(
+              "inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-all md:hidden",
+              reorderMode
+                ? "border-[#22c55e] text-[#22c55e] shadow-[0_0_14px_rgba(34,197,94,0.35)]"
+                : "border-slate-200 text-slate-600 hover:border-slate-300"
+            )}
+          >
+            {reorderMode ? t("builder.reorderModeOn") : t("builder.reorderMode")}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -848,6 +928,7 @@ export function MenuBuilder() {
             {tree.sections.length > 1 && activeSection?.id && (
               <ReorderButtons
                 revealOnHover
+                mobileEnabled={reorderMode}
                 onMoveUp={() => handleReorderSection(activeSection.id, -1)}
                 onMoveDown={() => handleReorderSection(activeSection.id, 1)}
                 canMoveUp={activeSectionIndex > 0}
@@ -871,23 +952,36 @@ export function MenuBuilder() {
 
           {activeSection && (
             <div className="space-y-4">
-              <div className="group flex items-start justify-between gap-3">
-                <LocalizedTitleEditor
-                  name={activeSection.name}
-                  primaryLanguage={primaryLanguage}
-                  titleClassName="air-section-title"
+              <div className="group flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <LocalizedTitleEditor
+                    name={activeSection.name}
+                    primaryLanguage={primaryLanguage}
+                    titleClassName="air-section-title"
+                    disabled={busy}
+                    onRename={(nextName) =>
+                      handleRenameCategory(activeSection.id, activeSection.name, nextName)
+                    }
+                    onTranslationChange={(lang, nextText) =>
+                      handleUpdateNameTranslation(activeSection.id, activeSection.name, lang, nextText)
+                    }
+                  />
+                  <p className="mt-1 text-xs text-[#86868B] md:hidden">
+                    {t("builder.categoriesCount", {
+                      count: activeSection.categories?.length ?? 0,
+                    })}
+                  </p>
+                </div>
+                <BuilderRowMoreButton
+                  className="md:hidden"
+                  label={t("builder.actions.more")}
                   disabled={busy}
-                  onRename={(nextName) =>
-                    handleRenameCategory(activeSection.id, activeSection.name, nextName)
-                  }
-                  onTranslationChange={(lang, nextText) =>
-                    handleUpdateNameTranslation(activeSection.id, activeSection.name, lang, nextText)
-                  }
+                  onClick={() => openSectionActions(activeSection)}
                 />
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="shrink-0 text-red-600 opacity-0 transition-opacity hover:text-red-700 group-hover:opacity-100 max-sm:opacity-100"
+                  className="hidden shrink-0 text-red-600 hover:text-red-700 md:inline-flex"
                   onClick={() => handleDeleteSection(activeSection)}
                   disabled={busy}
                 >
@@ -973,6 +1067,9 @@ export function MenuBuilder() {
                     onMoveDish={(dishId, direction) =>
                       handleReorderDish(category?.id, dishId, direction)
                     }
+                    reorderMode={reorderMode}
+                    onOpenCategoryActions={() => openCategoryActions(category)}
+                    onOpenDishActions={(dish) => openDishActions(dish, category.id)}
                   />
                 ))
               )}
@@ -993,6 +1090,43 @@ export function MenuBuilder() {
         onSave={handleSaveDishDetail}
         onImageUpload={handleImageUpload}
         onAvailabilityChange={handleAvailabilityChange}
+      />
+
+      <BuilderContextActionsSheet
+        target={contextTarget}
+        onClose={() => setContextTarget(null)}
+        busy={busy}
+        onEditDish={(target) => {
+          setSelectedDish({ dish: target.dish, categoryId: target.categoryId });
+        }}
+        onToggleDishVisibility={(target) => {
+          void handleToggleDishVisibility(target.dish, target.categoryId);
+        }}
+        onDuplicate={(target) => {
+          if (target.kind === "dish") {
+            void handleDuplicateDish(target.dish, target.categoryId);
+            return;
+          }
+          if (target.kind === "category" && activeSection) {
+            void handleDuplicateCategory(activeSection.id, target.category);
+          }
+        }}
+        onDelete={(target) => {
+          if (target.kind === "dish") {
+            void handleDeleteDish(target.dish, target.categoryId);
+            return;
+          }
+          if (target.kind === "category" && activeSection) {
+            void handleDeleteCategory(activeSection.id, target.category);
+            return;
+          }
+          if (target.kind === "section") {
+            void handleDeleteSection(target.section);
+          }
+        }}
+        onLayoutChange={(target, layout) => {
+          void handleLayoutChange(target.category, layout);
+        }}
       />
     </div>
   );
@@ -1020,6 +1154,9 @@ function CategoryBlock({
   onTranslationChange,
   onMoveCategory,
   onMoveDish,
+  reorderMode,
+  onOpenCategoryActions,
+  onOpenDishActions,
 }: {
   primaryLanguage: MenuContentLanguage;
   categoryId: string;
@@ -1042,6 +1179,9 @@ function CategoryBlock({
   onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
   onMoveCategory: (direction: -1 | 1) => void;
   onMoveDish: (dishId: string, direction: -1 | 1) => void;
+  reorderMode: boolean;
+  onOpenCategoryActions: () => void;
+  onOpenDishActions: (dish: MenuBuilderDish) => void;
 }) {
   const { t } = useDashboardLocale();
   const nameRef = useRef<HTMLInputElement>(null);
@@ -1059,27 +1199,36 @@ function CategoryBlock({
 
   return (
     <div id={categoryCardId(categoryId)} className="air-card overflow-hidden scroll-mt-24">
-      <div className="group flex flex-wrap items-start justify-between gap-3 border-b border-[#F5F5F7]/80 px-6 py-5">
-        <div className="flex min-w-0 flex-1 items-start gap-2">
+      <div className="group flex items-center justify-between gap-3 border-b border-[#F5F5F7]/80 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {reorderMode ? (
+            <GripVertical className="h-5 w-5 shrink-0 text-slate-400 md:hidden" aria-hidden />
+          ) : null}
           <ReorderButtons
             revealOnHover
+            mobileEnabled={reorderMode}
             onMoveUp={() => onMoveCategory(-1)}
             onMoveDown={() => onMoveCategory(1)}
             canMoveUp={categoryIndex > 0}
             canMoveDown={categoryIndex < categoryCount - 1}
             disabled={busy || duplicating}
           />
-          <LayoutGrid className="mt-1 h-4 w-4 shrink-0 text-slate-500 opacity-80 transition-opacity group-hover:opacity-100" />
-          <LocalizedTitleEditor
-            name={category.name}
-            primaryLanguage={primaryLanguage}
-            titleClassName="font-semibold text-slate-900"
-            disabled={busy || duplicating}
-            onRename={onRename}
-            onTranslationChange={onTranslationChange}
-          />
+          <LayoutGrid className="hidden h-4 w-4 shrink-0 text-slate-500 opacity-80 transition-opacity group-hover:opacity-100 md:block" />
+          <div className="min-w-0 flex-1">
+            <LocalizedTitleEditor
+              name={category.name}
+              primaryLanguage={primaryLanguage}
+              titleClassName="font-semibold text-slate-900"
+              disabled={busy || duplicating}
+              onRename={onRename}
+              onTranslationChange={onTranslationChange}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100">
+        <span className="shrink-0 text-xs text-[#86868B] md:hidden">
+          {t("builder.dishesCount", { count: category.dishes?.length ?? 0 })}
+        </span>
+        <div className="hidden items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 md:flex">
           <span className="shrink-0 text-xs text-[#86868B]">
             {category.dishes?.length ?? 0} dishes
           </span>
@@ -1112,10 +1261,21 @@ function CategoryBlock({
               <Copy className="h-4 w-4" />
             )}
           </Button>
-          <Button size="sm" variant="ghost" className="min-h-11 min-w-11 text-red-500" onClick={onDeleteCategory}>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="min-h-11 min-w-11 text-red-500"
+            onClick={onDeleteCategory}
+          >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
+        <BuilderRowMoreButton
+          className="md:hidden"
+          label={t("builder.actions.more")}
+          disabled={busy || duplicating}
+          onClick={onOpenCategoryActions}
+        />
       </div>
 
       <div className="border-b border-[#F5F5F7]/80 px-6 py-4">
@@ -1148,12 +1308,16 @@ function CategoryBlock({
             onClick={() => dish && onOpenDish(dish)}
             onKeyDown={(e) => (e.key === "Enter" && dish ? onOpenDish(dish) : undefined)}
             className={cn(
-              "air-list-row group flex cursor-pointer items-center gap-3 px-5 py-4",
+              "air-list-row group flex cursor-pointer items-center gap-3 px-4 py-4 sm:px-5",
               dish?.is_available === false && "opacity-60"
             )}
           >
+            {reorderMode ? (
+              <GripVertical className="h-5 w-5 shrink-0 text-slate-400 md:hidden" aria-hidden />
+            ) : null}
             <ReorderButtons
               revealOnHover
+              mobileEnabled={reorderMode}
               onMoveUp={() => dish?.id && onMoveDish(dish.id, -1)}
               onMoveDown={() => dish?.id && onMoveDish(dish.id, 1)}
               canMoveUp={dishIndex > 0}
@@ -1164,10 +1328,10 @@ function CategoryBlock({
               <img
                 src={dish.image_url}
                 alt=""
-                className="h-10 w-10 rounded-[10px] object-cover"
+                className="hidden h-10 w-10 rounded-[10px] object-cover sm:block"
               />
             ) : (
-              <div className="h-10 w-10 rounded-[10px] bg-[#F5F5F7]" />
+              <div className="hidden h-10 w-10 rounded-[10px] bg-[#F5F5F7] sm:block" />
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -1175,18 +1339,20 @@ function CategoryBlock({
                   {resolveBuilderSourceText(dish?.name, primaryLanguage) || "Untitled dish"}
                 </p>
                 {dish?.is_available === false && (
-                  <span className="air-badge shrink-0">Hidden</span>
+                  <span className="air-badge shrink-0">{t("builder.hidden")}</span>
                 )}
               </div>
               {dish?.description ? (
-                <p className="truncate text-xs text-[#86868B]">
+                <p className="hidden truncate text-xs text-[#86868B] sm:block">
                   {resolveBuilderSourceText(dish.description, primaryLanguage)}
                 </p>
               ) : (
-                <p className="text-xs text-[#86868B]">Tap to add photo, description, and tags</p>
+                <p className="hidden text-xs text-[#86868B] sm:block">
+                  Tap to add photo, description, and tags
+                </p>
               )}
             </div>
-            <p className="font-semibold text-slate-900">€{(dish?.price ?? 0).toFixed(2)}</p>
+            <p className="shrink-0 font-semibold text-slate-900">€{(dish?.price ?? 0).toFixed(2)}</p>
             <button
               type="button"
               onClick={(e) => {
@@ -1195,7 +1361,7 @@ function CategoryBlock({
               }}
               disabled={busy || !dish}
               aria-label={`Duplicate ${resolveBuilderSourceText(dish?.name, primaryLanguage) || "dish"}`}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 max-sm:opacity-100 disabled:opacity-40"
+              className="hidden min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 md:inline-flex disabled:opacity-40"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -1205,11 +1371,19 @@ function CategoryBlock({
                 e.stopPropagation();
                 if (dish) onDeleteDish(dish);
               }}
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 max-sm:opacity-100"
+              className="hidden min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 md:inline-flex"
             >
               <Trash2 className="h-4 w-4" />
             </button>
-            <ChevronRight className="h-4 w-4 text-[#C7C7CC] group-hover:text-slate-500" />
+            <ChevronRight className="hidden h-4 w-4 text-[#C7C7CC] group-hover:text-slate-500 md:block" />
+            {dish ? (
+              <BuilderRowMoreButton
+                className="md:hidden"
+                label={t("builder.actions.more")}
+                disabled={busy}
+                onClick={() => onOpenDishActions(dish)}
+              />
+            ) : null}
           </div>
         ))}
 

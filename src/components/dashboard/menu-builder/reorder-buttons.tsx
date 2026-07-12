@@ -10,6 +10,8 @@ interface ReorderButtonsProps {
   className?: string;
   /** Fade in on parent `.group` hover; always visible on small screens */
   revealOnHover?: boolean;
+  /** When false, hidden on viewports under md (use with Reorder Mode). */
+  mobileEnabled?: boolean;
 }
 
 export function ReorderButtons({
@@ -20,12 +22,14 @@ export function ReorderButtons({
   disabled = false,
   className,
   revealOnHover = false,
+  mobileEnabled = true,
 }: ReorderButtonsProps) {
   return (
     <div
       className={cn(
         "flex shrink-0 flex-col",
         revealOnHover && "opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100",
+        !mobileEnabled && "max-md:hidden",
         className
       )}
     >
