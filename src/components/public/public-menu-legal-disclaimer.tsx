@@ -1,11 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import type { PublicMenuLocale } from "@/lib/public-menu-i18n";
 
-const DISCLAIMER: Record<PublicMenuLocale, string> = {
-  es: "Nota legal: La información sobre alérgenos es proporcionada de forma exclusiva por el establecimiento. Menulia actúa únicamente como plataforma técnica de visualización y no se responsabiliza de la exactitud de los datos. En caso de duda, consulte con el personal.",
-  en: "Legal notice: Allergen information is provided exclusively by the establishment. Menulia acts solely as a technical display platform and is not responsible for data accuracy. In case of doubt, always consult with staff.",
-};
+const LINK_LABEL =
+  "Aviso de Alérgenos y Responsabilidad / Allergen & Liability Disclaimer";
 
 interface PublicMenuLegalDisclaimerProps {
   locale: PublicMenuLocale;
@@ -22,34 +21,18 @@ export function PublicMenuLegalDisclaimer({
   bodyFontWeight,
   bodyFontStyle,
 }: PublicMenuLegalDisclaimerProps) {
-  const primary = DISCLAIMER[locale];
-  const secondary = DISCLAIMER[locale === "es" ? "en" : "es"];
-
   return (
-    <div
-      className="mt-8 w-full max-w-2xl border-t border-black/10 pt-6"
-      style={{ color: textColor, textAlign: "center" }}
+    <Link
+      href={`/legal/disclaimer?lang=${locale}`}
+      className="mt-8 inline-flex min-h-11 w-full max-w-xl items-center justify-center px-4 py-3 text-center text-[11px] leading-snug opacity-75 underline-offset-4 transition-opacity hover:opacity-100 hover:underline sm:text-xs"
+      style={{
+        color: textColor,
+        fontFamily: bodyFont,
+        fontWeight: bodyFontWeight ?? 400,
+        fontStyle: bodyFontStyle ?? "normal",
+      }}
     >
-      <p
-        className="text-[11px] leading-relaxed opacity-80"
-        style={{
-          fontFamily: bodyFont,
-          fontWeight: bodyFontWeight ?? 400,
-          fontStyle: bodyFontStyle ?? "normal",
-        }}
-      >
-        {primary}
-      </p>
-      <p
-        className="mt-2 text-[11px] leading-relaxed opacity-65"
-        style={{
-          fontFamily: bodyFont,
-          fontWeight: bodyFontWeight ?? 400,
-          fontStyle: bodyFontStyle ?? "normal",
-        }}
-      >
-        {secondary}
-      </p>
-    </div>
+      {LINK_LABEL}
+    </Link>
   );
 }
