@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Globe, Loader2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { MAX_SECTION_TITLE } from "@/lib/menu-limits";
 import {
   getMenuContentLanguageMeta,
