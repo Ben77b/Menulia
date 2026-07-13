@@ -5,6 +5,7 @@ import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
+import { isRenderableImageUrl } from "@/lib/public-menu-utils";
 import { PublicMenuLegalDisclaimer } from "@/components/public/public-menu-legal-disclaimer";
 
 interface PublicMenuFooterProps {
@@ -59,10 +60,11 @@ export function PublicMenuFooter({
         style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}
       >
         {/* 1. Logo */}
-        {logo ? (
+        {isRenderableImageUrl(logo) ? (
           <RestaurantLogo
             src={logo}
             alt={restaurantName}
+            fallbackText={restaurantName}
             wrapperClassName="mx-auto h-16 w-40"
             className="h-16 w-full"
           />

@@ -93,12 +93,12 @@ function DishSection({
   previewInteractive?: PreviewInteractiveConfig;
 }) {
   const filteredDishes = useMemo(() => {
-    const dishes = subcategory.dishes ?? [];
-    if (!display.showDietary || activeFilters.size === 0) {
-      return dishes;
+    const dishes = subcategory?.dishes ?? [];
+    if (!display?.showDietary || activeFilters.size === 0) {
+      return dishes.filter((dish) => Boolean(dish?.id));
     }
-    return filterDishesByTags(dishes, activeFilters);
-  }, [subcategory.dishes, activeFilters, display.showDietary]);
+    return filterDishesByTags(dishes, activeFilters).filter((dish) => Boolean(dish?.id));
+  }, [subcategory?.dishes, activeFilters, display?.showDietary]);
 
   const emptyMessage =
     (subcategory.dishes?.length ?? 0) === 0
@@ -170,9 +170,11 @@ function DishSection({
       {categoryHeading}
       {sectionNote}
       <div className="mx-auto max-w-3xl space-y-12">
-        {filteredDishes.map((dish) => (
+        {(filteredDishes ?? []).map((dish, index) => {
+          if (!dish?.id) return null;
+          return (
           <DishCard
-            key={dish.id}
+            key={dish.id || `dish-${index}`}
             dish={dish}
             lang={locale}
             fallbackLang={primaryLocale}
@@ -191,7 +193,8 @@ function DishSection({
             layout="stacked"
             imageClassName="w-full"
           />
-        ))}
+          );
+        })}
         {filteredDishes.length === 0 && (
           <p className="text-center text-sm" style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}>
             {emptyMessage}

@@ -49,7 +49,9 @@ export function FlatCategoryNav({
     fontStyle: categoryFontStyle ?? "normal",
   } as const;
 
-  if (categories.length === 0) return null;
+  const safeCategories = categories ?? [];
+
+  if (safeCategories.length === 0) return null;
 
   return (
     <nav
@@ -60,12 +62,13 @@ export function FlatCategoryNav({
         justifyContent: "center",
       }}
     >
-      {categories.map((category) => {
+      {(safeCategories ?? []).map((category, index) => {
+        if (!category) return null;
         const isActive = category.id === activeCategoryId;
 
         return (
           <button
-            key={category.id}
+            key={category.id || `category-${index}`}
             type="button"
             onClick={() => onCategoryChange(category.id)}
             className="max-w-[12rem] rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:max-w-[14rem] sm:text-sm"

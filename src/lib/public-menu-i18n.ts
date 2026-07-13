@@ -83,6 +83,15 @@ export function getSecondaryMenuLocale(primary: PublicMenuLocale): PublicMenuLoc
   return primary === "es" ? "en" : "es";
 }
 
+/** Legal/footer links only support en | es — never throws. */
+export function normalizePublicMenuLocale(locale: unknown): "en" | "es" {
+  try {
+    return locale === "es" ? "es" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 export function menuUiString(locale: PublicMenuLocale, key: string): string {
   try {
     const safeKey = typeof key === "string" ? key.trim() : "";

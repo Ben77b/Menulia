@@ -78,6 +78,10 @@ export function DishCarousel({
   priceColor,
   emptyMessage = "No dishes in this category.",
 }: DishCarouselProps) {
+  const safeDishes = useMemo(
+    () => (dishes ?? []).filter((dish): dish is PublicMenuDish => Boolean(dish?.id)),
+    [dishes]
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const isPreview = usePreviewCanvas();
   const arrowColor = isPreview
@@ -86,25 +90,25 @@ export function DishCarousel({
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [dishes]);
+  }, [safeDishes]);
 
   const slots = useMemo(() => {
-    if (dishes.length === 0) return [];
-    if (dishes.length === 1) {
-      return [{ dish: dishes[0], position: "center" as const, key: dishes[0].id }];
+    if (safeDishes.length === 0) return [];
+    if (safeDishes.length === 1) {
+      return [{ dish: safeDishes[0], position: "center" as const, key: safeDishes[0].id }];
     }
 
-    const prevIndex = mod(activeIndex - 1, dishes.length);
-    const nextIndex = mod(activeIndex + 1, dishes.length);
+    const prevIndex = mod(activeIndex - 1, safeDishes.length);
+    const nextIndex = mod(activeIndex + 1, safeDishes.length);
 
     return [
-      { dish: dishes[prevIndex], position: "left" as const, key: `${dishes[prevIndex].id}-left` },
-      { dish: dishes[activeIndex], position: "center" as const, key: `${dishes[activeIndex].id}-center` },
-      { dish: dishes[nextIndex], position: "right" as const, key: `${dishes[nextIndex].id}-right` },
+      { dish: safeDishes[prevIndex], position: "left" as const, key: `${safeDishes[prevIndex].id}-left` },
+      { dish: safeDishes[activeIndex], position: "center" as const, key: `${safeDishes[activeIndex].id}-center` },
+      { dish: safeDishes[nextIndex], position: "right" as const, key: `${safeDishes[nextIndex].id}-right` },
     ];
-  }, [activeIndex, dishes]);
+  }, [activeIndex, safeDishes]);
 
-  if (dishes.length === 0) {
+  if (safeDishes.length === 0) {
     return (
       <p className="text-center text-sm" style={{ color: mainTextColor }}>
         {emptyMessage}
@@ -113,16 +117,16 @@ export function DishCarousel({
   }
 
   function goPrevious() {
-    setActiveIndex((current) => mod(current - 1, dishes.length));
+    setActiveIndex((current) => mod(current - 1, safeDishes.length));
   }
 
   function goNext() {
-    setActiveIndex((current) => mod(current + 1, dishes.length));
+    setActiveIndex((current) => mod(current + 1, safeDishes.length));
   }
 
   return (
     <div className="relative mx-auto max-w-4xl px-10 py-4 sm:px-14">
-      {dishes.length > 1 && (
+      {safeDishes.length > 1 && (
         <>
           <button
             type="button"
@@ -145,11 +149,11 @@ export function DishCarousel({
         </>
       )}
 
-      {dishes.length === 1 ? (
+      {safeDishes.length === 1 ? (
         <div className="mx-auto w-full max-w-[320px]">
           <CarouselCardFrame isActive>
             <DishCard
-              dish={dishes[0]}
+              dish={safeDishes[0]}
               lang={lang}
               fallbackLang={fallbackLang}
               restaurantName={restaurantName}
@@ -171,7 +175,8 @@ export function DishCarousel({
         </div>
       ) : (
         <div className="flex items-center justify-center gap-3 sm:gap-6">
-          {slots.map((slot) => {
+          {(slots ?? []).map((slot) => {
+            if (!slot?.dish) return null;
             const isActive = slot.position === "center";
 
             return (

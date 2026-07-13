@@ -3,26 +3,54 @@ import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu
 import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/localized-text";
 import { isFilterableTag } from "@/lib/dietary-tags";
 
-export function sanitizePublicMenuDish(dish: PublicMenuDish): PublicMenuDish {
+/** True when a dish image URL is safe to pass to next/image or <img>. */
+export function isRenderableImageUrl(url: string | null | undefined): url is string {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  return (
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("/")
+  );
+}
+
+export function sanitizePublicMenuDish(
+  dish: PublicMenuDish | null | undefined
+): PublicMenuDish | null {
+  if (!dish || typeof dish !== "object") return null;
+
+  const image = dish.image;
+  const safeImage = isRenderableImageUrl(image) ? image.trim() : null;
+
   return {
     id: dish.id ?? "",
     name: dish.name ?? "",
     description: dish.description ?? "",
     price: typeof dish.price === "number" && !Number.isNaN(dish.price) ? dish.price : 0,
     hide_price: Boolean(dish.hide_price),
-    image: dish.image ?? null,
-    tags: Array.isArray(dish.tags) ? dish.tags : [],
-    allergens: Array.isArray(dish.allergens) ? dish.allergens : [],
+    image: safeImage,
+    tags: Array.isArray(dish.tags) ? dish.tags.filter(Boolean) : [],
+    allergens: Array.isArray(dish.allergens) ? dish.allergens.filter(Boolean) : [],
   };
 }
 
 export function sanitizePublicMenuSubcategory(
-  subcategory: PublicMenuSubcategory
-): PublicMenuSubcategory {
+  subcategory: PublicMenuSubcategory | null | undefined
+): PublicMenuSubcategory | null {
+  if (!subcategory || typeof subcategory !== "object") return null;
+
+  const layoutType = subcategory.layout_type === "carousel" ? "carousel" : "stacked";
+
   return {
     ...subcategory,
+    id: subcategory.id ?? "",
+    name: subcategory.name ?? "",
     description: subcategory.description ?? null,
-    dishes: (subcategory.dishes ?? []).map(sanitizePublicMenuDish),
+    layout_type: layoutType,
+    dishes: (subcategory.dishes ?? [])
+      .map(sanitizePublicMenuDish)
+      .filter((dish): dish is PublicMenuDish => dish !== null),
   };
 }
 
@@ -31,13 +59,23 @@ export function sanitizePublicMenuTree(
   flatCategories: PublicMenuSubcategory[]
 ): { menu: PublicMenuParentCategory[]; flatCategories: PublicMenuSubcategory[] } {
   return {
-    menu: (menu ?? []).map((parent) => ({
-      ...parent,
-      id: parent?.id ?? "",
-      name: parent?.name ?? "",
-      subcategories: (parent?.subcategories ?? []).map(sanitizePublicMenuSubcategory),
-    })),
-    flatCategories: (flatCategories ?? []).map(sanitizePublicMenuSubcategory),
+    menu: (menu ?? [])
+      .map((parent) => {
+        if (!parent || typeof parent !== "object") return null;
+        const subcategories = (parent.subcategories ?? [])
+          .map(sanitizePublicMenuSubcategory)
+          .filter((sub): sub is PublicMenuSubcategory => sub !== null);
+        return {
+          ...parent,
+          id: parent.id ?? "",
+          name: parent.name ?? "",
+          subcategories,
+        } satisfies PublicMenuParentCategory;
+      })
+      .filter((parent): parent is PublicMenuParentCategory => parent !== null),
+    flatCategories: (flatCategories ?? [])
+      .map(sanitizePublicMenuSubcategory)
+      .filter((category): category is PublicMenuSubcategory => category !== null),
   };
 }
 

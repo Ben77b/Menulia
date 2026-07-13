@@ -68,9 +68,10 @@ export function NestedCategoryNav({
     fontStyle: categoryFontStyle ?? "normal",
   } as const;
 
+  const safeMenu = menu ?? [];
   const activeParent = useMemo(
-    () => menu.find((parent) => parent.id === activeParentId) ?? menu[0],
-    [menu, activeParentId]
+    () => safeMenu.find((parent) => parent?.id === activeParentId) ?? safeMenu[0],
+    [safeMenu, activeParentId]
   );
 
   const subcategories = activeParent?.subcategories ?? [];
@@ -84,7 +85,7 @@ export function NestedCategoryNav({
     }
   }, [activeParent, activeSubcategoryId, onSubcategoryChange, subcategories]);
 
-  if (menu.length === 0) return null;
+  if (safeMenu.length === 0) return null;
 
   const tierDividerColor = isPreview
     ? "var(--preview-divider, rgba(0, 0, 0, 0.1))"
@@ -104,11 +105,12 @@ export function NestedCategoryNav({
             justifyContent: "center",
           }}
         >
-          {menu.map((parent) => {
+          {(safeMenu ?? []).map((parent, parentIndex) => {
+            if (!parent) return null;
             const isActive = parent.id === activeParentId;
             return (
               <button
-                key={parent.id}
+                key={parent.id || `parent-${parentIndex}`}
                 type="button"
                 onClick={() => onParentChange(parent.id)}
                 className="rounded-full px-5 py-2 text-center text-xs font-semibold uppercase tracking-[0.15em] transition-colors duration-200 sm:text-sm"
@@ -156,11 +158,12 @@ export function NestedCategoryNav({
             justifyContent: "center",
           }}
         >
-          {subcategories.map((subcategory) => {
+          {(subcategories ?? []).map((subcategory, subIndex) => {
+            if (!subcategory) return null;
             const isActive = subcategory.id === activeSubcategoryId;
             return (
               <button
-                key={subcategory.id}
+                key={subcategory.id || `sub-${subIndex}`}
                 type="button"
                 onClick={() => onSubcategoryChange(subcategory.id)}
                 className="max-w-[12rem] rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:max-w-[14rem] sm:text-sm"

@@ -23,6 +23,7 @@ import { parseDisplayOptions } from "@/lib/display-options";
 import { normalizePrimaryLanguage } from "@/lib/menu-content-languages";
 import { parseTypography } from "@/lib/typography";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
+import { isRenderableImageUrl } from "@/lib/public-menu-utils";
 
 interface PageProps {
   params: Promise<{ "restaurant-slug": string }>;
@@ -86,8 +87,8 @@ export default async function PublicMenuPage({ params }: PageProps) {
       />
       <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
       <PublicMenuShell
-        restaurantName={restaurant.name as string}
-        logo={(restaurant.logo as string | null) ?? null}
+        restaurantName={(restaurant.name as string) ?? ""}
+        logo={isRenderableImageUrl(restaurant.logo as string | null) ? (restaurant.logo as string) : null}
         location={(restaurant.location as string | null) ?? ""}
         hours={(restaurant.hours as string | null) ?? ""}
         contactInfo={(restaurant.contact_info as string | null) ?? ""}
@@ -103,10 +104,10 @@ export default async function PublicMenuPage({ params }: PageProps) {
         categoryFontStyle={fonts.categoryFontStyle}
         bodyFontWeight={fonts.textFontWeight}
         bodyFontStyle={fonts.textFontStyle}
-        menu={menu}
-        flatCategories={flatCategories}
-        hasNestedStructure={hasNestedStructure}
-        links={links}
+        menu={menu ?? []}
+        flatCategories={flatCategories ?? []}
+        hasNestedStructure={Boolean(hasNestedStructure)}
+        links={links ?? []}
         display={display}
       />
     </div>

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
+import { isRenderableImageUrl } from "@/lib/public-menu-utils";
 
 export interface PublicMenuDish {
   id: string;
@@ -101,7 +103,9 @@ export function DishCard({
   compact = false,
   imageClassName = "w-full max-w-xs",
 }: DishCardProps) {
-  const showImage = display.showImages && Boolean(dish.image);
+  const [imageFailed, setImageFailed] = useState(false);
+  const safeImage = isRenderableImageUrl(dish?.image) ? dish.image.trim() : null;
+  const showImage = Boolean(display?.showImages && safeImage && !imageFailed);
 
   const resolvedTitle = titleColor ?? textColor;
   const resolvedDescription = descriptionColor ?? textColor;
@@ -113,15 +117,16 @@ export function DishCard({
   const allergenLocale = lang === "es" ? "es" : "en";
 
   const imageBlock =
-    showImage && dish.image ? (
+    showImage && safeImage ? (
       <div className={`relative aspect-square overflow-hidden rounded-2xl ${imageClassName}`}>
         <Image
-          src={dish.image}
+          src={safeImage}
           alt={imageAlt}
           fill
           className="object-cover"
           quality={75}
           sizes="(max-width: 768px) 80vw, 320px"
+          onError={() => setImageFailed(true)}
         />
       </div>
     ) : null;
@@ -164,8 +169,9 @@ export function DishCard({
       )}
       {display.showDietary && (dish.tags ?? []).length > 0 && (
         <div className="flex flex-wrap justify-center gap-2">
-          {(dish.tags ?? []).map((tag) => {
-            const meta = getFilterableTagMeta(tag);
+        {(dish?.tags ?? []).filter(Boolean).map((tag) => {
+          if (!tag) return null;
+          const meta = getFilterableTagMeta(tag);
             return (
               <TagBadge
                 key={tag}
@@ -182,8 +188,9 @@ export function DishCard({
       )}
       {display.showDietary && (dish.allergens ?? []).length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5">
-          {(dish.allergens ?? []).map((allergen) => {
-            const meta = getAllergenTagMeta(allergen, allergenLocale);
+          {(dish?.allergens ?? []).filter(Boolean).map((allergen) => {
+          if (!allergen) return null;
+          const meta = getAllergenTagMeta(allergen, allergenLocale);
             return (
               <TagBadge
                 key={allergen}

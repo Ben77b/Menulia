@@ -8,6 +8,7 @@ import { pv } from "@/lib/preview-theme-vars";
 import type { RestaurantLink } from "@/lib/restaurant-links";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
+import { isRenderableImageUrl } from "@/lib/public-menu-utils";
 import { MenuLanguageSelector } from "./menu-language-selector";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 
@@ -45,7 +46,11 @@ export function MenuHeader({
   const textColor = isPreview
     ? headerTextColor ?? pv("headerText")
     : headerTextColor ?? contrastingTextColor(headerBackgroundColor);
-  const hasLinks = links.length > 0;
+  const safeLinks = (links ?? []).filter(
+    (link) => link && typeof link.url === "string" && link.url.trim() && link.label
+  );
+  const hasLinks = safeLinks.length > 0;
+  const hasLogo = isRenderableImageUrl(logo);
   const localizedRestaurantName = resolveLocalizedText(
     restaurantName,
     lang,
@@ -78,12 +83,12 @@ export function MenuHeader({
           <div className="flex justify-center">
             <h1
               className={
-                logo
+                hasLogo
                   ? "sr-only"
                   : "text-center text-lg font-bold uppercase tracking-[0.2em] sm:text-xl"
               }
               style={
-                logo
+                hasLogo
                   ? undefined
                   : {
                       fontFamily: titleFont,
@@ -95,10 +100,11 @@ export function MenuHeader({
             >
               {localizedRestaurantName}
             </h1>
-            {logo ? (
+            {hasLogo ? (
               <RestaurantLogo
                 src={logo}
                 alt={`${localizedRestaurantName} logo`}
+                fallbackText={localizedRestaurantName}
                 wrapperClassName="h-16 w-40 sm:h-20 sm:w-48"
                 className="h-full w-full"
               />
@@ -152,9 +158,9 @@ export function MenuHeader({
               </button>
             </div>
             <nav className="flex flex-col gap-1 p-4">
-              {links.map((link) => (
+              {(safeLinks ?? []).map((link, index) => (
                 <a
-                  key={link.id}
+                  key={link.id || `link-${index}`}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
