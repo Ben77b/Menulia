@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Globe, Loader2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { MAX_SECTION_TITLE } from "@/lib/menu-limits";
 import {
   getMenuContentLanguageMeta,
   getSecondaryLanguage,
@@ -23,6 +23,7 @@ interface LocalizedTitleEditorProps {
   primaryLanguage: MenuContentLanguage;
   disabled?: boolean;
   titleClassName?: string;
+  maxLength?: number;
   onRename: (nextName: string) => Promise<boolean>;
   onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
 }
@@ -32,6 +33,7 @@ export function LocalizedTitleEditor({
   primaryLanguage,
   disabled = false,
   titleClassName,
+  maxLength = MAX_SECTION_TITLE,
   onRename,
   onTranslationChange,
 }: LocalizedTitleEditorProps) {
@@ -112,6 +114,7 @@ export function LocalizedTitleEditor({
           <input
             ref={inputRef}
             value={draft}
+            maxLength={maxLength}
             disabled={disabled || saving}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -185,6 +188,7 @@ export function LocalizedTitleEditor({
                 <div className="relative mt-2">
                   <input
                     value={translationDraft}
+                    maxLength={maxLength}
                     disabled={disabled || savingTranslation}
                     onChange={(e) => setTranslationDraft(e.target.value)}
                     onBlur={() => void saveTranslation()}

@@ -65,6 +65,13 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "builder.actions.layoutStacked": { en: "Stacked layout", es: "Diseño en lista" },
   "builder.actions.layoutCarousel": { en: "Carousel layout", es: "Diseño carrusel" },
   "builder.actions.more": { en: "More actions", es: "Más acciones" },
+  "share.qrColor": { en: "QR code color", es: "Color del código QR" },
+  "share.transparentBg": { en: "Transparent background", es: "Fondo transparente" },
+  "share.transparentBgDescription": {
+    en: "Export PNG with a clear background for stickers and print overlays.",
+    es: "Exporta PNG con fondo transparente para pegatinas e impresión.",
+  },
+  "share.downloadQr": { en: "Download QR code", es: "Descargar código QR" },
   "settings.primaryMenuLanguage": {
     en: "Primary menu language",
     es: "Idioma principal del menú",

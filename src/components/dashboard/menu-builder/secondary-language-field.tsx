@@ -21,6 +21,7 @@ interface SecondaryLanguageFieldProps {
   placeholder?: string;
   multiline?: boolean;
   label: string;
+  maxLength?: number;
 }
 
 export function SecondaryLanguageField({
@@ -32,6 +33,7 @@ export function SecondaryLanguageField({
   placeholder,
   multiline = false,
   label,
+  maxLength,
 }: SecondaryLanguageFieldProps) {
   const secondaryLanguage = getSecondaryLanguage(primaryLanguage);
   const secondaryMeta = getMenuContentLanguageMeta(secondaryLanguage);
@@ -86,6 +88,7 @@ export function SecondaryLanguageField({
             {multiline ? (
               <textarea
                 value={value}
+                maxLength={maxLength}
                 disabled={disabled || saving}
                 onChange={(event) => onChange(event.target.value)}
                 onBlur={() => void handleSave()}
@@ -95,6 +98,7 @@ export function SecondaryLanguageField({
             ) : (
               <input
                 value={value}
+                maxLength={maxLength}
                 disabled={disabled || saving}
                 onChange={(event) => onChange(event.target.value)}
                 onBlur={() => void handleSave()}

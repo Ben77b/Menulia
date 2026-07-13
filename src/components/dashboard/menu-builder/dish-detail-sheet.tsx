@@ -26,7 +26,7 @@ import {
 } from "@/lib/menu-content-languages";
 import { SecondaryLanguageField } from "./secondary-language-field";
 import { AllergenPopoverField } from "./allergen-popover-field";
-import { CurrencyInput } from "@/components/ui/currency-input";
+import { MAX_CATEGORY_NAME, MAX_DISH_DESCRIPTION, MAX_DISH_NAME, clampMenuText } from "@/lib/menu-limits";
 
 export interface PriceVariationDraft {
   label: string;
@@ -247,7 +247,10 @@ export function DishDetailSheet({
         throw new Error("No description was returned");
       }
 
-      setDraft((prev) => ({ ...prev, description: data.description!.trim() }));
+      setDraft((prev) => ({
+        ...prev,
+        description: clampMenuText(data.description!, MAX_DISH_DESCRIPTION),
+      }));
       toast.success("Description generated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not generate description");
@@ -334,6 +337,7 @@ export function DishDetailSheet({
               <SecondaryLanguageField
                 primaryLanguage={primaryLanguage}
                 label="name"
+                maxLength={MAX_DISH_NAME}
                 value={draft.nameTranslation}
                 onChange={(value) => setDraft((prev) => ({ ...prev, nameTranslation: value }))}
                 onSave={async () => undefined}
@@ -341,6 +345,7 @@ export function DishDetailSheet({
             </div>
             <input
               value={draft.name}
+              maxLength={MAX_DISH_NAME}
               onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
               className="air-input"
             />
@@ -461,6 +466,7 @@ export function DishDetailSheet({
                   label="description"
                   value={draft.descriptionTranslation}
                   multiline
+                  maxLength={MAX_DISH_DESCRIPTION}
                   onChange={(value) =>
                     setDraft((prev) => ({ ...prev, descriptionTranslation: value }))
                   }
@@ -486,6 +492,7 @@ export function DishDetailSheet({
               <textarea
                 rows={4}
                 value={draft.description}
+                maxLength={MAX_DISH_DESCRIPTION}
                 onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
                 disabled={generatingDescription}
                 placeholder={

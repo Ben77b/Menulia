@@ -6,9 +6,11 @@ import { runtimeEnv } from "@/lib/runtime-env";
 
 export const dynamic = "force-dynamic";
 
+import { MAX_CATEGORY_NAME, MAX_DISH_DESCRIPTION, MAX_DISH_NAME } from "@/lib/menu-limits";
+
 const requestSchema = z.object({
-  dishName: z.string().min(1).max(200),
-  categoryName: z.string().max(120).optional(),
+  dishName: z.string().min(1).max(MAX_DISH_NAME),
+  categoryName: z.string().max(MAX_CATEGORY_NAME).optional(),
   restaurantName: z.string().max(200).optional(),
 });
 
@@ -119,7 +121,9 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ description });
+    return NextResponse.json({
+      description: description.slice(0, MAX_DISH_DESCRIPTION),
+    });
   } catch (error) {
     console.error("[generate-description]", error);
     return NextResponse.json(

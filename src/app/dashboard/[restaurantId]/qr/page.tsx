@@ -3,15 +3,23 @@
 import { useMemo, useRef, useState } from "react";
 import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { getPublicMenuUrl } from "@/lib/site-url";
 import { buildMenuEmbedSnippet } from "@/lib/menu-embed-snippet";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Check, Code2, Copy, Download, Link2, QrCode, Share2 } from "lucide-react";
 import QRCode from "react-qr-code";
 
+const QR_PREVIEW_SIZE = 256;
+const QR_EXPORT_SIZE = 1024;
+
 export default function ShareMenuPage() {
   const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
+  const { t } = useDashboardLocale();
   const [qrColor, setQrColor] = useState("#000000");
+  const [transparentBackground, setTransparentBackground] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -19,6 +27,8 @@ export default function ShareMenuPage() {
   const restaurantUrl = activeRestaurant
     ? getPublicMenuUrl(activeRestaurant.slug)
     : getPublicMenuUrl("demo");
+
+  const qrBackground = transparentBackground ? "transparent" : "#ffffff";
 
   const embedSnippet = useMemo(
     () =>
@@ -44,16 +54,26 @@ export default function ShareMenuPage() {
     const svgElement = qrRef.current.querySelector("svg");
     if (!svgElement) return;
 
-    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const exportSvg = svgElement.cloneNode(true) as SVGSVGElement;
+    exportSvg.setAttribute("width", String(QR_EXPORT_SIZE));
+    exportSvg.setAttribute("height", String(QR_EXPORT_SIZE));
+
+    const svgData = new XMLSerializer().serializeToString(exportSvg);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const img = new Image();
     img.onload = () => {
-      canvas.width = 300;
-      canvas.height = 300;
-      ctx.drawImage(img, 0, 0);
+      canvas.width = QR_EXPORT_SIZE;
+      canvas.height = QR_EXPORT_SIZE;
+
+      if (!transparentBackground) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      ctx.drawImage(img, 0, 0, QR_EXPORT_SIZE, QR_EXPORT_SIZE);
 
       const pngUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
@@ -93,34 +113,49 @@ export default function ShareMenuPage() {
           </div>
 
           <div className="flex flex-col items-start gap-8 lg:flex-row">
-            <div className="air-card p-6">
+            <div
+              className={cn(
+                "air-card p-6",
+                transparentBackground &&
+                  "bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb),linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb)] bg-[length:16px_16px] bg-[position:0_0,8px_8px]"
+              )}
+            >
               <div ref={qrRef}>
                 <QRCode
                   value={restaurantUrl}
-                  size={256}
+                  size={QR_PREVIEW_SIZE}
                   fgColor={qrColor}
-                  bgColor="transparent"
+                  bgColor={qrBackground}
                   level="H"
                 />
               </div>
             </div>
-            <div className="flex-1 space-y-4">
+
+            <div className="flex w-full max-w-md flex-1 flex-col gap-5">
               <div>
-                <label className="air-label">QR Code Color</label>
+                <label className="air-label">{t("share.qrColor")}</label>
                 <div className="mt-1.5 flex items-center gap-3">
                   <input
                     type="color"
                     value={qrColor}
                     onChange={(event) => setQrColor(event.target.value)}
-                    className="h-10 w-16 cursor-pointer rounded-[10px] border border-input"
+                    className="h-11 w-16 cursor-pointer rounded-[10px] border border-input"
+                    aria-label={t("share.qrColor")}
                   />
-                  <span className="text-sm text-muted-foreground">{qrColor}</span>
+                  <span className="font-mono text-sm text-muted-foreground">{qrColor}</span>
                 </div>
               </div>
 
-              <Button onClick={downloadQrCode} className="gap-2">
+              <ToggleSwitch
+                label={t("share.transparentBg")}
+                description={t("share.transparentBgDescription")}
+                checked={transparentBackground}
+                onChange={setTransparentBackground}
+              />
+
+              <Button onClick={downloadQrCode} className="gap-2 self-start">
                 <Download className="h-4 w-4" />
-                Download QR Code
+                {t("share.downloadQr")}
               </Button>
             </div>
           </div>

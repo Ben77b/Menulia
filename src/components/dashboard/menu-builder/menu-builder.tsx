@@ -41,7 +41,13 @@ import {
   findCategory,
 } from "@/lib/menu-builder-mutations";
 import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
-import { MAX_CATEGORIES_PER_SECTION, MAX_SECTIONS } from "@/lib/menu-limits";
+import {
+  MAX_CATEGORY_NAME,
+  MAX_DISH_DESCRIPTION,
+  MAX_DISH_NAME,
+  MAX_SECTION_TITLE,
+  clampMenuText,
+} from "@/lib/menu-limits";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { MenuBuilderSkeleton } from "@/components/ui/skeleton";
@@ -306,7 +312,7 @@ export function MenuBuilder() {
     setBusy(true);
     try {
       const created = await createMenuCategory(
-        newSectionName.trim(),
+        clampMenuText(newSectionName, MAX_SECTION_TITLE),
         currentRestaurant.id,
         { layout_type: "stacked", parent_id: null }
       );
@@ -349,7 +355,7 @@ export function MenuBuilder() {
     setBusy(true);
     try {
       const created = await createMenuCategory(
-        newCategoryName.trim(),
+        clampMenuText(newCategoryName, MAX_CATEGORY_NAME),
         currentRestaurant.id,
         { layout_type: "stacked", parent_id: sectionId }
       );
@@ -397,7 +403,7 @@ export function MenuBuilder() {
     try {
       const created = await createMenuDish(
         categoryId,
-        draft.name.trim(),
+        clampMenuText(draft.name, MAX_DISH_NAME),
         "",
         parsePriceInput(draft.price),
         null,
@@ -428,18 +434,23 @@ export function MenuBuilder() {
     const previousTree = tree;
 
     const secondaryLanguage = getSecondaryLanguage(primaryLanguage);
-    let mergedName = mergeLocalizedText(dish.name, primaryLanguage, draft.name.trim(), primaryLanguage);
-    mergedName = mergeLocalizedText(mergedName, secondaryLanguage, draft.nameTranslation.trim(), primaryLanguage);
+    const primaryName = clampMenuText(draft.name, MAX_DISH_NAME);
+    const secondaryName = clampMenuText(draft.nameTranslation, MAX_DISH_NAME);
+    const primaryDescription = clampMenuText(draft.description, MAX_DISH_DESCRIPTION);
+    const secondaryDescription = clampMenuText(draft.descriptionTranslation, MAX_DISH_DESCRIPTION);
+
+    let mergedName = mergeLocalizedText(dish.name, primaryLanguage, primaryName, primaryLanguage);
+    mergedName = mergeLocalizedText(mergedName, secondaryLanguage, secondaryName, primaryLanguage);
     let mergedDescription = mergeLocalizedText(
       dish.description,
       primaryLanguage,
-      draft.description.trim(),
+      primaryDescription,
       primaryLanguage
     );
     mergedDescription = mergeLocalizedText(
       mergedDescription,
       secondaryLanguage,
-      draft.descriptionTranslation.trim(),
+      secondaryDescription,
       primaryLanguage
     );
 
@@ -661,7 +672,7 @@ export function MenuBuilder() {
     currentName: LocalizedTextValue,
     nextName: string
   ): Promise<boolean> {
-    const trimmed = nextName.trim();
+    const trimmed = clampMenuText(nextName, MAX_SECTION_TITLE);
     if (!trimmed) {
       toast.error("Category name cannot be empty");
       return false;
@@ -693,7 +704,7 @@ export function MenuBuilder() {
     lang: MenuContentLanguage,
     nextText: string
   ) {
-    const trimmed = nextText.trim();
+    const trimmed = clampMenuText(nextText, MAX_SECTION_TITLE);
     const mergedName = mergeLocalizedText(currentName, lang, trimmed, primaryLanguage);
     const previousTree = tree;
     setTree((prev) => renameCategoryInTree(prev, id, mergedName));
@@ -873,6 +884,7 @@ export function MenuBuilder() {
             autoFocus
             placeholder="Section name (e.g. Food, Drinks)"
             value={newSectionName}
+            maxLength={MAX_SECTION_TITLE}
             onChange={(e) => setNewSectionName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddSection()}
             className="air-input flex-1"
@@ -957,6 +969,7 @@ export function MenuBuilder() {
                     name={activeSection.name}
                     primaryLanguage={primaryLanguage}
                     titleClassName="air-section-title"
+                    maxLength={MAX_SECTION_TITLE}
                     disabled={busy}
                     onRename={(nextName) =>
                       handleRenameCategory(activeSection.id, activeSection.name, nextName)
@@ -996,6 +1009,7 @@ export function MenuBuilder() {
                       autoFocus
                       placeholder="Category name (e.g. Starters)"
                       value={newCategoryName}
+                      maxLength={MAX_CATEGORY_NAME}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddCategory(activeSection.id)}
                       className="air-input flex-1"
@@ -1217,6 +1231,7 @@ function CategoryBlock({
               name={category.name}
               primaryLanguage={primaryLanguage}
               titleClassName="font-semibold text-slate-900"
+              maxLength={MAX_CATEGORY_NAME}
               disabled={busy || duplicating}
               onRename={onRename}
               onTranslationChange={onTranslationChange}
@@ -1396,6 +1411,7 @@ function CategoryBlock({
                 ref={nameRef}
                 placeholder="e.g. Margherita"
                 value={rapidDraft.name}
+                maxLength={MAX_DISH_NAME}
                 disabled={busy}
                 onChange={(e) => onRapidDraftChange({ ...rapidDraft, name: e.target.value })}
                 onKeyDown={(e) => {
