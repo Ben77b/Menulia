@@ -232,17 +232,38 @@ export function dashboardUiString(
   key: string,
   vars?: Record<string, string | number>
 ): string {
-  const template = UI_STRINGS[key]?.[locale] ?? UI_STRINGS[key]?.en ?? key;
-  if (!vars) return template;
-  return Object.entries(vars).reduce(
-    (text, [name, value]) => text.replace(`{${name}}`, String(value)),
-    template
-  );
+  try {
+    const safeKey = typeof key === "string" ? key.trim() : "";
+    const safeLocale = isDashboardLocale(locale) ? locale : DEFAULT_DASHBOARD_LOCALE;
+
+    if (!safeKey) return "";
+
+    const entry = UI_STRINGS[safeKey];
+    const template =
+      (entry && (entry[safeLocale] ?? entry[DEFAULT_DASHBOARD_LOCALE])) ?? safeKey;
+
+    if (!vars || typeof vars !== "object") return template;
+
+    return Object.entries(vars).reduce((text, [name, value]) => {
+      if (name) {
+        return text.replace(new RegExp(`\\{${name}\\}`, "g"), String(value ?? ""));
+      }
+      return text;
+    }, template);
+  } catch {
+    return typeof key === "string" ? key : "";
+  }
 }
 
 export function readDashboardLocaleFromCookie(): DashboardLocale {
-  if (typeof document === "undefined") return DEFAULT_DASHBOARD_LOCALE;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${DASHBOARD_LOCALE_COOKIE}=([^;]*)`));
-  const value = match?.[1] ? decodeURIComponent(match[1]) : null;
-  return isDashboardLocale(value) ? value : DEFAULT_DASHBOARD_LOCALE;
+  try {
+    if (typeof document === "undefined") return DEFAULT_DASHBOARD_LOCALE;
+    const match = document.cookie.match(
+      new RegExp(`(?:^|; )${DASHBOARD_LOCALE_COOKIE}=([^;]*)`)
+    );
+    const value = match?.[1] ? decodeURIComponent(match[1]) : null;
+    return isDashboardLocale(value) ? value : DEFAULT_DASHBOARD_LOCALE;
+  } catch {
+    return DEFAULT_DASHBOARD_LOCALE;
+  }
 }

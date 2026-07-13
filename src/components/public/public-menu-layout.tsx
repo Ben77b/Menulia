@@ -238,7 +238,8 @@ export function PublicMenuLayout({
   );
 
   const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
-  const { activeFilters, toggleFilter } = usePublicMenuFilters();
+  const { activeFilters, toggleFilter, isMounted: filtersMounted } = usePublicMenuFilters();
+  const effectiveFilters = filtersMounted ? activeFilters : new Set<string>();
   const [activeParentId, setActiveParentId] = useState(safeMenu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
     safeMenu[0]?.subcategories?.[0]?.id ?? safeFlatCategories[0]?.id ?? ""
@@ -422,7 +423,7 @@ export function PublicMenuLayout({
               bodyFontStyle={bodyFontStyle}
               locale={locale}
               primaryLocale={defaultLocale}
-              activeFilters={activeFilters}
+              activeFilters={effectiveFilters}
               display={display}
               previewInteractive={previewInteractive}
             />
@@ -449,7 +450,7 @@ export function PublicMenuLayout({
             bodyFontWeight={bodyFontWeight}
             bodyFontStyle={bodyFontStyle}
             locale={locale}
-            activeFilters={activeFilters}
+            activeFilters={effectiveFilters}
             onToggleFilter={toggleFilter}
           />
         </PreviewHotspot>

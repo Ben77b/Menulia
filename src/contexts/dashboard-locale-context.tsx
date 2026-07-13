@@ -20,35 +20,45 @@ import {
 
 type DashboardLocaleContextValue = {
   locale: DashboardLocale;
+  isMounted: boolean;
   setLocale: (locale: DashboardLocale) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
 };
 
 const DashboardLocaleContext = createContext<DashboardLocaleContextValue>({
   locale: DEFAULT_DASHBOARD_LOCALE,
+  isMounted: false,
   setLocale: () => undefined,
   t: (key) => dashboardUiString(DEFAULT_DASHBOARD_LOCALE, key),
 });
 
 export function DashboardLocaleProvider({ children }: { children: ReactNode }) {
+  const [isMounted, setIsMounted] = useState(false);
   const [locale, setLocaleState] = useState<DashboardLocale>(DEFAULT_DASHBOARD_LOCALE);
 
   useEffect(() => {
+    setIsMounted(true);
     setLocaleState(readDashboardLocaleFromCookie());
   }, []);
 
   const setLocale = useCallback((next: DashboardLocale) => {
     setLocaleState(next);
-    document.cookie = `${DASHBOARD_LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    if (typeof document !== "undefined") {
+      document.cookie = `${DASHBOARD_LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    }
   }, []);
+
+  const effectiveLocale = isMounted ? locale : DEFAULT_DASHBOARD_LOCALE;
 
   const value = useMemo(
     () => ({
-      locale,
+      locale: effectiveLocale,
+      isMounted,
       setLocale,
-      t: (key: string, vars?: Record<string, string | number>) => dashboardUiString(locale, key, vars),
+      t: (key: string, vars?: Record<string, string | number>) =>
+        dashboardUiString(effectiveLocale, key, vars),
     }),
-    [locale, setLocale]
+    [effectiveLocale, isMounted, setLocale]
   );
 
   return (

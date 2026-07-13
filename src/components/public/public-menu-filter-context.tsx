@@ -15,6 +15,7 @@ const FILTERABLE_TAG_SET = new Set<string>(FILTERABLE_TAGS);
 
 interface PublicMenuFilterContextValue {
   activeFilters: Set<string>;
+  isMounted: boolean;
   toggleFilter: (tag: string) => void;
 }
 
@@ -45,11 +46,16 @@ function syncFiltersToLocation(filters: Set<string>) {
 }
 
 function PublicMenuFilterProviderInstant({ children }: { children: ReactNode }) {
-  // Always start empty so SSR and the first client paint match (avoids hydration crashes
-  // when ?diet= filters are present in the URL).
+  const [isMounted, setIsMounted] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     setActiveFilters(readInitialFiltersFromLocation());
 
     const onPopState = () => {
@@ -58,25 +64,30 @@ function PublicMenuFilterProviderInstant({ children }: { children: ReactNode }) 
 
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  }, [isMounted]);
 
-  const toggleFilter = useCallback((tag: string) => {
-    if (!FILTERABLE_TAG_SET.has(tag)) return;
+  const toggleFilter = useCallback(
+    (tag: string) => {
+      if (!FILTERABLE_TAG_SET.has(tag)) return;
 
-    setActiveFilters((previous) => {
-      const next = new Set(previous);
-      if (next.has(tag)) {
-        next.delete(tag);
-      } else {
-        next.add(tag);
-      }
-      syncFiltersToLocation(next);
-      return next;
-    });
-  }, []);
+      setActiveFilters((previous) => {
+        const next = new Set(previous);
+        if (next.has(tag)) {
+          next.delete(tag);
+        } else {
+          next.add(tag);
+        }
+        if (isMounted) {
+          syncFiltersToLocation(next);
+        }
+        return next;
+      });
+    },
+    [isMounted]
+  );
 
   return (
-    <PublicMenuFilterContext.Provider value={{ activeFilters, toggleFilter }}>
+    <PublicMenuFilterContext.Provider value={{ activeFilters, isMounted, toggleFilter }}>
       {children}
     </PublicMenuFilterContext.Provider>
   );
@@ -97,7 +108,12 @@ export function PublicMenuFilterProvider({
 }
 
 function PublicMenuFilterProviderLocal({ children }: { children: ReactNode }) {
+  const [isMounted, setIsMounted] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const toggleFilter = useCallback((tag: string) => {
     if (!FILTERABLE_TAG_SET.has(tag)) return;
@@ -113,7 +129,7 @@ function PublicMenuFilterProviderLocal({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <PublicMenuFilterContext.Provider value={{ activeFilters, toggleFilter }}>
+    <PublicMenuFilterContext.Provider value={{ activeFilters, isMounted, toggleFilter }}>
       {children}
     </PublicMenuFilterContext.Provider>
   );

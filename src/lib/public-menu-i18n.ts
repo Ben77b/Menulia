@@ -84,5 +84,13 @@ export function getSecondaryMenuLocale(primary: PublicMenuLocale): PublicMenuLoc
 }
 
 export function menuUiString(locale: PublicMenuLocale, key: string): string {
-  return UI_STRINGS[locale]?.[key] ?? UI_STRINGS.en[key] ?? key;
+  try {
+    const safeKey = typeof key === "string" ? key.trim() : "";
+    if (!safeKey) return "";
+
+    const localeStrings = UI_STRINGS[locale] ?? UI_STRINGS.en;
+    return localeStrings?.[safeKey] ?? UI_STRINGS.en?.[safeKey] ?? safeKey;
+  } catch {
+    return typeof key === "string" ? key : "";
+  }
 }
