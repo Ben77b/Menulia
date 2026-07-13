@@ -33,7 +33,9 @@ export function sanitizePublicMenuTree(
   return {
     menu: (menu ?? []).map((parent) => ({
       ...parent,
-      subcategories: (parent.subcategories ?? []).map(sanitizePublicMenuSubcategory),
+      id: parent?.id ?? "",
+      name: parent?.name ?? "",
+      subcategories: (parent?.subcategories ?? []).map(sanitizePublicMenuSubcategory),
     })),
     flatCategories: (flatCategories ?? []).map(sanitizePublicMenuSubcategory),
   };
@@ -45,12 +47,12 @@ export function collectAllDishes(
   hasNestedStructure: boolean
 ): PublicMenuDish[] {
   if (hasNestedStructure) {
-    return menu.flatMap((parent) =>
-      parent.subcategories.flatMap((subcategory) => subcategory.dishes)
+    return (menu ?? []).flatMap((parent) =>
+      (parent?.subcategories ?? []).flatMap((subcategory) => subcategory?.dishes ?? [])
     );
   }
 
-  return flatCategories.flatMap((category) => category.dishes);
+  return (flatCategories ?? []).flatMap((category) => category?.dishes ?? []);
 }
 
 export function filterDishesByTags(
@@ -71,24 +73,26 @@ function collectMenuTextFields(
   const fields: LocalizedTextValue[] = [];
 
   if (hasNestedStructure) {
-    for (const parent of menu) {
-      fields.push(parent.name);
-      for (const subcategory of parent.subcategories) {
-        fields.push(subcategory.name);
-        if (subcategory.description) fields.push(subcategory.description);
-        for (const dish of subcategory.dishes) {
-          fields.push(dish.name, dish.description);
+    for (const parent of menu ?? []) {
+      if (parent?.name != null) fields.push(parent.name);
+      for (const subcategory of parent?.subcategories ?? []) {
+        if (subcategory?.name != null) fields.push(subcategory.name);
+        if (subcategory?.description) fields.push(subcategory.description);
+        for (const dish of subcategory?.dishes ?? []) {
+          if (dish?.name != null) fields.push(dish.name);
+          if (dish?.description != null) fields.push(dish.description);
         }
       }
     }
     return fields;
   }
 
-  for (const category of flatCategories) {
-    fields.push(category.name);
-    if (category.description) fields.push(category.description);
-    for (const dish of category.dishes) {
-      fields.push(dish.name, dish.description);
+  for (const category of flatCategories ?? []) {
+    if (category?.name != null) fields.push(category.name);
+    if (category?.description) fields.push(category.description);
+    for (const dish of category?.dishes ?? []) {
+      if (dish?.name != null) fields.push(dish.name);
+      if (dish?.description != null) fields.push(dish.description);
     }
   }
 

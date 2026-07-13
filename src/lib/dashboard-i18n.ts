@@ -1,10 +1,155 @@
 export type DashboardLocale = "en" | "es";
 
+export const DASHBOARD_LOCALES: DashboardLocale[] = ["en", "es"];
+
 export const DEFAULT_DASHBOARD_LOCALE: DashboardLocale = "en";
 
-export const DASHBOARD_LOCALE_COOKIE = "menulia_locale";
+/** Dashboard UI locale — separate from marketing `menulia_locale`. */
+export const DASHBOARD_LOCALE_COOKIE = "menulia_dashboard_locale";
 
 const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
+  "locale.toggleLabel": { en: "Dashboard language", es: "Idioma del panel" },
+  "nav.home": { en: "Home", es: "Inicio" },
+  "nav.menuBuilder": { en: "Menu Builder", es: "Editor de menú" },
+  "nav.shareMenu": { en: "Share the Menu", es: "Compartir menú" },
+  "nav.settings": { en: "Settings", es: "Ajustes" },
+  "nav.designStudio": { en: "Design Studio", es: "Estudio de diseño" },
+  "nav.viewLiveMenu": { en: "View Live Menu", es: "Ver menú en vivo" },
+  "nav.workspace": { en: "Restaurant workspace", es: "Espacio de trabajo" },
+  "nav.loadingWorkspace": { en: "Loading workspace…", es: "Cargando espacio de trabajo…" },
+  "nav.selectRestaurant": { en: "Select Restaurant", es: "Seleccionar restaurante" },
+  "nav.loading": { en: "Loading...", es: "Cargando..." },
+  "nav.restaurantsOne": { en: "1 restaurant", es: "1 restaurante" },
+  "nav.restaurantsMany": { en: "{count} restaurants", es: "{count} restaurantes" },
+  "nav.addRestaurant": { en: "＋ Add New Restaurant", es: "＋ Añadir restaurante" },
+  "nav.onboardingLockout": {
+    en: "Dashboard locked until your first restaurant is created.",
+    es: "El panel está bloqueado hasta que crees tu primer restaurante.",
+  },
+  "nav.accountSettings": { en: "Account settings", es: "Ajustes de cuenta" },
+  "home.welcome": { en: "Welcome back", es: "Bienvenido de nuevo" },
+  "home.managing": { en: "Managing", es: "Gestionando" },
+  "home.viewLiveSite": { en: "View Live Site", es: "Ver sitio en vivo" },
+  "home.loading": { en: "Loading...", es: "Cargando..." },
+  "home.noRestaurant": { en: "No restaurant selected", es: "Ningún restaurante seleccionado" },
+  "home.statCategories": { en: "Total Menu Categories", es: "Categorías del menú" },
+  "home.statDishes": { en: "Total Active Dishes", es: "Platos activos" },
+  "home.statLinks": { en: "Dynamic Link Count", es: "Enlaces dinámicos" },
+  "home.getStarted": { en: "Get Started", es: "Primeros pasos" },
+  "home.getStartedSubtitle": {
+    en: "Complete these steps to launch your digital menu.",
+    es: "Completa estos pasos para publicar tu menú digital.",
+  },
+  "home.stepCategoriesTitle": { en: "Build your categories", es: "Crea tus categorías" },
+  "home.stepCategoriesDesc": {
+    en: "Create menu categories to organize your dishes",
+    es: "Organiza tus platos en categorías del menú",
+  },
+  "home.stepThemeTitle": { en: "Design your theme", es: "Diseña tu tema" },
+  "home.stepThemeDesc": {
+    en: "Customize colors, fonts, and branding",
+    es: "Personaliza colores, fuentes y marca",
+  },
+  "home.stepQrTitle": { en: "Download your QR code", es: "Descarga tu código QR" },
+  "home.stepQrDesc": {
+    en: "Get a printable QR code for your menu",
+    es: "Obtén un código QR imprimible para tu menú",
+  },
+  "share.pageTitle": { en: "Share the Menu", es: "Compartir menú" },
+  "share.pageSubtitle": {
+    en: "QR codes, direct links, and website embeds — everything you need to put your menu in guests' hands.",
+    es: "Códigos QR, enlaces directos e incrustaciones web: todo lo que necesitas para poner tu menú en manos de tus clientes.",
+  },
+  "share.loading": { en: "Loading share tools…", es: "Cargando herramientas para compartir…" },
+  "share.qrTitle": { en: "Menu QR Code", es: "Código QR del menú" },
+  "share.qrDescription": {
+    en: "Print this code for tables, menus, or signage. Guests scan to open your live digital menu.",
+    es: "Imprime este código para mesas, cartas o señalización. Los clientes escanean para abrir tu menú digital.",
+  },
+  "share.directLinkTitle": { en: "Direct Link", es: "Enlace directo" },
+  "share.directLinkDescription": {
+    en: "Share this URL in messages, social posts, or your Google Business profile.",
+    es: "Comparte esta URL en mensajes, redes sociales o tu perfil de Google Business.",
+  },
+  "share.embedTitle": { en: "Website Embed", es: "Incrustar en web" },
+  "share.embedDescription": {
+    en: "Paste this iframe into your website builder or HTML to embed your live menu.",
+    es: "Pega este iframe en tu web o HTML para incrustar tu menú en vivo.",
+  },
+  "share.footerNote": {
+    en: "All share tools point to the same live public menu. Updates in Menu Builder appear instantly — no need to regenerate links or QR codes.",
+    es: "Todas las herramientas apuntan al mismo menú público en vivo. Los cambios en el editor se publican al instante, sin regenerar enlaces ni códigos QR.",
+  },
+  "settings.pageTitle": { en: "Restaurant Settings", es: "Ajustes del restaurante" },
+  "settings.tab.general": { en: "General", es: "General" },
+  "settings.tab.hours": { en: "Hours & Location", es: "Horario y ubicación" },
+  "settings.tab.social": { en: "Social & Links", es: "Redes y enlaces" },
+  "settings.tab.languages": { en: "Languages", es: "Idiomas" },
+  "settings.tab.danger": { en: "Danger Zone", es: "Zona de peligro" },
+  "settings.menuLanguagesTitle": { en: "Menu Languages", es: "Idiomas del menú" },
+  "settings.menuLanguagesDescription": {
+    en: "Choose the primary language you write your menu in. The builder and public menu default to this language first.",
+    es: "Elige el idioma principal en el que escribes tu menú. El editor y el menú público usan este idioma por defecto.",
+  },
+  "settings.secondaryLanguage": {
+    en: "Secondary language for quick translations:",
+    es: "Idioma secundario para traducciones rápidas:",
+  },
+  "settings.savePrimaryLanguage": { en: "Save primary language", es: "Guardar idioma principal" },
+  "settings.primaryLanguageSaved": {
+    en: "Primary menu language saved",
+    es: "Idioma principal del menú guardado",
+  },
+  "settings.translateTitle": { en: "Auto-translate with DeepL", es: "Traducción automática con DeepL" },
+  "settings.translateDescription": {
+    en: "DeepL detects each item automatically. Select languages to add — skip your primary ({language}).",
+    es: "DeepL detecta cada elemento automáticamente. Selecciona idiomas a añadir — omite tu idioma principal ({language}).",
+  },
+  "settings.translateInto": { en: "Translate into", es: "Traducir a" },
+  "settings.translateMenu": { en: "Translate Menu", es: "Traducir menú" },
+  "settings.translateSuccess": { en: "Menu translated successfully", es: "Menú traducido correctamente" },
+  "settings.selectLanguage": {
+    en: "Select at least one language.",
+    es: "Selecciona al menos un idioma.",
+  },
+  "settings.primaryMenuLanguage": {
+    en: "Primary menu language",
+    es: "Idioma principal del menú",
+  },
+  "branding.pageTitle": { en: "Design Studio", es: "Estudio de diseño" },
+  "branding.showPrices": { en: "Show Prices", es: "Mostrar precios" },
+  "branding.showPricesDesc": {
+    en: "Display dish prices on the public menu",
+    es: "Muestra los precios en el menú público",
+  },
+  "branding.showDescriptions": { en: "Show Descriptions", es: "Mostrar descripciones" },
+  "branding.showDescriptionsDesc": {
+    en: "Display dish descriptions beneath each item name",
+    es: "Muestra descripciones debajo de cada plato",
+  },
+  "branding.showImages": { en: "Show Images", es: "Mostrar imágenes" },
+  "branding.showImagesDesc": {
+    en: "Display dish photos in carousel and stacked layouts",
+    es: "Muestra fotos en diseños carrusel y en lista",
+  },
+  "branding.showDietary": { en: "Show Dietary Info", es: "Mostrar información dietética" },
+  "branding.showDietaryDesc": {
+    en: "Show dietary tags on dishes and the filter bar in the footer area",
+    es: "Muestra etiquetas dietéticas y la barra de filtros en el pie",
+  },
+  "branding.saveChanges": { en: "Save Changes", es: "Guardar cambios" },
+  "branding.saving": { en: "Saving...", es: "Guardando..." },
+  "branding.saved": { en: "Saved!", es: "Guardado" },
+  "builder.pageTitle": { en: "Menu Builder", es: "Editor de menú" },
+  "account.pageTitle": { en: "Account Settings", es: "Ajustes de cuenta" },
+  "account.pageSubtitle": {
+    en: "Manage your personal profile, security, and billing",
+    es: "Gestiona tu perfil, seguridad y facturación",
+  },
+  "common.copied": { en: "Copied!", es: "Copiado" },
+  "common.copyLink": { en: "Copy Link", es: "Copiar enlace" },
+  "common.copyEmbed": { en: "Copy Embed Code", es: "Copiar código de incrustación" },
+  "common.saving": { en: "Saving...", es: "Guardando..." },
   "allergens.label": { en: "Allergens", es: "Alérgenos" },
   "allergens.select": { en: "Select allergens", es: "Seleccionar alérgenos" },
   "allergens.euTitle": { en: "EU allergens (14)", es: "Alérgenos UE (14)" },
@@ -72,10 +217,6 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     es: "Exporta PNG con fondo transparente para pegatinas e impresión.",
   },
   "share.downloadQr": { en: "Download QR code", es: "Descargar código QR" },
-  "settings.primaryMenuLanguage": {
-    en: "Primary menu language",
-    es: "Idioma principal del menú",
-  },
   "theme.advancedFineTune": {
     en: "Advanced fine-tune",
     es: "Ajuste avanzado",

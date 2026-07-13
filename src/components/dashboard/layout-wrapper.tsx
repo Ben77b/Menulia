@@ -7,6 +7,7 @@ import { DashboardLocaleProvider } from "@/contexts/dashboard-locale-context";
 import { ToastProvider } from "@/components/ui/toast";
 import { Menu as MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DashboardLocaleToggle } from "@/components/dashboard/dashboard-locale-toggle";
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -28,7 +29,10 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
                 <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)}>
                   <MenuIcon className="h-6 w-6" />
                 </Button>
+              <div className="flex items-center gap-2">
+                <DashboardLocaleToggle />
                 <h1 className="text-lg font-bold tracking-tight text-slate-900">Menulia</h1>
+              </div>
               </div>
             </header>
 

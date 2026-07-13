@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
 import { Upload, Image as ImageIcon, X, Search } from "lucide-react";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 
 const GOOGLE_FONTS = [
   { label: "Inter", value: "Inter", className: "font-[var(--font-inter)]" },
@@ -63,6 +64,7 @@ function ColorPicker({
 export function BrandingDashboard() {
   const { design, updateDesign } = useDesign();
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const { t } = useDashboardLocale();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [showTitleFontDropdown, setShowTitleFontDropdown] = useState(false);
   const [showBodyFontDropdown, setShowBodyFontDropdown] = useState(false);
@@ -178,7 +180,7 @@ export function BrandingDashboard() {
           onClick={handleSaveChanges}
           disabled={saving || !currentRestaurant?.id}
         >
-          {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
+          {saving ? t("branding.saving") : saveSuccess ? t("branding.saved") : t("branding.saveChanges")}
         </Button>
       </div>
 
@@ -194,26 +196,26 @@ export function BrandingDashboard() {
           Choose which elements appear on your live public menu page.
         </p>
         <ToggleSwitch
-          label="Show Prices"
-          description="Display dish prices on the public menu"
+          label={t("branding.showPrices")}
+          description={t("branding.showPricesDesc")}
           checked={design.showPrices ?? true}
           onChange={(checked) => updateDesign({ showPrices: checked })}
         />
         <ToggleSwitch
-          label="Show Descriptions"
-          description="Display dish descriptions beneath each item name"
+          label={t("branding.showDescriptions")}
+          description={t("branding.showDescriptionsDesc")}
           checked={design.showDescriptions ?? true}
           onChange={(checked) => updateDesign({ showDescriptions: checked })}
         />
         <ToggleSwitch
-          label="Show Images"
-          description="Display dish photos in carousel and stacked layouts"
+          label={t("branding.showImages")}
+          description={t("branding.showImagesDesc")}
           checked={design.showImages ?? true}
           onChange={(checked) => updateDesign({ showImages: checked })}
         />
         <ToggleSwitch
-          label="Show Dietary Info"
-          description="Show dietary tags on dishes and the filter bar in the footer area"
+          label={t("branding.showDietary")}
+          description={t("branding.showDietaryDesc")}
           checked={design.showDietary ?? true}
           onChange={(checked) => updateDesign({ showDietary: checked })}
         />

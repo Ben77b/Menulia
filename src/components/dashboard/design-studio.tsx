@@ -17,6 +17,7 @@ import {
   THEME_COLOR_PANEL_GROUPS,
 } from "@/lib/theme-inheritance";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { sanitizePublicMenuTree } from "@/lib/public-menu-utils";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,7 @@ export function DesignStudio() {
     isChildOverridden,
   } = useDesign();
   const { currentRestaurant, refreshRestaurants } = useRestaurant();
+  const { t } = useDashboardLocale();
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const [activeTab, setActiveTab] = useDashboardSearchParam(
@@ -294,7 +296,7 @@ export function DesignStudio() {
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
       <div className="mb-6 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="air-page-title">Design Studio</h1>
+          <h1 className="air-page-title">{t("branding.pageTitle")}</h1>
           <p className="air-page-subtitle">
             Parent colours control each region — fine-tune individual elements in the advanced accordion.
           </p>

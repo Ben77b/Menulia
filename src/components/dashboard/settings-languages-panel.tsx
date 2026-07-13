@@ -67,7 +67,7 @@ export function SettingsLanguagesPanel({
         primaryLanguage
       );
       await onPrimaryLanguageSaved();
-      toast.success("Primary menu language saved");
+      toast.success(t("settings.primaryLanguageSaved"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save primary language.");
     } finally {
@@ -78,7 +78,7 @@ export function SettingsLanguagesPanel({
   async function handleTranslateMenu() {
     const targets = Array.from(targetLanguages);
     if (targets.length === 0) {
-      toast.error("Select at least one language.");
+      toast.error(t("settings.selectLanguage"));
       return;
     }
 
@@ -95,7 +95,7 @@ export function SettingsLanguagesPanel({
         });
       }
 
-      toast.success("✨ Menu translated successfully");
+      toast.success(t("settings.translateSuccess"));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Could not translate your menu. Try again.";
@@ -108,8 +108,8 @@ export function SettingsLanguagesPanel({
   return (
     <div className="space-y-6">
       <DashboardSectionCard
-        title="Menu Languages"
-        description="Choose the primary language you write your menu in. The builder and public menu default to this language first."
+        title={t("settings.menuLanguagesTitle")}
+        description={t("settings.menuLanguagesDescription")}
         icon={<Globe className="h-5 w-5" />}
       >
         <div>
@@ -149,7 +149,7 @@ export function SettingsLanguagesPanel({
             })}
           </div>
           <p className="mt-3 text-xs text-slate-400">
-            Secondary language for quick translations:{" "}
+            {t("settings.secondaryLanguage")}{" "}
             {getMenuContentLanguageMeta(secondaryLanguage).label}
           </p>
         </div>
@@ -160,17 +160,19 @@ export function SettingsLanguagesPanel({
           onClick={() => void handleSavePrimaryLanguage()}
           disabled={savingPrimary}
         >
-          {savingPrimary ? "Saving..." : "Save primary language"}
+          {savingPrimary ? t("common.saving") : t("settings.savePrimaryLanguage")}
         </Button>
       </DashboardSectionCard>
 
       <DashboardSectionCard
-        title="Auto-translate with DeepL"
-        description={`DeepL detects each item automatically. Select languages to add — skip your primary (${getMenuContentLanguageMeta(primaryLanguage).label}).`}
+        title={t("settings.translateTitle")}
+        description={t("settings.translateDescription", {
+          language: getMenuContentLanguageMeta(primaryLanguage).label,
+        })}
         icon={<Sparkles className="h-5 w-5" />}
       >
         <div>
-          <p className="mb-3 text-sm font-medium text-slate-700">Translate into</p>
+          <p className="mb-3 text-sm font-medium text-slate-700">{t("settings.translateInto")}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {translationTargets.map((language) => {
               const isChecked = targetLanguages.has(language.code);
@@ -216,7 +218,7 @@ export function SettingsLanguagesPanel({
           ) : (
             <Sparkles className="h-4 w-4" />
           )}
-          Translate Menu
+          {t("settings.translateMenu")}
         </Button>
       </DashboardSectionCard>
     </div>

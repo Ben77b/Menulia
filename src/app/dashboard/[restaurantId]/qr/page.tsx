@@ -87,17 +87,14 @@ export default function ShareMenuPage() {
   }
 
   if (awaitingWorkspace) {
-    return <LoadingSpinner label="Loading share tools…" />;
+    return <LoadingSpinner label={t("share.loading")} />;
   }
 
   return (
     <div className="air-page space-y-8">
       <div>
-        <h1 className="air-page-title">Share the Menu</h1>
-        <p className="air-page-subtitle">
-          QR codes, direct links, and website embeds — everything you need to put your menu in
-          guests&apos; hands.
-        </p>
+        <h1 className="air-page-title">{t("share.pageTitle")}</h1>
+        <p className="air-page-subtitle">{t("share.pageSubtitle")}</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -105,11 +102,9 @@ export default function ShareMenuPage() {
           <div className="mb-6">
             <div className="flex items-center gap-3">
               <QrCode className="h-5 w-5 text-slate-500" />
-              <h2 className="text-base font-semibold text-slate-900">Menu QR Code</h2>
+              <h2 className="text-base font-semibold text-slate-900">{t("share.qrTitle")}</h2>
             </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Print this code for tables, menus, or signage. Guests scan to open your live digital menu.
-            </p>
+            <p className="mt-1 text-xs text-slate-400">{t("share.qrDescription")}</p>
           </div>
 
           <div className="flex flex-col items-start gap-8 lg:flex-row">
@@ -165,11 +160,9 @@ export default function ShareMenuPage() {
           <div className="mb-4">
             <div className="flex items-center gap-3">
               <Link2 className="h-5 w-5 text-slate-500" />
-              <h2 className="text-base font-semibold text-slate-900">Direct Link</h2>
+              <h2 className="text-base font-semibold text-slate-900">{t("share.directLinkTitle")}</h2>
             </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Share this URL in messages, social posts, or your Google Business profile.
-            </p>
+            <p className="mt-1 text-xs text-slate-400">{t("share.directLinkDescription")}</p>
           </div>
           <div className="rounded-[10px] border border-border bg-muted p-3">
             <code className="break-all text-sm text-slate-700">{restaurantUrl}</code>
@@ -181,7 +174,7 @@ export default function ShareMenuPage() {
             onClick={() => void copyText(restaurantUrl, setLinkCopied)}
           >
             {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {linkCopied ? "Copied!" : "Copy Link"}
+            {linkCopied ? t("common.copied") : t("common.copyLink")}
           </Button>
         </div>
 
@@ -189,11 +182,9 @@ export default function ShareMenuPage() {
           <div className="mb-4">
             <div className="flex items-center gap-3">
               <Code2 className="h-5 w-5 text-slate-500" />
-              <h2 className="text-base font-semibold text-slate-900">Website Embed</h2>
+              <h2 className="text-base font-semibold text-slate-900">{t("share.embedTitle")}</h2>
             </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Paste this iframe into your website builder or HTML to embed your live menu.
-            </p>
+            <p className="mt-1 text-xs text-slate-400">{t("share.embedDescription")}</p>
           </div>
           <pre className="max-h-40 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
             <code>{embedSnippet}</code>
@@ -205,17 +196,14 @@ export default function ShareMenuPage() {
             onClick={() => void copyText(embedSnippet, setEmbedCopied)}
           >
             {embedCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {embedCopied ? "Copied!" : "Copy Embed Code"}
+            {embedCopied ? t("common.copied") : t("common.copyEmbed")}
           </Button>
         </div>
       </div>
 
       <div className="air-card flex items-start gap-3 border-[#E5E5EA] bg-[#FAFAFA] p-4">
         <Share2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-        <p className="text-sm text-muted-foreground">
-          All share tools point to the same live public menu. Updates in Menu Builder appear
-          instantly — no need to regenerate links or QR codes.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("share.footerNote")}</p>
       </div>
     </div>
   );

@@ -39,16 +39,9 @@ import {
   DashboardFieldLabel,
   DashboardSectionCard,
 } from "@/components/dashboard/dashboard-section-card";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 
 type SettingsTab = "general" | "hours-location" | "social-links" | "languages" | "danger";
-
-const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "hours-location", label: "Hours & Location" },
-  { id: "social-links", label: "Social & Links" },
-  { id: "languages", label: "Languages" },
-  { id: "danger", label: "Danger Zone" },
-];
 
 const SETTINGS_TAB_IDS: SettingsTab[] = [
   "general",
@@ -62,6 +55,18 @@ function SettingsPageContent() {
   const router = useRouter();
   const { refreshRestaurants } = useRestaurant();
   const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
+  const { t } = useDashboardLocale();
+
+  const settingsTabs = useMemo(
+    (): { id: SettingsTab; label: string }[] => [
+      { id: "general", label: t("settings.tab.general") },
+      { id: "hours-location", label: t("settings.tab.hours") },
+      { id: "social-links", label: t("settings.tab.social") },
+      { id: "languages", label: t("settings.tab.languages") },
+      { id: "danger", label: t("settings.tab.danger") },
+    ],
+    [t]
+  );
 
   const {
     formDraft,
@@ -249,7 +254,7 @@ function SettingsPageContent() {
     <div className="flex min-h-[calc(100vh-6rem)] flex-col">
       <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="air-page-title">Restaurant Settings</h1>
+          <h1 className="air-page-title">{t("settings.pageTitle")}</h1>
           <p className="mt-1 text-sm text-gray-600">
             Manage profile, contact details, hours, and links for this restaurant
           </p>
@@ -260,7 +265,7 @@ function SettingsPageContent() {
             onClick={saveChanges}
             disabled={saving || Boolean(slugError)}
           >
-            {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
+            {saving ? t("common.saving") : saveSuccess ? t("branding.saved") : t("branding.saveChanges")}
           </Button>
         )}
       </div>
@@ -272,7 +277,7 @@ function SettingsPageContent() {
       )}
 
       <div className="mb-4 shrink-0">
-        <SettingsSubNav items={SETTINGS_TABS} active={activeTab} onChange={setActiveTab} />
+        <SettingsSubNav items={settingsTabs} active={activeTab} onChange={setActiveTab} />
       </div>
 
       <div className="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:gap-8">
@@ -523,7 +528,7 @@ function SettingsPageContent() {
                 onClick={saveChanges}
                 disabled={saving || Boolean(slugError)}
               >
-                {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
+                {saving ? t("common.saving") : saveSuccess ? t("branding.saved") : t("branding.saveChanges")}
               </Button>
             </div>
           )}

@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { UtensilsCrossed, LayoutTemplate, Palette, QrCode, ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { getPublicMenuUrl } from "@/lib/site-url";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 
 export default function DashboardPage() {
   const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
+  const { t } = useDashboardLocale();
   const [stats, setStats] = useState({
     totalCategories: 0,
     totalDishes: 0,
@@ -83,7 +85,7 @@ export default function DashboardPage() {
 
   // Always render the layout, show different content based on state
   const displayName =
-    activeRestaurant?.name || (awaitingWorkspace ? "Loading..." : "No restaurant selected");
+    activeRestaurant?.name || (awaitingWorkspace ? t("home.loading") : t("home.noRestaurant"));
   const showViewLiveSite = Boolean(activeRestaurant?.slug);
 
   const restaurantBase = activeRestaurant ? `/dashboard/${activeRestaurant.id}` : "";
@@ -92,22 +94,22 @@ export default function DashboardPage() {
     ? [
         {
           icon: LayoutTemplate,
-          title: "Build your categories",
-          description: "Create menu categories to organize your dishes",
+          title: t("home.stepCategoriesTitle"),
+          description: t("home.stepCategoriesDesc"),
           href: `${restaurantBase}/menu`,
           completed: (stats?.totalCategories || 0) > 0,
         },
         {
           icon: Palette,
-          title: "Design your theme",
-          description: "Customize colors, fonts, and branding",
+          title: t("home.stepThemeTitle"),
+          description: t("home.stepThemeDesc"),
           href: `${restaurantBase}/branding`,
           completed: false,
         },
         {
           icon: QrCode,
-          title: "Download your QR code",
-          description: "Get a printable QR code for your menu",
+          title: t("home.stepQrTitle"),
+          description: t("home.stepQrDesc"),
           href: `${restaurantBase}/qr`,
           completed: false,
         },
@@ -118,9 +120,9 @@ export default function DashboardPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="air-page-title">Welcome back</h1>
+          <h1 className="air-page-title">{t("home.welcome")}</h1>
           <p className="air-page-subtitle">
-            Managing <span className="font-medium text-slate-900">{displayName}</span>
+            {t("home.managing")} <span className="font-medium text-slate-900">{displayName}</span>
           </p>
         </div>
         {showViewLiveSite && activeRestaurant && (
@@ -131,7 +133,7 @@ export default function DashboardPage() {
             rel="noopener noreferrer"
             isExternal
           >
-            View Live Site
+            {t("home.viewLiveSite")}
           </Button>
         )}
       </div>
@@ -141,23 +143,23 @@ export default function DashboardPage() {
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <UtensilsCrossed className="h-5 w-5 text-slate-600" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalCategories ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-400">Total Menu Categories</p>
+          <p className="mt-1 text-xs text-slate-400">{t("home.statCategories")}</p>
         </div>
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <LayoutTemplate className="h-5 w-5 text-slate-600" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalDishes ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-400">Total Active Dishes</p>
+          <p className="mt-1 text-xs text-slate-400">{t("home.statDishes")}</p>
         </div>
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <QrCode className="h-5 w-5 text-slate-600" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalLinks ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-400">Dynamic Link Count</p>
+          <p className="mt-1 text-xs text-slate-400">{t("home.statLinks")}</p>
         </div>
       </div>
 
       <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
-        <h2 className="text-base font-semibold text-slate-900">Get Started</h2>
-        <p className="mt-1 mb-4 text-xs text-slate-400">Complete these steps to launch your digital menu.</p>
+        <h2 className="text-base font-semibold text-slate-900">{t("home.getStarted")}</h2>
+        <p className="mt-1 mb-4 text-xs text-slate-400">{t("home.getStartedSubtitle")}</p>
         <div className="space-y-4">
           {quickSteps.map((step, index) => (
             <Link

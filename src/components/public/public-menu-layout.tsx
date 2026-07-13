@@ -273,9 +273,9 @@ export function PublicMenuLayout({
     }
 
     const parent = safeMenu.find((item) => item.id === activeParentId) ?? safeMenu[0];
+    const subcategories = parent?.subcategories ?? [];
     return (
-      parent?.subcategories.find((sub) => sub.id === activeSubcategoryId) ??
-      parent?.subcategories[0]
+      subcategories.find((sub) => sub.id === activeSubcategoryId) ?? subcategories[0] ?? null
     );
   }, [safeMenu, safeFlatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
 

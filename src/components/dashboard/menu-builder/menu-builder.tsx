@@ -851,7 +851,7 @@ export function MenuBuilder() {
     <div className="air-page">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="air-page-title">Menu Builder</h1>
+          <h1 className="air-page-title">{t("builder.pageTitle")}</h1>
           <p className="air-page-subtitle">
             Sections → Categories → Dishes. Tab to price, Enter to save.
           </p>

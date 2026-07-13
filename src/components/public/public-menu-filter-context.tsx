@@ -45,9 +45,13 @@ function syncFiltersToLocation(filters: Set<string>) {
 }
 
 function PublicMenuFilterProviderInstant({ children }: { children: ReactNode }) {
-  const [activeFilters, setActiveFilters] = useState<Set<string>>(readInitialFiltersFromLocation);
+  // Always start empty so SSR and the first client paint match (avoids hydration crashes
+  // when ?diet= filters are present in the URL).
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
+    setActiveFilters(readInitialFiltersFromLocation());
+
     const onPopState = () => {
       setActiveFilters(readInitialFiltersFromLocation());
     };

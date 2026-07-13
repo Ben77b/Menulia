@@ -49,6 +49,7 @@ const UI_STRINGS: Record<string, Record<string, string>> = {
     poweredBy: "Powered by Menulia.net",
     language: "Sprache",
     allDishes: "Alle Gerichte",
+    disclaimerLink: "Allergen- & Haftungsausschluss",
   },
   fr: {
     openHours: "Horaires",
@@ -61,6 +62,7 @@ const UI_STRINGS: Record<string, Record<string, string>> = {
     poweredBy: "Powered by Menulia.net",
     language: "Langue",
     allDishes: "Tous les plats",
+    disclaimerLink: "Avertissement allergènes et responsabilité",
   },
   it: {
     openHours: "Orari",
@@ -73,6 +75,7 @@ const UI_STRINGS: Record<string, Record<string, string>> = {
     poweredBy: "Powered by Menulia.net",
     language: "Lingua",
     allDishes: "Tutti i piatti",
+    disclaimerLink: "Avvertenza allergeni e responsabilità",
   },
 };
 

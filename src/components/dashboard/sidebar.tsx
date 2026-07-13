@@ -20,6 +20,8 @@ import { useRestaurant } from "@/contexts/restaurant-context";
 import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal";
 import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
 import { cn } from "@/lib/utils";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
+import { DashboardLocaleToggle } from "@/components/dashboard/dashboard-locale-toggle";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -43,10 +45,11 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     user,
     userProfile,
   } = useRestaurant();
+  const { t } = useDashboardLocale();
 
   const profileName =
-    user?.user_metadata?.full_name || userProfile?.displayName || user?.email?.split("@")[0] || "Account";
-  const profileSubtitle = user?.email ?? "Account settings";
+    user?.user_metadata?.full_name || userProfile?.displayName || user?.email?.split("@")[0] || t("nav.accountSettings");
+  const profileSubtitle = user?.email ?? t("nav.accountSettings");
   const isAccountPage = pathname === "/dashboard/account";
 
   const activeRestaurant =
@@ -66,13 +69,13 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const navItems =
     user && hasRestaurants && activeRestaurantId
       ? [
-          { icon: Home, label: "Home", href: `/dashboard/${activeRestaurantId}` },
-          { icon: LayoutTemplate, label: "Menu Builder", href: `/dashboard/${activeRestaurantId}/menu` },
-          { icon: Share2, label: "Share the Menu", href: `/dashboard/${activeRestaurantId}/qr` },
-          { icon: Settings, label: "Settings", href: `/dashboard/${activeRestaurantId}/settings` },
+          { icon: Home, label: t("nav.home"), href: `/dashboard/${activeRestaurantId}` },
+          { icon: LayoutTemplate, label: t("nav.menuBuilder"), href: `/dashboard/${activeRestaurantId}/menu` },
+          { icon: Share2, label: t("nav.shareMenu"), href: `/dashboard/${activeRestaurantId}/qr` },
+          { icon: Settings, label: t("nav.settings"), href: `/dashboard/${activeRestaurantId}/settings` },
           {
             icon: Palette,
-            label: "Design Studio",
+            label: t("nav.designStudio"),
             href: `/dashboard/${activeRestaurantId}/branding`,
           },
         ]
@@ -111,13 +114,18 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
       >
         <div className="flex h-full flex-col px-4 py-6">
           <div className="mb-8 px-2">
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">Menulia</h1>
-            <p className="mt-0.5 text-xs text-[#86868B]">Restaurant workspace</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">Menulia</h1>
+                <p className="mt-0.5 text-xs text-[#86868B]">{t("nav.workspace")}</p>
+              </div>
+              <DashboardLocaleToggle className="shrink-0" />
+            </div>
           </div>
 
           {!workspaceReady && user ? (
             <div className="mb-6 rounded-2xl border border-[#E5E5EA] bg-[#FAFAFA] px-4 py-4 text-sm text-[#86868B]">
-              Loading workspace…
+              {t("nav.loadingWorkspace")}
             </div>
           ) : hasRestaurants ? (
             <div className="mb-6 px-1">
@@ -139,12 +147,14 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-900">
-                      {activeRestaurant?.name || "Select Restaurant"}
+                      {activeRestaurant?.name || t("nav.selectRestaurant")}
                     </p>
                     <p className="text-xs text-[#86868B]">
                       {loading
-                        ? "Loading..."
-                        : `${restaurants.length} restaurant${restaurants.length === 1 ? "" : "s"}`}
+                        ? t("nav.loading")
+                        : restaurants.length === 1
+                          ? t("nav.restaurantsOne")
+                          : t("nav.restaurantsMany", { count: restaurants.length })}
                     </p>
                   </div>
                   <ChevronDown
@@ -188,7 +198,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                       onClick={handleAddRestaurant}
                       className="mt-1 w-full rounded-xl border-t border-[#F5F5F7] px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-[#FAFAFA]"
                     >
-                      ＋ Add New Restaurant
+                      {t("nav.addRestaurant")}
                     </button>
                   </div>
                 )}
@@ -196,7 +206,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             </div>
           ) : showOnboardingLockout ? (
             <div className="mb-6 rounded-2xl border border-dashed border-[#E5E5EA] bg-[#FAFAFA] px-4 py-4 text-sm text-[#86868B]">
-              Dashboard locked until your first restaurant is created.
+              {t("nav.onboardingLockout")}
             </div>
           ) : null}
 
@@ -225,7 +235,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 isExternal
                 className="mt-3 w-full justify-start"
               >
-                View Live Menu
+                {t("nav.viewLiveMenu")}
               </Button>
             )}
           </nav>
