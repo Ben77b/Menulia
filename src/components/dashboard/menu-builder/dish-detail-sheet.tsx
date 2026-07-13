@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Upload, Camera, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { StickyActionBar } from "@/components/dashboard/sticky-action-bar";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
