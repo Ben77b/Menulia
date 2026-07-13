@@ -9,6 +9,7 @@ import {
   type PublicMenuSubcategory,
 } from "@/lib/menu-hierarchy";
 import { parseCustomLinks } from "@/lib/restaurant-links";
+import { sortRecordsByDisplayOrder } from "@/lib/menu-dish-order";
 
 export function hasNestedMenuStructure(categoryRows: CategoryRow[]): boolean {
   return categoryRows.some((row) => row.parent_id !== null);
@@ -38,17 +39,23 @@ export function buildFlatCategories(
   return leafRows.map((row) => rowToSubcategory(row, dishesByCategoryId));
 }
 
-const PUBLIC_DISH_COLUMNS_BASE = "id, name, description, price, image, tags";
+const PUBLIC_DISH_COLUMNS_CORE = "id, name, description, price, image, tags";
+const PUBLIC_DISH_COLUMNS_BASE = `${PUBLIC_DISH_COLUMNS_CORE}, display_order`;
 const PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_BASE}, hide_price`;
 const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE}, is_available`;
-const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY_NO_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_BASE}, is_available`;
+const PUBLIC_DISH_COLUMNS_CORE_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS_CORE}, is_available`;
+const PUBLIC_DISH_COLUMNS_CORE_WITH_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_CORE}, hide_price`;
+
+function sortDishRowsByDisplayOrder<T extends { display_order?: number | null }>(
+  rows: T[]
+): T[] {
+  return sortRecordsByDisplayOrder(rows);
+}
 
 async function fetchActiveDishesForCategory(
   supabase: ReturnType<typeof createAnonClient>,
   categoryId: string
 ): Promise<ReturnType<typeof mapDishRow>[]> {
-  // We include `hide_price` when available, but fall back safely if the column
-  // doesn't exist yet (e.g. during staged migrations).
   const withOrderColumns = PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY;
 
   const { data: withOrder, error: orderError } = await supabase
@@ -56,16 +63,18 @@ async function fetchActiveDishesForCategory(
     .select(withOrderColumns)
     .eq("category_id", categoryId)
     .eq("is_available", true)
-    .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (!orderError) return (withOrder ?? []).map(mapDishRow);
+  if (!orderError) {
+    const sorted = sortDishRowsByDisplayOrder(withOrder ?? []);
+    return sorted.map(mapDishRow);
+  }
   if (!isMissingColumnError(orderError)) return [];
 
-  // Retry without `display_order` ordering.
+  // Retry without `display_order` in the select list.
   const { data: withAvailability, error: availabilityError } = await supabase
     .from("dishes")
-    .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY)
+    .select(PUBLIC_DISH_COLUMNS_CORE_WITH_AVAILABILITY)
     .eq("category_id", categoryId)
     .eq("is_available", true)
     .order("created_at", { ascending: true });
@@ -76,7 +85,7 @@ async function fetchActiveDishesForCategory(
   // Retry with `is_available` but without `hide_price`.
   const { data: withAvailabilityNoHide, error: availabilityNoHideError } = await supabase
     .from("dishes")
-    .select(PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY_NO_HIDE_PRICE)
+    .select(PUBLIC_DISH_COLUMNS_CORE_WITH_AVAILABILITY)
     .eq("category_id", categoryId)
     .eq("is_available", true)
     .order("created_at", { ascending: true });
@@ -87,7 +96,7 @@ async function fetchActiveDishesForCategory(
   // Retry without `is_available`, but keep `hide_price`.
   const { data: withoutAvailabilityWithHide, error: fallbackWithHideError } = await supabase
     .from("dishes")
-    .select(PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE)
+    .select(PUBLIC_DISH_COLUMNS_CORE_WITH_HIDE_PRICE)
     .eq("category_id", categoryId)
     .order("created_at", { ascending: true });
 
@@ -98,7 +107,7 @@ async function fetchActiveDishesForCategory(
   // Final fallback: no `is_available` and no `hide_price`.
   const { data: withoutAvailability, error: fallbackError } = await supabase
     .from("dishes")
-    .select(PUBLIC_DISH_COLUMNS_BASE)
+    .select(PUBLIC_DISH_COLUMNS_CORE)
     .eq("category_id", categoryId)
     .order("created_at", { ascending: true });
 

@@ -8,6 +8,7 @@ import {
 import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
 import { isMissingColumnError } from "./restaurant-settings";
+import { sortRecordsByDisplayOrder } from "./menu-dish-order";
 
 function readIsAvailable(dish: Record<string, unknown>): boolean {
   return dish.is_available !== false;
@@ -183,37 +184,23 @@ function mapDishRecord(dish: Record<string, unknown>): MenuDishRecord {
 async function fetchDishesForCategory(categoryId: string): Promise<MenuDishRecord[]> {
   const supabase = getSupabaseBrowserClient();
 
-  const { data: withOrder, error: orderError } = await supabase
-    .from("dishes")
-    .select("*")
-    .eq("category_id", categoryId)
-    .order("display_order", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (!orderError) {
-    return (withOrder ?? []).map((dish) => mapDishRecord(dish as Record<string, unknown>));
-  }
-
-  if (!isMissingColumnError(orderError)) {
-    logSupabaseFailure("menu.fetchDishes", orderError);
-    throw orderError;
-  }
-
-  const { data: withoutOrder, error: fallbackError } = await supabase
+  const { data, error } = await supabase
     .from("dishes")
     .select("*")
     .eq("category_id", categoryId)
     .order("created_at", { ascending: true });
 
-  if (fallbackError) {
-    logSupabaseFailure("menu.fetchDishes", fallbackError);
-    throw fallbackError;
+  if (error) {
+    logSupabaseFailure("menu.fetchDishes", error);
+    throw error;
   }
 
-  return (withoutOrder ?? []).map((dish, index) => ({
+  const mapped = (data ?? []).map((dish, index) => ({
     ...mapDishRecord(dish as Record<string, unknown>),
-    display_order: index,
+    display_order: Number((dish as Record<string, unknown>).display_order ?? index),
   }));
+
+  return sortRecordsByDisplayOrder(mapped);
 }
 
 async function getNextCategoryOrderIndex(

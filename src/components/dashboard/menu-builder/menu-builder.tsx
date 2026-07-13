@@ -42,9 +42,11 @@ import {
 } from "@/lib/menu-builder-mutations";
 import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
 import {
+  MAX_CATEGORIES_PER_SECTION,
   MAX_CATEGORY_NAME,
   MAX_DISH_DESCRIPTION,
   MAX_DISH_NAME,
+  MAX_SECTIONS,
   MAX_SECTION_TITLE,
   clampMenuText,
 } from "@/lib/menu-limits";

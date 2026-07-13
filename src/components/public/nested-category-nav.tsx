@@ -132,7 +132,7 @@ export function NestedCategoryNav({
                       }
                 }
               >
-                <span className="line-clamp-2 break-words">
+                <span className="break-words">
                   {resolveLocalizedText(parent.name, lang, fallbackLang)}
                 </span>
               </button>
@@ -166,7 +166,7 @@ export function NestedCategoryNav({
                 key={subcategory.id || `sub-${subIndex}`}
                 type="button"
                 onClick={() => onSubcategoryChange(subcategory.id)}
-                className="max-w-[12rem] rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:max-w-[14rem] sm:text-sm"
+                className="rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:text-sm"
                 style={
                   isActive
                     ? {
@@ -185,7 +185,7 @@ export function NestedCategoryNav({
                       }
                 }
               >
-                <span className="line-clamp-2 break-words">
+                <span className="break-words">
                   {resolveLocalizedText(subcategory.name, lang, fallbackLang)}
                 </span>
               </button>

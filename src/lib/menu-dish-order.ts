@@ -1,9 +1,15 @@
 import type { MenuBuilderDish } from "./menu-builder-types";
 
-export function sortDishesByDisplayOrder(dishes: MenuBuilderDish[]): MenuBuilderDish[] {
-  return [...(dishes ?? [])].sort(
+export function sortRecordsByDisplayOrder<T extends { display_order?: number | null }>(
+  records: readonly T[]
+): T[] {
+  return [...(records ?? [])].sort(
     (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
   );
+}
+
+export function sortDishesByDisplayOrder(dishes: MenuBuilderDish[]): MenuBuilderDish[] {
+  return sortRecordsByDisplayOrder(dishes);
 }
 
 export function computeNextDishDisplayOrder(dishes: MenuBuilderDish[]): number {
