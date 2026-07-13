@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { Cormorant_Garamond, Inter, Instrument_Serif, Montserrat, Playfair_Display, Poppins, Roboto, Open_Sans, Lato, Merriweather, Oswald, Raleway, Source_Sans_3, Ubuntu } from "next/font/google";
 import "./globals.css";
+import { GlobalErrorListeners } from "@/components/global-error-listeners";
 import { RestaurantProvider } from "@/contexts/restaurant-context";
 
 const cormorantGaramond = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-cormorant-garamond" });
@@ -66,6 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale}>
       <body className={`${inter.variable} ${instrumentSerif.variable} ${montserrat.variable} ${playfairDisplay.variable} ${poppins.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${merriweather.variable} ${oswald.variable} ${raleway.variable} ${sourceSans.variable} ${ubuntu.variable} ${cormorantGaramond.variable}`}>
+        <GlobalErrorListeners />
         <RestaurantProvider>{children}</RestaurantProvider>
       </body>
     </html>
