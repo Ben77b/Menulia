@@ -126,10 +126,20 @@ export function DishCard({
       </div>
     ) : null;
 
+  const titleClampClass =
+    layout === "stacked"
+      ? "whitespace-pre-wrap text-base sm:text-lg"
+      : cn("line-clamp-2", compact ? "text-sm" : "text-base sm:text-lg");
+
+  const descriptionClampClass =
+    layout === "stacked"
+      ? "text-sm whitespace-pre-wrap leading-relaxed"
+      : cn("leading-relaxed", compact ? "line-clamp-2 text-xs" : "line-clamp-3 text-sm");
+
   const textBlock = (
     <div className="space-y-2 text-center">
       <h3
-        className={`font-semibold uppercase leading-tight tracking-wide ${compact ? "text-sm" : "text-base sm:text-lg"}`}
+        className={cn("font-semibold uppercase leading-tight tracking-wide", titleClampClass)}
         style={{
           color: resolvedTitle,
           fontFamily: titleFont,
@@ -141,7 +151,7 @@ export function DishCard({
       </h3>
       {display.showDescriptions && localizedDescription && (
         <p
-          className={`leading-relaxed ${compact ? "line-clamp-2 text-xs" : "text-sm"}`}
+          className={descriptionClampClass}
           style={{
             color: resolvedDescription,
             fontFamily: bodyFont,

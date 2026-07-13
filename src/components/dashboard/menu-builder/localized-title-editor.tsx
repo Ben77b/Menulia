@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Globe, Loader2, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
 import {
   getMenuContentLanguageMeta,
   getSecondaryLanguage,
@@ -113,7 +112,6 @@ export function LocalizedTitleEditor({
           <input
             ref={inputRef}
             value={draft}
-            maxLength={MAX_CATEGORY_NAME_LENGTH}
             disabled={disabled || saving}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -151,7 +149,9 @@ export function LocalizedTitleEditor({
         </div>
       ) : (
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className={cn("truncate", titleClassName)}>{displayName || "Untitled"}</span>
+          <span className={cn("line-clamp-2 break-words", titleClassName)}>
+            {displayName || "Untitled"}
+          </span>
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -185,7 +185,6 @@ export function LocalizedTitleEditor({
                 <div className="relative mt-2">
                   <input
                     value={translationDraft}
-                    maxLength={MAX_CATEGORY_NAME_LENGTH}
                     disabled={disabled || savingTranslation}
                     onChange={(e) => setTranslationDraft(e.target.value)}
                     onBlur={() => void saveTranslation()}

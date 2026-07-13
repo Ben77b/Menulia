@@ -41,7 +41,7 @@ import {
   findCategory,
 } from "@/lib/menu-builder-mutations";
 import type { MenuBuilderCategory, MenuBuilderDish, MenuBuilderSection } from "@/lib/menu-builder-types";
-import { MAX_CATEGORIES_PER_SECTION, MAX_SECTIONS, MAX_CATEGORY_NAME_LENGTH } from "@/lib/menu-limits";
+import { MAX_CATEGORIES_PER_SECTION, MAX_SECTIONS } from "@/lib/menu-limits";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { MenuBuilderSkeleton } from "@/components/ui/skeleton";
@@ -306,7 +306,7 @@ export function MenuBuilder() {
     setBusy(true);
     try {
       const created = await createMenuCategory(
-        newSectionName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH),
+        newSectionName.trim(),
         currentRestaurant.id,
         { layout_type: "stacked", parent_id: null }
       );
@@ -349,7 +349,7 @@ export function MenuBuilder() {
     setBusy(true);
     try {
       const created = await createMenuCategory(
-        newCategoryName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH),
+        newCategoryName.trim(),
         currentRestaurant.id,
         { layout_type: "stacked", parent_id: sectionId }
       );
@@ -661,7 +661,7 @@ export function MenuBuilder() {
     currentName: LocalizedTextValue,
     nextName: string
   ): Promise<boolean> {
-    const trimmed = nextName.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
+    const trimmed = nextName.trim();
     if (!trimmed) {
       toast.error("Category name cannot be empty");
       return false;
@@ -693,7 +693,7 @@ export function MenuBuilder() {
     lang: MenuContentLanguage,
     nextText: string
   ) {
-    const trimmed = nextText.trim().slice(0, MAX_CATEGORY_NAME_LENGTH);
+    const trimmed = nextText.trim();
     const mergedName = mergeLocalizedText(currentName, lang, trimmed, primaryLanguage);
     const previousTree = tree;
     setTree((prev) => renameCategoryInTree(prev, id, mergedName));
@@ -873,7 +873,6 @@ export function MenuBuilder() {
             autoFocus
             placeholder="Section name (e.g. Food, Drinks)"
             value={newSectionName}
-            maxLength={MAX_CATEGORY_NAME_LENGTH}
             onChange={(e) => setNewSectionName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddSection()}
             className="air-input flex-1"
@@ -997,7 +996,6 @@ export function MenuBuilder() {
                       autoFocus
                       placeholder="Category name (e.g. Starters)"
                       value={newCategoryName}
-                      maxLength={MAX_CATEGORY_NAME_LENGTH}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleAddCategory(activeSection.id)}
                       className="air-input flex-1"
@@ -1335,7 +1333,7 @@ function CategoryBlock({
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="truncate font-medium text-slate-900">
+                <p className="line-clamp-2 font-medium text-slate-900">
                   {resolveBuilderSourceText(dish?.name, primaryLanguage) || "Untitled dish"}
                 </p>
                 {dish?.is_available === false && (
@@ -1343,7 +1341,7 @@ function CategoryBlock({
                 )}
               </div>
               {dish?.description ? (
-                <p className="hidden truncate text-xs text-[#86868B] sm:block">
+                <p className="hidden line-clamp-2 text-xs text-[#86868B] sm:block">
                   {resolveBuilderSourceText(dish.description, primaryLanguage)}
                 </p>
               ) : (

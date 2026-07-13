@@ -37,7 +37,7 @@ export function CapsuleNav<T extends string>({
           type="button"
           onClick={() => onChange(item.id)}
           className={cn(
-            "air-capsule-nav-item min-h-11 snap-start rounded-xl px-4 py-2 text-sm font-medium",
+            "air-capsule-nav-item min-h-11 max-w-[12rem] snap-start rounded-xl px-4 py-2 text-sm font-medium",
             active === item.id && "air-capsule-nav-item-active"
           )}
         >

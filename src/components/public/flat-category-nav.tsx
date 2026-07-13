@@ -68,7 +68,7 @@ export function FlatCategoryNav({
             key={category.id}
             type="button"
             onClick={() => onCategoryChange(category.id)}
-            className="rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:text-sm"
+            className="max-w-[12rem] rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:max-w-[14rem] sm:text-sm"
             style={
               isActive
                 ? {
@@ -87,7 +87,9 @@ export function FlatCategoryNav({
                   }
             }
           >
-            {resolveLocalizedText(category.name, lang, fallbackLang)}
+            <span className="line-clamp-2 break-words">
+              {resolveLocalizedText(category.name, lang, fallbackLang)}
+            </span>
           </button>
         );
       })}
