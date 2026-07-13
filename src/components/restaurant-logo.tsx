@@ -1,5 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { isRenderableImageUrl } from "@/lib/public-menu-utils";
+import { normalizeImageUrl } from "@/lib/public-menu-utils";
 
 const LOGO_ACCEPT =
   "image/png,image/jpeg,image/webp,image/svg+xml,.svg";
@@ -44,9 +47,10 @@ export function RestaurantLogo({
   wrapperClassName,
   fallbackText,
 }: RestaurantLogoProps) {
-  const safeSrc = isRenderableImageUrl(src) ? src.trim() : null;
+  const [loadFailed, setLoadFailed] = useState(false);
+  const imageSrc = normalizeImageUrl(src);
 
-  if (!safeSrc) {
+  if (!imageSrc || loadFailed) {
     if (fallbackText?.trim()) {
       return (
         <LogoPlaceholder
@@ -63,12 +67,10 @@ export function RestaurantLogo({
     <div className={cn("flex items-center justify-center", wrapperClassName)}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={safeSrc}
+        src={imageSrc}
         alt={alt}
         className={cn("max-h-full max-w-full object-contain object-center", className)}
-        onError={(event) => {
-          event.currentTarget.style.display = "none";
-        }}
+        onError={() => setLoadFailed(true)}
       />
     </div>
   );

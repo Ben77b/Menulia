@@ -3,16 +3,16 @@ import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu
 import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/localized-text";
 import { isFilterableTag } from "@/lib/dietary-tags";
 
-/** True when a dish image URL is safe to pass to next/image or <img>. */
-export function isRenderableImageUrl(url: string | null | undefined): url is string {
-  if (!url || typeof url !== "string") return false;
+/** Returns a trimmed image URL when non-empty; does not block on protocol. */
+export function normalizeImageUrl(url: string | null | undefined): string | null {
+  if (!url || typeof url !== "string") return null;
   const trimmed = url.trim();
-  if (!trimmed) return false;
-  return (
-    trimmed.startsWith("https://") ||
-    trimmed.startsWith("http://") ||
-    trimmed.startsWith("/")
-  );
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/** @deprecated Use normalizeImageUrl — kept for existing imports. */
+export function isRenderableImageUrl(url: string | null | undefined): url is string {
+  return normalizeImageUrl(url) !== null;
 }
 
 export function sanitizePublicMenuDish(
@@ -21,7 +21,7 @@ export function sanitizePublicMenuDish(
   if (!dish || typeof dish !== "object") return null;
 
   const image = dish.image;
-  const safeImage = isRenderableImageUrl(image) ? image.trim() : null;
+  const safeImage = normalizeImageUrl(image);
 
   return {
     id: dish.id ?? "",

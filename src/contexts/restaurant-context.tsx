@@ -101,14 +101,27 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const hydrateAuthenticatedUser = useCallback(async (sessionUser: User) => {
-    const profile = buildUserProfile(sessionUser);
-    const supabase = getSupabaseBrowserClient();
+    try {
+      const profile = buildUserProfile(sessionUser);
+      const supabase = getSupabaseBrowserClient();
 
-    setUser(sessionUser);
-    setUserProfile(profile);
-    userIdRef.current = sessionUser.id;
+      setUser(sessionUser);
+      setUserProfile(profile);
+      userIdRef.current = sessionUser?.id ?? null;
 
-    await syncUserProfileRecord(supabase, profile);
+      try {
+        await syncUserProfileRecord(supabase, profile);
+      } catch (syncError) {
+        logAuthDiagnostic("profiles.sync", syncError);
+      }
+    } catch (error) {
+      logAuthDiagnostic("hydrateAuthenticatedUser", error);
+      if (sessionUser?.id) {
+        setUser(sessionUser);
+        setUserProfile(buildUserProfile(sessionUser));
+        userIdRef.current = sessionUser.id;
+      }
+    }
   }, []);
 
   const loadRestaurantsForUser = useCallback(async (userId: string) => {

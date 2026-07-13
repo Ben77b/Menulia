@@ -10,7 +10,17 @@ export interface UserProfile {
   displayName: string;
 }
 
-export function buildUserProfile(user: User): UserProfile {
+export const DEFAULT_USER_PROFILE: UserProfile = {
+  id: "",
+  email: "",
+  displayName: "User",
+};
+
+export function buildUserProfile(user: User | null | undefined): UserProfile {
+  if (!user?.id) {
+    return DEFAULT_USER_PROFILE;
+  }
+
   const metadataName =
     typeof user.user_metadata?.full_name === "string"
       ? user.user_metadata.full_name.trim()
@@ -29,71 +39,86 @@ function isMissingSchemaError(code: string | undefined): boolean {
   return code === "42P01" || code === "42703";
 }
 
+function isBenignProfileError(code: string | undefined, status?: number): boolean {
+  if (isMissingSchemaError(code)) return true;
+  if (code === "PGRST116") return true;
+  if (status === 404) return true;
+  return false;
+}
+
 export async function syncUserProfileRecord(
   supabase: SupabaseClient,
   profile: UserProfile
 ): Promise<boolean> {
-  const baseRecord = {
-    id: profile.id,
-    email: profile.email,
-  };
-
-  const { error: upsertError } = await supabase.from("profiles").upsert(baseRecord, {
-    onConflict: "id",
-    ignoreDuplicates: false,
-  });
-
-  if (!upsertError) {
-    return true;
-  }
-
-  console.dir(upsertError, { depth: null });
-
-  if (isMissingSchemaError(upsertError.code)) {
+  if (!profile?.id) {
     return false;
   }
 
-  const { data: existingProfile, error: readError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", profile.id)
-    .maybeSingle();
+  try {
+    const baseRecord = {
+      id: profile.id,
+      email: profile.email ?? "",
+    };
 
-  if (readError && !isMissingSchemaError(readError.code)) {
-    console.dir(readError, { depth: null });
-  }
+    const { error: upsertError } = await supabase.from("profiles").upsert(baseRecord, {
+      onConflict: "id",
+      ignoreDuplicates: false,
+    });
 
-  if (!existingProfile?.id) {
-    const { error: insertError } = await supabase.from("profiles").insert(baseRecord);
-
-    if (!insertError) {
+    if (!upsertError) {
       return true;
     }
 
-    console.dir(insertError, { depth: null });
-
-    if (isMissingSchemaError(insertError.code)) {
+    if (isBenignProfileError(upsertError.code, upsertError.status)) {
       return false;
     }
-  }
 
-  const { error: updateError } = await supabase
-    .from("profiles")
-    .update({ email: profile.email })
-    .eq("id", profile.id);
+    console.dir(upsertError, { depth: null });
 
-  if (!updateError) {
-    return true;
-  }
+    const { data: existingProfile, error: readError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", profile.id)
+      .maybeSingle();
 
-  console.dir(updateError, { depth: null });
+    if (readError && !isBenignProfileError(readError.code, readError.status)) {
+      console.dir(readError, { depth: null });
+    }
 
-  if (isMissingSchemaError(updateError.code)) {
+    if (!existingProfile?.id) {
+      const { error: insertError } = await supabase.from("profiles").insert(baseRecord);
+
+      if (!insertError) {
+        return true;
+      }
+
+      if (isBenignProfileError(insertError.code, insertError.status)) {
+        return false;
+      }
+
+      console.dir(insertError, { depth: null });
+    }
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ email: profile.email ?? "" })
+      .eq("id", profile.id);
+
+    if (!updateError) {
+      return true;
+    }
+
+    if (isBenignProfileError(updateError.code, updateError.status)) {
+      return false;
+    }
+
+    console.dir(updateError, { depth: null });
+    logAuthDiagnostic("profiles.sync", updateError ?? upsertError);
+    return false;
+  } catch (error) {
+    logAuthDiagnostic("profiles.sync", error);
     return false;
   }
-
-  logAuthDiagnostic("profiles.sync", updateError ?? upsertError);
-  return false;
 }
 
 export async function fetchRestaurantsForLogin(

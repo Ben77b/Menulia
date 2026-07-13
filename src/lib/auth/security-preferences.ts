@@ -32,20 +32,30 @@ export async function fetchSecurityPreferences(
   supabase: SupabaseClient,
   userId: string
 ): Promise<SecurityPreferences> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("security_preferences")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) {
-    if (isMissingSchemaError(error.code)) {
-      return DEFAULT_SECURITY_PREFERENCES;
-    }
-    throw error;
+  if (!userId) {
+    return DEFAULT_SECURITY_PREFERENCES;
   }
 
-  return normalizeSecurityPreferences(data?.security_preferences);
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("security_preferences")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      if (isMissingSchemaError(error.code)) {
+        return DEFAULT_SECURITY_PREFERENCES;
+      }
+      console.warn("[auth:profiles.security_preferences]", error);
+      return DEFAULT_SECURITY_PREFERENCES;
+    }
+
+    return normalizeSecurityPreferences(data?.security_preferences);
+  } catch (error) {
+    console.warn("[auth:profiles.security_preferences]", error);
+    return DEFAULT_SECURITY_PREFERENCES;
+  }
 }
 
 export async function saveSecurityPreferences(
@@ -54,19 +64,22 @@ export async function saveSecurityPreferences(
   email: string,
   preferences: SecurityPreferences
 ): Promise<void> {
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      id: userId,
-      email,
-      security_preferences: preferences,
-    },
-    { onConflict: "id" }
-  );
+  if (!userId) return;
 
-  if (error) {
-    if (isMissingSchemaError(error.code)) {
-      return;
+  try {
+    const { error } = await supabase.from("profiles").upsert(
+      {
+        id: userId,
+        email: email ?? "",
+        security_preferences: preferences,
+      },
+      { onConflict: "id" }
+    );
+
+    if (error && !isMissingSchemaError(error.code)) {
+      console.warn("[auth:profiles.security_preferences.save]", error);
     }
-    throw error;
+  } catch (error) {
+    console.warn("[auth:profiles.security_preferences.save]", error);
   }
 }

@@ -76,8 +76,12 @@ export async function ensureUserProfileReady(
   supabase: SupabaseClient,
   user: Parameters<typeof buildUserProfile>[0]
 ): Promise<void> {
-  const profile = buildUserProfile(user);
-  await syncUserProfileRecord(supabase, profile);
+  try {
+    const profile = buildUserProfile(user);
+    await syncUserProfileRecord(supabase, profile);
+  } catch (error) {
+    logAuthDiagnostic("profiles.sync", error);
+  }
 }
 
 export async function resolvePostAuthDashboardRoute(

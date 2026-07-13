@@ -8,7 +8,7 @@ import { pv } from "@/lib/preview-theme-vars";
 import type { RestaurantLink } from "@/lib/restaurant-links";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { RestaurantLogo } from "@/components/restaurant-logo";
-import { isRenderableImageUrl } from "@/lib/public-menu-utils";
+import { normalizeImageUrl } from "@/lib/public-menu-utils";
 import { MenuLanguageSelector } from "./menu-language-selector";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 
@@ -50,7 +50,7 @@ export function MenuHeader({
     (link) => link && typeof link.url === "string" && link.url.trim() && link.label
   );
   const hasLinks = safeLinks.length > 0;
-  const hasLogo = isRenderableImageUrl(logo);
+  const hasLogo = Boolean(normalizeImageUrl(logo));
   const localizedRestaurantName = resolveLocalizedText(
     restaurantName,
     lang,

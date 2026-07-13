@@ -6,7 +6,7 @@ import { cn, formatPrice } from "@/lib/utils";
 import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
-import { isRenderableImageUrl } from "@/lib/public-menu-utils";
+import { normalizeImageUrl } from "@/lib/public-menu-utils";
 
 export interface PublicMenuDish {
   id: string;
@@ -104,8 +104,8 @@ export function DishCard({
   imageClassName = "w-full max-w-xs",
 }: DishCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
-  const safeImage = isRenderableImageUrl(dish?.image) ? dish.image.trim() : null;
-  const showImage = Boolean(display?.showImages && safeImage && !imageFailed);
+  const imageSrc = normalizeImageUrl(dish?.image);
+  const showImage = Boolean(display?.showImages && imageSrc && !imageFailed);
 
   const resolvedTitle = titleColor ?? textColor;
   const resolvedDescription = descriptionColor ?? textColor;
@@ -117,10 +117,10 @@ export function DishCard({
   const allergenLocale = lang === "es" ? "es" : "en";
 
   const imageBlock =
-    showImage && safeImage ? (
+    showImage && imageSrc ? (
       <div className={`relative aspect-square overflow-hidden rounded-2xl ${imageClassName}`}>
         <Image
-          src={safeImage}
+          src={imageSrc}
           alt={imageAlt}
           fill
           className="object-cover"
