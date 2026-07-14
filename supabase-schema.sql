@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS categories (
   name TEXT NOT NULL,
   description TEXT,
   order_index INTEGER DEFAULT 0,
-  layout_type TEXT DEFAULT 'stacked' CHECK (layout_type IN ('stacked', 'stacked_right', 'carousel')),
+  layout_type TEXT DEFAULT 'stacked' CHECK (layout_type IN ('stacked', 'stacked_left', 'carousel')),
   parent_id UUID REFERENCES categories(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

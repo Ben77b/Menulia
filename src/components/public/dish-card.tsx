@@ -9,7 +9,11 @@ import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-t
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
 import { hasPriceVariations, parsePriceVariationsFromDb, type PriceVariation } from "@/lib/price-variations";
 import type { CategoryLayoutType } from "@/lib/category-layout";
-import { isStackedCategoryLayout } from "@/lib/category-layout";
+import {
+  isStackedCategoryLayout,
+  isStackedLeftCategoryLayout,
+  isStackedTopCategoryLayout,
+} from "@/lib/category-layout";
 
 export interface PublicMenuDish {
   id: string;
@@ -124,9 +128,11 @@ export function DishCard({
   const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
 
+  const isStackedTop = isStackedTopCategoryLayout(layout);
+  const isStackedLeft = isStackedLeftCategoryLayout(layout);
   const isStackedLayout = isStackedCategoryLayout(layout);
-  const isRightAlignedStack = layout === "stacked_right";
   const isCarouselPeek = layout === "carousel" && compact;
+  const isLeftAligned = isStackedLayout;
 
   const imageBlock =
     showImage && imageSrc ? (
@@ -155,37 +161,24 @@ export function DishCard({
     ) : null;
 
   const titleClampClass = isStackedLayout
-      ? "whitespace-pre-wrap text-base sm:text-lg"
-      : cn(
-          "line-clamp-2",
-          isCarouselPeek
-            ? "text-[11px] leading-snug sm:text-sm"
-            : "text-sm sm:text-base"
-        );
+    ? "whitespace-pre-wrap text-base sm:text-lg"
+    : cn(
+        "line-clamp-2",
+        isCarouselPeek ? "text-[11px] leading-snug sm:text-sm" : "text-sm sm:text-base"
+      );
 
   const descriptionClampClass = isStackedLayout
-      ? "text-sm whitespace-pre-wrap leading-relaxed"
-      : cn(
-          "leading-relaxed",
-          isCarouselPeek ? "hidden sm:line-clamp-2 sm:text-xs" : "line-clamp-3 text-xs sm:text-sm"
-        );
-
-  const stackedContentAlign = isRightAlignedStack
-    ? "items-end text-right"
-    : isStackedLayout
-      ? "text-left"
-      : "text-center";
-  const stackedRowJustify = isRightAlignedStack
-    ? "justify-end"
-    : isStackedLayout
-      ? "justify-start"
-      : "justify-center";
+    ? "text-sm whitespace-pre-wrap leading-relaxed"
+    : cn(
+        "leading-relaxed",
+        isCarouselPeek ? "hidden sm:line-clamp-2 sm:text-xs" : "line-clamp-3 text-xs sm:text-sm"
+      );
 
   const textBlock = (
     <div
       className={cn(
         "flex w-full flex-col space-y-2",
-        stackedContentAlign,
+        isLeftAligned ? "text-left" : "text-center",
         isCarouselPeek && "space-y-1"
       )}
     >
@@ -214,7 +207,7 @@ export function DishCard({
         </p>
       )}
       {display.showPrices && !dish.hide_price && portionOptions && (
-        <div className={cn("mt-2 flex flex-col gap-y-1", isRightAlignedStack && "items-end")}>
+        <div className="mt-2 flex flex-col gap-y-1">
           {portionOptions.map((option) => (
             <p
               key={`${option.label}-${option.price}`}
@@ -239,10 +232,16 @@ export function DishCard({
         </div>
       )}
       {display.showDietary && (dish.tags ?? []).length > 0 && (
-        <div className={cn("flex flex-wrap gap-2", stackedRowJustify, isCarouselPeek && "hidden sm:flex")}>
-        {(dish?.tags ?? []).filter(Boolean).map((tag) => {
-          if (!tag) return null;
-          const meta = getFilterableTagMeta(tag);
+        <div
+          className={cn(
+            "flex flex-wrap gap-2",
+            isLeftAligned ? "justify-start" : "justify-center",
+            isCarouselPeek && "hidden sm:flex"
+          )}
+        >
+          {(dish?.tags ?? []).filter(Boolean).map((tag) => {
+            if (!tag) return null;
+            const meta = getFilterableTagMeta(tag);
             return (
               <TagBadge
                 key={tag}
@@ -258,10 +257,16 @@ export function DishCard({
         </div>
       )}
       {display.showDietary && (dish.allergens ?? []).length > 0 && (
-        <div className={cn("flex flex-wrap gap-1.5", stackedRowJustify, isCarouselPeek && "hidden sm:flex")}>
+        <div
+          className={cn(
+            "flex flex-wrap gap-1.5",
+            isLeftAligned ? "justify-start" : "justify-center",
+            isCarouselPeek && "hidden sm:flex"
+          )}
+        >
           {(dish?.allergens ?? []).filter(Boolean).map((allergen) => {
-          if (!allergen) return null;
-          const meta = getAllergenTagMeta(allergen, allergenLocale);
+            if (!allergen) return null;
+            const meta = getAllergenTagMeta(allergen, allergenLocale);
             return (
               <TagBadge
                 key={allergen}
@@ -293,27 +298,27 @@ export function DishCard({
     </div>
   );
 
-  if (isStackedLayout) {
+  if (isStackedTop) {
+    return (
+      <article className="flex w-full flex-col gap-4">
+        {imageBlock && <div className="w-full">{imageBlock}</div>}
+        <div className="w-full">{textBlock}</div>
+      </article>
+    );
+  }
+
+  if (isStackedLeft) {
     return (
       <article
         className={cn(
           "flex w-full gap-4 sm:gap-6",
-          imageBlock
-            ? "flex-col items-center sm:flex-row sm:items-start"
-            : "flex-col items-stretch"
+          imageBlock ? "flex-col sm:flex-row sm:items-start" : "flex-col"
         )}
       >
         {imageBlock && (
           <div className="w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]">{imageBlock}</div>
         )}
-        <div
-          className={cn(
-            "min-w-0 flex-1",
-            isRightAlignedStack && "sm:pl-2"
-          )}
-        >
-          {textBlock}
-        </div>
+        <div className="min-w-0 flex-1">{textBlock}</div>
       </article>
     );
   }

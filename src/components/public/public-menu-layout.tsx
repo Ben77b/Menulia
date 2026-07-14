@@ -191,7 +191,7 @@ function DishSection({
             descriptionColor={themedColor(isPreview, "itemDescription", theme.itemDescriptionText)}
             priceColor={themedColor(isPreview, "itemPrice", theme.priceTextColor)}
             display={display}
-            layout={subcategory.layout_type === "stacked_right" ? "stacked_right" : "stacked"}
+            layout={subcategory.layout_type}
             imageClassName="w-full"
             priority={index < 3}
           />
