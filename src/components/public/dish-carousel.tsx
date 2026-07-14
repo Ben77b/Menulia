@@ -31,11 +31,16 @@ interface DishCarouselProps {
   emptyMessage?: string;
 }
 
-/** Centers the middle 70vw card with gap-3 on mobile (210vw track + 2×0.75rem gaps). */
-const MOBILE_TRACK_OFFSET = "translate-x-[calc(50vw-105vw-0.75rem)]";
+const MOBILE_CARD_WIDTH_VW = 70;
+const MOBILE_TRACK_GAP_PX = 12; // gap-3
 
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
+}
+
+function mobileTrackTranslate(activeIndex: number): string {
+  const centerOffsetVw = 50 - MOBILE_CARD_WIDTH_VW / 2;
+  return `translateX(calc(${centerOffsetVw}vw - ${activeIndex} * (${MOBILE_CARD_WIDTH_VW}vw + ${MOBILE_TRACK_GAP_PX}px)))`;
 }
 
 function CarouselCardFrame({
@@ -92,11 +97,14 @@ export function DishCarousel({
     setActiveIndex(0);
   }, [safeDishes]);
 
-  const slots = useMemo(() => {
-    if (safeDishes.length === 0) return [];
-    if (safeDishes.length === 1) {
-      return [{ dish: safeDishes[0], position: "center" as const, key: safeDishes[0].id }];
+  useEffect(() => {
+    if (activeIndex >= safeDishes.length) {
+      setActiveIndex(Math.max(0, safeDishes.length - 1));
     }
+  }, [activeIndex, safeDishes.length]);
+
+  const desktopSlots = useMemo(() => {
+    if (safeDishes.length <= 1) return [];
 
     const prevIndex = mod(activeIndex - 1, safeDishes.length);
     const nextIndex = mod(activeIndex + 1, safeDishes.length);
@@ -138,7 +146,7 @@ export function DishCarousel({
     else if (delta < -48) goNext();
   }
 
-  function handleSlotClick(position: "left" | "center" | "right") {
+  function handleDesktopSlotClick(position: "left" | "center" | "right") {
     if (position === "left") goPrevious();
     if (position === "right") goNext();
   }
@@ -166,7 +174,7 @@ export function DishCarousel({
   });
 
   return (
-    <div className="relative mx-auto max-w-4xl px-2 py-4 sm:px-14">
+    <div className="relative mx-auto max-w-4xl overflow-visible px-2 py-4 sm:px-14">
       {safeDishes.length > 1 && (
         <>
           <button
@@ -197,55 +205,91 @@ export function DishCarousel({
           </CarouselCardFrame>
         </div>
       ) : (
-        <div
-          className="relative overflow-hidden sm:overflow-visible"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
+        <>
+          {/* Mobile: full track with index-based centering */}
           <div
-            className={cn(
-              "flex items-center gap-3 transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] sm:justify-center sm:gap-6",
-              MOBILE_TRACK_OFFSET,
-              "sm:translate-x-0"
-            )}
+            className="overflow-visible sm:hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
-            {(slots ?? []).map((slot) => {
-              if (!slot?.dish) return null;
-              const isActive = slot.position === "center";
+            <div
+              className="flex items-center gap-3 transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
+              style={{ transform: mobileTrackTranslate(activeIndex) }}
+            >
+              {safeDishes.map((dish, index) => {
+                const isActive = index === activeIndex;
 
-              return (
-                <div
-                  key={slot.key}
-                  className={cn(
-                    "w-[70vw] max-w-[70vw] shrink-0 sm:w-[min(34vw,200px)] sm:max-w-none",
-                    isActive && "sm:w-[min(78vw,320px)]",
-                    !isActive && "cursor-pointer sm:cursor-default"
-                  )}
-                  onClick={() => {
-                    if (!isActive) handleSlotClick(slot.position);
-                  }}
-                  onKeyDown={(event) => {
-                    if (isActive || event.key !== "Enter") return;
-                    handleSlotClick(slot.position);
-                  }}
-                  role={isActive ? undefined : "button"}
-                  tabIndex={isActive ? undefined : 0}
-                  aria-label={
-                    isActive
-                      ? undefined
-                      : slot.position === "left"
-                        ? "Show previous dish"
-                        : "Show next dish"
-                  }
-                >
-                  <CarouselCardFrame isActive={isActive}>
-                    <DishCard {...dishCardProps(slot.dish, isActive)} />
-                  </CarouselCardFrame>
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={dish.id}
+                    className={cn(
+                      "w-[70vw] max-w-[70vw] shrink-0",
+                      !isActive && "cursor-pointer"
+                    )}
+                    onClick={() => {
+                      if (!isActive) setActiveIndex(index);
+                    }}
+                    onKeyDown={(event) => {
+                      if (isActive || event.key !== "Enter") return;
+                      setActiveIndex(index);
+                    }}
+                    role={isActive ? undefined : "button"}
+                    tabIndex={isActive ? undefined : 0}
+                    aria-label={isActive ? undefined : `Show ${dish.id}`}
+                  >
+                    <CarouselCardFrame isActive={isActive}>
+                      <DishCard {...dishCardProps(dish, isActive)} />
+                    </CarouselCardFrame>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+
+          {/* Desktop: three-slot layout */}
+          <div
+            className="hidden overflow-visible sm:block"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="flex items-center justify-center gap-6">
+              {desktopSlots.map((slot) => {
+                const isActive = slot.position === "center";
+
+                return (
+                  <div
+                    key={slot.key}
+                    className={cn(
+                      "shrink-0 sm:w-[min(34vw,200px)]",
+                      isActive && "sm:w-[min(78vw,320px)]",
+                      !isActive && "cursor-pointer"
+                    )}
+                    onClick={() => {
+                      if (!isActive) handleDesktopSlotClick(slot.position);
+                    }}
+                    onKeyDown={(event) => {
+                      if (isActive || event.key !== "Enter") return;
+                      handleDesktopSlotClick(slot.position);
+                    }}
+                    role={isActive ? undefined : "button"}
+                    tabIndex={isActive ? undefined : 0}
+                    aria-label={
+                      isActive
+                        ? undefined
+                        : slot.position === "left"
+                          ? "Show previous dish"
+                          : "Show next dish"
+                    }
+                  >
+                    <CarouselCardFrame isActive={isActive}>
+                      <DishCard {...dishCardProps(slot.dish, isActive)} />
+                    </CarouselCardFrame>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
