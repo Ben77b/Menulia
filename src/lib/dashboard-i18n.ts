@@ -150,6 +150,10 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     en: 'Optional note (e.g. "Served with miso soup")',
     es: 'Nota opcional (p. ej. "Servido con sopa miso")',
   },
+  "builder.categorySubtitle": {
+    en: "Category subtitle / description",
+    es: "Subtítulo / descripción de la categoría",
+  },
   "builder.tapForDetails": {
     en: "Tap for photo, description, and tags",
     es: "Toca para foto, descripción y etiquetas",

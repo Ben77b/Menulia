@@ -1078,6 +1078,18 @@ export function MenuBuilder() {
                 disabled={busy}
               />
             )}
+            {activeSection?.id && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="hidden shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 md:inline-flex"
+                onClick={() => handleDeleteSection(activeSection)}
+                disabled={busy}
+              >
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                Delete section
+              </Button>
+            )}
             <Button
               variant="dark"
               size="sm"
@@ -1101,31 +1113,24 @@ export function MenuBuilder() {
                 onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
               />
 
-              <div className="mt-4 grid items-start gap-5 md:grid-cols-[minmax(200px,25%)_minmax(0,75%)] md:gap-6">
+              <div className="mt-4 grid items-start gap-5 md:mt-0 md:grid-cols-[minmax(200px,25%)_minmax(0,75%)] md:gap-6">
                 <CategorySidebar
-                activeSection={activeSection}
-                activeCategoryId={activeCategoryId}
-                primaryLanguage={primaryLanguage}
-                busy={busy}
-                reorderMode={reorderMode}
-                addingCategory={addingCategoryForSection === activeSection.id}
-                newCategoryName={newCategoryName}
-                onSelectCategory={setActiveCategoryId}
-                onNewCategoryNameChange={setNewCategoryName}
-                onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
-                onCancelAddCategory={() => setAddingCategoryForSection(null)}
-                onAddCategory={() => handleAddCategory(activeSection.id)}
-                onMoveCategory={(categoryId, direction) =>
-                  handleReorderCategory(activeSection.id, categoryId, direction)
-                }
-                onRenameSection={(nextName) =>
-                  handleRenameCategory(activeSection.id, activeSection.name, nextName)
-                }
-                onTranslationChange={(lang, nextText) =>
-                  handleUpdateNameTranslation(activeSection.id, activeSection.name, lang, nextText)
-                }
-                onDeleteSection={() => handleDeleteSection(activeSection)}
-              />
+                  activeSection={activeSection}
+                  activeCategoryId={activeCategoryId}
+                  primaryLanguage={primaryLanguage}
+                  busy={busy}
+                  reorderMode={reorderMode}
+                  addingCategory={addingCategoryForSection === activeSection.id}
+                  newCategoryName={newCategoryName}
+                  onSelectCategory={setActiveCategoryId}
+                  onNewCategoryNameChange={setNewCategoryName}
+                  onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
+                  onCancelAddCategory={() => setAddingCategoryForSection(null)}
+                  onAddCategory={() => handleAddCategory(activeSection.id)}
+                  onMoveCategory={(categoryId, direction) =>
+                    handleReorderCategory(activeSection.id, categoryId, direction)
+                  }
+                />
 
               {activeCategory ? (
                 <DishesCanvas
@@ -1318,10 +1323,10 @@ function MobileCategoryStrip({
         type="button"
         onClick={onStartAddCategory}
         disabled={busy || categories.length >= MAX_CATEGORIES_PER_SECTION}
-        className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-dashed border-neutral-200/60 px-3 text-sm text-neutral-600"
+        className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800"
       >
         <Plus className="h-4 w-4" />
-        Add
+        Add Category
       </button>
     </div>
   );
@@ -1341,9 +1346,6 @@ function CategorySidebar({
   onCancelAddCategory,
   onAddCategory,
   onMoveCategory,
-  onRenameSection,
-  onTranslationChange,
-  onDeleteSection,
 }: {
   activeSection: MenuBuilderSection;
   activeCategoryId: string | null;
@@ -1358,138 +1360,102 @@ function CategorySidebar({
   onCancelAddCategory: () => void;
   onAddCategory: () => void;
   onMoveCategory: (categoryId: string, direction: -1 | 1) => void;
-  onRenameSection: (nextName: string) => Promise<boolean>;
-  onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
-  onDeleteSection: () => void;
 }) {
-  const { t } = useDashboardLocale();
   const categories = (activeSection.categories ?? []).filter(
     (category): category is MenuBuilderCategory => Boolean(category?.id)
   );
 
   return (
-    <aside className="hidden flex-col gap-4 md:flex">
-        <div className="rounded-2xl border border-neutral-200/60 bg-white p-4">
-          <LocalizedTitleEditor
-            name={activeSection.name}
-            primaryLanguage={primaryLanguage}
-            titleClassName="text-base font-bold tracking-tight text-neutral-800"
-            maxLength={MAX_SECTION_TITLE}
-            disabled={busy}
-            onRename={onRenameSection}
-            onTranslationChange={onTranslationChange}
-          />
-          <p className="mt-1.5 text-xs text-neutral-500">
-            {t("builder.categoriesCount", { count: categories.length })}
-          </p>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="mt-3 min-h-10 text-red-500 hover:text-red-600"
-            onClick={onDeleteSection}
-            disabled={busy}
-          >
-            <Trash2 className="mr-1 h-4 w-4" />
-            Delete section
-          </Button>
-        </div>
-
-        <nav
-          aria-label="Categories"
-          className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white"
-        >
-          <div className="border-b border-neutral-200/60 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-              Categories
-            </p>
-          </div>
-          <ul className="space-y-1 p-2">
-            {categories.map((category, index) => {
-              const isActive = category.id === activeCategoryId;
-              const label =
-                resolveBuilderSourceText(category.name, primaryLanguage) || "Category";
-              return (
-                <li key={category.id}>
-                  <div className="group flex items-center gap-1">
-                    <ReorderButtons
-                      revealOnHover
-                      mobileEnabled={reorderMode}
-                      onMoveUp={() => onMoveCategory(category.id, -1)}
-                      onMoveDown={() => onMoveCategory(category.id, 1)}
-                      canMoveUp={index > 0}
-                      canMoveDown={index < categories.length - 1}
-                      disabled={busy}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => onSelectCategory(category.id)}
-                      className={cn(
-                        "flex min-h-11 flex-1 items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-200 ease-in-out",
-                        isActive
-                          ? "border border-sky-200/80 bg-sky-50 text-sky-900"
-                          : "border border-transparent text-neutral-700 hover:bg-neutral-50"
-                      )}
-                    >
-                      <span className="truncate font-medium">{label}</span>
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums",
-                          isActive
-                            ? "bg-sky-100 text-sky-700"
-                            : "bg-neutral-100 text-neutral-500"
-                        )}
-                      >
-                        {category.dishes?.length ?? 0}
-                      </span>
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="border-t border-neutral-200/60 p-2">
-            {addingCategory ? (
-              <div className="space-y-2">
-                <input
-                  autoFocus
-                  placeholder="Category name"
-                  value={newCategoryName}
-                  maxLength={MAX_CATEGORY_NAME}
-                  onChange={(e) => onNewCategoryNameChange(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && onAddCategory()}
-                  className="w-full rounded-xl border border-neutral-200/60 bg-white px-3 py-2 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+    <nav
+      aria-label="Categories"
+      className="hidden overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm shadow-neutral-200/20 md:flex md:flex-col md:self-start"
+    >
+      <div className="border-b border-neutral-200/60 px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
+          Categories
+        </p>
+      </div>
+      <ul className="max-h-[min(70vh,640px)] space-y-1 overflow-y-auto p-2">
+        {categories.map((category, index) => {
+          const isActive = category.id === activeCategoryId;
+          const label = resolveBuilderSourceText(category.name, primaryLanguage) || "Category";
+          return (
+            <li key={category.id}>
+              <div className="group flex items-center gap-1">
+                <ReorderButtons
+                  revealOnHover
+                  mobileEnabled={reorderMode}
+                  onMoveUp={() => onMoveCategory(category.id, -1)}
+                  onMoveDown={() => onMoveCategory(category.id, 1)}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < categories.length - 1}
+                  disabled={busy}
                 />
-                <div className="flex gap-2">
-                  <Button
-                    variant="dark"
-                    size="sm"
-                    className="min-h-11 flex-1"
-                    onClick={onAddCategory}
-                    disabled={!newCategoryName.trim() || busy}
+                <button
+                  type="button"
+                  onClick={() => onSelectCategory(category.id)}
+                  className={cn(
+                    "flex min-h-11 flex-1 items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-200 ease-in-out",
+                    isActive
+                      ? "border border-sky-200/80 bg-sky-50 text-sky-900"
+                      : "border border-transparent text-neutral-700 hover:bg-neutral-50"
+                  )}
+                >
+                  <span className="truncate font-medium">{label}</span>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums",
+                      isActive ? "bg-sky-100 text-sky-700" : "bg-neutral-100 text-neutral-500"
+                    )}
                   >
-                    Add
-                  </Button>
-                  <Button variant="outline" size="sm" className="min-h-11" onClick={onCancelAddCategory}>
-                    Cancel
-                  </Button>
-                </div>
+                    {category.dishes?.length ?? 0}
+                  </span>
+                </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={onStartAddCategory}
-                disabled={
-                  busy || categories.length >= MAX_CATEGORIES_PER_SECTION
-                }
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-200/60 text-sm font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:border-sky-200 hover:bg-sky-50/50 disabled:opacity-50"
+            </li>
+          );
+        })}
+      </ul>
+      <div className="border-t border-neutral-200/60 p-3">
+        {addingCategory ? (
+          <div className="space-y-2">
+            <input
+              autoFocus
+              placeholder="Category name"
+              value={newCategoryName}
+              maxLength={MAX_CATEGORY_NAME}
+              onChange={(e) => onNewCategoryNameChange(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onAddCategory()}
+              className="w-full rounded-xl border border-neutral-200/60 bg-white px-3 py-2 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="dark"
+                size="sm"
+                className="min-h-11 flex-1"
+                onClick={onAddCategory}
+                disabled={!newCategoryName.trim() || busy}
               >
-                <Plus className="h-4 w-4" />
-                Add Category
-              </button>
-            )}
+                Add
+              </Button>
+              <Button variant="outline" size="sm" className="min-h-11" onClick={onCancelAddCategory}>
+                Cancel
+              </Button>
+            </div>
           </div>
-        </nav>
-    </aside>
+        ) : (
+          <button
+            type="button"
+            onClick={onStartAddCategory}
+            disabled={busy || categories.length >= MAX_CATEGORIES_PER_SECTION}
+            className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl text-sm font-medium text-neutral-500 transition-all duration-200 ease-in-out hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            Add Category
+          </button>
+        )}
+      </div>
+    </nav>
   );
 }
 
@@ -1650,6 +1616,9 @@ function DishesCanvas({
       </div>
 
       <div className="border-b border-neutral-200/60 bg-neutral-50/40 px-4 py-3">
+        <label className="mb-1.5 block text-xs text-neutral-400">
+          {t("builder.categorySubtitle")}
+        </label>
         <input
           type="text"
           value={noteDraft}
@@ -1663,7 +1632,7 @@ function DishesCanvas({
               void onNoteChange(trimmed);
             }
           }}
-          className="w-full rounded-xl border border-transparent bg-white/80 px-3 py-2.5 text-sm text-neutral-700 transition-all duration-200 ease-in-out placeholder:text-neutral-400 focus:border-neutral-200/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+          className="w-full rounded-xl border border-neutral-200/60 bg-white px-3 py-2.5 text-sm text-neutral-700 transition-all duration-200 ease-in-out placeholder:text-neutral-400 focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
         />
       </div>
 

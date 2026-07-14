@@ -9,29 +9,6 @@ import type { MenuContentLanguage } from "@/lib/menu-content-languages";
 import { MAX_DISH_NAME } from "@/lib/menu-limits";
 import { resolveBuilderSourceText } from "@/lib/localized-text";
 
-function VisibilityBadge({
-  visible,
-  visibleLabel,
-  hiddenLabel,
-}: {
-  visible: boolean;
-  visibleLabel: string;
-  hiddenLabel: string;
-}) {
-  return (
-    <span
-      className={cn(
-        "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium",
-        visible
-          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70"
-          : "bg-neutral-100 text-neutral-500 ring-1 ring-neutral-200/70"
-      )}
-    >
-      {visible ? visibleLabel : hiddenLabel}
-    </span>
-  );
-}
-
 export function DishRow({
   dish,
   primaryLanguage,
@@ -96,8 +73,8 @@ export function DishRow({
         disabled={busy}
       />
 
-      <button type="button" onClick={onSelect} className="min-w-0 flex-1 py-2 text-left">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <button type="button" onClick={onSelect} className="flex min-w-0 flex-1 items-center py-2 text-left">
+        <div className="min-w-0">
           <InlineSaveField
             value={name}
             placeholder="Untitled dish"
@@ -108,13 +85,8 @@ export function DishRow({
             onSave={onInlineNameUpdate}
             onClick={(e) => e.stopPropagation()}
           />
-          <VisibilityBadge
-            visible={isVisible}
-            visibleLabel={visibleLabel}
-            hiddenLabel={hiddenLabel}
-          />
+          <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">{subtitle}</p>
         </div>
-        <p className="mt-0.5 line-clamp-1 text-xs text-neutral-500">{subtitle}</p>
       </button>
 
       <InlineSaveField
@@ -123,7 +95,7 @@ export function DishRow({
         inputMode="decimal"
         disabled={busy}
         ariaLabel={`Edit price for ${name}`}
-        textClassName="inline-flex min-h-11 items-center rounded-xl border border-neutral-200/60 bg-neutral-50/80 px-3 text-sm font-semibold tabular-nums text-neutral-700"
+        textClassName="inline-flex min-h-11 shrink-0 items-center rounded-xl border border-neutral-200/60 bg-neutral-50/80 px-3 text-sm font-semibold tabular-nums text-neutral-700"
         inputClassName="w-20 text-right text-sm font-semibold tabular-nums"
         onSave={onInlinePriceUpdate}
       />
@@ -139,22 +111,20 @@ export function DishRow({
           onToggleVisibility();
         }}
         className={cn(
-          "inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border transition-all duration-200 ease-in-out",
+          "inline-flex min-h-11 shrink-0 items-center justify-center rounded-full px-3.5 transition-all duration-200 ease-in-out",
           isVisible
-            ? "border-emerald-200/80 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-            : "border-neutral-200/60 bg-neutral-100 text-neutral-500 hover:bg-neutral-200/70"
+            ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70 hover:bg-emerald-100"
+            : "bg-neutral-100 text-neutral-500 ring-1 ring-neutral-200/70 hover:bg-neutral-200/70"
         )}
       >
-        <span className="text-[10px] font-semibold uppercase tracking-wide">
-          {isVisible ? "On" : "Off"}
-        </span>
+        <span className="text-[11px] font-medium">{isVisible ? visibleLabel : hiddenLabel}</span>
       </button>
 
       <button
         type="button"
         onClick={onSelect}
         aria-label={editLabel}
-        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-neutral-200/60 bg-white text-neutral-500 transition-all duration-200 ease-in-out hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+        className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200/60 bg-white text-neutral-500 transition-all duration-200 ease-in-out hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
       >
         <Pencil className="h-4 w-4" />
       </button>
