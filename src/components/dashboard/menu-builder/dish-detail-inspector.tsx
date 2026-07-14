@@ -23,7 +23,6 @@ interface DishDetailInspectorProps {
   onImageUpload: (file: File) => Promise<string | null>;
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
   className?: string;
-  variant?: "panel" | "overlay";
 }
 
 export function DishDetailInspector({
@@ -38,7 +37,6 @@ export function DishDetailInspector({
   onImageUpload,
   onAvailabilityChange,
   className,
-  variant = "panel",
 }: DishDetailInspectorProps) {
   const { t } = useDashboardLocale();
   const {
@@ -57,33 +55,28 @@ export function DishDetailInspector({
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-neutral-200/60 bg-white transition-all duration-200 ease-in-out dark:border-neutral-800/60 dark:bg-neutral-950",
-        variant === "panel"
-          ? "rounded-2xl border"
-          : "border-l shadow-2xl shadow-neutral-900/10",
+        "flex h-full flex-col border-l border-neutral-200/60 bg-white shadow-[-12px_0_40px_rgba(15,23,42,0.08)] transition-all duration-200 ease-in-out",
         className
       )}
     >
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200/60 px-4 py-3 dark:border-neutral-800/60">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200/60 bg-gradient-to-r from-white to-sky-50/40 px-5 py-4">
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-sky-600/80">
             {t("dish.editTitle")}
           </p>
-          <h2 className="truncate text-base font-semibold text-neutral-900 dark:text-neutral-100">
-            {dishName}
-          </h2>
+          <h2 className="truncate text-lg font-semibold text-neutral-800">{dishName}</h2>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close inspector"
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200/60 text-neutral-500 transition-all duration-200 ease-in-out hover:bg-neutral-50 hover:text-neutral-900 dark:border-neutral-800/60"
+          aria-label="Close editor"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200/60 bg-white text-neutral-500 transition-all duration-200 ease-in-out hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-800"
         >
           <X className="h-4 w-4" />
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-neutral-50/30 px-5 py-5">
         <DishDetailForm
           draft={draft}
           setDraft={setDraft}
@@ -103,7 +96,7 @@ export function DishDetailInspector({
         />
       </div>
 
-      <footer className="shrink-0 border-t border-neutral-200/60 bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-neutral-800/60 dark:bg-neutral-950/95">
+      <footer className="shrink-0 border-t border-neutral-200/60 bg-white px-5 py-4">
         <div className="flex gap-2">
           <Button variant="outline" onClick={onClose} className="min-h-11 flex-1">
             {t("dish.cancel")}

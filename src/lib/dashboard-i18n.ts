@@ -142,8 +142,8 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "branding.saved": { en: "Saved!", es: "Guardado" },
   "builder.pageTitle": { en: "Menu Builder", es: "Editor de menú" },
   "builder.pageSubtitle": {
-    en: "Tap any title or price to edit inline. Press Enter to save instantly.",
-    es: "Toca cualquier título o precio para editarlo. Pulsa Enter para guardar al instante.",
+    en: "Drag to reorder sections, tap any dish to edit details, or toggle visibility instantly.",
+    es: "Arrastra para reordenar secciones, toca cualquier plato para editarlo o cambia la visibilidad al instante.",
   },
   "builder.rapidAddPlaceholder": { en: "+ Add a dish…", es: "+ Agregar plato…" },
   "builder.sectionNotePlaceholder": {
@@ -210,6 +210,7 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "builder.reorderMode": { en: "Reorder Mode", es: "Modo reordenar" },
   "builder.reorderModeOn": { en: "Reorder On", es: "Reordenar activo" },
   "builder.hidden": { en: "Hidden", es: "Oculto" },
+  "builder.visible": { en: "Visible", es: "Visible" },
   "builder.dishesCount": { en: "{count} dishes", es: "{count} platos" },
   "builder.categoriesCount": { en: "{count} categories", es: "{count} categorías" },
   "builder.actions.title": { en: "Actions", es: "Acciones" },
