@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { parseContactInfo } from "@/lib/contact-info";
 import type { ResolvedMenuTheme, ThemeHotspotId } from "@/lib/advanced-theme";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
@@ -16,7 +17,7 @@ import {
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
-import { isCarouselCategoryLayout } from "@/lib/category-layout";
+import { isCarouselCategoryLayout, isStackedLeftCategoryLayout } from "@/lib/category-layout";
 import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
 import { CategorySectionHeader } from "./category-section-header";
@@ -160,6 +161,8 @@ function DishSection({
     );
   }
 
+  const centerDishes = !isStackedLeftCategoryLayout(subcategory.layout_type);
+
   return (
     <PreviewHotspot
       id="menuItem"
@@ -170,12 +173,20 @@ function DishSection({
     >
       {categoryHeading}
       {sectionNote}
-      <div className="mx-auto max-w-3xl space-y-12">
+      <div
+        className={cn(
+          "mx-auto max-w-3xl space-y-12",
+          centerDishes && "flex flex-col items-center"
+        )}
+      >
         {(filteredDishes ?? []).map((dish, index) => {
           if (!dish?.id) return null;
           return (
-          <DishCard
+          <div
             key={dish.id || `dish-${index}`}
+            className={cn("w-full", centerDishes && "flex justify-center")}
+          >
+          <DishCard
             dish={dish}
             lang={locale}
             fallbackLang={primaryLocale}
@@ -195,6 +206,7 @@ function DishSection({
             imageClassName="w-full"
             priority={index < 3}
           />
+          </div>
           );
         })}
         {filteredDishes.length === 0 && (

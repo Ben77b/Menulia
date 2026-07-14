@@ -63,7 +63,7 @@ export function MenuHeader({
         className="sticky top-0 z-50 px-4 py-4"
         style={{ backgroundColor: headerBackgroundColor, color: textColor }}
       >
-        <div className="mx-auto grid max-w-6xl grid-cols-[2.75rem_1fr_auto] items-center gap-3">
+        <div className="mx-auto grid max-w-6xl grid-cols-3 items-center gap-2 sm:gap-3">
           <div className="flex justify-start">
             {hasLinks ? (
               <button
@@ -76,11 +76,11 @@ export function MenuHeader({
                 <Menu className="h-6 w-6" style={{ color: textColor }} />
               </button>
             ) : (
-              <span className="h-10 w-10" />
+              <span className="h-10 w-10" aria-hidden />
             )}
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex min-w-0 items-center justify-center px-2 text-center">
             <h1
               className={
                 hasLogo
@@ -105,7 +105,7 @@ export function MenuHeader({
                 src={logo}
                 alt={`${localizedRestaurantName} logo`}
                 fallbackText={localizedRestaurantName}
-                wrapperClassName="h-16 w-40 sm:h-20 sm:w-48"
+                wrapperClassName="mx-auto h-16 w-40 sm:h-20 sm:w-48"
                 className="h-full w-full"
                 priority
               />
@@ -121,7 +121,7 @@ export function MenuHeader({
                 headerBackgroundColor={headerBackgroundColor}
               />
             ) : (
-              <span className="h-11 w-11" />
+              <span className="h-11 w-11" aria-hidden />
             )}
           </div>
         </div>

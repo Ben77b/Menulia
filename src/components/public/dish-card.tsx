@@ -305,7 +305,7 @@ export function DishCard({
 
   if (isStackedTop) {
     return (
-      <article className="flex w-full flex-col items-center gap-4">
+      <article className="flex w-full flex-col items-center justify-center gap-4">
         {imageBlock && (
           <div className="mx-auto w-full max-w-[240px] sm:max-w-[260px]">{imageBlock}</div>
         )}
@@ -338,7 +338,7 @@ export function DishCard({
   }
 
   return (
-    <article className={`flex flex-col ${imageBlock ? "" : "w-full"}`}>
+    <article className={cn("flex w-full flex-col items-center", imageBlock ? "" : "w-full")}>
       {imageBlock}
       <div className={cn(imageBlock ? "mt-3 sm:mt-4" : "w-full", isCarouselPeek && "mt-2 sm:mt-4")}>
         {textBlock}
