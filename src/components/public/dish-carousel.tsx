@@ -33,15 +33,14 @@ interface DishCarouselProps {
 
 const MOBILE_CARD_WIDTH_VW = 70;
 const MOBILE_TRACK_GAP_PX = 12; // gap-3
-const MOBILE_TRACK_GAP_HALF_PX = MOBILE_TRACK_GAP_PX / 2;
+const MOBILE_TRACK_ANCHOR_VW = 13;
 
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
 }
 
 function mobileTrackTranslate(activeIndex: number): string {
-  const centerOffsetVw = 50 - MOBILE_CARD_WIDTH_VW / 2;
-  return `translateX(calc(${centerOffsetVw}vw - (${activeIndex} * (${MOBILE_CARD_WIDTH_VW}vw + ${MOBILE_TRACK_GAP_PX}px)) - ${MOBILE_TRACK_GAP_HALF_PX}px))`;
+  return `translateX(calc(${MOBILE_TRACK_ANCHOR_VW}vw - (${activeIndex} * (${MOBILE_CARD_WIDTH_VW}vw + ${MOBILE_TRACK_GAP_PX}px))))`;
 }
 
 function CarouselCardFrame({
