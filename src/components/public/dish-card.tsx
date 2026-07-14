@@ -7,12 +7,14 @@ import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
+import { hasPriceVariations, type PriceVariation } from "@/lib/price-variations";
 
 export interface PublicMenuDish {
   id: string;
   name: LocalizedTextValue;
   description: LocalizedTextValue;
   price: number;
+  price_variations?: PriceVariation[];
   /** If true, do not display price on the public menu */
   hide_price: boolean;
   image: string | null;
@@ -117,6 +119,7 @@ export function DishCard({
   const localizedDescription = resolveLocalizedText(dish.description, lang, fallbackLang);
   const imageAlt = `${localizedName} at ${restaurantName}`;
   const allergenLocale = lang === "es" ? "es" : "en";
+  const portionOptions = hasPriceVariations(dish.price_variations) ? dish.price_variations : null;
 
   const isCarouselPeek = layout === "carousel" && compact;
 
@@ -190,6 +193,36 @@ export function DishCard({
           {localizedDescription}
         </p>
       )}
+      {display.showPrices && !dish.hide_price && portionOptions && (
+        <div
+          className={cn(
+            "flex flex-wrap justify-center gap-2",
+            isCarouselPeek ? "gap-1.5" : "gap-2"
+          )}
+        >
+          {portionOptions.map((option) => (
+            <span
+              key={`${option.label}-${option.price}`}
+              className={cn(
+                "inline-flex items-center rounded-full border border-current/15 bg-current/[0.04] px-3 py-1 font-medium tabular-nums",
+                isCarouselPeek ? "text-[10px] sm:text-xs" : "text-xs sm:text-sm"
+              )}
+              style={{
+                color: resolvedPrice,
+                fontFamily: bodyFont,
+                fontWeight: bodyFontWeight ?? 500,
+                fontStyle: bodyFontStyle ?? "normal",
+              }}
+            >
+              <span className="opacity-80">{option.label}</span>
+              <span className="mx-1.5 opacity-30" aria-hidden>
+                ·
+              </span>
+              <span>{formatPrice(option.price)}</span>
+            </span>
+          ))}
+        </div>
+      )}
       {display.showDietary && (dish.tags ?? []).length > 0 && (
         <div className={cn("flex flex-wrap justify-center gap-2", isCarouselPeek && "hidden sm:flex")}>
         {(dish?.tags ?? []).filter(Boolean).map((tag) => {
@@ -229,7 +262,7 @@ export function DishCard({
           })}
         </div>
       )}
-      {display.showPrices && !dish.hide_price && (
+      {display.showPrices && !dish.hide_price && !portionOptions && (
         <p
           className={cn("font-bold", isCarouselPeek ? "text-xs sm:text-sm" : "text-base")}
           style={{

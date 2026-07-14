@@ -58,12 +58,21 @@ async function fetchActiveDishesForCategory(
 ): Promise<ReturnType<typeof mapDishRow>[]> {
   const withOrderColumns = PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY;
 
-  const { data: withOrder, error: orderError } = await supabase
+  let { data: withOrder, error: orderError } = await supabase
     .from("dishes")
-    .select(withOrderColumns)
+    .select(`${withOrderColumns}, price_variations`)
     .eq("category_id", categoryId)
     .eq("is_available", true)
     .order("created_at", { ascending: true });
+
+  if (orderError && isMissingColumnError(orderError)) {
+    ({ data: withOrder, error: orderError } = await supabase
+      .from("dishes")
+      .select(withOrderColumns)
+      .eq("category_id", categoryId)
+      .eq("is_available", true)
+      .order("created_at", { ascending: true }));
+  }
 
   if (!orderError) {
     const sorted = sortDishRowsByDisplayOrder(withOrder ?? []);

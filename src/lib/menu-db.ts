@@ -9,6 +9,11 @@ import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
 import { isMissingColumnError } from "./restaurant-settings";
 import { sortRecordsByDisplayOrder } from "./menu-dish-order";
+import {
+  parsePriceVariationsFromDb,
+  serializePriceVariationsForDb,
+  type PriceVariation,
+} from "./price-variations";
 
 function readIsAvailable(dish: Record<string, unknown>): boolean {
   return dish.is_available !== false;
@@ -53,6 +58,12 @@ async function insertDishRow(
     if ("display_order" in current) {
       const { display_order: _ignored, ...withoutOrder } = current;
       current = withoutOrder;
+      continue;
+    }
+
+    if ("price_variations" in current) {
+      const { price_variations: _ignored, ...withoutVariations } = current;
+      current = withoutVariations;
       continue;
     }
 
@@ -130,6 +141,15 @@ async function updateDishRow(
       result = await supabase.from("dishes").update(withoutAvailability).eq("id", dishId);
       return { error: result.error, availabilityPersisted: false };
     }
+
+    if ("price_variations" in payload && isMissingColumnError(result.error)) {
+      const { price_variations: _ignored, ...withoutVariations } = payload;
+      result = await supabase.from("dishes").update(withoutVariations).eq("id", dishId);
+      return {
+        error: result.error,
+        availabilityPersisted: !result.error && hasAvailability,
+      };
+    }
   }
 
   return {
@@ -153,6 +173,7 @@ export interface MenuDishRecord {
   name: LocalizedTextValue;
   description: LocalizedTextValue;
   price: number;
+  price_variations: PriceVariation[];
   image_url: string | null;
   tags: string[];
   allergens: string[];
@@ -171,6 +192,7 @@ function mapDishRecord(dish: Record<string, unknown>): MenuDishRecord {
     name: parseLocalizedFieldFromDb(dish.name),
     description: parseLocalizedFieldFromDb(dish.description),
     price: parseFloat(String(dish.price)) || 0,
+    price_variations: parsePriceVariationsFromDb(dish.price_variations),
     image_url: (dish.image as string) ?? null,
     tags: normalized.tags,
     allergens: normalized.allergens,
@@ -412,12 +434,13 @@ export async function updateMenuDish(
   allergens: string[] = [],
   isAvailable = true,
   hidePrice: boolean = false,
-  lockTitleTranslation: boolean = false
+  lockTitleTranslation: boolean = false,
+  priceVariations?: PriceVariation[] | null
 ): Promise<void> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
   const allergensForDb = serializeAllergensForDb(allergens, tags);
 
-  const { error } = await updateDishRow(dishId, {
+  const payload: Record<string, unknown> = {
     name: serializeLocalizedFieldForDb(name),
     description: serializeLocalizedFieldForDb(description),
     price: String(price),
@@ -427,7 +450,13 @@ export async function updateMenuDish(
     is_available: isAvailable,
     hide_price: hidePrice,
     lock_title_translation: lockTitleTranslation,
-  });
+  };
+
+  if (priceVariations !== undefined) {
+    payload.price_variations = serializePriceVariationsForDb(priceVariations);
+  }
+
+  const { error } = await updateDishRow(dishId, payload);
 
   if (error) {
     logSupabaseFailure("menu.updateDish", error);
@@ -498,6 +527,9 @@ async function cloneDishToCategory(
     name: serializeLocalizedFieldForDb(source.name as LocalizedTextValue),
     description: serializeLocalizedFieldForDb(source.description as LocalizedTextValue),
     price: String(source.price ?? "0"),
+    price_variations: serializePriceVariationsForDb(
+      parsePriceVariationsFromDb(source.price_variations)
+    ),
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
     allergens: allergensForDb,
@@ -535,6 +567,9 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     name: serializeLocalizedFieldForDb(duplicateName(source.name as LocalizedTextValue)),
     description: serializeLocalizedFieldForDb(source.description as LocalizedTextValue),
     price: String(source.price ?? "0"),
+    price_variations: serializePriceVariationsForDb(
+      parsePriceVariationsFromDb((source as Record<string, unknown>).price_variations)
+    ),
     image: (source.image as string | null) ?? null,
     tags: tagsForDb,
     allergens: allergensForDb,

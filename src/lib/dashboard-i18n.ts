@@ -178,13 +178,18 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "dish.upload": { en: "Upload", es: "Subir" },
   "dish.uploading": { en: "Uploading…", es: "Subiendo…" },
   "dish.price": { en: "Price", es: "Precio" },
-  "dish.addPriceVariations": {
-    en: "+ Add price variations (sizes, portions…)",
-    es: "+ Añadir variaciones de precio (tamaños, raciones…)",
+  "dish.hasPortions": {
+    en: "Has multiple sizes or portions?",
+    es: "¿Tiene varios tamaños o raciones?",
   },
-  "dish.priceVariations": { en: "Price variations", es: "Variaciones de precio" },
-  "dish.useSinglePrice": { en: "Use single price", es: "Usar precio único" },
-  "dish.addAnotherVariation": { en: "+ Add another variation", es: "+ Añadir otra variación" },
+  "dish.hasPortionsDescription": {
+    en: "Offer different sizes or portions, each with its own price.",
+    es: "Ofrece distintos tamaños o raciones, cada uno con su precio.",
+  },
+  "dish.portionsAndPrices": { en: "Portions and prices", es: "Raciones y precios" },
+  "dish.portionNamePlaceholder": { en: "Small, 1 Bottle…", es: "Pequeño, 1 botella…" },
+  "dish.addSizeOption": { en: "Add size option", es: "Añadir tamaño" },
+  "dish.removePortion": { en: "Remove portion", es: "Eliminar ración" },
   "dish.hidePrice": { en: "Hide price on public menu", es: "Ocultar precio en el menú público" },
   "dish.hidePriceDescription": {
     en: "Show the dish name and description, but omit its price.",

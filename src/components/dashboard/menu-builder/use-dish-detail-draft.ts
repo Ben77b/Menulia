@@ -11,6 +11,8 @@ import {
   getSecondaryLanguage,
   type MenuContentLanguage,
 } from "@/lib/menu-content-languages";
+import { hasPriceVariations, type PriceVariation } from "@/lib/price-variations";
+import { parsePriceInput } from "@/lib/price-input";
 import type { DishDetailDraft, PriceVariationDraft } from "./dish-detail-types";
 
 export const EMPTY_DISH_DRAFT: DishDetailDraft = {
@@ -34,6 +36,8 @@ export function dishToDraft(
   primaryLanguage: MenuContentLanguage
 ): DishDetailDraft {
   const normalized = normalizeDishTagFields(dish.tags, dish.allergens);
+  const usePriceVariations = hasPriceVariations(dish.price_variations);
+
   return {
     name: resolveBuilderSourceText(dish.name, primaryLanguage),
     nameTranslation: resolveBuilderTranslationText(
@@ -46,8 +50,13 @@ export function dishToDraft(
       getSecondaryLanguage(primaryLanguage)
     ),
     price: String(dish.price),
-    usePriceVariations: false,
-    priceVariations: [{ label: "", price: String(dish.price) }],
+    usePriceVariations,
+    priceVariations: usePriceVariations
+      ? dish.price_variations.map((variation) => ({
+          label: variation.label,
+          price: variation.price.toFixed(2),
+        }))
+      : [{ label: "", price: String(dish.price) }],
     hide_price: Boolean(dish.hide_price),
     lock_title_translation: Boolean(dish.lock_title_translation),
     image_url: dish.image_url,
@@ -109,15 +118,34 @@ export function useDishDetailDraft(
     });
   }
 
-  function enablePriceVariations() {
-    setDraft((prev) => ({
-      ...prev,
-      usePriceVariations: true,
-      priceVariations: [
-        { label: "Regular", price: prev.price },
-        { label: "", price: "" },
-      ],
-    }));
+  function setUsePriceVariations(enabled: boolean) {
+    setDraft((prev) => {
+      if (enabled) {
+        const seeded =
+          prev.priceVariations.some((row) => row.label.trim() || row.price.trim()) &&
+          prev.usePriceVariations
+            ? prev.priceVariations
+            : [
+                { label: "", price: prev.price || "" },
+                { label: "", price: "" },
+              ];
+        return {
+          ...prev,
+          usePriceVariations: true,
+          priceVariations: seeded,
+        };
+      }
+
+      const fallbackPrice =
+        prev.priceVariations.find((row) => row.price.trim())?.price ?? prev.price;
+
+      return {
+        ...prev,
+        usePriceVariations: false,
+        price: fallbackPrice,
+        priceVariations: [{ label: "", price: fallbackPrice }],
+      };
+    });
   }
 
   function toggleFilterableTag(tag: string) {
@@ -144,8 +172,21 @@ export function useDishDetailDraft(
     addPriceVariation,
     updatePriceVariation,
     removePriceVariation,
-    enablePriceVariations,
+    setUsePriceVariations,
     toggleFilterableTag,
     toggleAllergen,
   };
+}
+
+export function draftToStoredPriceVariations(draft: DishDetailDraft): PriceVariation[] | null {
+  if (!draft.usePriceVariations) return null;
+
+  const variations = draft.priceVariations
+    .map((row) => ({
+      label: row.label.trim(),
+      price: row.price.trim() ? parsePriceInput(row.price) : Number.NaN,
+    }))
+    .filter((row) => row.label.length > 0 && !Number.isNaN(row.price));
+
+  return variations.length > 0 ? variations : null;
 }

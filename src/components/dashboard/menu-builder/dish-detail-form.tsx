@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, Camera, X, Sparkles, Loader2 } from "lucide-react";
+import { Upload, Camera, X, Sparkles, Loader2, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
@@ -40,7 +40,7 @@ interface DishDetailFormProps {
   addPriceVariation: () => void;
   updatePriceVariation: (index: number, patch: Partial<PriceVariationDraft>) => void;
   removePriceVariation: (index: number) => void;
-  enablePriceVariations: () => void;
+  setUsePriceVariations: (enabled: boolean) => void;
   toggleFilterableTag: (tag: string) => void;
   toggleAllergen: (tag: string) => void;
 }
@@ -58,7 +58,7 @@ export function DishDetailForm({
   addPriceVariation,
   updatePriceVariation,
   removePriceVariation,
-  enablePriceVariations,
+  setUsePriceVariations,
   toggleFilterableTag,
   toggleAllergen,
 }: DishDetailFormProps) {
@@ -201,9 +201,16 @@ export function DishDetailForm({
         />
       </div>
 
-      <div>
+      <div className="space-y-4 rounded-2xl border border-neutral-200/60 bg-neutral-50/40 p-4">
+        <ToggleSwitch
+          label={t("dish.hasPortions")}
+          description={t("dish.hasPortionsDescription")}
+          checked={draft.usePriceVariations}
+          onChange={setUsePriceVariations}
+        />
+
         {!draft.usePriceVariations ? (
-          <>
+          <div>
             <label className={labelClass}>{t("dish.price")}</label>
             <CurrencyInput
               value={draft.price}
@@ -217,41 +224,17 @@ export function DishDetailForm({
               placeholder="12.50"
               wrapperClassName="mt-1.5"
             />
-            <button
-              type="button"
-              onClick={enablePriceVariations}
-              className="mt-2 inline-flex min-h-11 items-center text-xs font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:text-neutral-900"
-            >
-              {t("dish.addPriceVariations")}
-            </button>
-          </>
+          </div>
         ) : (
-          <div className="space-y-3 rounded-xl border border-neutral-200/60 bg-neutral-50/60 p-4 dark:border-neutral-800/60 dark:bg-neutral-900/40">
-            <div className="flex items-center justify-between gap-2">
-              <label className={cn(labelClass, "mb-0")}>{t("dish.priceVariations")}</label>
-              <button
-                type="button"
-                onClick={() =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    usePriceVariations: false,
-                    price:
-                      prev.priceVariations.find((row) => row.price.trim())?.price ?? prev.price,
-                    priceVariations: [{ label: "", price: prev.price }],
-                  }))
-                }
-                className="text-xs text-neutral-500 transition-all duration-200 ease-in-out hover:text-neutral-700"
-              >
-                {t("dish.useSinglePrice")}
-              </button>
-            </div>
+          <div className="space-y-3">
+            <label className={cn(labelClass, "mb-0")}>{t("dish.portionsAndPrices")}</label>
             <div className="space-y-2">
               {draft.priceVariations.map((row, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <input
                     value={row.label}
                     onChange={(e) => updatePriceVariation(index, { label: e.target.value })}
-                    placeholder="Size or portion"
+                    placeholder={t("dish.portionNamePlaceholder")}
                     className={cn(inputClass, "min-w-0 flex-1")}
                   />
                   <CurrencyInput
@@ -267,25 +250,25 @@ export function DishDetailForm({
                     placeholder="0.00"
                     wrapperClassName="w-28 shrink-0"
                   />
-                  {draft.priceVariations.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removePriceVariation(index)}
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-neutral-300 hover:text-red-500"
-                      aria-label="Remove price variation"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => removePriceVariation(index)}
+                    disabled={draft.priceVariations.length <= 1}
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-neutral-200/60 bg-white text-neutral-400 transition-all duration-200 ease-in-out hover:border-red-200 hover:bg-red-50 hover:text-red-500 disabled:opacity-30"
+                    aria-label={t("dish.removePortion")}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
             </div>
             <button
               type="button"
               onClick={addPriceVariation}
-              className="inline-flex min-h-11 items-center text-xs font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:text-neutral-900"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-neutral-200/60 px-3 text-sm font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:border-sky-200 hover:bg-sky-50/60 hover:text-sky-700"
             >
-              {t("dish.addAnotherVariation")}
+              <Plus className="h-4 w-4" />
+              {t("dish.addSizeOption")}
             </button>
           </div>
         )}

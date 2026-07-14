@@ -2,6 +2,7 @@ import type { PublicMenuDish } from "@/components/public/dish-card";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/localized-text";
 import { isFilterableTag } from "@/lib/dietary-tags";
+import { parsePriceVariationsFromDb } from "@/lib/price-variations";
 
 /** Returns a trimmed image URL when non-empty; does not block on protocol. */
 export function normalizeImageUrl(url: string | null | undefined): string | null {
@@ -28,6 +29,7 @@ export function sanitizePublicMenuDish(
     name: dish.name ?? "",
     description: dish.description ?? "",
     price: typeof dish.price === "number" && !Number.isNaN(dish.price) ? dish.price : 0,
+    price_variations: parsePriceVariationsFromDb(dish.price_variations),
     hide_price: Boolean(dish.hide_price),
     image: safeImage,
     tags: Array.isArray(dish.tags) ? dish.tags.filter(Boolean) : [],

@@ -26,23 +26,27 @@ export interface PublicMenuParentCategory {
 
 import { parseDishTagsFromDb } from "@/lib/dietary-tags";
 import { parseLocalizedFieldFromDb } from "@/lib/localized-text";
+import { parsePriceVariationsFromDb } from "@/lib/price-variations";
 
 export function mapDishRow(dish: {
   id: string;
   name: LocalizedTextValue;
   description?: LocalizedTextValue;
   price?: string | number | null;
+  price_variations?: unknown;
   hide_price?: boolean | null;
   image?: string | null;
   tags?: string[] | null;
   allergens?: string[] | null;
 }): PublicMenuDish {
   const normalized = parseDishTagsFromDb(dish);
+  const priceVariations = parsePriceVariationsFromDb(dish.price_variations);
   return {
     id: dish.id,
     name: parseLocalizedFieldFromDb(dish.name),
     description: parseLocalizedFieldFromDb(dish.description ?? ""),
     price: typeof dish.price === "number" ? dish.price : parseFloat(String(dish.price)) || 0,
+    price_variations: priceVariations,
     hide_price: typeof dish.hide_price === "boolean" ? dish.hide_price : false,
     image: dish.image ?? null,
     tags: normalized.tags,

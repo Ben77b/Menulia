@@ -58,6 +58,7 @@ import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { DishDetailInspector } from "./dish-detail-inspector";
 import { DishRow } from "./dish-row";
+import { draftToStoredPriceVariations } from "./use-dish-detail-draft";
 import { LocalizedTitleEditor } from "./localized-title-editor";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
@@ -496,7 +497,8 @@ export function MenuBuilder() {
         dish.allergens ?? [],
         dish.is_available,
         dish.hide_price,
-        dish.lock_title_translation
+        dish.lock_title_translation,
+        dish.price_variations
       );
       return true;
     } catch (err) {
@@ -530,7 +532,8 @@ export function MenuBuilder() {
         dish.allergens ?? [],
         dish.is_available,
         dish.hide_price,
-        dish.lock_title_translation
+        dish.lock_title_translation,
+        dish.price_variations
       );
       return true;
     } catch (err) {
@@ -566,10 +569,9 @@ export function MenuBuilder() {
       primaryLanguage
     );
 
-    const resolvedPrice = draft.usePriceVariations
-      ? parsePriceInput(
-          draft.priceVariations.find((row) => row.price.trim())?.price ?? draft.price
-        )
+    const storedVariations = draftToStoredPriceVariations(draft);
+    const resolvedPrice = storedVariations?.length
+      ? storedVariations[0].price
       : parsePriceInput(draft.price);
 
     const optimisticDish: MenuBuilderDish = {
@@ -577,6 +579,7 @@ export function MenuBuilder() {
       name: mergedName,
       description: mergedDescription,
       price: resolvedPrice,
+      price_variations: storedVariations ?? [],
       image_url: draft.image_url,
       tags: draft.filterableTags,
       allergens: draft.allergens,
@@ -599,7 +602,8 @@ export function MenuBuilder() {
         draft.allergens,
         draft.is_available,
         draft.hide_price,
-        draft.lock_title_translation
+        draft.lock_title_translation,
+        storedVariations
       );
       toast.success("✨ Dish updated successfully");
     } catch (err) {

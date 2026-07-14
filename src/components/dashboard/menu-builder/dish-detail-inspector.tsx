@@ -45,7 +45,7 @@ export function DishDetailInspector({
     addPriceVariation,
     updatePriceVariation,
     removePriceVariation,
-    enablePriceVariations,
+    setUsePriceVariations,
     toggleFilterableTag,
     toggleAllergen,
   } = useDishDetailDraft(dish, primaryLanguage, true);
@@ -90,7 +90,7 @@ export function DishDetailInspector({
           addPriceVariation={addPriceVariation}
           updatePriceVariation={updatePriceVariation}
           removePriceVariation={removePriceVariation}
-          enablePriceVariations={enablePriceVariations}
+          setUsePriceVariations={setUsePriceVariations}
           toggleFilterableTag={toggleFilterableTag}
           toggleAllergen={toggleAllergen}
         />

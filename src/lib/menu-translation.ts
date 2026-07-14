@@ -308,7 +308,8 @@ export async function translateMenuTreeToLanguage(
         dish.allergens,
         dish.is_available,
         dish.hide_price,
-        dish.lock_title_translation
+        dish.lock_title_translation,
+        dish.price_variations
       );
     }),
   ]);
