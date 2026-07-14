@@ -125,7 +125,7 @@ export function DishCard({
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
 
   const isStackedLayout = isStackedCategoryLayout(layout);
-  const isImageRight = layout === "stacked_right";
+  const isRightAlignedStack = layout === "stacked_right";
   const isCarouselPeek = layout === "carousel" && compact;
 
   const imageBlock =
@@ -170,11 +170,22 @@ export function DishCard({
           isCarouselPeek ? "hidden sm:line-clamp-2 sm:text-xs" : "line-clamp-3 text-xs sm:text-sm"
         );
 
+  const stackedContentAlign = isRightAlignedStack
+    ? "items-end text-right"
+    : isStackedLayout
+      ? "text-left"
+      : "text-center";
+  const stackedRowJustify = isRightAlignedStack
+    ? "justify-end"
+    : isStackedLayout
+      ? "justify-start"
+      : "justify-center";
+
   const textBlock = (
     <div
       className={cn(
-        "space-y-2",
-        isStackedLayout ? "text-left" : "text-center",
+        "flex w-full flex-col space-y-2",
+        stackedContentAlign,
         isCarouselPeek && "space-y-1"
       )}
     >
@@ -203,7 +214,7 @@ export function DishCard({
         </p>
       )}
       {display.showPrices && !dish.hide_price && portionOptions && (
-        <div className="mt-2 flex flex-col gap-y-1">
+        <div className={cn("mt-2 flex flex-col gap-y-1", isRightAlignedStack && "items-end")}>
           {portionOptions.map((option) => (
             <p
               key={`${option.label}-${option.price}`}
@@ -228,7 +239,7 @@ export function DishCard({
         </div>
       )}
       {display.showDietary && (dish.tags ?? []).length > 0 && (
-        <div className={cn("flex flex-wrap justify-center gap-2", isCarouselPeek && "hidden sm:flex")}>
+        <div className={cn("flex flex-wrap gap-2", stackedRowJustify, isCarouselPeek && "hidden sm:flex")}>
         {(dish?.tags ?? []).filter(Boolean).map((tag) => {
           if (!tag) return null;
           const meta = getFilterableTagMeta(tag);
@@ -247,7 +258,7 @@ export function DishCard({
         </div>
       )}
       {display.showDietary && (dish.allergens ?? []).length > 0 && (
-        <div className={cn("flex flex-wrap justify-center gap-1.5", isCarouselPeek && "hidden sm:flex")}>
+        <div className={cn("flex flex-wrap gap-1.5", stackedRowJustify, isCarouselPeek && "hidden sm:flex")}>
           {(dish?.allergens ?? []).filter(Boolean).map((allergen) => {
           if (!allergen) return null;
           const meta = getAllergenTagMeta(allergen, allergenLocale);
@@ -288,16 +299,21 @@ export function DishCard({
         className={cn(
           "flex w-full gap-4 sm:gap-6",
           imageBlock
-            ? isImageRight
-              ? "flex-col items-center sm:flex-row-reverse sm:items-start"
-              : "flex-col items-center sm:flex-row sm:items-start"
+            ? "flex-col items-center sm:flex-row sm:items-start"
             : "flex-col items-stretch"
         )}
       >
         {imageBlock && (
           <div className="w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]">{imageBlock}</div>
         )}
-        <div className="min-w-0 flex-1">{textBlock}</div>
+        <div
+          className={cn(
+            "min-w-0 flex-1",
+            isRightAlignedStack && "sm:pl-2"
+          )}
+        >
+          {textBlock}
+        </div>
       </article>
     );
   }

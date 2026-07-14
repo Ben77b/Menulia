@@ -241,7 +241,7 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "builder.actions.layoutCarousel": { en: "Carousel layout", es: "Diseño carrusel" },
   "builder.layout.carousel": { en: "Carousel", es: "Carrusel" },
   "builder.layout.stackedLeft": { en: "Stacked (Image Left)", es: "Lista (img. izq.)" },
-  "builder.layout.stackedRight": { en: "Stacked (Image Right)", es: "Lista (img. der.)" },
+  "builder.layout.stackedRight": { en: "Stacked (Right Aligned)", es: "Lista (alineada der.)" },
   "builder.actions.more": { en: "More actions", es: "Más acciones" },
   "share.qrColor": { en: "QR code color", es: "Color del código QR" },
   "share.transparentBg": { en: "Transparent background", es: "Fondo transparente" },
