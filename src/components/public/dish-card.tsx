@@ -7,7 +7,7 @@ import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
-import { hasPriceVariations, type PriceVariation } from "@/lib/price-variations";
+import { hasPriceVariations, parsePriceVariationsFromDb, type PriceVariation } from "@/lib/price-variations";
 
 export interface PublicMenuDish {
   id: string;
@@ -107,6 +107,8 @@ export function DishCard({
   imageClassName = "w-full max-w-xs",
   priority = false,
 }: DishCardProps) {
+  console.log("DISH DATA:", dish);
+
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = normalizeImageUrl(dish?.image);
   const showImage = Boolean(display?.showImages && imageSrc && !imageFailed);
@@ -119,7 +121,8 @@ export function DishCard({
   const localizedDescription = resolveLocalizedText(dish.description, lang, fallbackLang);
   const imageAlt = `${localizedName} at ${restaurantName}`;
   const allergenLocale = lang === "es" ? "es" : "en";
-  const portionOptions = hasPriceVariations(dish.price_variations) ? dish.price_variations : null;
+  const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
+  const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
 
   const isCarouselPeek = layout === "carousel" && compact;
 

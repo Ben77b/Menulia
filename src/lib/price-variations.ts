@@ -4,9 +4,22 @@ export interface PriceVariation {
 }
 
 export function parsePriceVariationsFromDb(value: unknown): PriceVariation[] {
-  if (!Array.isArray(value)) return [];
+  if (value == null) return [];
 
-  return value
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
     .map((entry) => {
       if (!entry || typeof entry !== "object") return null;
       const row = entry as Record<string, unknown>;
