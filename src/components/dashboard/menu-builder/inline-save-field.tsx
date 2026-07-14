@@ -16,6 +16,8 @@ interface InlineSaveFieldProps {
   inputClassName?: string;
   onSave: (nextValue: string) => Promise<boolean>;
   onClick?: (event: React.MouseEvent) => void;
+  /** When true, display static text only (touch layouts) */
+  readOnly?: boolean;
 }
 
 export function InlineSaveField({
@@ -30,6 +32,7 @@ export function InlineSaveField({
   inputClassName,
   onSave,
   onClick,
+  readOnly = false,
 }: InlineSaveFieldProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -78,6 +81,14 @@ export function InlineSaveField({
     } catch {
       setSaveStatus("error");
     }
+  }
+
+  if (readOnly) {
+    return (
+      <span className={cn("min-w-0 px-1 py-0.5", textClassName)}>
+        <span className="line-clamp-2 break-words">{displayValue ?? (value || placeholder)}</span>
+      </span>
+    );
   }
 
   if (editing) {

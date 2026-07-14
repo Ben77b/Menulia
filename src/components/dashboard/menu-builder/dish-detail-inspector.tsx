@@ -76,7 +76,7 @@ export function DishDetailInspector({
         </button>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-neutral-50/30 px-5 py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-neutral-50/30 px-5 py-5 pb-32">
         <DishDetailForm
           draft={draft}
           setDraft={setDraft}

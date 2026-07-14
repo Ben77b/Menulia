@@ -218,6 +218,13 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "builder.sectionNote": { en: "Section note", es: "Nota de sección" },
   "builder.reorderMode": { en: "Reorder Mode", es: "Modo reordenar" },
   "builder.reorderModeOn": { en: "Reorder On", es: "Reordenar activo" },
+  "builder.reorderDishes": { en: "Reorder dishes", es: "Reordenar platos" },
+  "builder.doneReordering": { en: "Done reordering", es: "Terminar reordenar" },
+  "builder.reorderModeHint": {
+    en: "Use the arrows to move dishes. Scrolling is paused while reordering.",
+    es: "Usa las flechas para mover platos. El desplazamiento está pausado mientras reordenas.",
+  },
+  "builder.categoriesMenu": { en: "Categories", es: "Categorías" },
   "builder.hidden": { en: "Hidden", es: "Oculto" },
   "builder.visible": { en: "Visible", es: "Visible" },
   "builder.dishesCount": { en: "{count} dishes", es: "{count} platos" },

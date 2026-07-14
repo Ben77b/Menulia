@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, LayoutGrid, Layers, Copy, Loader2, GripVertical } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
+import { Plus, Trash2, LayoutGrid, Layers, Copy, Loader2, GripVertical, Menu, ArrowUpDown } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { useSessionPersistedState } from "@/hooks/use-session-persisted-state";
@@ -74,6 +74,9 @@ import {
 } from "@/lib/localized-text";
 import type { MenuContentLanguage } from "@/lib/menu-content-languages";
 import { getSecondaryLanguage, normalizePrimaryLanguage } from "@/lib/menu-content-languages";
+import { useTouchLayout } from "@/hooks/use-touch-layout";
+import { CategoryListPanel } from "./category-list-panel";
+import { CategorySlideOver } from "./category-slide-over";
 
 function isBenignMenuBuilderError(error: unknown): boolean {
   if (error instanceof TypeError) return true;
@@ -210,7 +213,9 @@ export function MenuBuilder() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
   const [reorderMode, setReorderMode] = useState(false);
+  const [categoryPanelOpen, setCategoryPanelOpen] = useState(false);
   const [contextTarget, setContextTarget] = useState<BuilderContextTarget | null>(null);
+  const touchLayout = useTouchLayout();
 
   const selectedCategory = useMemo(
     () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
@@ -300,6 +305,15 @@ export function MenuBuilder() {
       setSelectedDish((prev) => (prev ? { ...prev, dish: freshDish } : null));
     }
   }, [tree, selectedDish?.categoryId, selectedDish?.dish.id]);
+
+  useEffect(() => {
+    if (!touchLayout.touchOptimized || !reorderMode) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [touchLayout.touchOptimized, reorderMode]);
 
   const loadMenu = useCallback(async (options?: { silent?: boolean }) => {
     if (!currentRestaurant?.id) return;
@@ -982,20 +996,6 @@ export function MenuBuilder() {
               {t("builder.pageSubtitle")}
             </p>
           </div>
-          {tree.sections.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setReorderMode((current) => !current)}
-              className={cn(
-                "inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out md:hidden",
-                reorderMode
-                  ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                  : "border-neutral-200/60 bg-white text-neutral-600 hover:border-neutral-300"
-              )}
-            >
-              {reorderMode ? t("builder.reorderModeOn") : t("builder.reorderMode")}
-            </button>
-          )}
         </div>
       </header>
 
@@ -1082,7 +1082,7 @@ export function MenuBuilder() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="hidden shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 md:inline-flex"
+                className="hidden shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600 lg:inline-flex"
                 onClick={() => handleDeleteSection(activeSection)}
                 disabled={busy}
               >
@@ -1113,24 +1113,33 @@ export function MenuBuilder() {
                 onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
               />
 
-              <div className="mt-4 grid items-start gap-5 md:mt-0 md:grid-cols-[minmax(200px,25%)_minmax(0,75%)] md:gap-6">
-                <CategorySidebar
-                  activeSection={activeSection}
-                  activeCategoryId={activeCategoryId}
-                  primaryLanguage={primaryLanguage}
-                  busy={busy}
-                  reorderMode={reorderMode}
-                  addingCategory={addingCategoryForSection === activeSection.id}
-                  newCategoryName={newCategoryName}
-                  onSelectCategory={setActiveCategoryId}
-                  onNewCategoryNameChange={setNewCategoryName}
-                  onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
-                  onCancelAddCategory={() => setAddingCategoryForSection(null)}
-                  onAddCategory={() => handleAddCategory(activeSection.id)}
-                  onMoveCategory={(categoryId, direction) =>
-                    handleReorderCategory(activeSection.id, categoryId, direction)
-                  }
-                />
+              <div
+                className={cn(
+                  "grid items-start gap-5",
+                  touchLayout.useTwoColumn
+                    ? "lg:mt-0 lg:grid-cols-[minmax(200px,25%)_minmax(0,75%)] lg:gap-6"
+                    : "mt-4 grid-cols-1"
+                )}
+              >
+                {touchLayout.useTwoColumn && (
+                  <CategorySidebar
+                    activeSection={activeSection}
+                    activeCategoryId={activeCategoryId}
+                    primaryLanguage={primaryLanguage}
+                    busy={busy}
+                    reorderMode={reorderMode}
+                    addingCategory={addingCategoryForSection === activeSection.id}
+                    newCategoryName={newCategoryName}
+                    onSelectCategory={setActiveCategoryId}
+                    onNewCategoryNameChange={setNewCategoryName}
+                    onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
+                    onCancelAddCategory={() => setAddingCategoryForSection(null)}
+                    onAddCategory={() => handleAddCategory(activeSection.id)}
+                    onMoveCategory={(categoryId, direction) =>
+                      handleReorderCategory(activeSection.id, categoryId, direction)
+                    }
+                  />
+                )}
 
               {activeCategory ? (
                 <DishesCanvas
@@ -1143,6 +1152,8 @@ export function MenuBuilder() {
                   rapidDraft={rapidDrafts[activeCategory.id] ?? ""}
                   selectedDishId={selectedDish?.dish.id ?? null}
                   reorderMode={reorderMode}
+                  touchOptimized={touchLayout.touchOptimized}
+                  onToggleReorderMode={() => setReorderMode((current) => !current)}
                   onRapidDraftChange={(draft) =>
                     setRapidDrafts((prev) => ({ ...prev, [activeCategory.id]: draft }))
                   }
@@ -1186,6 +1197,44 @@ export function MenuBuilder() {
                 </div>
               )}
               </div>
+
+              {touchLayout.showTabletCategoryTrigger && activeSection && (
+                <button
+                  type="button"
+                  onClick={() => setCategoryPanelOpen(true)}
+                  className="fixed bottom-6 left-6 z-30 inline-flex min-h-12 items-center gap-2 rounded-full border border-neutral-200/60 bg-white px-5 py-3 text-sm font-semibold text-neutral-800 shadow-lg shadow-neutral-300/30 transition-all duration-200 ease-in-out hover:border-sky-200 hover:bg-sky-50 active:scale-[0.98] md:flex lg:hidden"
+                >
+                  <Menu className="h-4 w-4" />
+                  {t("builder.categoriesMenu")}
+                </button>
+              )}
+
+              <CategorySlideOver
+                open={categoryPanelOpen}
+                onClose={() => setCategoryPanelOpen(false)}
+                title={t("builder.categoriesMenu")}
+              >
+                <CategoryListPanel
+                  activeSection={activeSection}
+                  activeCategoryId={activeCategoryId}
+                  primaryLanguage={primaryLanguage}
+                  busy={busy}
+                  reorderMode={reorderMode}
+                  addingCategory={addingCategoryForSection === activeSection.id}
+                  newCategoryName={newCategoryName}
+                  onSelectCategory={(categoryId) => {
+                    setActiveCategoryId(categoryId);
+                    setCategoryPanelOpen(false);
+                  }}
+                  onNewCategoryNameChange={setNewCategoryName}
+                  onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
+                  onCancelAddCategory={() => setAddingCategoryForSection(null)}
+                  onAddCategory={() => handleAddCategory(activeSection.id)}
+                  onMoveCategory={(categoryId, direction) =>
+                    handleReorderCategory(activeSection.id, categoryId, direction)
+                  }
+                />
+              </CategorySlideOver>
             </div>
           )}
         </>
@@ -1332,129 +1381,13 @@ function MobileCategoryStrip({
   );
 }
 
-function CategorySidebar({
-  activeSection,
-  activeCategoryId,
-  primaryLanguage,
-  busy,
-  reorderMode,
-  addingCategory,
-  newCategoryName,
-  onSelectCategory,
-  onNewCategoryNameChange,
-  onStartAddCategory,
-  onCancelAddCategory,
-  onAddCategory,
-  onMoveCategory,
-}: {
-  activeSection: MenuBuilderSection;
-  activeCategoryId: string | null;
-  primaryLanguage: MenuContentLanguage;
-  busy: boolean;
-  reorderMode: boolean;
-  addingCategory: boolean;
-  newCategoryName: string;
-  onSelectCategory: (categoryId: string) => void;
-  onNewCategoryNameChange: (value: string) => void;
-  onStartAddCategory: () => void;
-  onCancelAddCategory: () => void;
-  onAddCategory: () => void;
-  onMoveCategory: (categoryId: string, direction: -1 | 1) => void;
-}) {
-  const categories = (activeSection.categories ?? []).filter(
-    (category): category is MenuBuilderCategory => Boolean(category?.id)
-  );
-
+function CategorySidebar(props: ComponentProps<typeof CategoryListPanel>) {
   return (
     <nav
       aria-label="Categories"
-      className="hidden overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm shadow-neutral-200/20 md:flex md:flex-col md:self-start"
+      className="hidden overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm shadow-neutral-200/20 lg:flex lg:flex-col lg:self-start"
     >
-      <div className="border-b border-neutral-200/60 px-4 py-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-          Categories
-        </p>
-      </div>
-      <ul className="max-h-[min(70vh,640px)] space-y-1 overflow-y-auto p-2">
-        {categories.map((category, index) => {
-          const isActive = category.id === activeCategoryId;
-          const label = resolveBuilderSourceText(category.name, primaryLanguage) || "Category";
-          return (
-            <li key={category.id}>
-              <div className="group flex items-center gap-1">
-                <ReorderButtons
-                  revealOnHover
-                  mobileEnabled={reorderMode}
-                  onMoveUp={() => onMoveCategory(category.id, -1)}
-                  onMoveDown={() => onMoveCategory(category.id, 1)}
-                  canMoveUp={index > 0}
-                  canMoveDown={index < categories.length - 1}
-                  disabled={busy}
-                />
-                <button
-                  type="button"
-                  onClick={() => onSelectCategory(category.id)}
-                  className={cn(
-                    "flex min-h-11 flex-1 items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-200 ease-in-out",
-                    isActive
-                      ? "border border-sky-200/80 bg-sky-50 text-sky-900"
-                      : "border border-transparent text-neutral-700 hover:bg-neutral-50"
-                  )}
-                >
-                  <span className="truncate font-medium">{label}</span>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums",
-                      isActive ? "bg-sky-100 text-sky-700" : "bg-neutral-100 text-neutral-500"
-                    )}
-                  >
-                    {category.dishes?.length ?? 0}
-                  </span>
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="border-t border-neutral-200/60 p-3">
-        {addingCategory ? (
-          <div className="space-y-2">
-            <input
-              autoFocus
-              placeholder="Category name"
-              value={newCategoryName}
-              maxLength={MAX_CATEGORY_NAME}
-              onChange={(e) => onNewCategoryNameChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onAddCategory()}
-              className="w-full rounded-xl border border-neutral-200/60 bg-white px-3 py-2 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
-            />
-            <div className="flex gap-2">
-              <Button
-                variant="dark"
-                size="sm"
-                className="min-h-11 flex-1"
-                onClick={onAddCategory}
-                disabled={!newCategoryName.trim() || busy}
-              >
-                Add
-              </Button>
-              <Button variant="outline" size="sm" className="min-h-11" onClick={onCancelAddCategory}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={onStartAddCategory}
-            disabled={busy || categories.length >= MAX_CATEGORIES_PER_SECTION}
-            className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl text-sm font-medium text-neutral-500 transition-all duration-200 ease-in-out hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" />
-            Add Category
-          </button>
-        )}
-      </div>
+      <CategoryListPanel {...props} />
     </nav>
   );
 }
@@ -1469,6 +1402,8 @@ function DishesCanvas({
   rapidDraft,
   selectedDishId,
   reorderMode,
+  touchOptimized,
+  onToggleReorderMode,
   onRapidDraftChange,
   onRapidAdd,
   onDeleteCategory,
@@ -1497,6 +1432,8 @@ function DishesCanvas({
   rapidDraft: string;
   selectedDishId: string | null;
   reorderMode: boolean;
+  touchOptimized: boolean;
+  onToggleReorderMode: () => void;
   onRapidDraftChange: (draft: string) => void;
   onRapidAdd: () => Promise<void>;
   onDeleteCategory: () => void;
@@ -1563,10 +1500,27 @@ function DishesCanvas({
             />
           </div>
         </div>
-        <span className="shrink-0 text-xs text-neutral-500 md:hidden">
+        <span className="shrink-0 text-xs text-neutral-500 lg:hidden">
           {t("builder.dishesCount", { count: category.dishes?.length ?? 0 })}
         </span>
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+          {touchOptimized && (
+            <button
+              type="button"
+              onClick={onToggleReorderMode}
+              disabled={busy || duplicating}
+              className={cn(
+                "inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all duration-200 ease-in-out lg:hidden",
+                reorderMode
+                  ? "border-emerald-400 bg-emerald-50 text-emerald-800"
+                  : "border-neutral-200/60 bg-white text-neutral-700 hover:border-sky-200 hover:bg-sky-50"
+              )}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              {reorderMode ? t("builder.doneReordering") : t("builder.reorderDishes")}
+            </button>
+          )}
+        <div className="hidden items-center gap-1 lg:flex">
           <div className="flex rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-0.5">
             {(["stacked", "carousel"] as const).map((layout) => (
               <button
@@ -1607,13 +1561,27 @@ function DishesCanvas({
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
+        </div>
         <BuilderRowMoreButton
-          className="md:hidden"
+          className="lg:hidden"
           label={t("builder.actions.more")}
           disabled={busy || duplicating}
           onClick={onOpenCategoryActions}
         />
       </div>
+
+      {touchOptimized && reorderMode && (
+        <div className="sticky top-0 z-10 border-b border-emerald-200/80 bg-emerald-50 px-4 py-2.5 text-center lg:hidden">
+          <p className="text-xs font-medium text-emerald-800">{t("builder.reorderModeHint")}</p>
+          <button
+            type="button"
+            onClick={onToggleReorderMode}
+            className="mt-1 inline-flex min-h-11 items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+          >
+            {t("builder.doneReordering")}
+          </button>
+        </div>
+      )}
 
       <div className="border-b border-neutral-200/60 bg-neutral-50/40 px-4 py-3">
         <label className="mb-1.5 block text-xs text-neutral-400">
@@ -1636,7 +1604,12 @@ function DishesCanvas({
         />
       </div>
 
-      <div className="bg-white">
+      <div
+        className={cn(
+          "bg-white",
+          touchOptimized && reorderMode && "max-lg:max-h-[min(70vh,640px)] max-lg:overflow-y-auto max-lg:overscroll-contain"
+        )}
+      >
         {(category.dishes ?? []).map((dish, dishIndex) =>
           dish ? (
             <DishRow
@@ -1648,6 +1621,7 @@ function DishesCanvas({
               dishIndex={dishIndex}
               dishCount={category.dishes?.length ?? 0}
               reorderMode={reorderMode}
+              touchOptimized={touchOptimized}
               onSelect={() => onSelectDish(dish)}
               onToggleVisibility={() => onToggleVisibility(dish)}
               onInlineNameUpdate={(nextName) => onInlineDishNameUpdate(dish, nextName)}

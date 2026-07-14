@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type FocusEvent } from "react";
 import { Upload, Camera, X, Sparkles, Loader2, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
@@ -26,6 +26,12 @@ const inputClass =
 
 const labelClass =
   "mb-1.5 block text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400";
+
+function scrollFocusedFieldIntoView(event: FocusEvent<HTMLElement>) {
+  window.requestAnimationFrame(() => {
+    event.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" });
+  });
+}
 
 interface DishDetailFormProps {
   draft: DishDetailDraft;
@@ -197,6 +203,7 @@ export function DishDetailForm({
           value={draft.name}
           maxLength={MAX_DISH_NAME}
           onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
+          onFocus={scrollFocusedFieldIntoView}
           className={inputClass}
         />
       </div>
@@ -234,6 +241,7 @@ export function DishDetailForm({
                   <input
                     value={row.label}
                     onChange={(e) => updatePriceVariation(index, { label: e.target.value })}
+                    onFocus={scrollFocusedFieldIntoView}
                     placeholder={t("dish.portionNamePlaceholder")}
                     className={cn(inputClass, "min-w-0 flex-1")}
                   />
@@ -329,6 +337,7 @@ export function DishDetailForm({
             value={draft.description}
             maxLength={MAX_DISH_DESCRIPTION}
             onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
+            onFocus={scrollFocusedFieldIntoView}
             disabled={generatingDescription}
             placeholder={
               generatingDescription
