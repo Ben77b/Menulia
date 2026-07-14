@@ -29,13 +29,16 @@ interface DishCarouselProps {
   descriptionColor?: string;
   priceColor?: string;
   emptyMessage?: string;
+  /** Menu background — used for edge vignette fades on mobile */
+  backgroundColor?: string;
 }
 
 const FOCUS_TRANSITION =
   "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease";
 
-/** Centers the middle slot so ~8vw of adjacent cards peek on mobile. */
-const MOBILE_TRACK_OFFSET = "translateX(calc(50vw - 126vw - 0.5rem))";
+/** Centers the middle slot so adjacent cards peek on mobile (84vw + gap-4). */
+const MOBILE_TRACK_OFFSET_STANDARD =
+  "translate-x-[calc(50vw-126vw-1rem)] max-[380px]:translate-x-[calc(50vw-132vw-0.5rem)]";
 
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
@@ -52,8 +55,8 @@ function CarouselCardFrame({
     <div
       className="origin-center will-change-transform"
       style={{
-        transform: isActive ? "scale(1.02)" : "scale(0.96)",
-        opacity: isActive ? 1 : 0.72,
+        transform: isActive ? "scale(1)" : "scale(0.94)",
+        opacity: isActive ? 1 : 0.55,
         transition: FOCUS_TRANSITION,
       }}
     >
@@ -81,6 +84,7 @@ export function DishCarousel({
   descriptionColor,
   priceColor,
   emptyMessage = "No dishes in this category.",
+  backgroundColor = "#ffffff",
 }: DishCarouselProps) {
   const safeDishes = useMemo(
     () => (dishes ?? []).filter((dish): dish is PublicMenuDish => Boolean(dish?.id)),
@@ -149,7 +153,7 @@ export function DishCarousel({
   }
 
   return (
-    <div className="relative mx-auto max-w-4xl px-6 py-4 sm:px-14">
+    <div className="relative mx-auto max-w-4xl px-3 py-4 max-[380px]:px-2 sm:px-14">
       {safeDishes.length > 1 && (
         <>
           <button
@@ -199,74 +203,87 @@ export function DishCarousel({
           </CarouselCardFrame>
         </div>
       ) : (
-        <div
-          className="overflow-hidden sm:overflow-visible"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
+        <div className="relative overflow-hidden sm:overflow-visible">
           <div
-            className={cn(
-              "flex items-center gap-4 transition-transform duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] sm:justify-center",
-              MOBILE_TRACK_OFFSET,
-              "sm:translate-x-0"
-            )}
+            className="overflow-hidden sm:overflow-visible"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
-            {(slots ?? []).map((slot) => {
-              if (!slot?.dish) return null;
-              const isActive = slot.position === "center";
+            <div
+              className={cn(
+                "flex items-stretch gap-4 transition-transform duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] max-[380px]:gap-2 sm:justify-center",
+                MOBILE_TRACK_OFFSET_STANDARD,
+                "sm:translate-x-0"
+              )}
+            >
+              {(slots ?? []).map((slot) => {
+                if (!slot?.dish) return null;
+                const isActive = slot.position === "center";
 
-              return (
-                <div
-                  key={slot.key}
-                  className={cn(
-                    "w-[84vw] shrink-0 sm:w-[min(34vw,200px)]",
-                    isActive && "sm:w-[min(78vw,320px)]",
-                    !isActive && "cursor-pointer sm:cursor-default"
-                  )}
-                  onClick={() => {
-                    if (!isActive) handleSlotClick(slot.position);
-                  }}
-                  onKeyDown={(event) => {
-                    if (isActive || event.key !== "Enter") return;
-                    handleSlotClick(slot.position);
-                  }}
-                  role={isActive ? undefined : "button"}
-                  tabIndex={isActive ? undefined : 0}
-                  aria-label={
-                    isActive
-                      ? undefined
-                      : slot.position === "left"
-                        ? "Show previous dish"
-                        : "Show next dish"
-                  }
-                >
-                  <CarouselCardFrame isActive={isActive}>
-                    <DishCard
-                      dish={slot.dish}
-                      lang={lang}
-                      fallbackLang={fallbackLang}
-                      restaurantName={restaurantName}
-                      titleFont={titleFont}
-                      bodyFont={bodyFont}
-                      titleFontWeight={titleFontWeight}
-                      titleFontStyle={titleFontStyle}
-                      bodyFontWeight={bodyFontWeight}
-                      bodyFontStyle={bodyFontStyle}
-                      textColor={mainTextColor}
-                      display={display}
-                      titleColor={titleColor}
-                      descriptionColor={descriptionColor}
-                      priceColor={priceColor}
-                      layout="carousel"
-                      compact={!isActive}
-                      imageClassName="w-full"
-                      priority={isActive && activeIndex < 3}
-                    />
-                  </CarouselCardFrame>
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={slot.key}
+                    className={cn(
+                      "w-[84vw] shrink-0 max-[380px]:w-[88vw] sm:w-[min(34vw,200px)]",
+                      isActive && "sm:w-[min(78vw,320px)]",
+                      !isActive && "cursor-pointer sm:cursor-default"
+                    )}
+                    onClick={() => {
+                      if (!isActive) handleSlotClick(slot.position);
+                    }}
+                    onKeyDown={(event) => {
+                      if (isActive || event.key !== "Enter") return;
+                      handleSlotClick(slot.position);
+                    }}
+                    role={isActive ? undefined : "button"}
+                    tabIndex={isActive ? undefined : 0}
+                    aria-label={
+                      isActive
+                        ? undefined
+                        : slot.position === "left"
+                          ? "Show previous dish"
+                          : "Show next dish"
+                    }
+                  >
+                    <CarouselCardFrame isActive={isActive}>
+                      <DishCard
+                        dish={slot.dish}
+                        lang={lang}
+                        fallbackLang={fallbackLang}
+                        restaurantName={restaurantName}
+                        titleFont={titleFont}
+                        bodyFont={bodyFont}
+                        titleFontWeight={titleFontWeight}
+                        titleFontStyle={titleFontStyle}
+                        bodyFontWeight={bodyFontWeight}
+                        bodyFontStyle={bodyFontStyle}
+                        textColor={mainTextColor}
+                        display={display}
+                        titleColor={titleColor}
+                        descriptionColor={descriptionColor}
+                        priceColor={priceColor}
+                        layout="carousel"
+                        compact={!isActive}
+                        imageClassName="w-full"
+                        priority={isActive && activeIndex < 3}
+                      />
+                    </CarouselCardFrame>
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 sm:hidden"
+            style={{ backgroundImage: `linear-gradient(to right, ${backgroundColor}, transparent)` }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 sm:hidden"
+            style={{ backgroundImage: `linear-gradient(to left, ${backgroundColor}, transparent)` }}
+          />
         </div>
       )}
     </div>

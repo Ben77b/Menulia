@@ -154,6 +154,7 @@ function DishSection({
           descriptionColor={themedColor(isPreview, "itemDescription", theme.itemDescriptionText)}
           priceColor={themedColor(isPreview, "itemPrice", theme.priceTextColor)}
           emptyMessage={emptyMessage}
+          backgroundColor={themedColor(isPreview, "menuBackground", theme.menuBackground)}
         />
       </PreviewHotspot>
     );
