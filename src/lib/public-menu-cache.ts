@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors, DEFAULT_MENU_THEME } from "@/lib/theme-colors";
 import {
@@ -20,6 +21,9 @@ export const DEFAULT_PUBLIC_MENU_SPLASH: PublicMenuSplashTheme = {
   backgroundColor: DEFAULT_MENU_THEME.headerBackgroundColor,
   accentColor: DEFAULT_MENU_THEME.categoryAccentColor,
 };
+
+/** Seconds between public menu payload revalidations (ISR). */
+export const PUBLIC_MENU_REVALIDATE_SECONDS = 60;
 
 type RestaurantRow = Record<string, unknown>;
 
@@ -60,11 +64,25 @@ export function restaurantRowToSplashTheme(row: RestaurantRow | null): PublicMen
 }
 
 export async function getPublicRestaurantRow(slug: string): Promise<RestaurantRow | null> {
-  return queryRestaurantBySlug(slug);
+  return unstable_cache(
+    () => queryRestaurantBySlug(slug),
+    ["public-restaurant-row", slug],
+    {
+      revalidate: PUBLIC_MENU_REVALIDATE_SECONDS,
+      tags: [`public-menu:${slug}`],
+    }
+  )();
 }
 
 export async function getPublicMenuPayload(restaurantId: string) {
-  return fetchPublicMenuData(restaurantId);
+  return unstable_cache(
+    () => fetchPublicMenuData(restaurantId),
+    ["public-menu-payload", restaurantId],
+    {
+      revalidate: PUBLIC_MENU_REVALIDATE_SECONDS,
+      tags: [`public-menu-data:${restaurantId}`],
+    }
+  )();
 }
 
 export async function getPublicMenuSplashBySlug(slug: string): Promise<PublicMenuSplashTheme> {

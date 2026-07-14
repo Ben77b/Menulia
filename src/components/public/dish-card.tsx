@@ -41,6 +41,7 @@ interface DishCardProps {
   layout?: "carousel" | "stacked";
   compact?: boolean;
   imageClassName?: string;
+  priority?: boolean;
 }
 
 function TagBadge({
@@ -102,6 +103,7 @@ export function DishCard({
   layout = "carousel",
   compact = false,
   imageClassName = "w-full max-w-xs",
+  priority = false,
 }: DishCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = normalizeImageUrl(dish?.image);
@@ -125,7 +127,13 @@ export function DishCard({
           fill
           className="object-cover"
           quality={75}
-          sizes="(max-width: 768px) 80vw, 320px"
+          sizes={
+            layout === "carousel"
+              ? "(max-width: 640px) 84vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
+              : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
+          }
+          priority={priority}
+          loading={priority ? undefined : "lazy"}
           onError={() => setImageFailed(true)}
         />
       </div>

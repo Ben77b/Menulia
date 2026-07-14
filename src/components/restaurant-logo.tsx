@@ -14,6 +14,8 @@ interface RestaurantLogoProps {
   wrapperClassName?: string;
   /** Shown when the logo URL is missing or fails to load */
   fallbackText?: string;
+  /** Prioritize header logo for first paint */
+  priority?: boolean;
 }
 
 function LogoPlaceholder({
@@ -46,6 +48,7 @@ export function RestaurantLogo({
   className,
   wrapperClassName,
   fallbackText,
+  priority = false,
 }: RestaurantLogoProps) {
   const [loadFailed, setLoadFailed] = useState(false);
   const imageSrc = normalizeImageUrl(src);
@@ -69,6 +72,9 @@ export function RestaurantLogo({
       <img
         src={imageSrc}
         alt={alt}
+        fetchPriority={priority ? "high" : "auto"}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
         className={cn("max-h-full max-w-full object-contain object-center", className)}
         onError={() => setLoadFailed(true)}
       />

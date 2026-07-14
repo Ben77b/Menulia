@@ -192,6 +192,7 @@ function DishSection({
             display={display}
             layout="stacked"
             imageClassName="w-full"
+            priority={index < 3}
           />
           );
         })}

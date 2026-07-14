@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { contrastingTextColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
@@ -33,6 +34,9 @@ interface DishCarouselProps {
 const FOCUS_TRANSITION =
   "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease";
 
+/** Centers the middle slot so ~8vw of adjacent cards peek on mobile. */
+const MOBILE_TRACK_OFFSET = "translateX(calc(50vw - 126vw - 0.5rem))";
+
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
 }
@@ -48,8 +52,8 @@ function CarouselCardFrame({
     <div
       className="origin-center will-change-transform"
       style={{
-        transform: isActive ? "scale(1.02)" : "scale(1)",
-        opacity: isActive ? 1 : 0.7,
+        transform: isActive ? "scale(1.02)" : "scale(0.96)",
+        opacity: isActive ? 1 : 0.72,
         transition: FOCUS_TRANSITION,
       }}
     >
@@ -83,6 +87,7 @@ export function DishCarousel({
     [dishes]
   );
   const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
   const isPreview = usePreviewCanvas();
   const arrowColor = isPreview
     ? pv("carouselArrowIcon")
@@ -124,15 +129,34 @@ export function DishCarousel({
     setActiveIndex((current) => mod(current + 1, safeDishes.length));
   }
 
+  function handleTouchStart(event: React.TouchEvent) {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  }
+
+  function handleTouchEnd(event: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const endX = event.changedTouches[0]?.clientX ?? touchStartX.current;
+    const delta = endX - touchStartX.current;
+    touchStartX.current = null;
+
+    if (delta > 48) goPrevious();
+    else if (delta < -48) goNext();
+  }
+
+  function handleSlotClick(position: "left" | "center" | "right") {
+    if (position === "left") goPrevious();
+    if (position === "right") goNext();
+  }
+
   return (
-    <div className="relative mx-auto max-w-4xl px-10 py-4 sm:px-14">
+    <div className="relative mx-auto max-w-4xl px-6 py-4 sm:px-14">
       {safeDishes.length > 1 && (
         <>
           <button
             type="button"
             aria-label="Previous dish"
             onClick={goPrevious}
-            className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105"
+            className="absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:left-0 sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
@@ -141,7 +165,7 @@ export function DishCarousel({
             type="button"
             aria-label="Next dish"
             onClick={goNext}
-            className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105"
+            className="absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:right-0 sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
@@ -170,49 +194,79 @@ export function DishCarousel({
               priceColor={priceColor}
               layout="carousel"
               imageClassName="w-full"
+              priority
             />
           </CarouselCardFrame>
         </div>
       ) : (
-        <div className="flex items-center justify-center gap-3 sm:gap-6">
-          {(slots ?? []).map((slot) => {
-            if (!slot?.dish) return null;
-            const isActive = slot.position === "center";
+        <div
+          className="overflow-hidden sm:overflow-visible"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div
+            className={cn(
+              "flex items-center gap-4 transition-transform duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] sm:justify-center",
+              MOBILE_TRACK_OFFSET,
+              "sm:translate-x-0"
+            )}
+          >
+            {(slots ?? []).map((slot) => {
+              if (!slot?.dish) return null;
+              const isActive = slot.position === "center";
 
-            return (
-              <div
-                key={slot.key}
-                className={
-                  isActive
-                    ? "w-[min(78vw,320px)] shrink-0"
-                    : "hidden w-[min(34vw,200px)] shrink-0 sm:block"
-                }
-              >
-                <CarouselCardFrame isActive={isActive}>
-                  <DishCard
-                    dish={slot.dish}
-                    lang={lang}
-                    fallbackLang={fallbackLang}
-                    restaurantName={restaurantName}
-                    titleFont={titleFont}
-                    bodyFont={bodyFont}
-                    titleFontWeight={titleFontWeight}
-                    titleFontStyle={titleFontStyle}
-                    bodyFontWeight={bodyFontWeight}
-                    bodyFontStyle={bodyFontStyle}
-                    textColor={mainTextColor}
-                    display={display}
-                    titleColor={titleColor}
-                    descriptionColor={descriptionColor}
-                    priceColor={priceColor}
-                    layout="carousel"
-                    compact={!isActive}
-                    imageClassName="w-full"
-                  />
-                </CarouselCardFrame>
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={slot.key}
+                  className={cn(
+                    "w-[84vw] shrink-0 sm:w-[min(34vw,200px)]",
+                    isActive && "sm:w-[min(78vw,320px)]",
+                    !isActive && "cursor-pointer sm:cursor-default"
+                  )}
+                  onClick={() => {
+                    if (!isActive) handleSlotClick(slot.position);
+                  }}
+                  onKeyDown={(event) => {
+                    if (isActive || event.key !== "Enter") return;
+                    handleSlotClick(slot.position);
+                  }}
+                  role={isActive ? undefined : "button"}
+                  tabIndex={isActive ? undefined : 0}
+                  aria-label={
+                    isActive
+                      ? undefined
+                      : slot.position === "left"
+                        ? "Show previous dish"
+                        : "Show next dish"
+                  }
+                >
+                  <CarouselCardFrame isActive={isActive}>
+                    <DishCard
+                      dish={slot.dish}
+                      lang={lang}
+                      fallbackLang={fallbackLang}
+                      restaurantName={restaurantName}
+                      titleFont={titleFont}
+                      bodyFont={bodyFont}
+                      titleFontWeight={titleFontWeight}
+                      titleFontStyle={titleFontStyle}
+                      bodyFontWeight={bodyFontWeight}
+                      bodyFontStyle={bodyFontStyle}
+                      textColor={mainTextColor}
+                      display={display}
+                      titleColor={titleColor}
+                      descriptionColor={descriptionColor}
+                      priceColor={priceColor}
+                      layout="carousel"
+                      compact={!isActive}
+                      imageClassName="w-full"
+                      priority={isActive && activeIndex < 3}
+                    />
+                  </CarouselCardFrame>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -107,6 +107,7 @@ export function MenuHeader({
                 fallbackText={localizedRestaurantName}
                 wrapperClassName="h-16 w-40 sm:h-20 sm:w-48"
                 className="h-full w-full"
+                priority
               />
             ) : null}
           </div>
