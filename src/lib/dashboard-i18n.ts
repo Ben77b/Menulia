@@ -141,6 +141,19 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "branding.saving": { en: "Saving...", es: "Guardando..." },
   "branding.saved": { en: "Saved!", es: "Guardado" },
   "builder.pageTitle": { en: "Menu Builder", es: "Editor de menú" },
+  "builder.pageSubtitle": {
+    en: "Tap any title or price to edit inline. Press Enter to save instantly.",
+    es: "Toca cualquier título o precio para editarlo. Pulsa Enter para guardar al instante.",
+  },
+  "builder.rapidAddPlaceholder": { en: "+ Add a dish…", es: "+ Agregar plato…" },
+  "builder.sectionNotePlaceholder": {
+    en: 'Optional note (e.g. "Served with miso soup")',
+    es: 'Nota opcional (p. ej. "Servido con sopa miso")',
+  },
+  "builder.tapForDetails": {
+    en: "Tap for photo, description, and tags",
+    es: "Toca para foto, descripción y etiquetas",
+  },
   "account.pageTitle": { en: "Account Settings", es: "Ajustes de cuenta" },
   "account.pageSubtitle": {
     en: "Manage your personal profile, security, and billing",

@@ -57,6 +57,7 @@ import { parsePriceInput } from "@/lib/price-input";
 import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { LocalizedTitleEditor } from "./localized-title-editor";
+import { InlineSaveField } from "./inline-save-field";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
@@ -105,7 +106,7 @@ function reportMenuBuilderError(
 }
 
 interface MenuBuilderFormDrafts {
-  rapidDrafts: Record<string, { name: string; price: string }>;
+  rapidDrafts: Record<string, string>;
   newSectionName: string;
   newCategoryName: string;
   addingSection: boolean;
@@ -128,9 +129,17 @@ function normalizeMenuBuilderFormDrafts(value: unknown): MenuBuilderFormDrafts {
   const draft = value as Partial<MenuBuilderFormDrafts>;
   const rapidDrafts =
     draft.rapidDrafts && typeof draft.rapidDrafts === "object" ? draft.rapidDrafts : {};
+  const normalizedRapidDrafts: Record<string, string> = {};
+  for (const [key, value] of Object.entries(rapidDrafts)) {
+    if (typeof value === "string") {
+      normalizedRapidDrafts[key] = value;
+    } else if (value && typeof value === "object" && typeof (value as { name?: string }).name === "string") {
+      normalizedRapidDrafts[key] = (value as { name: string }).name;
+    }
+  }
 
   return {
-    rapidDrafts,
+    rapidDrafts: normalizedRapidDrafts,
     newSectionName: typeof draft.newSectionName === "string" ? draft.newSectionName : "",
     newCategoryName: typeof draft.newCategoryName === "string" ? draft.newCategoryName : "",
     addingSection: Boolean(draft.addingSection),
@@ -174,16 +183,11 @@ export function MenuBuilder() {
   } = formDrafts;
 
   const setRapidDrafts = (
-    updater:
-      | Record<string, { name: string; price: string }>
-      | ((
-          prev: Record<string, { name: string; price: string }>
-        ) => Record<string, { name: string; price: string }>)
+    updater: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)
   ) => {
     setFormDrafts((prev) => ({
       ...prev,
-      rapidDrafts:
-        typeof updater === "function" ? updater(prev?.rapidDrafts ?? {}) : updater,
+      rapidDrafts: typeof updater === "function" ? updater(prev?.rapidDrafts ?? {}) : updater,
     }));
   };
 
@@ -395,8 +399,8 @@ export function MenuBuilder() {
   }
 
   async function handleRapidAddDish(categoryId: string) {
-    const draft = rapidDrafts[categoryId];
-    if (!draft?.name.trim()) return;
+    const name = rapidDrafts[categoryId]?.trim();
+    if (!name) return;
 
     const existingDishes = findCategory(tree, categoryId)?.dishes ?? [];
     const displayOrder = computeNextDishDisplayOrder(existingDishes);
@@ -405,9 +409,9 @@ export function MenuBuilder() {
     try {
       const created = await createMenuDish(
         categoryId,
-        clampMenuText(draft.name, MAX_DISH_NAME),
+        clampMenuText(name, MAX_DISH_NAME),
         "",
-        parsePriceInput(draft.price),
+        0,
         null,
         [],
         [],
@@ -417,8 +421,7 @@ export function MenuBuilder() {
       setTree((prev) =>
         addDishToCategory(prev, categoryId, { ...created, display_order: displayOrder })
       );
-      setRapidDrafts((prev) => ({ ...prev, [categoryId]: { name: "", price: "" } }));
-      toast.success("✨ Dish added");
+      setRapidDrafts((prev) => ({ ...prev, [categoryId]: "" }));
     } catch (err) {
       const message = toMenuBuilderErrorMessage(err);
       if (message) {
@@ -427,6 +430,76 @@ export function MenuBuilder() {
       }
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleInlineDishNameUpdate(
+    dish: MenuBuilderDish,
+    categoryId: string,
+    nextName: string
+  ): Promise<boolean> {
+    const trimmed = clampMenuText(nextName, MAX_DISH_NAME);
+    if (!trimmed) return false;
+
+    const currentName = resolveBuilderSourceText(dish.name, primaryLanguage).trim();
+    if (trimmed === currentName) return true;
+
+    const mergedName = mergeLocalizedText(dish.name, primaryLanguage, trimmed, primaryLanguage);
+    const previousTree = tree;
+    setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, { name: mergedName }));
+
+    try {
+      await updateMenuDish(
+        dish.id,
+        mergedName,
+        dish.description,
+        dish.price,
+        dish.image_url,
+        dish.tags ?? [],
+        dish.allergens ?? [],
+        dish.is_available,
+        dish.hide_price,
+        dish.lock_title_translation
+      );
+      return true;
+    } catch (err) {
+      setTree(previousTree);
+      toast.error(formatSupabaseError(err));
+      return false;
+    }
+  }
+
+  async function handleInlineDishPriceUpdate(
+    dish: MenuBuilderDish,
+    categoryId: string,
+    nextPrice: string
+  ): Promise<boolean> {
+    const resolvedPrice = parsePriceInput(nextPrice);
+    if (resolvedPrice === dish.price) return true;
+
+    const previousTree = tree;
+    setTree((prev) =>
+      updateDishInCategory(prev, categoryId, dish.id, { price: resolvedPrice })
+    );
+
+    try {
+      await updateMenuDish(
+        dish.id,
+        dish.name,
+        dish.description,
+        resolvedPrice,
+        dish.image_url,
+        dish.tags ?? [],
+        dish.allergens ?? [],
+        dish.is_available,
+        dish.hide_price,
+        dish.lock_title_translation
+      );
+      return true;
+    } catch (err) {
+      setTree(previousTree);
+      toast.error(formatSupabaseError(err));
+      return false;
     }
   }
 
@@ -689,7 +762,6 @@ export function MenuBuilder() {
 
     try {
       await updateMenuCategory(id, { name: mergedName });
-      toast.success("✨ Section renamed successfully!");
       return true;
     } catch (err) {
       setTree(previousTree);
@@ -855,7 +927,7 @@ export function MenuBuilder() {
         <div>
           <h1 className="air-page-title">{t("builder.pageTitle")}</h1>
           <p className="air-page-subtitle">
-            Sections → Categories → Dishes. Tab to price, Enter to save.
+            {t("builder.pageSubtitle")}
           </p>
         </div>
         {tree.sections.length > 0 && (
@@ -964,47 +1036,49 @@ export function MenuBuilder() {
           </div>
 
           {activeSection && (
-            <div className="space-y-4">
-              <div className="group flex items-center justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <LocalizedTitleEditor
-                    name={activeSection.name}
-                    primaryLanguage={primaryLanguage}
-                    titleClassName="air-section-title"
-                    maxLength={MAX_SECTION_TITLE}
+            <div className="space-y-6">
+              <div className="rounded-3xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-lg shadow-slate-200/40 sm:p-6">
+                <div className="group flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <LocalizedTitleEditor
+                      name={activeSection.name}
+                      primaryLanguage={primaryLanguage}
+                      titleClassName="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+                      maxLength={MAX_SECTION_TITLE}
+                      disabled={busy}
+                      onRename={(nextName) =>
+                        handleRenameCategory(activeSection.id, activeSection.name, nextName)
+                      }
+                      onTranslationChange={(lang, nextText) =>
+                        handleUpdateNameTranslation(activeSection.id, activeSection.name, lang, nextText)
+                      }
+                    />
+                    <p className="mt-2 text-sm text-slate-500 md:hidden">
+                      {t("builder.categoriesCount", {
+                        count: activeSection.categories?.length ?? 0,
+                      })}
+                    </p>
+                  </div>
+                  <BuilderRowMoreButton
+                    className="md:hidden"
+                    label={t("builder.actions.more")}
                     disabled={busy}
-                    onRename={(nextName) =>
-                      handleRenameCategory(activeSection.id, activeSection.name, nextName)
-                    }
-                    onTranslationChange={(lang, nextText) =>
-                      handleUpdateNameTranslation(activeSection.id, activeSection.name, lang, nextText)
-                    }
+                    onClick={() => openSectionActions(activeSection)}
                   />
-                  <p className="mt-1 text-xs text-[#86868B] md:hidden">
-                    {t("builder.categoriesCount", {
-                      count: activeSection.categories?.length ?? 0,
-                    })}
-                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="hidden shrink-0 text-red-600 hover:text-red-700 md:inline-flex"
+                    onClick={() => handleDeleteSection(activeSection)}
+                    disabled={busy}
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    Delete section
+                  </Button>
                 </div>
-                <BuilderRowMoreButton
-                  className="md:hidden"
-                  label={t("builder.actions.more")}
-                  disabled={busy}
-                  onClick={() => openSectionActions(activeSection)}
-                />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="hidden shrink-0 text-red-600 hover:text-red-700 md:inline-flex"
-                  onClick={() => handleDeleteSection(activeSection)}
-                  disabled={busy}
-                >
-                  <Trash2 className="mr-1 h-4 w-4" />
-                  Delete section
-                </Button>
               </div>
 
-              <div className="sticky top-0 z-10 -mx-1 rounded-2xl border border-[#F5F5F7]/90 bg-[#FAFAFA]/95 px-4 py-3 shadow-sm backdrop-blur-sm">
+              <div className="sticky top-0 z-10 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm">
                 {addingCategoryForSection === activeSection.id ? (
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <input
@@ -1059,11 +1133,17 @@ export function MenuBuilder() {
                     categoryCount={activeSection.categories?.length ?? 0}
                     busy={busy}
                     duplicating={duplicatingCategoryId === category.id}
-                    rapidDraft={rapidDrafts[category.id] ?? { name: "", price: "" }}
+                    rapidDraft={rapidDrafts[category.id] ?? ""}
                     onRapidDraftChange={(draft) =>
                       setRapidDrafts((prev) => ({ ...prev, [category.id]: draft }))
                     }
                     onRapidAdd={() => handleRapidAddDish(category.id)}
+                    onInlineDishNameUpdate={(dish, nextName) =>
+                      handleInlineDishNameUpdate(dish, category.id, nextName)
+                    }
+                    onInlineDishPriceUpdate={(dish, nextPrice) =>
+                      handleInlineDishPriceUpdate(dish, category.id, nextPrice)
+                    }
                     onDeleteCategory={() => handleDeleteCategory(activeSection.id, category)}
                     onDuplicateCategory={() => handleDuplicateCategory(activeSection.id, category)}
                     onDeleteDish={(dish) => handleDeleteDish(dish, category.id)}
@@ -1168,6 +1248,8 @@ function CategoryBlock({
   onTranslationChange,
   onMoveCategory,
   onMoveDish,
+  onInlineDishNameUpdate,
+  onInlineDishPriceUpdate,
   reorderMode,
   onOpenCategoryActions,
   onOpenDishActions,
@@ -1179,8 +1261,8 @@ function CategoryBlock({
   categoryCount: number;
   busy: boolean;
   duplicating: boolean;
-  rapidDraft: { name: string; price: string };
-  onRapidDraftChange: (draft: { name: string; price: string }) => void;
+  rapidDraft: string;
+  onRapidDraftChange: (draft: string) => void;
   onRapidAdd: () => Promise<void>;
   onDeleteCategory: () => void;
   onDuplicateCategory: () => void;
@@ -1193,27 +1275,31 @@ function CategoryBlock({
   onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
   onMoveCategory: (direction: -1 | 1) => void;
   onMoveDish: (dishId: string, direction: -1 | 1) => void;
+  onInlineDishNameUpdate: (dish: MenuBuilderDish, nextName: string) => Promise<boolean>;
+  onInlineDishPriceUpdate: (dish: MenuBuilderDish, nextPrice: string) => Promise<boolean>;
   reorderMode: boolean;
   onOpenCategoryActions: () => void;
   onOpenDishActions: (dish: MenuBuilderDish) => void;
 }) {
   const { t } = useDashboardLocale();
-  const nameRef = useRef<HTMLInputElement>(null);
-  const priceRef = useRef<HTMLInputElement>(null);
+  const rapidAddRef = useRef<HTMLInputElement>(null);
   const [noteDraft, setNoteDraft] = useState(resolveBuilderSourceText(category.description, primaryLanguage));
 
   useEffect(() => {
     setNoteDraft(resolveBuilderSourceText(category.description, primaryLanguage));
-  }, [category.id, category.description]);
+  }, [category.id, category.description, primaryLanguage]);
 
   async function handleQuickAdd() {
     await onRapidAdd();
-    nameRef.current?.focus();
+    rapidAddRef.current?.focus();
   }
 
   return (
-    <div id={categoryCardId(categoryId)} className="air-card overflow-hidden scroll-mt-24">
-      <div className="group flex items-center justify-between gap-3 border-b border-[#F5F5F7]/80 px-4 py-4 sm:px-6 sm:py-5">
+    <div
+      id={categoryCardId(categoryId)}
+      className="overflow-hidden scroll-mt-24 rounded-2xl border border-slate-200 bg-white shadow-md shadow-slate-200/30"
+    >
+      <div className="group flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6 sm:py-5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {reorderMode ? (
             <GripVertical className="h-5 w-5 shrink-0 text-slate-400 md:hidden" aria-hidden />
@@ -1232,7 +1318,7 @@ function CategoryBlock({
             <LocalizedTitleEditor
               name={category.name}
               primaryLanguage={primaryLanguage}
-              titleClassName="font-semibold text-slate-900"
+              titleClassName="text-lg font-semibold text-slate-900"
               maxLength={MAX_CATEGORY_NAME}
               disabled={busy || duplicating}
               onRename={onRename}
@@ -1240,11 +1326,11 @@ function CategoryBlock({
             />
           </div>
         </div>
-        <span className="shrink-0 text-xs text-[#86868B] md:hidden">
+        <span className="shrink-0 text-xs text-slate-500 md:hidden">
           {t("builder.dishesCount", { count: category.dishes?.length ?? 0 })}
         </span>
         <div className="hidden items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 md:flex">
-          <span className="shrink-0 text-xs text-[#86868B]">
+          <span className="shrink-0 text-xs text-slate-500">
             {category.dishes?.length ?? 0} dishes
           </span>
           <div className="air-capsule-nav !w-auto p-0.5">
@@ -1293,15 +1379,12 @@ function CategoryBlock({
         />
       </div>
 
-      <div className="border-b border-[#F5F5F7]/80 px-6 py-4">
-        <label className="mb-1.5 block text-xs font-medium text-slate-700">
-          {t("builder.sectionNote")}
-        </label>
+      <div className="border-b border-slate-100 px-4 py-3 sm:px-6">
         <input
           type="text"
           value={noteDraft}
           disabled={busy}
-          placeholder='e.g. "Optional flamed" or "Served with miso soup"'
+          placeholder={t("builder.sectionNotePlaceholder")}
           onChange={(e) => setNoteDraft(e.target.value)}
           onBlur={() => {
             const trimmed = noteDraft.trim();
@@ -1310,20 +1393,18 @@ function CategoryBlock({
               void onNoteChange(trimmed);
             }
           }}
-          className="air-input"
+          className="w-full rounded-xl border border-transparent bg-slate-50 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
         />
       </div>
 
-      <div className="divide-y divide-[#F5F5F7]">
+      <div>
         {(category.dishes ?? []).map((dish, dishIndex) => (
           <div
             key={dish?.id ?? dishIndex}
-            role="button"
-            tabIndex={0}
-            onClick={() => dish && onOpenDish(dish)}
-            onKeyDown={(e) => (e.key === "Enter" && dish ? onOpenDish(dish) : undefined)}
             className={cn(
-              "air-list-row group flex cursor-pointer items-center gap-3 px-4 py-4 sm:px-5",
+              "group flex items-center gap-3 border-b border-slate-100 px-4 py-3.5 transition-colors sm:px-5",
+              dishIndex % 2 === 0 ? "bg-white" : "bg-slate-50/80",
+              "hover:bg-sky-50/60",
               dish?.is_available === false && "opacity-60"
             )}
           >
@@ -1339,35 +1420,61 @@ function CategoryBlock({
               canMoveDown={dishIndex < (category.dishes?.length ?? 0) - 1}
               disabled={busy}
             />
-            {dish?.image_url ? (
-              <img
-                src={dish.image_url}
-                alt=""
-                className="hidden h-10 w-10 rounded-[10px] object-cover sm:block"
-              />
-            ) : (
-              <div className="hidden h-10 w-10 rounded-[10px] bg-[#F5F5F7] sm:block" />
-            )}
+            <button
+              type="button"
+              onClick={() => dish && onOpenDish(dish)}
+              className="hidden shrink-0 sm:block"
+              aria-label={t("builder.actions.editDetails")}
+            >
+              {dish?.image_url ? (
+                <img
+                  src={dish.image_url}
+                  alt=""
+                  className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200/80 transition-transform group-hover:scale-[1.02]"
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-xl bg-slate-100 ring-1 ring-slate-200/80" />
+              )}
+            </button>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="line-clamp-2 font-medium text-slate-900">
-                  {resolveBuilderSourceText(dish?.name, primaryLanguage) || "Untitled dish"}
-                </p>
+              <div className="flex min-w-0 items-center gap-2">
+                {dish ? (
+                  <InlineSaveField
+                    value={resolveBuilderSourceText(dish.name, primaryLanguage)}
+                    placeholder="Untitled dish"
+                    maxLength={MAX_DISH_NAME}
+                    disabled={busy}
+                    ariaLabel={`Edit ${resolveBuilderSourceText(dish.name, primaryLanguage) || "dish name"}`}
+                    textClassName="font-medium text-slate-900"
+                    onSave={(nextName) => onInlineDishNameUpdate(dish, nextName)}
+                  />
+                ) : null}
                 {dish?.is_available === false && (
                   <span className="air-badge shrink-0">{t("builder.hidden")}</span>
                 )}
               </div>
-              {dish?.description ? (
-                <p className="hidden line-clamp-2 text-xs text-[#86868B] sm:block">
-                  {resolveBuilderSourceText(dish.description, primaryLanguage)}
-                </p>
-              ) : (
-                <p className="hidden text-xs text-[#86868B] sm:block">
-                  Tap to add photo, description, and tags
-                </p>
-              )}
+              <button
+                type="button"
+                onClick={() => dish && onOpenDish(dish)}
+                className="mt-0.5 hidden text-left text-xs text-slate-500 transition-colors hover:text-slate-700 sm:block"
+              >
+                {dish?.description
+                  ? resolveBuilderSourceText(dish.description, primaryLanguage)
+                  : t("builder.tapForDetails")}
+              </button>
             </div>
-            <p className="shrink-0 font-semibold text-slate-900">€{(dish?.price ?? 0).toFixed(2)}</p>
+            {dish ? (
+              <InlineSaveField
+                value={(dish.price ?? 0).toFixed(2)}
+                displayValue={`€${(dish.price ?? 0).toFixed(2)}`}
+                inputMode="decimal"
+                disabled={busy}
+                ariaLabel={`Edit price for ${resolveBuilderSourceText(dish.name, primaryLanguage) || "dish"}`}
+                textClassName="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold tabular-nums text-slate-800"
+                inputClassName="w-24 text-right font-semibold tabular-nums"
+                onSave={(nextPrice) => onInlineDishPriceUpdate(dish, nextPrice)}
+              />
+            ) : null}
             <button
               type="button"
               onClick={(e) => {
@@ -1376,7 +1483,7 @@ function CategoryBlock({
               }}
               disabled={busy || !dish}
               aria-label={`Duplicate ${resolveBuilderSourceText(dish?.name, primaryLanguage) || "dish"}`}
-              className="hidden min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-slate-600 group-hover:opacity-100 md:inline-flex disabled:opacity-40"
+              className="hidden min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-white hover:text-slate-600 group-hover:opacity-100 md:inline-flex disabled:opacity-40"
             >
               <Copy className="h-4 w-4" />
             </button>
@@ -1386,11 +1493,18 @@ function CategoryBlock({
                 e.stopPropagation();
                 if (dish) onDeleteDish(dish);
               }}
-              className="hidden min-h-11 min-w-11 items-center justify-center rounded-lg text-[#C7C7CC] opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 md:inline-flex"
+              className="hidden min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-white hover:text-red-500 group-hover:opacity-100 md:inline-flex"
             >
               <Trash2 className="h-4 w-4" />
             </button>
-            <ChevronRight className="hidden h-4 w-4 text-[#C7C7CC] group-hover:text-slate-500 md:block" />
+            <button
+              type="button"
+              onClick={() => dish && onOpenDish(dish)}
+              className="hidden min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white hover:text-slate-600 md:inline-flex"
+              aria-label={t("builder.actions.editDetails")}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
             {dish ? (
               <BuilderRowMoreButton
                 className="md:hidden"
@@ -1402,58 +1516,22 @@ function CategoryBlock({
           </div>
         ))}
 
-        <div className="space-y-3 px-5 py-4">
-          <p className="text-xs leading-relaxed text-[#86868B]">
-            Quick add with name and price. Tap any dish above to edit full details.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="min-w-0 flex-1">
-              <label className="mb-1 block text-xs font-medium text-slate-700">Name</label>
-              <input
-                ref={nameRef}
-                placeholder="e.g. Margherita"
-                value={rapidDraft.name}
-                maxLength={MAX_DISH_NAME}
-                disabled={busy}
-                onChange={(e) => onRapidDraftChange({ ...rapidDraft, name: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    priceRef.current?.focus();
-                  }
-                }}
-                className="air-input"
-              />
-            </div>
-            <div className="w-full sm:w-28">
-              <label className="mb-1 block text-xs font-medium text-slate-700">Price (€)</label>
-              <input
-                ref={priceRef}
-                type="text"
-                inputMode="decimal"
-                placeholder="12,50"
-                value={rapidDraft.price}
-                disabled={busy}
-                onChange={(e) => onRapidDraftChange({ ...rapidDraft, price: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void handleQuickAdd();
-                  }
-                }}
-                className="air-input"
-              />
-            </div>
-            <Button
-              size="sm"
-              variant="dark"
-              className="w-full sm:w-auto"
-              disabled={busy || !rapidDraft.name.trim()}
-              onClick={() => void handleQuickAdd()}
-            >
-              Add dish
-            </Button>
-          </div>
+        <div className="border-t border-dashed border-slate-200 bg-slate-50/70 px-4 py-3 sm:px-5">
+          <input
+            ref={rapidAddRef}
+            placeholder={t("builder.rapidAddPlaceholder")}
+            value={rapidDraft}
+            maxLength={MAX_DISH_NAME}
+            disabled={busy}
+            onChange={(e) => onRapidDraftChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void handleQuickAdd();
+              }
+            }}
+            className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+          />
         </div>
       </div>
     </div>
