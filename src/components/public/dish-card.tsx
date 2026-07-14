@@ -132,7 +132,7 @@ export function DishCard({
   const isStackedLeft = isStackedLeftCategoryLayout(layout);
   const isStackedLayout = isStackedCategoryLayout(layout);
   const isCarouselPeek = layout === "carousel" && compact;
-  const isLeftAligned = isStackedLayout;
+  const isLeftAligned = isStackedLeft;
 
   const imageBlock =
     showImage && imageSrc ? (
@@ -207,7 +207,12 @@ export function DishCard({
         </p>
       )}
       {display.showPrices && !dish.hide_price && portionOptions && (
-        <div className="mt-2 flex flex-col gap-y-1">
+        <div
+          className={cn(
+            "mt-2 flex flex-col gap-y-1",
+            isStackedTop && "items-center"
+          )}
+        >
           {portionOptions.map((option) => (
             <p
               key={`${option.label}-${option.price}`}
@@ -300,9 +305,11 @@ export function DishCard({
 
   if (isStackedTop) {
     return (
-      <article className="flex w-full flex-col gap-4">
-        {imageBlock && <div className="w-full">{imageBlock}</div>}
-        <div className="w-full">{textBlock}</div>
+      <article className="flex w-full flex-col items-center gap-4">
+        {imageBlock && (
+          <div className="mx-auto w-full max-w-[160px] sm:max-w-[180px]">{imageBlock}</div>
+        )}
+        <div className="flex w-full flex-col items-center text-center">{textBlock}</div>
       </article>
     );
   }
