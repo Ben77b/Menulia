@@ -29,16 +29,10 @@ interface DishCarouselProps {
   descriptionColor?: string;
   priceColor?: string;
   emptyMessage?: string;
-  /** Menu background — used for edge vignette fades on mobile */
-  backgroundColor?: string;
 }
 
-const FOCUS_TRANSITION =
-  "transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease";
-
-/** Centers the middle slot so adjacent cards peek on mobile (84vw + gap-4). */
-const MOBILE_TRACK_OFFSET_STANDARD =
-  "translate-x-[calc(50vw-126vw-1rem)] max-[380px]:translate-x-[calc(50vw-132vw-0.5rem)]";
+/** Centers the middle 70vw card with gap-3 on mobile (210vw track + 2×0.75rem gaps). */
+const MOBILE_TRACK_OFFSET = "translate-x-[calc(50vw-105vw-0.75rem)]";
 
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
@@ -53,12 +47,10 @@ function CarouselCardFrame({
 }) {
   return (
     <div
-      className="origin-center will-change-transform"
-      style={{
-        transform: isActive ? "scale(1)" : "scale(0.94)",
-        opacity: isActive ? 1 : 0.55,
-        transition: FOCUS_TRANSITION,
-      }}
+      className={cn(
+        "origin-center transition-all duration-300 will-change-transform",
+        isActive ? "scale-100 opacity-100" : "scale-[0.82] opacity-40"
+      )}
     >
       {children}
     </div>
@@ -84,7 +76,6 @@ export function DishCarousel({
   descriptionColor,
   priceColor,
   emptyMessage = "No dishes in this category.",
-  backgroundColor = "#ffffff",
 }: DishCarouselProps) {
   const safeDishes = useMemo(
     () => (dishes ?? []).filter((dish): dish is PublicMenuDish => Boolean(dish?.id)),
@@ -152,15 +143,37 @@ export function DishCarousel({
     if (position === "right") goNext();
   }
 
+  const dishCardProps = (dish: PublicMenuDish, isActive: boolean) => ({
+    dish,
+    lang,
+    fallbackLang,
+    restaurantName,
+    titleFont,
+    bodyFont,
+    titleFontWeight,
+    titleFontStyle,
+    bodyFontWeight,
+    bodyFontStyle,
+    textColor: mainTextColor,
+    display,
+    titleColor,
+    descriptionColor,
+    priceColor,
+    layout: "carousel" as const,
+    compact: !isActive,
+    imageClassName: "w-full max-w-[70vw] sm:max-w-none",
+    priority: isActive && activeIndex < 3,
+  });
+
   return (
-    <div className="relative mx-auto max-w-4xl px-3 py-4 max-[380px]:px-2 sm:px-14">
+    <div className="relative mx-auto max-w-4xl px-2 py-4 sm:px-14">
       {safeDishes.length > 1 && (
         <>
           <button
             type="button"
             aria-label="Previous dish"
             onClick={goPrevious}
-            className="absolute left-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:left-0 sm:h-11 sm:w-11"
+            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
@@ -169,7 +182,7 @@ export function DishCarousel({
             type="button"
             aria-label="Next dish"
             onClick={goNext}
-            className="absolute right-1 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:right-0 sm:h-11 sm:w-11"
+            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
@@ -178,112 +191,60 @@ export function DishCarousel({
       )}
 
       {safeDishes.length === 1 ? (
-        <div className="mx-auto w-full max-w-[320px]">
+        <div className="mx-auto w-full max-w-[70vw] sm:max-w-[320px]">
           <CarouselCardFrame isActive>
-            <DishCard
-              dish={safeDishes[0]}
-              lang={lang}
-              fallbackLang={fallbackLang}
-              restaurantName={restaurantName}
-              titleFont={titleFont}
-              bodyFont={bodyFont}
-              titleFontWeight={titleFontWeight}
-              titleFontStyle={titleFontStyle}
-              bodyFontWeight={bodyFontWeight}
-              bodyFontStyle={bodyFontStyle}
-              textColor={mainTextColor}
-              display={display}
-              titleColor={titleColor}
-              descriptionColor={descriptionColor}
-              priceColor={priceColor}
-              layout="carousel"
-              imageClassName="w-full"
-              priority
-            />
+            <DishCard {...dishCardProps(safeDishes[0], true)} priority />
           </CarouselCardFrame>
         </div>
       ) : (
-        <div className="relative overflow-hidden sm:overflow-visible">
+        <div
+          className="relative overflow-hidden sm:overflow-visible"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <div
-            className="overflow-hidden sm:overflow-visible"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            className={cn(
+              "flex items-center gap-3 transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] sm:justify-center sm:gap-6",
+              MOBILE_TRACK_OFFSET,
+              "sm:translate-x-0"
+            )}
           >
-            <div
-              className={cn(
-                "flex items-stretch gap-4 transition-transform duration-[400ms] ease-[cubic-bezier(0.25,1,0.5,1)] max-[380px]:gap-2 sm:justify-center",
-                MOBILE_TRACK_OFFSET_STANDARD,
-                "sm:translate-x-0"
-              )}
-            >
-              {(slots ?? []).map((slot) => {
-                if (!slot?.dish) return null;
-                const isActive = slot.position === "center";
+            {(slots ?? []).map((slot) => {
+              if (!slot?.dish) return null;
+              const isActive = slot.position === "center";
 
-                return (
-                  <div
-                    key={slot.key}
-                    className={cn(
-                      "w-[84vw] shrink-0 max-[380px]:w-[88vw] sm:w-[min(34vw,200px)]",
-                      isActive && "sm:w-[min(78vw,320px)]",
-                      !isActive && "cursor-pointer sm:cursor-default"
-                    )}
-                    onClick={() => {
-                      if (!isActive) handleSlotClick(slot.position);
-                    }}
-                    onKeyDown={(event) => {
-                      if (isActive || event.key !== "Enter") return;
-                      handleSlotClick(slot.position);
-                    }}
-                    role={isActive ? undefined : "button"}
-                    tabIndex={isActive ? undefined : 0}
-                    aria-label={
-                      isActive
-                        ? undefined
-                        : slot.position === "left"
-                          ? "Show previous dish"
-                          : "Show next dish"
-                    }
-                  >
-                    <CarouselCardFrame isActive={isActive}>
-                      <DishCard
-                        dish={slot.dish}
-                        lang={lang}
-                        fallbackLang={fallbackLang}
-                        restaurantName={restaurantName}
-                        titleFont={titleFont}
-                        bodyFont={bodyFont}
-                        titleFontWeight={titleFontWeight}
-                        titleFontStyle={titleFontStyle}
-                        bodyFontWeight={bodyFontWeight}
-                        bodyFontStyle={bodyFontStyle}
-                        textColor={mainTextColor}
-                        display={display}
-                        titleColor={titleColor}
-                        descriptionColor={descriptionColor}
-                        priceColor={priceColor}
-                        layout="carousel"
-                        compact={!isActive}
-                        imageClassName="w-full"
-                        priority={isActive && activeIndex < 3}
-                      />
-                    </CarouselCardFrame>
-                  </div>
-                );
-              })}
-            </div>
+              return (
+                <div
+                  key={slot.key}
+                  className={cn(
+                    "w-[70vw] max-w-[70vw] shrink-0 sm:w-[min(34vw,200px)] sm:max-w-none",
+                    isActive && "sm:w-[min(78vw,320px)]",
+                    !isActive && "cursor-pointer sm:cursor-default"
+                  )}
+                  onClick={() => {
+                    if (!isActive) handleSlotClick(slot.position);
+                  }}
+                  onKeyDown={(event) => {
+                    if (isActive || event.key !== "Enter") return;
+                    handleSlotClick(slot.position);
+                  }}
+                  role={isActive ? undefined : "button"}
+                  tabIndex={isActive ? undefined : 0}
+                  aria-label={
+                    isActive
+                      ? undefined
+                      : slot.position === "left"
+                        ? "Show previous dish"
+                        : "Show next dish"
+                  }
+                >
+                  <CarouselCardFrame isActive={isActive}>
+                    <DishCard {...dishCardProps(slot.dish, isActive)} />
+                  </CarouselCardFrame>
+                </div>
+              );
+            })}
           </div>
-
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 sm:hidden"
-            style={{ backgroundImage: `linear-gradient(to right, ${backgroundColor}, transparent)` }}
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 sm:hidden"
-            style={{ backgroundImage: `linear-gradient(to left, ${backgroundColor}, transparent)` }}
-          />
         </div>
       )}
     </div>

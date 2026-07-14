@@ -118,13 +118,13 @@ export function DishCard({
   const imageAlt = `${localizedName} at ${restaurantName}`;
   const allergenLocale = lang === "es" ? "es" : "en";
 
+  const isCarouselPeek = layout === "carousel" && compact;
+
   const imageBlock =
     showImage && imageSrc ? (
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl",
-          layout === "carousel" && compact && "aspect-[5/4] max-[380px]:aspect-[4/3]",
-          layout === "carousel" && !compact && "aspect-square",
+          "relative aspect-square overflow-hidden rounded-2xl",
           imageClassName
         )}
       >
@@ -136,7 +136,7 @@ export function DishCard({
           quality={75}
           sizes={
             layout === "carousel"
-              ? "(max-width: 380px) 88vw, (max-width: 640px) 84vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
+              ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
               : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
           }
           priority={priority}
@@ -151,9 +151,9 @@ export function DishCard({
       ? "whitespace-pre-wrap text-base sm:text-lg"
       : cn(
           "line-clamp-2",
-          compact
-            ? "text-xs max-[380px]:text-[11px] sm:text-sm"
-            : "text-sm max-[380px]:text-[15px] sm:text-base"
+          isCarouselPeek
+            ? "text-[11px] leading-snug sm:text-sm"
+            : "text-sm sm:text-base"
         );
 
   const descriptionClampClass =
@@ -161,13 +161,11 @@ export function DishCard({
       ? "text-sm whitespace-pre-wrap leading-relaxed"
       : cn(
           "leading-relaxed",
-          compact
-            ? "line-clamp-2 text-[10px] max-[380px]:hidden sm:text-xs"
-            : "line-clamp-3 text-xs max-[380px]:text-[13px] sm:text-sm"
+          isCarouselPeek ? "hidden sm:line-clamp-2 sm:text-xs" : "line-clamp-3 text-xs sm:text-sm"
         );
 
   const textBlock = (
-    <div className="space-y-2 text-center">
+    <div className={cn("space-y-2 text-center", isCarouselPeek && "space-y-1")}>
       <h3
         className={cn("font-semibold uppercase leading-tight tracking-wide", titleClampClass)}
         style={{
@@ -193,7 +191,7 @@ export function DishCard({
         </p>
       )}
       {display.showDietary && (dish.tags ?? []).length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className={cn("flex flex-wrap justify-center gap-2", isCarouselPeek && "hidden sm:flex")}>
         {(dish?.tags ?? []).filter(Boolean).map((tag) => {
           if (!tag) return null;
           const meta = getFilterableTagMeta(tag);
@@ -212,7 +210,7 @@ export function DishCard({
         </div>
       )}
       {display.showDietary && (dish.allergens ?? []).length > 0 && (
-        <div className="flex flex-wrap justify-center gap-1.5">
+        <div className={cn("flex flex-wrap justify-center gap-1.5", isCarouselPeek && "hidden sm:flex")}>
           {(dish?.allergens ?? []).filter(Boolean).map((allergen) => {
           if (!allergen) return null;
           const meta = getAllergenTagMeta(allergen, allergenLocale);
@@ -233,7 +231,7 @@ export function DishCard({
       )}
       {display.showPrices && !dish.hide_price && (
         <p
-          className={`font-bold ${compact ? "text-sm" : "text-base"}`}
+          className={cn("font-bold", isCarouselPeek ? "text-xs sm:text-sm" : "text-base")}
           style={{
             color: resolvedPrice,
             fontFamily: bodyFont,
@@ -261,7 +259,9 @@ export function DishCard({
   return (
     <article className={`flex flex-col ${imageBlock ? "" : "w-full"}`}>
       {imageBlock}
-      <div className={imageBlock ? "mt-4" : "w-full"}>{textBlock}</div>
+      <div className={cn(imageBlock ? "mt-3 sm:mt-4" : "w-full", isCarouselPeek && "mt-2 sm:mt-4")}>
+        {textBlock}
+      </div>
     </article>
   );
 }
