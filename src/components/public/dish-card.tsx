@@ -308,17 +308,24 @@ export function DishCard({
   }
 
   if (isStackedLeft) {
+    const stackedLeftImageColumnClass = "w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]";
+    const stackedLeftMedia =
+      display.showImages &&
+      (showImage && imageBlock ? (
+        imageBlock
+      ) : (
+        <div
+          className="aspect-square w-full rounded-2xl bg-neutral-100/60 dark:bg-neutral-900/40"
+          aria-hidden
+        />
+      ));
+
     return (
-      <article
-        className={cn(
-          "flex w-full gap-4 sm:gap-6",
-          imageBlock ? "flex-col sm:flex-row sm:items-start" : "flex-col"
-        )}
-      >
-        {imageBlock && (
-          <div className="w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]">{imageBlock}</div>
-        )}
-        <div className="min-w-0 flex-1">{textBlock}</div>
+      <article className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+        {stackedLeftMedia ? (
+          <div className={stackedLeftImageColumnClass}>{stackedLeftMedia}</div>
+        ) : null}
+        <div className="min-w-0 flex-1 items-start text-left">{textBlock}</div>
       </article>
     );
   }
