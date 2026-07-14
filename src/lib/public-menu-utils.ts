@@ -2,6 +2,7 @@ import type { PublicMenuDish } from "@/components/public/dish-card";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/localized-text";
 import { isFilterableTag } from "@/lib/dietary-tags";
+import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 import { parsePriceVariationsFromDb } from "@/lib/price-variations";
 
 /** Returns a trimmed image URL when non-empty; does not block on protocol. */
@@ -42,14 +43,12 @@ export function sanitizePublicMenuSubcategory(
 ): PublicMenuSubcategory | null {
   if (!subcategory || typeof subcategory !== "object") return null;
 
-  const layoutType = subcategory.layout_type === "carousel" ? "carousel" : "stacked";
-
   return {
     ...subcategory,
     id: subcategory.id ?? "",
     name: subcategory.name ?? "",
     description: subcategory.description ?? null,
-    layout_type: layoutType,
+    layout_type: normalizeCategoryLayoutType(subcategory.layout_type),
     dishes: (subcategory.dishes ?? [])
       .map(sanitizePublicMenuDish)
       .filter((dish): dish is PublicMenuDish => dish !== null),

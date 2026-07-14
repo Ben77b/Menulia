@@ -10,6 +10,7 @@ import {
 } from "@/lib/menu-hierarchy";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { sortRecordsByDisplayOrder } from "@/lib/menu-dish-order";
+import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 
 export function hasNestedMenuStructure(categoryRows: CategoryRow[]): boolean {
   return categoryRows.some((row) => row.parent_id !== null);
@@ -23,7 +24,7 @@ function rowToSubcategory(
     id: row.id,
     name: row.name,
     description: row.description ?? null,
-    layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
+    layout_type: normalizeCategoryLayoutType(row.layout_type),
     dishes: dishesByCategoryId[row.id] ?? [],
   };
 }

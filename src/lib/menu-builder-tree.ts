@@ -1,3 +1,4 @@
+import { normalizeCategoryLayoutType } from "./category-layout";
 import type { MenuCategoryRecord } from "./menu-db";
 import type { MenuBuilderCategory, MenuBuilderSection, MenuBuilderTree } from "./menu-builder-types";
 
@@ -24,7 +25,7 @@ export function flatRecordsToMenuTree(records: MenuCategoryRecord[]): MenuBuilde
       id: row.id,
       name: row.name,
       description: row.description ?? null,
-      layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
+      layout_type: normalizeCategoryLayoutType(row.layout_type),
       order_index: row.order_index ?? 0,
       parent_id: row.parent_id,
       dishes: [...(row.items ?? [])].sort(

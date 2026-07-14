@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
+import { CATEGORY_LAYOUT_OPTIONS, type CategoryLayoutType } from "@/lib/category-layout";
 import type { BuilderContextTarget } from "./builder-context-target";
 
 interface BuilderContextActionsSheetProps {
@@ -23,7 +24,7 @@ interface BuilderContextActionsSheetProps {
   onDelete: (target: BuilderContextTarget) => void;
   onLayoutChange: (
     target: Extract<BuilderContextTarget, { kind: "category" }>,
-    layout: "stacked" | "carousel"
+    layout: CategoryLayoutType
   ) => void;
   busy?: boolean;
 }
@@ -144,18 +145,21 @@ export function BuilderContextActionsSheet({
 
           {target?.kind === "category" && (
             <div className="flex flex-col gap-1">
-              <ActionRow
-                icon={<Layers className="h-4 w-4" />}
-                label={t("builder.actions.layoutStacked")}
-                disabled={busy || target.category.layout_type === "stacked"}
-                onClick={() => run(() => onLayoutChange(target, "stacked"))}
-              />
-              <ActionRow
-                icon={<LayoutGrid className="h-4 w-4" />}
-                label={t("builder.actions.layoutCarousel")}
-                disabled={busy || target.category.layout_type === "carousel"}
-                onClick={() => run(() => onLayoutChange(target, "carousel"))}
-              />
+              {CATEGORY_LAYOUT_OPTIONS.map((option) => (
+                <ActionRow
+                  key={option.value}
+                  icon={
+                    option.value === "carousel" ? (
+                      <LayoutGrid className="h-4 w-4" />
+                    ) : (
+                      <Layers className="h-4 w-4" />
+                    )
+                  }
+                  label={t(option.labelKey)}
+                  disabled={busy || target.category.layout_type === option.value}
+                  onClick={() => run(() => onLayoutChange(target, option.value))}
+                />
+              ))}
               <ActionRow
                 icon={<Copy className="h-4 w-4" />}
                 label={t("builder.actions.duplicate")}

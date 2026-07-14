@@ -8,6 +8,8 @@ import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
 import { hasPriceVariations, parsePriceVariationsFromDb, type PriceVariation } from "@/lib/price-variations";
+import type { CategoryLayoutType } from "@/lib/category-layout";
+import { isStackedCategoryLayout } from "@/lib/category-layout";
 
 export interface PublicMenuDish {
   id: string;
@@ -40,7 +42,7 @@ interface DishCardProps {
   descriptionColor?: string;
   priceColor?: string;
   display: PublicMenuDisplayOptions;
-  layout?: "carousel" | "stacked";
+  layout?: CategoryLayoutType;
   compact?: boolean;
   imageClassName?: string;
   priority?: boolean;
@@ -122,6 +124,8 @@ export function DishCard({
   const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
 
+  const isStackedLayout = isStackedCategoryLayout(layout);
+  const isImageRight = layout === "stacked_right";
   const isCarouselPeek = layout === "carousel" && compact;
 
   const imageBlock =
@@ -150,8 +154,7 @@ export function DishCard({
       </div>
     ) : null;
 
-  const titleClampClass =
-    layout === "stacked"
+  const titleClampClass = isStackedLayout
       ? "whitespace-pre-wrap text-base sm:text-lg"
       : cn(
           "line-clamp-2",
@@ -160,8 +163,7 @@ export function DishCard({
             : "text-sm sm:text-base"
         );
 
-  const descriptionClampClass =
-    layout === "stacked"
+  const descriptionClampClass = isStackedLayout
       ? "text-sm whitespace-pre-wrap leading-relaxed"
       : cn(
           "leading-relaxed",
@@ -169,7 +171,13 @@ export function DishCard({
         );
 
   const textBlock = (
-    <div className={cn("space-y-2 text-center", isCarouselPeek && "space-y-1")}>
+    <div
+      className={cn(
+        "space-y-2",
+        isStackedLayout ? "text-left" : "text-center",
+        isCarouselPeek && "space-y-1"
+      )}
+    >
       <h3
         className={cn("font-semibold uppercase leading-tight tracking-wide", titleClampClass)}
         style={{
@@ -274,13 +282,22 @@ export function DishCard({
     </div>
   );
 
-  if (layout === "stacked") {
+  if (isStackedLayout) {
     return (
       <article
-        className={`flex flex-col gap-4 text-center ${imageBlock ? "items-center" : "w-full items-stretch"}`}
+        className={cn(
+          "flex w-full gap-4 sm:gap-6",
+          imageBlock
+            ? isImageRight
+              ? "flex-col items-center sm:flex-row-reverse sm:items-start"
+              : "flex-col items-center sm:flex-row sm:items-start"
+            : "flex-col items-stretch"
+        )}
       >
-        {imageBlock && <div className="w-full max-w-sm shrink-0">{imageBlock}</div>}
-        <div className={imageBlock ? "w-full max-w-xl flex-1" : "w-full flex-1"}>{textBlock}</div>
+        {imageBlock && (
+          <div className="w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]">{imageBlock}</div>
+        )}
+        <div className="min-w-0 flex-1">{textBlock}</div>
       </article>
     );
   }

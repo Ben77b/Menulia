@@ -14,6 +14,8 @@ import {
   serializePriceVariationsForDb,
   type PriceVariation,
 } from "./price-variations";
+import type { CategoryLayoutType } from "./category-layout";
+import { normalizeCategoryLayoutType } from "./category-layout";
 
 function readIsAvailable(dish: Record<string, unknown>): boolean {
   return dish.is_available !== false;
@@ -301,7 +303,7 @@ export async function createMenuCategory(
   name: string,
   restaurantId: string,
   options?: {
-    layout_type?: "stacked" | "carousel";
+    layout_type?: CategoryLayoutType;
     parent_id?: string | null;
     description?: string | null;
   }
@@ -610,7 +612,7 @@ export async function duplicateMenuCategory(
     resolveLocalizedText(duplicateName(source.name as LocalizedTextValue), "en"),
     restaurantId,
     {
-      layout_type: source.layout_type === "carousel" ? "carousel" : "stacked",
+      layout_type: normalizeCategoryLayoutType(source.layout_type),
       parent_id: (source.parent_id as string | null) ?? null,
       description: resolveLocalizedText(source.description as LocalizedTextValue, "en") || null,
     }

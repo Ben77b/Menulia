@@ -77,6 +77,7 @@ import { getSecondaryLanguage, normalizePrimaryLanguage } from "@/lib/menu-conte
 import { useTouchLayout } from "@/hooks/use-touch-layout";
 import { CategoryListPanel } from "./category-list-panel";
 import { CategorySlideOver } from "./category-slide-over";
+import { CATEGORY_LAYOUT_OPTIONS, type CategoryLayoutType } from "@/lib/category-layout";
 
 function isBenignMenuBuilderError(error: unknown): boolean {
   if (error instanceof TypeError) return true;
@@ -709,7 +710,7 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleLayoutChange(category: MenuBuilderCategory, layout: "stacked" | "carousel") {
+  async function handleLayoutChange(category: MenuBuilderCategory, layout: CategoryLayoutType) {
     const previousTree = tree;
     setTree((prev) => patchCategoryInTree(prev, category.id, { layout_type: layout }));
     try {
@@ -1442,7 +1443,7 @@ function DishesCanvas({
   onDuplicateDish: (dish: MenuBuilderDish) => void;
   onSelectDish: (dish: MenuBuilderDish) => void;
   onToggleVisibility: (dish: MenuBuilderDish) => void;
-  onLayoutChange: (layout: "stacked" | "carousel") => void;
+  onLayoutChange: (layout: CategoryLayoutType) => void;
   onNoteChange: (note: string) => void;
   onRename: (nextName: string) => Promise<boolean>;
   onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
@@ -1521,20 +1522,20 @@ function DishesCanvas({
             </button>
           )}
         <div className="hidden items-center gap-1 lg:flex">
-          <div className="flex rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-0.5">
-            {(["stacked", "carousel"] as const).map((layout) => (
+          <div className="flex max-w-full flex-wrap rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-0.5">
+            {CATEGORY_LAYOUT_OPTIONS.map((option) => (
               <button
-                key={layout}
+                key={option.value}
                 type="button"
-                onClick={() => onLayoutChange(layout)}
+                onClick={() => onLayoutChange(option.value)}
                 className={cn(
-                  "min-h-11 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all duration-200 ease-in-out",
-                  category.layout_type === layout
+                  "min-h-11 rounded-lg px-2.5 py-1.5 text-[11px] font-medium leading-tight transition-all duration-200 ease-in-out sm:px-3 sm:text-xs",
+                  category.layout_type === option.value
                     ? "bg-sky-600 text-white shadow-sm"
                     : "text-neutral-600 hover:bg-white"
                 )}
               >
-                {layout}
+                {t(option.labelKey)}
               </button>
             ))}
           </div>

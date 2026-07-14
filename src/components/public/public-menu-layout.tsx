@@ -16,6 +16,7 @@ import {
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
+import { isCarouselCategoryLayout } from "@/lib/category-layout";
 import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
 import { CategorySectionHeader } from "./category-section-header";
@@ -124,7 +125,7 @@ function DishSection({
     <h2 className="sr-only">{resolveLocalizedText(subcategory.name, locale, primaryLocale)}</h2>
   );
 
-  if (subcategory.layout_type === "carousel") {
+  if (isCarouselCategoryLayout(subcategory.layout_type)) {
     return (
       <PreviewHotspot
         id="menuItem"
@@ -190,7 +191,7 @@ function DishSection({
             descriptionColor={themedColor(isPreview, "itemDescription", theme.itemDescriptionText)}
             priceColor={themedColor(isPreview, "itemPrice", theme.priceTextColor)}
             display={display}
-            layout="stacked"
+            layout={subcategory.layout_type === "stacked_right" ? "stacked_right" : "stacked"}
             imageClassName="w-full"
             priority={index < 3}
           />

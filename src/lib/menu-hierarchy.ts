@@ -14,7 +14,7 @@ export interface PublicMenuSubcategory {
   id: string;
   name: LocalizedTextValue;
   description?: LocalizedTextValue;
-  layout_type: "carousel" | "stacked";
+  layout_type: CategoryLayoutType;
   dishes: PublicMenuDish[];
 }
 
@@ -27,6 +27,10 @@ export interface PublicMenuParentCategory {
 import { parseDishTagsFromDb } from "@/lib/dietary-tags";
 import { parseLocalizedFieldFromDb } from "@/lib/localized-text";
 import { parsePriceVariationsFromDb } from "@/lib/price-variations";
+import {
+  normalizeCategoryLayoutType,
+  type CategoryLayoutType,
+} from "@/lib/category-layout";
 
 export function mapDishRow(dish: {
   id: string;
@@ -64,7 +68,7 @@ export function buildMenuHierarchy(
     id: row.id,
     name: row.name,
     description: row.description ?? null,
-    layout_type: row.layout_type === "carousel" ? "carousel" : "stacked",
+    layout_type: normalizeCategoryLayoutType(row.layout_type),
     dishes: dishesByCategoryId[row.id] ?? [],
   });
 

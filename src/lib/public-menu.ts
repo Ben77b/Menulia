@@ -4,6 +4,7 @@ import { defaultOperatingHours, formatOperatingHoursDisplay, normalizeOperatingH
 import { DEFAULT_DESIGN, applyComputedContrast, type RestaurantDesign } from "./restaurant-design";
 import { parseMenuThemeColors } from "./theme-colors";
 import { contrastingTextColor } from "./contrast";
+import { normalizeCategoryLayoutType } from "./category-layout";
 
 export const DEFAULT_OPERATING_HOURS: OperatingHourData[] = defaultOperatingHours();
 
@@ -64,7 +65,7 @@ export function withPublicMenuDefaults(restaurant: RestaurantFull): RestaurantFu
 
   const categories = (restaurant.categories ?? []).map((category) => ({
     ...category,
-    layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
+    layout_type: normalizeCategoryLayoutType(category.layout_type),
     items: (category.items ?? []).map((item) => ({
       ...item,
       description: item.description || "",

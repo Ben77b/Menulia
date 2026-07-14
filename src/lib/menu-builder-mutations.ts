@@ -4,7 +4,7 @@ import type {
   MenuBuilderSection,
   MenuBuilderTree,
 } from "./menu-builder-types";
-import type { LocalizedTextValue } from "./localized-text";
+import { normalizeCategoryLayoutType, type CategoryLayoutType } from "./category-layout";
 import {
   normalizeDishDisplayOrder,
   sortDishesByDisplayOrder,
@@ -236,7 +236,7 @@ export function recordsToCategory(category: {
     id: category.id,
     name: category.name,
     description: category.description,
-    layout_type: category.layout_type === "carousel" ? "carousel" : "stacked",
+    layout_type: normalizeCategoryLayoutType(category.layout_type),
     order_index: category.order_index,
     parent_id: category.parent_id ?? "",
     dishes: [...category.items].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
