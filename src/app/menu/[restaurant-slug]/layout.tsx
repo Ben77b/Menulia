@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { getPublicMenuSplashBySlug } from "@/lib/public-menu-cache";
 import { PublicMenuRouteShell } from "@/components/public/public-menu-route-shell";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export function headers() {
   return {
