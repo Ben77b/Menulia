@@ -107,8 +107,6 @@ export function DishCard({
   imageClassName = "w-full max-w-xs",
   priority = false,
 }: DishCardProps) {
-  console.log("DISH DATA:", dish);
-
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = normalizeImageUrl(dish?.image);
   const showImage = Boolean(display?.showImages && imageSrc && !imageFailed);
@@ -197,18 +195,13 @@ export function DishCard({
         </p>
       )}
       {display.showPrices && !dish.hide_price && portionOptions && (
-        <div
-          className={cn(
-            "flex flex-wrap justify-center gap-2",
-            isCarouselPeek ? "gap-1.5" : "gap-2"
-          )}
-        >
+        <div className="mt-2 flex flex-col gap-y-1">
           {portionOptions.map((option) => (
-            <span
+            <p
               key={`${option.label}-${option.price}`}
               className={cn(
-                "inline-flex items-center rounded-full border border-current/15 bg-current/[0.04] px-3 py-1 font-medium tabular-nums",
-                isCarouselPeek ? "text-[10px] sm:text-xs" : "text-xs sm:text-sm"
+                "font-medium tabular-nums",
+                isCarouselPeek ? "text-xs sm:text-sm" : "text-sm sm:text-base"
               )}
               style={{
                 color: resolvedPrice,
@@ -217,12 +210,12 @@ export function DishCard({
                 fontStyle: bodyFontStyle ?? "normal",
               }}
             >
-              <span className="opacity-80">{option.label}</span>
-              <span className="mx-1.5 opacity-30" aria-hidden>
+              {option.label}
+              <span className="mx-1.5 opacity-50" aria-hidden>
                 ·
               </span>
-              <span>{formatPrice(option.price)}</span>
-            </span>
+              {formatPrice(option.price)}
+            </p>
           ))}
         </div>
       )}
