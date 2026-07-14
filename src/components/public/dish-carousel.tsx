@@ -33,6 +33,7 @@ interface DishCarouselProps {
 
 const MOBILE_CARD_WIDTH_VW = 70;
 const MOBILE_TRACK_GAP_PX = 12; // gap-3
+const MOBILE_TRACK_GAP_HALF_PX = MOBILE_TRACK_GAP_PX / 2;
 
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
@@ -40,7 +41,7 @@ function mod(n: number, m: number) {
 
 function mobileTrackTranslate(activeIndex: number): string {
   const centerOffsetVw = 50 - MOBILE_CARD_WIDTH_VW / 2;
-  return `translateX(calc(${centerOffsetVw}vw - ${activeIndex} * (${MOBILE_CARD_WIDTH_VW}vw + ${MOBILE_TRACK_GAP_PX}px)))`;
+  return `translateX(calc(${centerOffsetVw}vw - (${activeIndex} * (${MOBILE_CARD_WIDTH_VW}vw + ${MOBILE_TRACK_GAP_PX}px)) - ${MOBILE_TRACK_GAP_HALF_PX}px))`;
 }
 
 function CarouselCardFrame({
@@ -174,7 +175,7 @@ export function DishCarousel({
   });
 
   return (
-    <div className="relative mx-auto max-w-4xl overflow-visible px-2 py-4 sm:px-14">
+    <div className="relative mx-auto max-w-4xl overflow-visible py-4 sm:px-14">
       {safeDishes.length > 1 && (
         <>
           <button
