@@ -307,7 +307,7 @@ export function DishCard({
     return (
       <article className="flex w-full flex-col items-center gap-4">
         {imageBlock && (
-          <div className="mx-auto w-full max-w-[160px] sm:max-w-[180px]">{imageBlock}</div>
+          <div className="mx-auto w-full max-w-[200px] sm:max-w-[220px]">{imageBlock}</div>
         )}
         <div className="flex w-full flex-col items-center text-center">{textBlock}</div>
       </article>
