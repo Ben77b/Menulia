@@ -107,7 +107,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-[#E5E5EA] bg-white transition-transform duration-300 ease-out",
+          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-neutral-200/50 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0 w-72" : "-translate-x-full w-72",
           "md:translate-x-0 md:w-64"
         )}
@@ -117,14 +117,14 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-slate-900">Menulia</h1>
-                <p className="mt-0.5 text-xs text-[#86868B]">{t("nav.workspace")}</p>
+                <p className="mt-0.5 text-xs text-neutral-500">{t("nav.workspace")}</p>
               </div>
               <DashboardLocaleToggle className="shrink-0" />
             </div>
           </div>
 
           {!workspaceReady && user ? (
-            <div className="mb-6 rounded-2xl border border-[#E5E5EA] bg-[#FAFAFA] px-4 py-4 text-sm text-[#86868B]">
+            <div className="mb-6 rounded-xl border border-neutral-200/50 bg-neutral-50/80 px-4 py-4 text-sm text-neutral-500">
               {t("nav.loadingWorkspace")}
             </div>
           ) : hasRestaurants ? (
@@ -132,7 +132,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               <div className="relative">
                 <button
                   onClick={() => setRestaurantOpen(!restaurantOpen)}
-                  className="air-card flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left transition-colors hover:bg-[#FAFAFA]"
+                  className="air-card flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 hover:bg-neutral-50"
                 >
                   {activeRestaurant?.logo ? (
                     <img
@@ -141,7 +141,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                       className="h-9 w-9 rounded-xl object-cover"
                     />
                   ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F5F5F7]">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-100">
                       <Building2 className="h-4 w-4 text-slate-500" />
                     </div>
                   )}
@@ -149,7 +149,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     <p className="truncate text-sm font-semibold text-slate-900">
                       {activeRestaurant?.name || t("nav.selectRestaurant")}
                     </p>
-                    <p className="text-xs text-[#86868B]">
+                    <p className="text-xs text-neutral-500">
                       {loading
                         ? t("nav.loading")
                         : restaurants.length === 1
@@ -159,14 +159,14 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   </div>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 text-[#86868B] transition-transform",
+                      "h-4 w-4 text-neutral-400 transition-transform",
                       restaurantOpen && "rotate-180"
                     )}
                   />
                 </button>
 
                 {restaurantOpen && (
-                  <div className="absolute left-0 right-0 top-full z-10 mt-2 max-h-64 overflow-y-auto rounded-2xl border border-[#E5E5EA] bg-white p-2 shadow-[0_8px_40px_rgba(0,0,0,0.08)]">
+                  <div className="absolute left-0 right-0 top-full z-10 mt-2 max-h-64 overflow-y-auto rounded-xl border border-neutral-200/50 bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
                     {restaurants.map((restaurant) => {
                       const isActive = restaurant.id === activeRestaurantId;
                       return (
@@ -174,10 +174,10 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                           key={restaurant.id}
                           onClick={() => handleRestaurantSwitch(restaurant.id)}
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200",
                             isActive
-                              ? "bg-[#F5F5F7] font-medium text-slate-900"
-                              : "text-slate-600 hover:bg-[#FAFAFA]"
+                              ? "bg-neutral-100 font-medium text-slate-900"
+                              : "text-neutral-600 hover:bg-neutral-50"
                           )}
                         >
                           {restaurant.logo ? (
@@ -196,7 +196,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     })}
                     <button
                       onClick={handleAddRestaurant}
-                      className="mt-1 w-full rounded-xl border-t border-[#F5F5F7] px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-[#FAFAFA]"
+                      className="mt-1 w-full rounded-lg border-t border-neutral-100 px-3 py-2.5 text-left text-sm font-medium text-neutral-700 transition-all duration-200 hover:bg-neutral-50"
                     >
                       {t("nav.addRestaurant")}
                     </button>
@@ -205,7 +205,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               </div>
             </div>
           ) : showOnboardingLockout ? (
-            <div className="mb-6 rounded-2xl border border-dashed border-[#E5E5EA] bg-[#FAFAFA] px-4 py-4 text-sm text-[#86868B]">
+            <div className="mb-6 rounded-xl border border-dashed border-neutral-200/60 bg-neutral-50/50 px-4 py-4 text-sm text-neutral-500">
               {t("nav.onboardingLockout")}
             </div>
           ) : null}
@@ -220,7 +220,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                   onClick={onToggle}
                   className={cn("air-sidebar-link", isActive && "air-sidebar-link-active")}
                 >
-                  <item.icon className="h-5 w-5 shrink-0 text-slate-500" />
+                  <item.icon className="h-5 w-5 shrink-0 text-neutral-400" />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -246,20 +246,20 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               onClick={onToggle}
               className={cn("air-profile-card", isAccountPage && "air-profile-card-active")}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F5F5F7]">
-                <User className="h-4 w-4 text-slate-600" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100">
+                <User className="h-4 w-4 text-neutral-600" />
               </div>
               <div className="min-w-0 flex-1 text-left">
                 <p className="truncate text-sm font-semibold text-slate-900">{profileName}</p>
-                <p className="truncate text-xs text-[#86868B]">{profileSubtitle}</p>
+                <p className="truncate text-xs text-neutral-500">{profileSubtitle}</p>
               </div>
-              <ChevronDown className="-rotate-90 h-4 w-4 shrink-0 text-[#86868B]" />
+              <ChevronDown className="-rotate-90 h-4 w-4 shrink-0 text-neutral-400" />
             </Link>
           </div>
 
           <button
             onClick={onToggle}
-            className="absolute right-4 top-5 rounded-xl p-2 transition-colors hover:bg-[#F5F5F7] md:hidden"
+            className="absolute right-4 top-5 rounded-lg p-2 transition-all duration-200 hover:bg-neutral-100 md:hidden"
           >
             <X className="h-5 w-5 text-slate-500" />
           </button>

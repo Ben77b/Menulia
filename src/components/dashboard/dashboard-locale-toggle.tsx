@@ -20,7 +20,7 @@ export function DashboardLocaleToggle({ className }: { className?: string }) {
     <nav
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center rounded-full border border-[#E5E5EA] bg-[#FAFAFA] p-0.5 text-xs font-semibold",
+        "inline-flex items-center rounded-full border border-neutral-200/50 bg-neutral-100/60 p-0.5 text-xs font-semibold shadow-sm shadow-black/[0.02]",
         className
       )}
     >
@@ -37,10 +37,10 @@ export function DashboardLocaleToggle({ className }: { className?: string }) {
             }}
             disabled={!isMounted || !localeMounted}
             className={cn(
-              "min-w-[2.25rem] rounded-full px-2.5 py-1 tracking-wide transition-colors",
+              "min-w-[2.25rem] rounded-full px-2.5 py-1 tracking-wide transition-all duration-200",
               isActive
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-800",
+                ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-neutral-200/50"
+                : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-800",
               (!isMounted || !localeMounted) && "pointer-events-none"
             )}
             aria-pressed={isActive}

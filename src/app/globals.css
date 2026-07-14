@@ -5,10 +5,10 @@
   --color-background: #f5f5f7;
   --color-foreground: #0f172a;
   --color-card: #ffffff;
-  --color-border: #e5e5ea;
-  --color-input: #e5e5ea;
-  --color-muted: #f5f5f7;
-  --color-muted-foreground: #86868b;
+  --color-border: #e5e7eb;
+  --color-input: #e5e7eb;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #737373;
   --color-surface: #f5f5f7;
   --color-surface-elevated: #ffffff;
   --color-text-primary: #0f172a;
@@ -39,7 +39,9 @@
   --font-display: var(--font-instrument-serif), "Instrument Serif", ui-serif, Georgia, serif;
   --font-air: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --shadow-air-ambient: 0 4px 30px rgba(0, 0, 0, 0.02);
+  --shadow-air-ambient: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-air-card: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-air-elevated: 0 8px 24px rgba(0, 0, 0, 0.06);
 
   --radius-lg: 1rem;
   --radius-md: 0.625rem;
@@ -156,15 +158,15 @@
   /* ——— Menulia Air dashboard design system ——— */
 
   .air-page-title {
-    @apply text-3xl font-bold tracking-tight text-slate-900 md:text-[2rem];
+    @apply text-2xl font-bold tracking-tight text-slate-900 md:text-3xl;
   }
 
   .air-section-title {
-    @apply text-xl font-semibold tracking-tight text-slate-900;
+    @apply text-lg font-semibold tracking-tight text-slate-900 md:text-xl;
   }
 
   .air-page-subtitle {
-    @apply mt-2 text-sm leading-relaxed text-muted-foreground md:text-[15px];
+    @apply mt-1.5 text-sm leading-relaxed text-neutral-500 md:text-[15px];
   }
 
   .air-label {
@@ -172,76 +174,75 @@
   }
 
   .air-helper {
-    @apply text-xs leading-relaxed text-muted-foreground;
+    @apply text-xs leading-relaxed text-neutral-500;
   }
 
   .air-link {
-    @apply text-sm font-medium text-slate-700 underline-offset-4 hover:text-slate-900 hover:underline;
+    @apply text-sm font-medium text-neutral-600 underline-offset-4 transition-colors duration-200 hover:text-slate-900 hover:underline;
   }
 
   .air-card {
-    @apply border-0 bg-card shadow-[0_4px_30px_rgba(0,0,0,0.04)];
-    border-radius: var(--radius-lg);
+    @apply rounded-xl border border-neutral-200/50 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow duration-200;
   }
 
   .air-card-lg {
-    border-radius: var(--radius-xl);
+    @apply rounded-2xl;
   }
 
   .air-card-pad {
-    @apply p-7 md:p-10;
+    @apply p-5 md:p-6;
   }
 
   .air-page {
-    @apply space-y-10;
+    @apply space-y-8 md:space-y-10;
   }
 
   .air-list-row {
-    @apply transition-all duration-200 ease-in-out hover:bg-[#FAFAFA];
+    @apply transition-all duration-200 ease-out hover:bg-neutral-50/80;
   }
 
   .air-input {
-    @apply h-10 w-full rounded-[10px] border border-input bg-card px-3 text-sm text-slate-900 transition-colors placeholder:text-muted-foreground focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-black/5;
+    @apply h-10 w-full rounded-xl border border-neutral-200/60 bg-white px-3.5 text-sm text-slate-900 shadow-sm shadow-black/[0.02] transition-all duration-200 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5;
   }
 
   .air-input-ghost {
-    @apply h-10 w-full rounded-[10px] border border-transparent bg-transparent px-3 text-sm text-slate-900 transition-colors placeholder:text-muted-foreground focus:border-input focus:bg-card focus:outline-none focus:ring-2 focus:ring-black/5;
+    @apply h-10 w-full rounded-xl border border-transparent bg-transparent px-3.5 text-sm text-slate-900 transition-all duration-200 placeholder:text-neutral-400 focus:border-neutral-200/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900/5;
   }
 
   .air-textarea {
-    @apply min-h-[100px] w-full resize-none rounded-[10px] border border-input bg-card px-3 py-2 text-sm text-slate-900 transition-colors placeholder:text-muted-foreground focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-black/5;
+    @apply min-h-[100px] w-full resize-none rounded-xl border border-neutral-200/60 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm shadow-black/[0.02] transition-all duration-200 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5;
   }
 
   .air-select {
-    @apply h-10 w-full rounded-[10px] border border-input bg-card px-3 text-sm text-slate-900 transition-colors placeholder:text-muted-foreground focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-black/5;
+    @apply h-10 w-full rounded-xl border border-neutral-200/60 bg-white px-3.5 text-sm text-slate-900 shadow-sm shadow-black/[0.02] transition-all duration-200 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5;
   }
 
   .air-chip {
-    @apply rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-slate-300 hover:text-slate-700;
+    @apply rounded-full border border-neutral-200/60 px-3 py-1 text-xs font-medium text-neutral-500 transition-all duration-200 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700;
   }
 
   .air-chip-active {
-    @apply border-slate-300 bg-muted text-slate-900;
+    @apply border-neutral-300/80 bg-neutral-100/80 text-slate-900;
   }
 
   .air-alert-error {
-    @apply rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700;
+    @apply rounded-xl border border-red-200/60 bg-red-50/80 px-4 py-3 text-sm text-red-700;
   }
 
   .air-alert-warning {
-    @apply rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-900;
+    @apply rounded-xl border border-amber-200/60 bg-amber-50/80 px-4 py-3 text-sm text-amber-900;
   }
 
   .air-dropdown {
-    @apply absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-[10px] border border-border bg-card p-1 shadow-[0_8px_40px_rgba(0,0,0,0.08)];
+    @apply absolute left-0 right-0 top-full z-50 mt-1.5 max-h-48 overflow-y-auto rounded-xl border border-neutral-200/50 bg-white p-1 shadow-[0_8px_24px_rgba(0,0,0,0.06)];
   }
 
   .air-dropdown-item {
-    @apply flex w-full items-center rounded-[8px] px-3 py-2.5 text-left text-sm text-slate-700 transition-colors hover:bg-muted;
+    @apply flex w-full items-center rounded-lg px-3 py-2.5 text-left text-sm text-neutral-700 transition-all duration-200 hover:bg-neutral-50;
   }
 
   .air-capsule-nav {
-    @apply inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-[14px] bg-muted p-1;
+    @apply inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-xl border border-neutral-200/40 bg-neutral-100/60 p-1;
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -260,51 +261,51 @@
   }
 
   .air-capsule-nav-item {
-    @apply min-w-0 whitespace-normal break-words line-clamp-2 rounded-[10px] px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-slate-700;
+    @apply min-w-0 whitespace-normal break-words line-clamp-2 rounded-lg px-3.5 py-2 text-sm font-medium text-neutral-500 transition-all duration-200 hover:bg-neutral-50/80 hover:text-neutral-800;
   }
 
   .air-capsule-nav-item-active {
-    @apply bg-card text-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.06)];
+    @apply bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-neutral-200/50;
   }
 
   .air-sidebar-link {
-    @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition-all duration-200 ease-in-out hover:bg-muted hover:text-slate-900;
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-600 transition-all duration-200 hover:bg-neutral-50 hover:text-slate-900;
   }
 
   .air-sidebar-link-active {
-    @apply bg-muted text-slate-900;
+    @apply bg-neutral-100/90 text-slate-900 ring-1 ring-neutral-200/50;
   }
 
   .air-profile-card {
-    @apply flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-air-ambient)] transition-colors hover:bg-[#FAFAFA];
+    @apply flex w-full items-center gap-3 rounded-xl border border-neutral-200/50 bg-white p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-neutral-200 hover:bg-neutral-50/50;
   }
 
   .air-profile-card-active {
-    @apply border-slate-300 bg-muted;
+    @apply border-neutral-300/60 bg-neutral-50 ring-1 ring-neutral-200/60;
   }
 
   .air-row-divider {
-    @apply border-b border-[#F5F5F7] last:border-b-0;
+    @apply border-b border-neutral-100 last:border-b-0;
   }
 
   .air-badge {
-    @apply rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground;
+    @apply rounded-full bg-neutral-100/80 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-500;
   }
 
   .air-badge-active {
-    @apply bg-slate-900/8 text-slate-700;
+    @apply bg-neutral-200/60 text-neutral-700;
   }
 
   .air-pill-toggle {
-    @apply flex rounded-[10px] border border-border bg-card p-0.5 text-xs;
+    @apply flex rounded-xl border border-neutral-200/50 bg-white p-0.5 text-xs shadow-sm shadow-black/[0.02];
   }
 
   .air-pill-toggle-item {
-    @apply rounded-[8px] px-2.5 py-1 capitalize text-muted-foreground transition-colors;
+    @apply rounded-lg px-2.5 py-1 capitalize text-neutral-500 transition-all duration-200 hover:text-neutral-700;
   }
 
   .air-pill-toggle-item-active {
-    @apply bg-muted font-medium text-slate-900;
+    @apply bg-neutral-100 font-medium text-slate-900;
   }
 
   .air-display-serif {

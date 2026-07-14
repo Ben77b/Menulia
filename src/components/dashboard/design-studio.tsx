@@ -378,7 +378,7 @@ export function DesignStudio() {
         )}
 
         {activeTab === "colours" && (
-          <div className="mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+          <div className="mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Colours</h2>
               <p className="mt-1 text-xs text-slate-400">
@@ -404,7 +404,7 @@ export function DesignStudio() {
         )}
 
         {activeTab === "fonts" && (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+          <div className="mx-auto max-w-2xl rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Typography</h2>
               <p className="mt-1 text-xs text-slate-400">
@@ -416,7 +416,7 @@ export function DesignStudio() {
         )}
 
         {activeTab === "display" && (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+          <div className="mx-auto max-w-2xl rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Display Options</h2>
               <p className="mt-1 text-xs text-slate-400">
@@ -428,7 +428,7 @@ export function DesignStudio() {
         )}
 
         {activeTab === "logo-seo" && (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+          <div className="mx-auto max-w-2xl rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Logo & SEO</h2>
               <p className="mt-1 text-xs text-slate-400">

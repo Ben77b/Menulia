@@ -20,24 +20,24 @@ export function DashboardSectionCard({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8",
+        "rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6",
         className
       )}
     >
-      <div className="mb-6 flex items-start gap-3">
+      <div className="mb-5 flex items-start gap-3">
         {icon ? (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600">
             {icon}
           </div>
         ) : null}
         <div className="min-w-0">
           <h2 className="text-base font-semibold tracking-tight text-slate-900">{title}</h2>
           {description ? (
-            <p className="mt-1 text-xs text-slate-400">{description}</p>
+            <p className="mt-1 text-xs text-neutral-500">{description}</p>
           ) : null}
         </div>
       </div>
-      <div className={cn("space-y-5", contentClassName)}>{children}</div>
+      <div className={cn("space-y-4", contentClassName)}>{children}</div>
     </section>
   );
 }
@@ -53,10 +53,10 @@ export function DashboardFieldLabel({
 }) {
   return (
     <div className="mb-2">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-slate-700">
+      <label htmlFor={htmlFor} className="text-sm font-medium text-slate-800">
         {label}
       </label>
-      {hint ? <p className="mt-1 text-xs text-slate-400">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-neutral-500">{hint}</p> : null}
     </div>
   );
 }

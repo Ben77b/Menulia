@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, ChevronRight, LayoutGrid, Layers, Copy, Loader2, GripVertical } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, Layers, Copy, Loader2, GripVertical, Pencil, X } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { useSessionPersistedState } from "@/hooks/use-session-persisted-state";
@@ -56,8 +56,9 @@ import { MenuBuilderSkeleton } from "@/components/ui/skeleton";
 import { parsePriceInput } from "@/lib/price-input";
 import { cn } from "@/lib/utils";
 import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
+import { DishDetailInspector } from "./dish-detail-inspector";
+import { DishRow } from "./dish-row";
 import { LocalizedTitleEditor } from "./localized-title-editor";
-import { InlineSaveField } from "./inline-save-field";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
@@ -204,6 +205,8 @@ export function MenuBuilder() {
     dish: MenuBuilderDish;
     categoryId: string;
   } | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
   const [reorderMode, setReorderMode] = useState(false);
@@ -230,6 +233,21 @@ export function MenuBuilder() {
         : -1,
     [activeSection, tree.sections]
   );
+
+  const activeCategory = useMemo(() => {
+    if (!activeCategoryId || !activeSection) return null;
+    return (
+      (activeSection.categories ?? []).find((category) => category?.id === activeCategoryId) ??
+      null
+    );
+  }, [activeSection, activeCategoryId]);
+
+  const activeCategoryIndex = useMemo(() => {
+    if (!activeCategoryId || !activeSection) return -1;
+    return (activeSection.categories ?? []).findIndex(
+      (category) => category?.id === activeCategoryId
+    );
+  }, [activeSection, activeCategoryId]);
 
   const setActiveSectionId = useCallback(
     (sectionId: string) => {
@@ -262,6 +280,26 @@ export function MenuBuilder() {
       setAddingCategoryForSection(null);
     }
   }, [addingCategoryForSection, tree.sections]);
+
+  useEffect(() => {
+    const categories = activeSection?.categories ?? [];
+    if (categories.length === 0) {
+      setActiveCategoryId(null);
+      return;
+    }
+    if (!activeCategoryId || !categories.some((category) => category?.id === activeCategoryId)) {
+      setActiveCategoryId(categories[0]?.id ?? null);
+    }
+  }, [activeSection?.id, activeSection?.categories, activeCategoryId]);
+
+  useEffect(() => {
+    if (!selectedDish) return;
+    const category = findCategory(tree, selectedDish.categoryId);
+    const freshDish = category?.dishes?.find((dish) => dish?.id === selectedDish.dish.id);
+    if (freshDish && freshDish !== selectedDish.dish) {
+      setSelectedDish((prev) => (prev ? { ...prev, dish: freshDish } : null));
+    }
+  }, [tree, selectedDish?.categoryId, selectedDish?.dish.id]);
 
   const loadMenu = useCallback(async (options?: { silent?: boolean }) => {
     if (!currentRestaurant?.id) return;
@@ -549,7 +587,8 @@ export function MenuBuilder() {
     };
 
     setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, optimisticDish));
-    setSelectedDish(null);
+    setSelectedDish({ dish: optimisticDish, categoryId });
+    setMobileSheetOpen(false);
     setBusy(true);
     try {
       await updateMenuDish(
@@ -921,12 +960,24 @@ export function MenuBuilder() {
     });
   }
 
+  function handleSelectDish(dish: MenuBuilderDish, categoryId: string) {
+    setSelectedDish({ dish, categoryId });
+    setMobileSheetOpen(false);
+  }
+
+  function handleCloseInspector() {
+    setSelectedDish(null);
+    setMobileSheetOpen(false);
+  }
+
   return (
-    <div className="air-page">
+    <div className="flex flex-col gap-4 pb-28 md:pb-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="air-page-title">{t("builder.pageTitle")}</h1>
-          <p className="air-page-subtitle">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+            {t("builder.pageTitle")}
+          </h1>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             {t("builder.pageSubtitle")}
           </p>
         </div>
@@ -935,10 +986,10 @@ export function MenuBuilder() {
             type="button"
             onClick={() => setReorderMode((current) => !current)}
             className={cn(
-              "inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-all md:hidden",
+              "inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium transition-all duration-200 ease-in-out md:hidden",
               reorderMode
-                ? "border-[#22c55e] text-[#22c55e] shadow-[0_0_14px_rgba(34,197,94,0.35)]"
-                : "border-slate-200 text-slate-600 hover:border-slate-300"
+                ? "border-emerald-500 text-emerald-600 shadow-[0_0_14px_rgba(16,185,129,0.35)]"
+                : "border-neutral-200/60 text-neutral-600 hover:border-neutral-300"
             )}
           >
             {reorderMode ? t("builder.reorderModeOn") : t("builder.reorderMode")}
@@ -953,7 +1004,7 @@ export function MenuBuilder() {
       )}
 
       {addingSection && (
-        <div className="air-card air-card-pad flex gap-2">
+        <div className="flex gap-2 rounded-2xl border border-neutral-200/60 bg-white p-4 dark:border-neutral-800/60 dark:bg-neutral-950">
           <input
             autoFocus
             placeholder="Section name (e.g. Food, Drinks)"
@@ -961,7 +1012,7 @@ export function MenuBuilder() {
             maxLength={MAX_SECTION_TITLE}
             onChange={(e) => setNewSectionName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddSection()}
-            className="air-input flex-1"
+            className="flex-1 rounded-xl border border-neutral-200/60 bg-white px-3 py-2.5 text-sm transition-all duration-200 ease-in-out focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-800/60 dark:bg-neutral-950"
           />
           <Button variant="dark" onClick={handleAddSection} disabled={!newSectionName.trim() || busy}>
             Save
@@ -973,12 +1024,14 @@ export function MenuBuilder() {
       )}
 
       {tree.sections.length === 0 ? (
-        <div className="air-card air-card-pad flex flex-col items-center py-20 text-center">
-          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F5F5F7]">
-            <Layers className="h-8 w-8 text-[#C7C7CC]" />
+        <div className="flex flex-col items-center rounded-2xl border border-neutral-200/60 bg-white py-20 text-center dark:border-neutral-800/60 dark:bg-neutral-950">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-900">
+            <Layers className="h-8 w-8 text-neutral-400" />
           </div>
-          <h2 className="text-lg font-semibold text-slate-900">Welcome to your menu builder!</h2>
-          <p className="mt-2 max-w-sm text-sm text-[#86868B]">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            Welcome to your menu builder!
+          </h2>
+          <p className="mt-2 max-w-sm text-sm text-neutral-500">
             Create your first section to get started. Sections organize your menu into groups like
             Food, Drinks, or Desserts.
           </p>
@@ -1036,155 +1089,197 @@ export function MenuBuilder() {
           </div>
 
           {activeSection && (
-            <div className="space-y-6">
-              <div className="rounded-3xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/90 p-5 shadow-lg shadow-slate-200/40 sm:p-6">
-                <div className="group flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <LocalizedTitleEditor
-                      name={activeSection.name}
-                      primaryLanguage={primaryLanguage}
-                      titleClassName="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
-                      maxLength={MAX_SECTION_TITLE}
-                      disabled={busy}
-                      onRename={(nextName) =>
-                        handleRenameCategory(activeSection.id, activeSection.name, nextName)
-                      }
-                      onTranslationChange={(lang, nextText) =>
-                        handleUpdateNameTranslation(activeSection.id, activeSection.name, lang, nextText)
-                      }
-                    />
-                    <p className="mt-2 text-sm text-slate-500 md:hidden">
-                      {t("builder.categoriesCount", {
-                        count: activeSection.categories?.length ?? 0,
-                      })}
-                    </p>
-                  </div>
-                  <BuilderRowMoreButton
-                    className="md:hidden"
-                    label={t("builder.actions.more")}
-                    disabled={busy}
-                    onClick={() => openSectionActions(activeSection)}
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="hidden shrink-0 text-red-600 hover:text-red-700 md:inline-flex"
-                    onClick={() => handleDeleteSection(activeSection)}
-                    disabled={busy}
-                  >
-                    <Trash2 className="mr-1 h-4 w-4" />
-                    Delete section
-                  </Button>
-                </div>
-              </div>
+            <>
+              <MobileCategoryStrip
+                activeSection={activeSection}
+                activeCategoryId={activeCategoryId}
+                primaryLanguage={primaryLanguage}
+                busy={busy}
+                onSelectCategory={setActiveCategoryId}
+                onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
+              />
 
-              <div className="sticky top-0 z-10 rounded-2xl border border-slate-200/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-sm">
-                {addingCategoryForSection === activeSection.id ? (
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <input
-                      autoFocus
-                      placeholder="Category name (e.g. Starters)"
-                      value={newCategoryName}
-                      maxLength={MAX_CATEGORY_NAME}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddCategory(activeSection.id)}
-                      className="air-input flex-1"
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        variant="dark"
-                        onClick={() => handleAddCategory(activeSection.id)}
-                        disabled={!newCategoryName.trim() || busy}
-                      >
-                        Add
-                      </Button>
-                      <Button variant="outline" onClick={() => setAddingCategoryForSection(null)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setAddingCategoryForSection(activeSection.id)}
-                    disabled={busy || (activeSection.categories?.length ?? 0) >= MAX_CATEGORIES_PER_SECTION}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#E5E5EA] bg-white py-3 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-white disabled:opacity-50"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Category
-                  </button>
+              <div
+                className={cn(
+                  "grid items-start gap-4",
+                  selectedDish
+                    ? "lg:grid-cols-[240px_1fr_400px]"
+                    : "lg:grid-cols-[240px_1fr]"
                 )}
-              </div>
+              >
+                <CategorySidebar
+                activeSection={activeSection}
+                activeCategoryId={activeCategoryId}
+                primaryLanguage={primaryLanguage}
+                busy={busy}
+                reorderMode={reorderMode}
+                addingCategory={addingCategoryForSection === activeSection.id}
+                newCategoryName={newCategoryName}
+                onSelectCategory={setActiveCategoryId}
+                onNewCategoryNameChange={setNewCategoryName}
+                onStartAddCategory={() => setAddingCategoryForSection(activeSection.id)}
+                onCancelAddCategory={() => setAddingCategoryForSection(null)}
+                onAddCategory={() => handleAddCategory(activeSection.id)}
+                onMoveCategory={(categoryId, direction) =>
+                  handleReorderCategory(activeSection.id, categoryId, direction)
+                }
+                onRenameSection={(nextName) =>
+                  handleRenameCategory(activeSection.id, activeSection.name, nextName)
+                }
+                onTranslationChange={(lang, nextText) =>
+                  handleUpdateNameTranslation(activeSection.id, activeSection.name, lang, nextText)
+                }
+                onDeleteSection={() => handleDeleteSection(activeSection)}
+              />
 
-              {(activeSection.categories?.length ?? 0) === 0 ? (
-                <div className="air-card air-card-pad py-10 text-center text-sm text-[#86868B]">
-                  No categories yet. Use the button above to add Starters, Mains, Desserts…
-                </div>
+              {activeCategory ? (
+                <DishesCanvas
+                  category={activeCategory}
+                  categoryIndex={activeCategoryIndex}
+                  categoryCount={activeSection.categories?.length ?? 0}
+                  primaryLanguage={primaryLanguage}
+                  busy={busy}
+                  duplicating={duplicatingCategoryId === activeCategory.id}
+                  rapidDraft={rapidDrafts[activeCategory.id] ?? ""}
+                  selectedDishId={selectedDish?.dish.id ?? null}
+                  reorderMode={reorderMode}
+                  onRapidDraftChange={(draft) =>
+                    setRapidDrafts((prev) => ({ ...prev, [activeCategory.id]: draft }))
+                  }
+                  onRapidAdd={() => handleRapidAddDish(activeCategory.id)}
+                  onInlineDishNameUpdate={(dish, nextName) =>
+                    handleInlineDishNameUpdate(dish, activeCategory.id, nextName)
+                  }
+                  onInlineDishPriceUpdate={(dish, nextPrice) =>
+                    handleInlineDishPriceUpdate(dish, activeCategory.id, nextPrice)
+                  }
+                  onDeleteCategory={() => handleDeleteCategory(activeSection.id, activeCategory)}
+                  onDuplicateCategory={() =>
+                    handleDuplicateCategory(activeSection.id, activeCategory)
+                  }
+                  onDeleteDish={(dish) => handleDeleteDish(dish, activeCategory.id)}
+                  onDuplicateDish={(dish) => handleDuplicateDish(dish, activeCategory.id)}
+                  onSelectDish={(dish) => handleSelectDish(dish, activeCategory.id)}
+                  onToggleVisibility={(dish) =>
+                    handleToggleDishVisibility(dish, activeCategory.id)
+                  }
+                  onLayoutChange={(layout) => handleLayoutChange(activeCategory, layout)}
+                  onNoteChange={(note) => handleCategoryNoteChange(activeCategory.id, note)}
+                  onRename={(nextName) =>
+                    handleRenameCategory(activeCategory.id, activeCategory.name, nextName)
+                  }
+                  onTranslationChange={(lang, nextText) =>
+                    handleUpdateNameTranslation(activeCategory.id, activeCategory.name, lang, nextText)
+                  }
+                  onMoveCategory={(direction) =>
+                    handleReorderCategory(activeSection.id, activeCategory.id, direction)
+                  }
+                  onMoveDish={(dishId, direction) =>
+                    handleReorderDish(activeCategory.id, dishId, direction)
+                  }
+                  onOpenCategoryActions={() => openCategoryActions(activeCategory)}
+                  onOpenDishActions={(dish) => openDishActions(dish, activeCategory.id)}
+                />
               ) : (
-                (activeSection.categories ?? [])
-                  .filter((category): category is MenuBuilderCategory => Boolean(category?.id))
-                  .map((category, categoryIndex) => (
-                  <CategoryBlock
-                    key={category.id}
-                    primaryLanguage={primaryLanguage}
-                    categoryId={category.id}
-                    category={category}
-                    categoryIndex={categoryIndex}
-                    categoryCount={activeSection.categories?.length ?? 0}
-                    busy={busy}
-                    duplicating={duplicatingCategoryId === category.id}
-                    rapidDraft={rapidDrafts[category.id] ?? ""}
-                    onRapidDraftChange={(draft) =>
-                      setRapidDrafts((prev) => ({ ...prev, [category.id]: draft }))
-                    }
-                    onRapidAdd={() => handleRapidAddDish(category.id)}
-                    onInlineDishNameUpdate={(dish, nextName) =>
-                      handleInlineDishNameUpdate(dish, category.id, nextName)
-                    }
-                    onInlineDishPriceUpdate={(dish, nextPrice) =>
-                      handleInlineDishPriceUpdate(dish, category.id, nextPrice)
-                    }
-                    onDeleteCategory={() => handleDeleteCategory(activeSection.id, category)}
-                    onDuplicateCategory={() => handleDuplicateCategory(activeSection.id, category)}
-                    onDeleteDish={(dish) => handleDeleteDish(dish, category.id)}
-                    onDuplicateDish={(dish) => handleDuplicateDish(dish, category.id)}
-                    onOpenDish={(dish) => setSelectedDish({ dish, categoryId: category.id })}
-                    onLayoutChange={(layout) => handleLayoutChange(category, layout)}
-                    onNoteChange={(note) => handleCategoryNoteChange(category.id, note)}
-                    onRename={(nextName) => handleRenameCategory(category.id, category.name, nextName)}
-                    onTranslationChange={(lang, nextText) =>
-                      handleUpdateNameTranslation(category.id, category.name, lang, nextText)
-                    }
-                    onMoveCategory={(direction) =>
-                      handleReorderCategory(activeSection?.id, category?.id, direction)
-                    }
-                    onMoveDish={(dishId, direction) =>
-                      handleReorderDish(category?.id, dishId, direction)
-                    }
-                    reorderMode={reorderMode}
-                    onOpenCategoryActions={() => openCategoryActions(category)}
-                    onOpenDishActions={(dish) => openDishActions(dish, category.id)}
-                  />
-                ))
+                <div className="rounded-2xl border border-neutral-200/60 bg-white p-10 text-center text-sm text-neutral-500 dark:border-neutral-800/60 dark:bg-neutral-950">
+                  No categories yet. Add one from the sidebar.
+                </div>
               )}
-            </div>
+
+              {selectedDish && (
+                <DishDetailInspector
+                  className="hidden lg:sticky lg:top-4 lg:flex lg:max-h-[calc(100vh-10rem)] lg:min-h-[480px]"
+                  variant="panel"
+                  dish={selectedDish.dish}
+                  primaryLanguage={primaryLanguage}
+                  saving={busy}
+                  uploadingImage={uploadingImage}
+                  restaurantName={currentRestaurant?.name ?? ""}
+                  categoryName={resolveBuilderSourceText(selectedCategory?.name, primaryLanguage)}
+                  onClose={handleCloseInspector}
+                  onSave={handleSaveDishDetail}
+                  onImageUpload={handleImageUpload}
+                  onAvailabilityChange={handleAvailabilityChange}
+                />
+              )}
+              </div>
+            </>
           )}
         </>
       )}
 
-      <DishDetailSheet
-        open={Boolean(selectedDish)}
-        dish={selectedDish?.dish ?? null}
-        primaryLanguage={primaryLanguage}
-        saving={busy}
-        uploadingImage={uploadingImage}
-        restaurantName={currentRestaurant?.name ?? ""}
-        categoryName={resolveBuilderSourceText(selectedCategory?.name, primaryLanguage)}
-        onClose={() => setSelectedDish(null)}
-        onSave={handleSaveDishDetail}
-        onImageUpload={handleImageUpload}
-        onAvailabilityChange={handleAvailabilityChange}
-      />
+      {selectedDish && (
+        <>
+          <button
+            type="button"
+            aria-label="Close inspector"
+            className="fixed inset-0 z-40 hidden bg-black/20 md:block lg:hidden"
+            onClick={handleCloseInspector}
+          />
+          <DishDetailInspector
+            className="fixed inset-y-0 right-0 z-50 hidden w-[min(400px,100vw)] md:flex lg:hidden"
+            variant="overlay"
+            dish={selectedDish.dish}
+            primaryLanguage={primaryLanguage}
+            saving={busy}
+            uploadingImage={uploadingImage}
+            restaurantName={currentRestaurant?.name ?? ""}
+            categoryName={resolveBuilderSourceText(selectedCategory?.name, primaryLanguage)}
+            onClose={handleCloseInspector}
+            onSave={handleSaveDishDetail}
+            onImageUpload={handleImageUpload}
+            onAvailabilityChange={handleAvailabilityChange}
+          />
+        </>
+      )}
+
+      {selectedDish && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/60 bg-white/95 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-md md:hidden dark:border-neutral-800/60 dark:bg-neutral-950/95">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                {resolveBuilderSourceText(selectedDish.dish.name, primaryLanguage) || "Untitled dish"}
+              </p>
+              <p className="text-xs text-neutral-500">
+                €{(selectedDish.dish.price ?? 0).toFixed(2)}
+                {selectedDish.dish.is_available === false ? ` · ${t("builder.hidden")}` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleCloseInspector}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-neutral-200/60 text-neutral-500"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <Button
+              variant="dark"
+              className="min-h-11 gap-2"
+              onClick={() => setMobileSheetOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              {t("builder.actions.editDetails")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="md:hidden">
+        <DishDetailSheet
+          open={mobileSheetOpen && Boolean(selectedDish)}
+          dish={selectedDish?.dish ?? null}
+          primaryLanguage={primaryLanguage}
+          saving={busy}
+          uploadingImage={uploadingImage}
+          restaurantName={currentRestaurant?.name ?? ""}
+          categoryName={resolveBuilderSourceText(selectedCategory?.name, primaryLanguage)}
+          onClose={() => setMobileSheetOpen(false)}
+          onSave={handleSaveDishDetail}
+          onImageUpload={handleImageUpload}
+          onAvailabilityChange={handleAvailabilityChange}
+        />
+      </div>
 
       <BuilderContextActionsSheet
         target={contextTarget}
@@ -1192,6 +1287,7 @@ export function MenuBuilder() {
         busy={busy}
         onEditDish={(target) => {
           setSelectedDish({ dish: target.dish, categoryId: target.categoryId });
+          setMobileSheetOpen(true);
         }}
         onToggleDishVisibility={(target) => {
           void handleToggleDishVisibility(target.dish, target.categoryId);
@@ -1226,22 +1322,246 @@ export function MenuBuilder() {
   );
 }
 
-function CategoryBlock({
+function MobileCategoryStrip({
+  activeSection,
+  activeCategoryId,
   primaryLanguage,
-  categoryId,
+  busy,
+  onSelectCategory,
+  onStartAddCategory,
+}: {
+  activeSection: MenuBuilderSection;
+  activeCategoryId: string | null;
+  primaryLanguage: MenuContentLanguage;
+  busy: boolean;
+  onSelectCategory: (categoryId: string) => void;
+  onStartAddCategory: () => void;
+}) {
+  const categories = (activeSection.categories ?? []).filter(
+    (category): category is MenuBuilderCategory => Boolean(category?.id)
+  );
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+      {categories.map((category) => {
+        const isActive = category.id === activeCategoryId;
+        const label = resolveBuilderSourceText(category.name, primaryLanguage) || "Category";
+        return (
+          <button
+            key={category.id}
+            type="button"
+            onClick={() => onSelectCategory(category.id)}
+            className={cn(
+              "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all duration-200 ease-in-out",
+              isActive
+                ? "border-neutral-900 bg-neutral-900 text-white"
+                : "border-neutral-200/60 bg-white text-neutral-700"
+            )}
+          >
+            {label}
+            <span className="rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] tabular-nums">
+              {category.dishes?.length ?? 0}
+            </span>
+          </button>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onStartAddCategory}
+        disabled={busy || categories.length >= MAX_CATEGORIES_PER_SECTION}
+        className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl border border-dashed border-neutral-200/60 px-3 text-sm text-neutral-600"
+      >
+        <Plus className="h-4 w-4" />
+        Add
+      </button>
+    </div>
+  );
+}
+
+function CategorySidebar({
+  activeSection,
+  activeCategoryId,
+  primaryLanguage,
+  busy,
+  reorderMode,
+  addingCategory,
+  newCategoryName,
+  onSelectCategory,
+  onNewCategoryNameChange,
+  onStartAddCategory,
+  onCancelAddCategory,
+  onAddCategory,
+  onMoveCategory,
+  onRenameSection,
+  onTranslationChange,
+  onDeleteSection,
+}: {
+  activeSection: MenuBuilderSection;
+  activeCategoryId: string | null;
+  primaryLanguage: MenuContentLanguage;
+  busy: boolean;
+  reorderMode: boolean;
+  addingCategory: boolean;
+  newCategoryName: string;
+  onSelectCategory: (categoryId: string) => void;
+  onNewCategoryNameChange: (value: string) => void;
+  onStartAddCategory: () => void;
+  onCancelAddCategory: () => void;
+  onAddCategory: () => void;
+  onMoveCategory: (categoryId: string, direction: -1 | 1) => void;
+  onRenameSection: (nextName: string) => Promise<boolean>;
+  onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
+  onDeleteSection: () => void;
+}) {
+  const { t } = useDashboardLocale();
+  const categories = (activeSection.categories ?? []).filter(
+    (category): category is MenuBuilderCategory => Boolean(category?.id)
+  );
+
+  return (
+    <aside className="hidden flex-col gap-3 lg:flex">
+        <div className="rounded-2xl border border-neutral-200/60 bg-white p-4 dark:border-neutral-800/60 dark:bg-neutral-950">
+          <LocalizedTitleEditor
+            name={activeSection.name}
+            primaryLanguage={primaryLanguage}
+            titleClassName="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100"
+            maxLength={MAX_SECTION_TITLE}
+            disabled={busy}
+            onRename={onRenameSection}
+            onTranslationChange={onTranslationChange}
+          />
+          <p className="mt-1 text-xs text-neutral-500">
+            {t("builder.categoriesCount", { count: categories.length })}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="min-h-11 text-red-600 hover:text-red-700"
+              onClick={onDeleteSection}
+              disabled={busy}
+            >
+              <Trash2 className="mr-1 h-4 w-4" />
+              Delete
+            </Button>
+          </div>
+        </div>
+
+        <nav
+          aria-label="Categories"
+          className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white dark:border-neutral-800/60 dark:bg-neutral-950"
+        >
+          <div className="border-b border-neutral-200/60 px-3 py-2.5 dark:border-neutral-800/60">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400">
+              Categories
+            </p>
+          </div>
+          <ul className="max-h-[min(60vh,520px)] overflow-y-auto p-2">
+            {categories.map((category, index) => {
+              const isActive = category.id === activeCategoryId;
+              const label =
+                resolveBuilderSourceText(category.name, primaryLanguage) || "Category";
+              return (
+                <li key={category.id}>
+                  <div className="group flex items-center gap-1">
+                    <ReorderButtons
+                      revealOnHover
+                      mobileEnabled={reorderMode}
+                      onMoveUp={() => onMoveCategory(category.id, -1)}
+                      onMoveDown={() => onMoveCategory(category.id, 1)}
+                      canMoveUp={index > 0}
+                      canMoveDown={index < categories.length - 1}
+                      disabled={busy}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onSelectCategory(category.id)}
+                      className={cn(
+                        "flex min-h-11 flex-1 items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-all duration-200 ease-in-out",
+                        isActive
+                          ? "bg-neutral-900 text-white"
+                          : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                      )}
+                    >
+                      <span className="truncate font-medium">{label}</span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums",
+                          isActive ? "bg-white/15 text-white" : "bg-neutral-100 text-neutral-500"
+                        )}
+                      >
+                        {category.dishes?.length ?? 0}
+                      </span>
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="border-t border-neutral-200/60 p-2 dark:border-neutral-800/60">
+            {addingCategory ? (
+              <div className="space-y-2">
+                <input
+                  autoFocus
+                  placeholder="Category name"
+                  value={newCategoryName}
+                  maxLength={MAX_CATEGORY_NAME}
+                  onChange={(e) => onNewCategoryNameChange(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onAddCategory()}
+                  className="w-full rounded-xl border border-neutral-200/60 bg-white px-3 py-2 text-sm focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-800/60 dark:bg-neutral-950"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    variant="dark"
+                    size="sm"
+                    className="min-h-11 flex-1"
+                    onClick={onAddCategory}
+                    disabled={!newCategoryName.trim() || busy}
+                  >
+                    Add
+                  </Button>
+                  <Button variant="outline" size="sm" className="min-h-11" onClick={onCancelAddCategory}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onStartAddCategory}
+                disabled={
+                  busy || categories.length >= MAX_CATEGORIES_PER_SECTION
+                }
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-200/60 text-sm font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:border-neutral-300 hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-800/60"
+              >
+                <Plus className="h-4 w-4" />
+                Add Category
+              </button>
+            )}
+          </div>
+        </nav>
+    </aside>
+  );
+}
+
+function DishesCanvas({
   category,
   categoryIndex,
   categoryCount,
+  primaryLanguage,
   busy,
   duplicating,
   rapidDraft,
+  selectedDishId,
+  reorderMode,
   onRapidDraftChange,
   onRapidAdd,
   onDeleteCategory,
   onDuplicateCategory,
   onDeleteDish,
   onDuplicateDish,
-  onOpenDish,
+  onSelectDish,
+  onToggleVisibility,
   onLayoutChange,
   onNoteChange,
   onRename,
@@ -1250,25 +1570,26 @@ function CategoryBlock({
   onMoveDish,
   onInlineDishNameUpdate,
   onInlineDishPriceUpdate,
-  reorderMode,
   onOpenCategoryActions,
   onOpenDishActions,
 }: {
-  primaryLanguage: MenuContentLanguage;
-  categoryId: string;
   category: MenuBuilderCategory;
   categoryIndex: number;
   categoryCount: number;
+  primaryLanguage: MenuContentLanguage;
   busy: boolean;
   duplicating: boolean;
   rapidDraft: string;
+  selectedDishId: string | null;
+  reorderMode: boolean;
   onRapidDraftChange: (draft: string) => void;
   onRapidAdd: () => Promise<void>;
   onDeleteCategory: () => void;
   onDuplicateCategory: () => void;
   onDeleteDish: (dish: MenuBuilderDish) => void;
   onDuplicateDish: (dish: MenuBuilderDish) => void;
-  onOpenDish: (dish: MenuBuilderDish) => void;
+  onSelectDish: (dish: MenuBuilderDish) => void;
+  onToggleVisibility: (dish: MenuBuilderDish) => void;
   onLayoutChange: (layout: "stacked" | "carousel") => void;
   onNoteChange: (note: string) => void;
   onRename: (nextName: string) => Promise<boolean>;
@@ -1277,13 +1598,14 @@ function CategoryBlock({
   onMoveDish: (dishId: string, direction: -1 | 1) => void;
   onInlineDishNameUpdate: (dish: MenuBuilderDish, nextName: string) => Promise<boolean>;
   onInlineDishPriceUpdate: (dish: MenuBuilderDish, nextPrice: string) => Promise<boolean>;
-  reorderMode: boolean;
   onOpenCategoryActions: () => void;
   onOpenDishActions: (dish: MenuBuilderDish) => void;
 }) {
   const { t } = useDashboardLocale();
   const rapidAddRef = useRef<HTMLInputElement>(null);
-  const [noteDraft, setNoteDraft] = useState(resolveBuilderSourceText(category.description, primaryLanguage));
+  const [noteDraft, setNoteDraft] = useState(
+    resolveBuilderSourceText(category.description, primaryLanguage)
+  );
 
   useEffect(() => {
     setNoteDraft(resolveBuilderSourceText(category.description, primaryLanguage));
@@ -1296,13 +1618,13 @@ function CategoryBlock({
 
   return (
     <div
-      id={categoryCardId(categoryId)}
-      className="overflow-hidden scroll-mt-24 rounded-2xl border border-slate-200 bg-white shadow-md shadow-slate-200/30"
+      id={categoryCardId(category.id)}
+      className="min-w-0 overflow-hidden rounded-2xl border border-neutral-200/60 bg-white transition-all duration-200 ease-in-out dark:border-neutral-800/60 dark:bg-neutral-950"
     >
-      <div className="group flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-4 sm:px-6 sm:py-5">
+      <div className="group flex items-center justify-between gap-3 border-b border-neutral-200/60 bg-neutral-50/50 px-4 py-4 dark:border-neutral-800/60 dark:bg-neutral-900/30">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {reorderMode ? (
-            <GripVertical className="h-5 w-5 shrink-0 text-slate-400 md:hidden" aria-hidden />
+            <GripVertical className="h-5 w-5 shrink-0 text-neutral-400 md:hidden" aria-hidden />
           ) : null}
           <ReorderButtons
             revealOnHover
@@ -1313,12 +1635,12 @@ function CategoryBlock({
             canMoveDown={categoryIndex < categoryCount - 1}
             disabled={busy || duplicating}
           />
-          <LayoutGrid className="hidden h-4 w-4 shrink-0 text-slate-500 opacity-80 transition-opacity group-hover:opacity-100 md:block" />
+          <LayoutGrid className="hidden h-4 w-4 shrink-0 text-neutral-500 lg:block" />
           <div className="min-w-0 flex-1">
             <LocalizedTitleEditor
               name={category.name}
               primaryLanguage={primaryLanguage}
-              titleClassName="text-lg font-semibold text-slate-900"
+              titleClassName="text-lg font-semibold text-neutral-900 dark:text-neutral-100"
               maxLength={MAX_CATEGORY_NAME}
               disabled={busy || duplicating}
               onRename={onRename}
@@ -1326,22 +1648,21 @@ function CategoryBlock({
             />
           </div>
         </div>
-        <span className="shrink-0 text-xs text-slate-500 md:hidden">
+        <span className="shrink-0 text-xs text-neutral-500 lg:hidden">
           {t("builder.dishesCount", { count: category.dishes?.length ?? 0 })}
         </span>
-        <div className="hidden items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 md:flex">
-          <span className="shrink-0 text-xs text-slate-500">
-            {category.dishes?.length ?? 0} dishes
-          </span>
-          <div className="air-capsule-nav !w-auto p-0.5">
+        <div className="hidden items-center gap-1 lg:flex">
+          <div className="flex rounded-xl border border-neutral-200/60 p-0.5 dark:border-neutral-800/60">
             {(["stacked", "carousel"] as const).map((layout) => (
               <button
                 key={layout}
                 type="button"
                 onClick={() => onLayoutChange(layout)}
                 className={cn(
-                  "air-capsule-nav-item min-h-11 !px-4 !py-2 text-xs capitalize",
-                  category.layout_type === layout && "air-capsule-nav-item-active"
+                  "min-h-11 rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-all duration-200 ease-in-out",
+                  category.layout_type === layout
+                    ? "bg-neutral-900 text-white"
+                    : "text-neutral-600 hover:bg-neutral-100"
                 )}
               >
                 {layout}
@@ -1351,7 +1672,7 @@ function CategoryBlock({
           <Button
             size="sm"
             variant="ghost"
-            className="min-h-11 min-w-11 text-slate-500 hover:text-slate-700"
+            className="min-h-11 min-w-11 text-neutral-500"
             onClick={onDuplicateCategory}
             disabled={busy || duplicating}
             aria-label={`Duplicate ${resolveBuilderSourceText(category.name, primaryLanguage)}`}
@@ -1372,14 +1693,14 @@ function CategoryBlock({
           </Button>
         </div>
         <BuilderRowMoreButton
-          className="md:hidden"
+          className="lg:hidden"
           label={t("builder.actions.more")}
           disabled={busy || duplicating}
           onClick={onOpenCategoryActions}
         />
       </div>
 
-      <div className="border-b border-slate-100 px-4 py-3 sm:px-6">
+      <div className="border-b border-neutral-200/60 px-4 py-3 dark:border-neutral-800/60">
         <input
           type="text"
           value={noteDraft}
@@ -1393,130 +1714,41 @@ function CategoryBlock({
               void onNoteChange(trimmed);
             }
           }}
-          className="w-full rounded-xl border border-transparent bg-slate-50 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+          className="w-full rounded-xl border border-transparent bg-neutral-50 px-3 py-2.5 text-sm text-neutral-700 transition-all duration-200 ease-in-out placeholder:text-neutral-400 focus:border-neutral-200/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900/10 dark:bg-neutral-900/40 dark:text-neutral-300"
         />
       </div>
 
       <div>
-        {(category.dishes ?? []).map((dish, dishIndex) => (
-          <div
-            key={dish?.id ?? dishIndex}
-            className={cn(
-              "group flex items-center gap-3 border-b border-slate-100 px-4 py-3.5 transition-colors sm:px-5",
-              dishIndex % 2 === 0 ? "bg-white" : "bg-slate-50/80",
-              "hover:bg-sky-50/60",
-              dish?.is_available === false && "opacity-60"
-            )}
-          >
-            {reorderMode ? (
-              <GripVertical className="h-5 w-5 shrink-0 text-slate-400 md:hidden" aria-hidden />
-            ) : null}
-            <ReorderButtons
-              revealOnHover
-              mobileEnabled={reorderMode}
-              onMoveUp={() => dish?.id && onMoveDish(dish.id, -1)}
-              onMoveDown={() => dish?.id && onMoveDish(dish.id, 1)}
-              canMoveUp={dishIndex > 0}
-              canMoveDown={dishIndex < (category.dishes?.length ?? 0) - 1}
-              disabled={busy}
+        {(category.dishes ?? []).map((dish, dishIndex) =>
+          dish ? (
+            <DishRow
+              key={dish.id}
+              dish={dish}
+              primaryLanguage={primaryLanguage}
+              busy={busy}
+              selected={selectedDishId === dish.id}
+              dishIndex={dishIndex}
+              dishCount={category.dishes?.length ?? 0}
+              reorderMode={reorderMode}
+              onSelect={() => onSelectDish(dish)}
+              onToggleVisibility={() => onToggleVisibility(dish)}
+              onInlineNameUpdate={(nextName) => onInlineDishNameUpdate(dish, nextName)}
+              onInlinePriceUpdate={(nextPrice) => onInlineDishPriceUpdate(dish, nextPrice)}
+              onMoveDish={(direction) => onMoveDish(dish.id, direction)}
+              editLabel={t("builder.actions.editDetails")}
+              hiddenLabel={t("builder.hidden")}
+              tapForDetailsLabel={t("builder.tapForDetails")}
             />
-            <button
-              type="button"
-              onClick={() => dish && onOpenDish(dish)}
-              className="hidden shrink-0 sm:block"
-              aria-label={t("builder.actions.editDetails")}
-            >
-              {dish?.image_url ? (
-                <img
-                  src={dish.image_url}
-                  alt=""
-                  className="h-10 w-10 rounded-xl object-cover ring-1 ring-slate-200/80 transition-transform group-hover:scale-[1.02]"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-xl bg-slate-100 ring-1 ring-slate-200/80" />
-              )}
-            </button>
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-2">
-                {dish ? (
-                  <InlineSaveField
-                    value={resolveBuilderSourceText(dish.name, primaryLanguage)}
-                    placeholder="Untitled dish"
-                    maxLength={MAX_DISH_NAME}
-                    disabled={busy}
-                    ariaLabel={`Edit ${resolveBuilderSourceText(dish.name, primaryLanguage) || "dish name"}`}
-                    textClassName="font-medium text-slate-900"
-                    onSave={(nextName) => onInlineDishNameUpdate(dish, nextName)}
-                  />
-                ) : null}
-                {dish?.is_available === false && (
-                  <span className="air-badge shrink-0">{t("builder.hidden")}</span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => dish && onOpenDish(dish)}
-                className="mt-0.5 hidden text-left text-xs text-slate-500 transition-colors hover:text-slate-700 sm:block"
-              >
-                {dish?.description
-                  ? resolveBuilderSourceText(dish.description, primaryLanguage)
-                  : t("builder.tapForDetails")}
-              </button>
-            </div>
-            {dish ? (
-              <InlineSaveField
-                value={(dish.price ?? 0).toFixed(2)}
-                displayValue={`€${(dish.price ?? 0).toFixed(2)}`}
-                inputMode="decimal"
-                disabled={busy}
-                ariaLabel={`Edit price for ${resolveBuilderSourceText(dish.name, primaryLanguage) || "dish"}`}
-                textClassName="inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold tabular-nums text-slate-800"
-                inputClassName="w-24 text-right font-semibold tabular-nums"
-                onSave={(nextPrice) => onInlineDishPriceUpdate(dish, nextPrice)}
-              />
-            ) : null}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (dish) onDuplicateDish(dish);
-              }}
-              disabled={busy || !dish}
-              aria-label={`Duplicate ${resolveBuilderSourceText(dish?.name, primaryLanguage) || "dish"}`}
-              className="hidden min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-white hover:text-slate-600 group-hover:opacity-100 md:inline-flex disabled:opacity-40"
-            >
-              <Copy className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (dish) onDeleteDish(dish);
-              }}
-              className="hidden min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-white hover:text-red-500 group-hover:opacity-100 md:inline-flex"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => dish && onOpenDish(dish)}
-              className="hidden min-h-10 min-w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white hover:text-slate-600 md:inline-flex"
-              aria-label={t("builder.actions.editDetails")}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-            {dish ? (
-              <BuilderRowMoreButton
-                className="md:hidden"
-                label={t("builder.actions.more")}
-                disabled={busy}
-                onClick={() => onOpenDishActions(dish)}
-              />
-            ) : null}
-          </div>
-        ))}
+          ) : null
+        )}
 
-        <div className="border-t border-dashed border-slate-200 bg-slate-50/70 px-4 py-3 sm:px-5">
+        {(category.dishes?.length ?? 0) === 0 && (
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">
+            No dishes yet. Add one below.
+          </p>
+        )}
+
+        <div className="border-t border-dashed border-neutral-200/60 bg-neutral-50/50 px-4 py-3 dark:border-neutral-800/60 dark:bg-neutral-900/20">
           <input
             ref={rapidAddRef}
             placeholder={t("builder.rapidAddPlaceholder")}
@@ -1530,7 +1762,7 @@ function CategoryBlock({
                 void handleQuickAdd();
               }
             }}
-            className="w-full rounded-xl border border-slate-200/80 bg-white px-4 py-3.5 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+            className="w-full rounded-xl border border-neutral-200/60 bg-white px-4 py-3.5 text-sm text-neutral-800 transition-all duration-200 ease-in-out placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-800/60 dark:bg-neutral-950"
           />
         </div>
       </div>

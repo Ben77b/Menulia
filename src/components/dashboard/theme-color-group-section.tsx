@@ -31,8 +31,8 @@ export function ThemeColorGroupSection({
   const [advancedOpen, setAdvancedOpen] = useState(defaultExpanded);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-5 py-4 md:px-6">
+    <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+      <div className="border-b border-neutral-100 px-5 py-4 md:px-6">
         <h3 className="text-sm font-semibold tracking-tight text-slate-900">{group.title}</h3>
         <p className="mt-1 text-xs text-slate-400">{group.parentDescription}</p>
       </div>

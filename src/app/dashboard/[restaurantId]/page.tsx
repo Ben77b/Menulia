@@ -139,47 +139,47 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-6 sm:grid-cols-3 mb-8">
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <UtensilsCrossed className="h-5 w-5 text-slate-600" />
+      <div className="mb-8 grid gap-4 sm:grid-cols-3 sm:gap-5">
+        <div className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-neutral-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <UtensilsCrossed className="h-5 w-5 text-neutral-500" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalCategories ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-400">{t("home.statCategories")}</p>
+          <p className="mt-1 text-xs font-medium text-neutral-500">{t("home.statCategories")}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <LayoutTemplate className="h-5 w-5 text-slate-600" />
+        <div className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-neutral-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <LayoutTemplate className="h-5 w-5 text-neutral-500" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalDishes ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-400">{t("home.statDishes")}</p>
+          <p className="mt-1 text-xs font-medium text-neutral-500">{t("home.statDishes")}</p>
         </div>
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-          <QrCode className="h-5 w-5 text-slate-600" />
+        <div className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-200 hover:border-neutral-200 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+          <QrCode className="h-5 w-5 text-neutral-500" />
           <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{stats?.totalLinks ?? 0}</p>
-          <p className="mt-1 text-xs text-slate-400">{t("home.statLinks")}</p>
+          <p className="mt-1 text-xs font-medium text-neutral-500">{t("home.statLinks")}</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
-        <h2 className="text-base font-semibold text-slate-900">{t("home.getStarted")}</h2>
-        <p className="mt-1 mb-4 text-xs text-slate-400">{t("home.getStartedSubtitle")}</p>
-        <div className="space-y-4">
-          {quickSteps.map((step, index) => (
+      <div className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
+        <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("home.getStarted")}</h2>
+        <p className="mb-4 mt-1 text-xs text-neutral-500">{t("home.getStartedSubtitle")}</p>
+        <div className="space-y-3">
+          {quickSteps.map((step) => (
             <Link
               key={step.href}
               href={step.href}
-              className="flex items-center gap-4 rounded-2xl border border-[#E5E5EA] p-4 transition-colors hover:border-slate-300 hover:bg-[#FAFAFA]"
+              className="flex items-center gap-4 rounded-xl border border-neutral-200/50 p-4 transition-all duration-200 hover:border-neutral-300/60 hover:bg-neutral-50/80 hover:shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                <step.icon className="h-5 w-5 text-slate-700" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100">
+                <step.icon className="h-5 w-5 text-neutral-600" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium text-gray-900">{step.title}</h3>
+                  <h3 className="font-medium text-slate-900">{step.title}</h3>
                   {step.completed && (
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
                   )}
                 </div>
-                <p className="text-sm text-gray-600">{step.description}</p>
+                <p className="text-sm text-neutral-500">{step.description}</p>
               </div>
-              <ArrowRight className="h-5 w-5 text-gray-400" />
+              <ArrowRight className="h-5 w-5 text-neutral-400" />
             </Link>
           ))}
         </div>

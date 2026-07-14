@@ -10,7 +10,7 @@ export function StickyActionBar({ children, className }: StickyActionBarProps) {
   return (
     <div
       className={cn(
-        "sticky bottom-0 z-10 mt-auto border-t border-slate-100 bg-white/90 px-4 py-4 backdrop-blur-md",
+        "sticky bottom-0 z-10 mt-auto border-t border-neutral-200/50 bg-white/90 px-4 py-4 backdrop-blur-md",
         "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-50",
         className
       )}

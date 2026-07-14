@@ -29,11 +29,11 @@ export default function DashboardIndexPage() {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6">
-      <div className="air-card w-full max-w-lg p-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="air-card air-card-pad w-full max-w-lg text-center">
+        <h1 className="air-page-title text-2xl">
           Create your first restaurant to unlock your dashboard
         </h1>
-        <p className="mt-3 text-sm text-gray-600">
+        <p className="air-page-subtitle">
           Enter your restaurant name and public URL slug. Once saved, your full dashboard
           will unlock instantly.
         </p>
@@ -41,7 +41,7 @@ export default function DashboardIndexPage() {
           <CreateFirstRestaurantForm />
         </div>
       </div>
-      <Link href="/logout" className="mt-6 text-sm text-gray-500 hover:text-gray-700">
+      <Link href="/logout" className="air-link mt-6 text-neutral-500">
         Sign out
       </Link>
     </div>

@@ -28,7 +28,7 @@ export function ThemeColorFieldCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-[#F5F5F7] bg-white",
+        "rounded-xl border border-neutral-200/40 bg-white",
         isPopover ? "p-3" : "p-4 air-row-divider"
       )}
     >

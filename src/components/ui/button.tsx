@@ -37,24 +37,24 @@ const INTERACTION =
   "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100";
 
 const VARIANT_STYLES: Record<ResolvedVariant, string> = {
-  dark: "bg-slate-900 text-white border border-slate-900 shadow-[0_2px_12px_rgba(0,0,0,0.12)] hover:bg-slate-800 hover:opacity-95 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.14)]",
+  dark: "bg-slate-900 text-white border border-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:bg-slate-800 hover:shadow-[0_4px_12px_rgba(0,0,0,0.14)]",
   light:
-    "bg-white text-black border border-border shadow-[var(--shadow-air-ambient)] hover:bg-neutral-50 hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]",
-  ghost: "bg-transparent text-slate-800 shadow-none hover:bg-muted hover:-translate-y-px",
-  link: "bg-transparent text-slate-700 underline-offset-4 shadow-none hover:text-slate-900 hover:underline active:scale-100",
-  danger: "bg-red-500 text-white border border-red-500 shadow-sm hover:bg-red-600 hover:opacity-95 hover:-translate-y-px",
+    "bg-white text-slate-900 border border-neutral-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:bg-neutral-50 hover:border-neutral-300/60 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]",
+  ghost: "bg-transparent text-slate-800 shadow-none hover:bg-neutral-100/80",
+  link: "bg-transparent text-neutral-600 underline-offset-4 shadow-none hover:text-slate-900 hover:underline active:scale-100",
+  danger: "bg-red-500 text-white border border-red-500 shadow-sm hover:bg-red-600 hover:opacity-95",
   primary:
-    "bg-coral-cta text-white border border-coral-cta shadow-sm hover:bg-coral-cta-dark hover:opacity-95 hover:-translate-y-px",
+    "bg-coral-cta text-white border border-coral-cta shadow-[0_2px_8px_rgba(255,107,74,0.25)] hover:bg-coral-cta-dark hover:shadow-[0_4px_12px_rgba(255,107,74,0.3)]",
   secondary:
-    "bg-emerald-brand text-white border border-emerald-brand shadow-sm hover:bg-emerald-brand-dark hover:opacity-95 hover:-translate-y-px",
+    "bg-emerald-brand text-white border border-emerald-brand shadow-sm hover:bg-emerald-brand-dark hover:opacity-95",
 };
 
 const BUTTON_HEIGHT = "h-10 min-h-10 shrink-0";
 
 const SIZE_STYLES: Record<ButtonSize, string> = {
-  sm: `${BUTTON_HEIGHT} px-3 text-sm rounded-[var(--radius)]`,
-  md: `${BUTTON_HEIGHT} px-4 text-sm rounded-[var(--radius)]`,
-  lg: `${BUTTON_HEIGHT} px-5 text-sm rounded-[var(--radius)]`,
+  sm: `${BUTTON_HEIGHT} px-3 text-sm rounded-xl`,
+  md: `${BUTTON_HEIGHT} px-4 text-sm rounded-xl`,
+  lg: `${BUTTON_HEIGHT} px-5 text-sm rounded-xl`,
 };
 
 function resolveVariant(variant: ButtonVariant): ResolvedVariant {
