@@ -79,7 +79,13 @@ export function useDishDetailDraft(
       dishIdRef.current = null;
       return;
     }
-    if (!dish) return;
+    if (!dish) {
+      if (dishIdRef.current !== "__new__") {
+        dishIdRef.current = "__new__";
+        setDraft(EMPTY_DISH_DRAFT);
+      }
+      return;
+    }
     if (dishIdRef.current === dish.id) return;
 
     dishIdRef.current = dish.id;

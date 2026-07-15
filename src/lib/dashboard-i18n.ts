@@ -175,6 +175,10 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "allergens.selectedOne": { en: "1 selected", es: "1 seleccionado" },
   "allergens.selectedMany": { en: "{count} selected", es: "{count} seleccionados" },
   "dish.editTitle": { en: "Edit dish", es: "Editar plato" },
+  "dish.addTitle": { en: "Add dish", es: "Agregar plato" },
+  "dish.create": { en: "Add dish", es: "Agregar plato" },
+  "dish.creating": { en: "Adding…", es: "Agregando…" },
+  "dish.delete": { en: "Delete dish", es: "Eliminar plato" },
   "dish.visibleOnMenu": { en: "Visible on menu", es: "Visible en el menú" },
   "dish.visibleDescription": {
     en: "Turn off to hide this dish from your public menu when it is out of stock.",
@@ -245,6 +249,7 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "builder.layout.carousel": { en: "Carousel", es: "Carrusel" },
   "builder.layout.stacked": { en: "Stacked", es: "Lista" },
   "builder.layout.stackedLeft": { en: "Stacked (Image Left)", es: "Lista (img. izq.)" },
+  "builder.layout.label": { en: "Category layout", es: "Diseño de categoría" },
   "builder.actions.more": { en: "More actions", es: "Más acciones" },
   "share.qrColor": { en: "QR code color", es: "Color del código QR" },
   "share.transparentBg": { en: "Transparent background", es: "Fondo transparente" },

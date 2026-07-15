@@ -15,11 +15,13 @@ export type { DishDetailDraft, PriceVariationDraft } from "./dish-detail-types";
 interface DishDetailSheetProps {
   open: boolean;
   dish: MenuBuilderDish | null;
+  mode?: "create" | "edit";
   primaryLanguage: MenuContentLanguage;
   saving?: boolean;
   uploadingImage?: boolean;
   onClose: () => void;
   onSave: (draft: DishDetailDraft) => Promise<void>;
+  onDelete?: () => void;
   onImageUpload: (file: File) => Promise<string | null>;
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
   restaurantName?: string;
@@ -29,17 +31,20 @@ interface DishDetailSheetProps {
 export function DishDetailSheet({
   open,
   dish,
+  mode = dish ? "edit" : "create",
   primaryLanguage,
   saving,
   uploadingImage,
   onClose,
   onSave,
+  onDelete,
   onImageUpload,
   onAvailabilityChange,
   restaurantName = "",
   categoryName = "",
 }: DishDetailSheetProps) {
   const { t } = useDashboardLocale();
+  const isCreate = mode === "create";
   const {
     draft,
     setDraft,
@@ -55,20 +60,32 @@ export function DishDetailSheet({
     <MobileBottomSheet
       open={open}
       onClose={onClose}
-      title={t("dish.editTitle")}
+      title={isCreate ? t("dish.addTitle") : t("dish.editTitle")}
       footer={
-        <StickyActionBar>
-          <Button variant="outline" onClick={onClose} className="min-h-11">
-            {t("dish.cancel")}
-          </Button>
-          <Button
-            variant="dark"
-            disabled={saving || !draft.name.trim()}
-            onClick={() => onSave(draft)}
-            className="min-h-11"
-          >
-            {saving ? t("dish.saving") : t("dish.save")}
-          </Button>
+        <StickyActionBar className="[&>div]:w-full [&>div]:flex-col [&>div]:items-stretch [&>div]:gap-2">
+          {!isCreate && onDelete ? (
+            <Button
+              variant="outline"
+              onClick={onDelete}
+              disabled={saving}
+              className="min-h-11 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              {t("dish.delete")}
+            </Button>
+          ) : null}
+          <div className="flex w-full gap-2">
+            <Button variant="outline" onClick={onClose} className="min-h-11 flex-1">
+              {t("dish.cancel")}
+            </Button>
+            <Button
+              variant="dark"
+              disabled={saving || !draft.name.trim()}
+              onClick={() => onSave(draft)}
+              className="min-h-11 flex-1"
+            >
+              {saving ? (isCreate ? t("dish.creating") : t("dish.saving")) : isCreate ? t("dish.create") : t("dish.save")}
+            </Button>
+          </div>
         </StickyActionBar>
       }
     >

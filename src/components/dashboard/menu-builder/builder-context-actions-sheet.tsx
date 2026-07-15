@@ -5,15 +5,14 @@ import {
   Copy,
   Eye,
   EyeOff,
-  LayoutGrid,
-  Layers,
   Pencil,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
-import { CATEGORY_LAYOUT_OPTIONS, type CategoryLayoutType } from "@/lib/category-layout";
+import { type CategoryLayoutType } from "@/lib/category-layout";
 import type { BuilderContextTarget } from "./builder-context-target";
+import { CategoryLayoutSegment } from "./category-layout-segment";
 
 interface BuilderContextActionsSheetProps {
   target: BuilderContextTarget | null;
@@ -153,7 +152,7 @@ export function BuilderContextActionsSheet({
           )}
 
           {target?.kind === "category" && (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-3">
               {onEditCategoryName ? (
                 <ActionRow
                   icon={<Pencil className="h-4 w-4" />}
@@ -162,21 +161,11 @@ export function BuilderContextActionsSheet({
                   onClick={() => run(() => onEditCategoryName(target))}
                 />
               ) : null}
-              {CATEGORY_LAYOUT_OPTIONS.map((option) => (
-                <ActionRow
-                  key={option.value}
-                  icon={
-                    option.value === "carousel" ? (
-                      <LayoutGrid className="h-4 w-4" />
-                    ) : (
-                      <Layers className="h-4 w-4" />
-                    )
-                  }
-                  label={t(option.labelKey)}
-                  disabled={busy || target.category.layout_type === option.value}
-                  onClick={() => run(() => onLayoutChange(target, option.value))}
-                />
-              ))}
+              <CategoryLayoutSegment
+                value={target.category.layout_type}
+                disabled={busy}
+                onChange={(layout) => onLayoutChange(target, layout)}
+              />
               <ActionRow
                 icon={<Copy className="h-4 w-4" />}
                 label={t("builder.actions.duplicate")}

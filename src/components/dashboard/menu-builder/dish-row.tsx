@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { GripVertical, Pencil } from "lucide-react";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ReorderButtons } from "./reorder-buttons";
 import type { MenuBuilderDish } from "@/lib/menu-builder-types";
@@ -19,8 +19,10 @@ export function DishRow({
   dishCount,
   reorderMode,
   onEdit,
+  onDelete,
   onMoveDish,
   editLabel,
+  deleteLabel,
   hiddenLabel,
 }: {
   dish: MenuBuilderDish;
@@ -31,8 +33,10 @@ export function DishRow({
   dishCount: number;
   reorderMode: boolean;
   onEdit: () => void;
+  onDelete: () => void;
   onMoveDish: (direction: -1 | 1) => void;
   editLabel: string;
+  deleteLabel: string;
   hiddenLabel: string;
 }) {
   const name = resolveBuilderSourceText(dish.name, primaryLanguage) || "Untitled dish";
@@ -96,15 +100,26 @@ export function DishRow({
       ) : null}
 
       {!reorderMode ? (
-        <button
-          type="button"
-          onClick={onEdit}
-          disabled={busy}
-          aria-label={editLabel}
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 active:bg-neutral-200/70"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={busy}
+            aria-label={editLabel}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 active:bg-neutral-200/70"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            aria-label={deleteLabel}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-neutral-300 transition-colors hover:bg-red-50 hover:text-red-600 active:bg-red-100/70"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       ) : null}
     </div>
   );

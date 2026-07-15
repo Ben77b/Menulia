@@ -212,6 +212,7 @@ export function MenuBuilder() {
   const [reorderMode, setReorderMode] = useState(false);
   const [contextTarget, setContextTarget] = useState<BuilderContextTarget | null>(null);
   const [categoryEditRequestId, setCategoryEditRequestId] = useState<string | null>(null);
+  const [addDishCategoryId, setAddDishCategoryId] = useState<string | null>(null);
 
   const selectedCategory = useMemo(
     () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
@@ -411,36 +412,114 @@ export function MenuBuilder() {
     }
   }
 
-  async function handleRapidAddDish(categoryId: string) {
-    const name = rapidDrafts[categoryId]?.trim();
-    if (!name) return;
+  async function handleCreateDishDetail(draft: DishDetailDraft) {
+    if (!addDishCategoryId) return;
+
+    const categoryId = addDishCategoryId;
+    const primaryName = clampMenuText(draft.name, MAX_DISH_NAME);
+    if (!primaryName) return;
+
+    const secondaryLanguage = getSecondaryLanguage(primaryLanguage);
+    const secondaryName = clampMenuText(draft.nameTranslation, MAX_DISH_NAME);
+    const primaryDescription = clampMenuText(draft.description, MAX_DISH_DESCRIPTION);
+    const secondaryDescription = clampMenuText(draft.descriptionTranslation, MAX_DISH_DESCRIPTION);
+
+    let mergedName = mergeLocalizedText(null, primaryLanguage, primaryName, primaryLanguage);
+    mergedName = mergeLocalizedText(mergedName, secondaryLanguage, secondaryName, primaryLanguage);
+    let mergedDescription = mergeLocalizedText(
+      null,
+      primaryLanguage,
+      primaryDescription,
+      primaryLanguage
+    );
+    mergedDescription = mergeLocalizedText(
+      mergedDescription,
+      secondaryLanguage,
+      secondaryDescription,
+      primaryLanguage
+    );
+
+    const storedVariations = draftToStoredPriceVariations(draft);
+    const resolvedPrice = storedVariations?.length
+      ? storedVariations[0].price
+      : parsePriceInput(draft.price);
 
     const existingDishes = findCategory(tree, categoryId)?.dishes ?? [];
     const displayOrder = computeNextDishDisplayOrder(existingDishes);
+    const tempId = `temp-${crypto.randomUUID()}`;
 
+    const optimisticDish: MenuBuilderDish = {
+      id: tempId,
+      name: mergedName,
+      description: mergedDescription,
+      price: resolvedPrice,
+      price_variations: storedVariations ?? [],
+      image_url: draft.image_url,
+      tags: draft.filterableTags,
+      allergens: draft.allergens,
+      is_available: draft.is_available,
+      hide_price: draft.hide_price,
+      lock_title_translation: draft.lock_title_translation,
+      display_order: displayOrder,
+    };
+
+    const previousTree = tree;
+    setTree((prev) => addDishToCategory(prev, categoryId, optimisticDish));
+    setAddDishCategoryId(null);
     setBusy(true);
+
     try {
       const created = await createMenuDish(
         categoryId,
-        clampMenuText(name, MAX_DISH_NAME),
-        "",
-        0,
-        null,
-        [],
-        [],
-        false,
+        primaryName,
+        primaryDescription,
+        resolvedPrice,
+        draft.image_url,
+        draft.filterableTags,
+        draft.allergens,
+        draft.hide_price,
         { displayOrder }
       );
-      setTree((prev) =>
-        addDishToCategory(prev, categoryId, { ...created, display_order: displayOrder })
-      );
-      setRapidDrafts((prev) => ({ ...prev, [categoryId]: "" }));
-    } catch (err) {
-      const message = toMenuBuilderErrorMessage(err);
-      if (message) {
-        setError(message);
-        toast.error(message);
+
+      const savedDish: MenuBuilderDish = {
+        ...created,
+        name: mergedName,
+        description: mergedDescription,
+        price_variations: storedVariations ?? [],
+        lock_title_translation: draft.lock_title_translation,
+        display_order: displayOrder,
+      };
+
+      const needsFollowUpUpdate =
+        storedVariations !== null ||
+        draft.lock_title_translation ||
+        secondaryName.trim() ||
+        secondaryDescription.trim();
+
+      if (needsFollowUpUpdate) {
+        await updateMenuDish(
+          created.id,
+          mergedName,
+          mergedDescription,
+          resolvedPrice,
+          draft.image_url,
+          draft.filterableTags,
+          draft.allergens,
+          draft.is_available,
+          draft.hide_price,
+          draft.lock_title_translation,
+          storedVariations
+        );
       }
+
+      setTree((prev) => updateDishInCategory(prev, categoryId, tempId, { ...savedDish, id: created.id }));
+      toast.success("✨ Dish added");
+    } catch (err) {
+      setTree(previousTree);
+      setAddDishCategoryId(categoryId);
+      const message = formatSupabaseError(err);
+      setError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -656,7 +735,6 @@ export function MenuBuilder() {
     setTree((prev) => removeDishFromCategory(prev, categoryId, dish.id));
     if (selectedDish?.dish.id === dish.id) setSelectedDish(null);
 
-    setBusy(true);
     try {
       await deleteMenuDish(dish.id);
       toast.success("Dish deleted");
@@ -665,14 +743,17 @@ export function MenuBuilder() {
       const message = formatSupabaseError(err);
       setError(message);
       toast.error(message);
-    } finally {
-      setBusy(false);
     }
   }
 
   async function handleLayoutChange(category: MenuBuilderCategory, layout: CategoryLayoutType) {
     const previousTree = tree;
     setTree((prev) => patchCategoryInTree(prev, category.id, { layout_type: layout }));
+    setContextTarget((current) =>
+      current?.kind === "category" && current.categoryId === category.id
+        ? { ...current, category: { ...current.category, layout_type: layout } }
+        : current
+    );
     try {
       await updateMenuCategory(category.id, { layout_type: layout });
     } catch (err) {
@@ -1093,14 +1174,11 @@ export function MenuBuilder() {
                     primaryLanguage={primaryLanguage}
                     busy={busy}
                     duplicating={duplicatingCategoryId === category.id}
-                    rapidDraft={rapidDrafts[category.id] ?? ""}
                     selectedDishId={selectedDish?.dish.id ?? null}
                     reorderMode={reorderMode}
-                    onRapidDraftChange={(draft) =>
-                      setRapidDrafts((prev) => ({ ...prev, [category.id]: draft }))
-                    }
-                    onRapidAdd={() => handleRapidAddDish(category.id)}
+                    onStartAddDish={() => setAddDishCategoryId(category.id)}
                     onSelectDish={(dish) => handleSelectDish(dish, category.id)}
+                    onDeleteDish={(dish) => handleDeleteDish(dish, category.id)}
                     onRename={(nextName) =>
                       handleRenameCategory(category.id, category.name, nextName)
                     }
@@ -1181,8 +1259,36 @@ export function MenuBuilder() {
             categoryName={resolveBuilderSourceText(selectedCategory?.name, primaryLanguage)}
             onClose={handleCloseInspector}
             onSave={handleSaveDishDetail}
+            onDelete={() => handleDeleteDish(selectedDish.dish, selectedDish.categoryId)}
             onImageUpload={handleImageUpload}
             onAvailabilityChange={handleAvailabilityChange}
+          />
+        </div>
+      )}
+
+      {addDishCategoryId && (
+        <div className="fixed inset-0 z-50 hidden md:block">
+          <button
+            type="button"
+            aria-label="Close add dish"
+            className="absolute inset-0 bg-neutral-900/20 backdrop-blur-[1px] transition-opacity"
+            onClick={() => setAddDishCategoryId(null)}
+          />
+          <DishDetailInspector
+            className="absolute inset-y-0 right-0 flex w-[min(420px,100vw)] animate-in slide-in-from-right duration-300"
+            dish={null}
+            mode="create"
+            primaryLanguage={primaryLanguage}
+            saving={busy}
+            uploadingImage={uploadingImage}
+            restaurantName={currentRestaurant?.name ?? ""}
+            categoryName={resolveBuilderSourceText(
+              findCategory(tree, addDishCategoryId)?.name,
+              primaryLanguage
+            )}
+            onClose={() => setAddDishCategoryId(null)}
+            onSave={handleCreateDishDetail}
+            onImageUpload={handleImageUpload}
           />
         </div>
       )}
@@ -1198,8 +1304,29 @@ export function MenuBuilder() {
           categoryName={resolveBuilderSourceText(selectedCategory?.name, primaryLanguage)}
           onClose={handleCloseInspector}
           onSave={handleSaveDishDetail}
+          onDelete={
+            selectedDish
+              ? () => handleDeleteDish(selectedDish.dish, selectedDish.categoryId)
+              : undefined
+          }
           onImageUpload={handleImageUpload}
           onAvailabilityChange={handleAvailabilityChange}
+        />
+        <DishDetailSheet
+          open={Boolean(addDishCategoryId)}
+          dish={null}
+          mode="create"
+          primaryLanguage={primaryLanguage}
+          saving={busy}
+          uploadingImage={uploadingImage}
+          restaurantName={currentRestaurant?.name ?? ""}
+          categoryName={resolveBuilderSourceText(
+            addDishCategoryId ? findCategory(tree, addDishCategoryId)?.name : null,
+            primaryLanguage
+          )}
+          onClose={() => setAddDishCategoryId(null)}
+          onSave={handleCreateDishDetail}
+          onImageUpload={handleImageUpload}
         />
       </div>
 
@@ -1253,12 +1380,11 @@ function DishesCanvas({
   primaryLanguage,
   busy,
   duplicating,
-  rapidDraft,
   selectedDishId,
   reorderMode,
-  onRapidDraftChange,
-  onRapidAdd,
+  onStartAddDish,
   onSelectDish,
+  onDeleteDish,
   onRename,
   onTranslationChange,
   onMoveCategory,
@@ -1273,12 +1399,11 @@ function DishesCanvas({
   primaryLanguage: MenuContentLanguage;
   busy: boolean;
   duplicating: boolean;
-  rapidDraft: string;
   selectedDishId: string | null;
   reorderMode: boolean;
-  onRapidDraftChange: (draft: string) => void;
-  onRapidAdd: () => Promise<void>;
+  onStartAddDish: () => void;
   onSelectDish: (dish: MenuBuilderDish) => void;
+  onDeleteDish: (dish: MenuBuilderDish) => void;
   onRename: (nextName: string) => Promise<boolean>;
   onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
   onMoveCategory: (direction: -1 | 1) => void;
@@ -1288,7 +1413,6 @@ function DishesCanvas({
   onEditRequestHandled: () => void;
 }) {
   const { t } = useDashboardLocale();
-  const rapidAddRef = useRef<HTMLInputElement>(null);
   const titleEditorRef = useRef<LocalizedTitleEditorHandle>(null);
 
   useEffect(() => {
@@ -1296,11 +1420,6 @@ function DishesCanvas({
     titleEditorRef.current?.startEditing();
     onEditRequestHandled();
   }, [category.id, editRequestId, onEditRequestHandled]);
-
-  async function handleQuickAdd() {
-    await onRapidAdd();
-    rapidAddRef.current?.focus();
-  }
 
   const dishes = category.dishes ?? [];
 
@@ -1359,8 +1478,10 @@ function DishesCanvas({
               dishCount={dishes.length}
               reorderMode={reorderMode}
               onEdit={() => onSelectDish(dish)}
+              onDelete={() => onDeleteDish(dish)}
               onMoveDish={(direction) => onMoveDish(dish.id, direction)}
               editLabel={t("builder.actions.editDetails")}
+              deleteLabel={t("dish.delete")}
               hiddenLabel={t("builder.hidden")}
             />
           ) : null
@@ -1372,24 +1493,15 @@ function DishesCanvas({
           </p>
         )}
 
-        <div className="flex items-center gap-3 px-4 py-4 sm:px-5 sm:py-5">
-          <Plus className="h-5 w-5 shrink-0 text-sky-600" aria-hidden />
-          <input
-            ref={rapidAddRef}
-            placeholder={t("builder.addDish")}
-            value={rapidDraft}
-            maxLength={MAX_DISH_NAME}
-            disabled={busy}
-            onChange={(e) => onRapidDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void handleQuickAdd();
-              }
-            }}
-            className="min-h-[44px] flex-1 bg-transparent text-base font-medium text-neutral-900 placeholder:text-sky-600 focus:outline-none"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={onStartAddDish}
+          disabled={busy}
+          className="flex min-h-[56px] w-full items-center justify-center gap-2 px-4 py-4 text-base font-semibold text-sky-600 transition-colors hover:bg-sky-50/60 active:bg-sky-50 sm:px-5 sm:py-5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Plus className="h-5 w-5 shrink-0" aria-hidden />
+          {t("builder.addDish")}
+        </button>
       </div>
     </section>
   );

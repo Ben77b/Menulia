@@ -12,7 +12,8 @@ import { useDishDetailDraft } from "./use-dish-detail-draft";
 import type { DishDetailDraft } from "./dish-detail-types";
 
 interface DishDetailInspectorProps {
-  dish: MenuBuilderDish;
+  dish: MenuBuilderDish | null;
+  mode?: "create" | "edit";
   primaryLanguage: MenuContentLanguage;
   saving?: boolean;
   uploadingImage?: boolean;
@@ -20,6 +21,7 @@ interface DishDetailInspectorProps {
   categoryName?: string;
   onClose: () => void;
   onSave: (draft: DishDetailDraft) => Promise<void>;
+  onDelete?: () => void;
   onImageUpload: (file: File) => Promise<string | null>;
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
   className?: string;
@@ -27,6 +29,7 @@ interface DishDetailInspectorProps {
 
 export function DishDetailInspector({
   dish,
+  mode = dish ? "edit" : "create",
   primaryLanguage,
   saving,
   uploadingImage,
@@ -34,11 +37,13 @@ export function DishDetailInspector({
   categoryName,
   onClose,
   onSave,
+  onDelete,
   onImageUpload,
   onAvailabilityChange,
   className,
 }: DishDetailInspectorProps) {
   const { t } = useDashboardLocale();
+  const isCreate = mode === "create";
   const {
     draft,
     setDraft,
@@ -50,7 +55,9 @@ export function DishDetailInspector({
     toggleAllergen,
   } = useDishDetailDraft(dish, primaryLanguage, true);
 
-  const dishName = resolveBuilderSourceText(dish.name, primaryLanguage) || "Untitled dish";
+  const dishName = isCreate
+    ? draft.name.trim() || t("dish.addTitle")
+    : resolveBuilderSourceText(dish?.name, primaryLanguage) || "Untitled dish";
 
   return (
     <aside
@@ -62,7 +69,7 @@ export function DishDetailInspector({
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200/60 bg-gradient-to-r from-white to-sky-50/40 px-5 py-4">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-sky-600/80">
-            {t("dish.editTitle")}
+            {isCreate ? t("dish.addTitle") : t("dish.editTitle")}
           </p>
           <h2 className="truncate text-lg font-semibold text-neutral-800">{dishName}</h2>
         </div>
@@ -96,7 +103,17 @@ export function DishDetailInspector({
         />
       </div>
 
-      <footer className="shrink-0 border-t border-neutral-200/60 bg-white px-5 py-4">
+      <footer className="shrink-0 space-y-3 border-t border-neutral-200/60 bg-white px-5 py-4">
+        {!isCreate && onDelete ? (
+          <Button
+            variant="outline"
+            onClick={onDelete}
+            disabled={saving}
+            className="min-h-11 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            {t("dish.delete")}
+          </Button>
+        ) : null}
         <div className="flex gap-2">
           <Button variant="outline" onClick={onClose} className="min-h-11 flex-1">
             {t("dish.cancel")}
@@ -107,7 +124,7 @@ export function DishDetailInspector({
             onClick={() => onSave(draft)}
             className="min-h-11 flex-1"
           >
-            {saving ? t("dish.saving") : t("dish.save")}
+            {saving ? (isCreate ? t("dish.creating") : t("dish.saving")) : isCreate ? t("dish.create") : t("dish.save")}
           </Button>
         </div>
       </footer>
