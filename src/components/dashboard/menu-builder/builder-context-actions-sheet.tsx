@@ -19,6 +19,7 @@ interface BuilderContextActionsSheetProps {
   target: BuilderContextTarget | null;
   onClose: () => void;
   onEditDish: (target: Extract<BuilderContextTarget, { kind: "dish" }>) => void;
+  onEditCategoryName?: (target: Extract<BuilderContextTarget, { kind: "category" }>) => void;
   onToggleDishVisibility: (target: Extract<BuilderContextTarget, { kind: "dish" }>) => void;
   onDuplicate: (target: BuilderContextTarget) => void;
   onDelete: (target: BuilderContextTarget) => void;
@@ -67,6 +68,7 @@ export function BuilderContextActionsSheet({
   target,
   onClose,
   onEditDish,
+  onEditCategoryName,
   onToggleDishVisibility,
   onDuplicate,
   onDelete,
@@ -85,7 +87,7 @@ export function BuilderContextActionsSheet({
     <>
       <div
         className={cn(
-          "fixed inset-0 z-[60] bg-black/30 transition-opacity md:hidden",
+          "fixed inset-0 z-[60] bg-black/30 transition-opacity",
           open ? "opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={onClose}
@@ -93,18 +95,25 @@ export function BuilderContextActionsSheet({
       />
 
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="builder-actions-title"
         className={cn(
-          "fixed inset-x-0 bottom-0 z-[70] flex max-h-[85vh] flex-col rounded-t-2xl border-t border-[#E5E5EA] bg-white shadow-[0_-12px_40px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-out md:hidden",
-          open ? "translate-y-0" : "translate-y-full"
+          "fixed z-[70] flex max-h-[85vh] flex-col bg-white transition-all duration-300 ease-out",
+          "inset-x-0 bottom-0 rounded-t-2xl border-t border-[#E5E5EA] shadow-[0_-12px_40px_rgba(0,0,0,0.12)]",
+          "md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-md md:-translate-x-1/2 md:rounded-2xl md:border md:shadow-2xl",
+          open
+            ? "translate-y-0 md:-translate-y-1/2 md:opacity-100"
+            : "pointer-events-none translate-y-full md:translate-y-[calc(-50%+12px)] md:opacity-0"
         )}
         aria-hidden={!open}
       >
-        <div className="flex shrink-0 justify-center pt-3" aria-hidden>
+        <div className="flex shrink-0 justify-center pt-3 md:hidden" aria-hidden>
           <span className="h-1 w-10 rounded-full bg-slate-200" />
         </div>
 
         <div className="shrink-0 border-b border-[#F5F5F7] px-5 py-4">
-          <h2 className="truncate text-lg font-semibold text-slate-900">
+          <h2 id="builder-actions-title" className="truncate text-lg font-semibold text-slate-900">
             {target?.title ?? t("builder.actions.title")}
           </h2>
         </div>
@@ -145,6 +154,14 @@ export function BuilderContextActionsSheet({
 
           {target?.kind === "category" && (
             <div className="flex flex-col gap-1">
+              {onEditCategoryName ? (
+                <ActionRow
+                  icon={<Pencil className="h-4 w-4" />}
+                  label={t("builder.actions.renameCategory")}
+                  disabled={busy}
+                  onClick={() => run(() => onEditCategoryName(target))}
+                />
+              ) : null}
               {CATEGORY_LAYOUT_OPTIONS.map((option) => (
                 <ActionRow
                   key={option.value}

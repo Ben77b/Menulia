@@ -21,13 +21,29 @@ function readIsAvailable(dish: Record<string, unknown>): boolean {
   return dish.is_available !== false;
 }
 
+function readDishImageUrl(dish: Record<string, unknown>): string | null {
+  return (dish.image_url as string | null) ?? (dish.image as string | null) ?? null;
+}
+
+function withDishImageColumn(
+  payload: Record<string, unknown>,
+  column: "image" | "image_url"
+): Record<string, unknown> {
+  const imageValue = payload.image ?? payload.image_url ?? null;
+  const { image: _image, image_url: _imageUrl, ...rest } = payload;
+  return { ...rest, [column]: imageValue };
+}
+
 async function insertDishRow(
   payload: Record<string, unknown>
 ): Promise<{ data: Record<string, unknown> | null; error: unknown }> {
   const supabase = getSupabaseBrowserClient();
-  let current: Record<string, unknown> = { ...payload, is_available: payload.is_available ?? true };
+  let current: Record<string, unknown> = withDishImageColumn(
+    { ...payload, is_available: payload.is_available ?? true },
+    "image"
+  );
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
     const result = await supabase.from("dishes").insert(current).select("*").single();
     if (!result.error || !isMissingColumnError(result.error)) {
       return result;
@@ -66,6 +82,16 @@ async function insertDishRow(
     if ("price_variations" in current) {
       const { price_variations: _ignored, ...withoutVariations } = current;
       current = withoutVariations;
+      continue;
+    }
+
+    if ("image" in current) {
+      current = withDishImageColumn(current, "image_url");
+      continue;
+    }
+
+    if ("image_url" in current) {
+      current = withDishImageColumn(current, "image");
       continue;
     }
 
@@ -152,6 +178,24 @@ async function updateDishRow(
         availabilityPersisted: !result.error && hasAvailability,
       };
     }
+
+    if ("image" in payload && isMissingColumnError(result.error)) {
+      const nextPayload = withDishImageColumn(payload, "image_url");
+      result = await supabase.from("dishes").update(nextPayload).eq("id", dishId);
+      return {
+        error: result.error,
+        availabilityPersisted: !result.error && hasAvailability,
+      };
+    }
+
+    if ("image_url" in payload && isMissingColumnError(result.error)) {
+      const nextPayload = withDishImageColumn(payload, "image");
+      result = await supabase.from("dishes").update(nextPayload).eq("id", dishId);
+      return {
+        error: result.error,
+        availabilityPersisted: !result.error && hasAvailability,
+      };
+    }
   }
 
   return {
@@ -195,7 +239,7 @@ function mapDishRecord(dish: Record<string, unknown>): MenuDishRecord {
     description: parseLocalizedFieldFromDb(dish.description),
     price: parseFloat(String(dish.price)) || 0,
     price_variations: parsePriceVariationsFromDb(dish.price_variations),
-    image_url: (dish.image as string) ?? null,
+    image_url: readDishImageUrl(dish),
     tags: normalized.tags,
     allergens: normalized.allergens,
     is_available: readIsAvailable(dish),
@@ -532,7 +576,7 @@ async function cloneDishToCategory(
     price_variations: serializePriceVariationsForDb(
       parsePriceVariationsFromDb(source.price_variations)
     ),
-    image: (source.image as string | null) ?? null,
+    image: readDishImageUrl(source),
     tags: tagsForDb,
     allergens: allergensForDb,
     is_available: readIsAvailable(source),
@@ -572,7 +616,7 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     price_variations: serializePriceVariationsForDb(
       parsePriceVariationsFromDb((source as Record<string, unknown>).price_variations)
     ),
-    image: (source.image as string | null) ?? null,
+    image: readDishImageUrl(source),
     tags: tagsForDb,
     allergens: allergensForDb,
     is_available: readIsAvailable(source as Record<string, unknown>),

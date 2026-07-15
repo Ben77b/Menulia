@@ -233,6 +233,7 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "builder.categoriesCount": { en: "{count} categories", es: "{count} categorías" },
   "builder.actions.title": { en: "Actions", es: "Acciones" },
   "builder.actions.editDetails": { en: "Edit details", es: "Editar detalles" },
+  "builder.actions.renameCategory": { en: "Rename category", es: "Renombrar categoría" },
   "builder.actions.showOnMenu": { en: "Show on menu", es: "Mostrar en el menú" },
   "builder.actions.hideFromMenu": { en: "Hide from menu", es: "Ocultar del menú" },
   "builder.actions.duplicate": { en: "Duplicate item", es: "Duplicar elemento" },

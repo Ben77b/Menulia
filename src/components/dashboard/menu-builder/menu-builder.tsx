@@ -59,7 +59,7 @@ import { DishDetailSheet, type DishDetailDraft } from "./dish-detail-sheet";
 import { DishDetailInspector } from "./dish-detail-inspector";
 import { DishRow } from "./dish-row";
 import { draftToStoredPriceVariations } from "./use-dish-detail-draft";
-import { LocalizedTitleEditor } from "./localized-title-editor";
+import { LocalizedTitleEditor, type LocalizedTitleEditorHandle } from "./localized-title-editor";
 import { CapsuleNav } from "@/components/dashboard/capsule-nav";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { ReorderButtons, moveByIndex } from "./reorder-buttons";
@@ -211,6 +211,7 @@ export function MenuBuilder() {
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
   const [reorderMode, setReorderMode] = useState(false);
   const [contextTarget, setContextTarget] = useState<BuilderContextTarget | null>(null);
+  const [categoryEditRequestId, setCategoryEditRequestId] = useState<string | null>(null);
 
   const selectedCategory = useMemo(
     () => (selectedDish ? findCategory(tree, selectedDish.categoryId) : null),
@@ -1113,6 +1114,8 @@ export function MenuBuilder() {
                       handleReorderDish(category.id, dishId, direction)
                     }
                     onOpenCategoryActions={() => openCategoryActions(category)}
+                    editRequestId={categoryEditRequestId}
+                    onEditRequestHandled={() => setCategoryEditRequestId(null)}
                   />
                 ) : null
               )}
@@ -1207,6 +1210,9 @@ export function MenuBuilder() {
         onEditDish={(target) => {
           setSelectedDish({ dish: target.dish, categoryId: target.categoryId });
         }}
+        onEditCategoryName={(target) => {
+          setCategoryEditRequestId(target.categoryId);
+        }}
         onToggleDishVisibility={(target) => {
           void handleToggleDishVisibility(target.dish, target.categoryId);
         }}
@@ -1258,6 +1264,8 @@ function DishesCanvas({
   onMoveCategory,
   onMoveDish,
   onOpenCategoryActions,
+  editRequestId,
+  onEditRequestHandled,
 }: {
   category: MenuBuilderCategory;
   categoryIndex: number;
@@ -1276,9 +1284,18 @@ function DishesCanvas({
   onMoveCategory: (direction: -1 | 1) => void;
   onMoveDish: (dishId: string, direction: -1 | 1) => void;
   onOpenCategoryActions: () => void;
+  editRequestId: string | null;
+  onEditRequestHandled: () => void;
 }) {
   const { t } = useDashboardLocale();
   const rapidAddRef = useRef<HTMLInputElement>(null);
+  const titleEditorRef = useRef<LocalizedTitleEditorHandle>(null);
+
+  useEffect(() => {
+    if (editRequestId !== category.id) return;
+    titleEditorRef.current?.startEditing();
+    onEditRequestHandled();
+  }, [category.id, editRequestId, onEditRequestHandled]);
 
   async function handleQuickAdd() {
     await onRapidAdd();
@@ -1306,11 +1323,13 @@ function DishesCanvas({
             </>
           ) : null}
           <LocalizedTitleEditor
+            ref={titleEditorRef}
             name={category.name}
             primaryLanguage={primaryLanguage}
-            titleClassName="text-sm font-semibold uppercase tracking-wide text-neutral-500"
+            titleClassName="text-base font-semibold text-neutral-900"
             maxLength={MAX_CATEGORY_NAME}
             disabled={busy || duplicating}
+            showEditHint
             onRename={onRename}
             onTranslationChange={onTranslationChange}
           />

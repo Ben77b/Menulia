@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Globe, Loader2 } from "lucide-react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { Globe, Loader2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MAX_SECTION_TITLE } from "@/lib/menu-limits";
 import {
@@ -25,19 +25,31 @@ interface LocalizedTitleEditorProps {
   disabled?: boolean;
   titleClassName?: string;
   maxLength?: number;
+  showEditHint?: boolean;
   onRename: (nextName: string) => Promise<boolean>;
   onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
 }
 
-export function LocalizedTitleEditor({
-  name,
-  primaryLanguage,
-  disabled = false,
-  titleClassName,
-  maxLength = MAX_SECTION_TITLE,
-  onRename,
-  onTranslationChange,
-}: LocalizedTitleEditorProps) {
+export interface LocalizedTitleEditorHandle {
+  startEditing: () => void;
+}
+
+export const LocalizedTitleEditor = forwardRef<
+  LocalizedTitleEditorHandle,
+  LocalizedTitleEditorProps
+>(function LocalizedTitleEditor(
+  {
+    name,
+    primaryLanguage,
+    disabled = false,
+    titleClassName,
+    maxLength = MAX_SECTION_TITLE,
+    showEditHint = false,
+    onRename,
+    onTranslationChange,
+  },
+  ref
+) {
   const secondaryLanguage = getSecondaryLanguage(primaryLanguage);
   const primaryMeta = getMenuContentLanguageMeta(primaryLanguage);
   const secondaryMeta = getMenuContentLanguageMeta(secondaryLanguage);
@@ -63,6 +75,12 @@ export function LocalizedTitleEditor({
   useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
+
+  useImperativeHandle(ref, () => ({
+    startEditing: () => {
+      if (!disabled) setEditing(true);
+    },
+  }));
 
   useEffect(() => {
     if (!popoverOpen) return;
@@ -149,13 +167,25 @@ export function LocalizedTitleEditor({
             onClick={() => setEditing(true)}
             aria-label={`Edit ${displayName || "title"}`}
             className={cn(
-              "min-w-0 rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-white/60 disabled:opacity-40",
+              "min-w-0 rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-neutral-100 disabled:opacity-40",
               titleClassName
             )}
           >
             <span className="line-clamp-2 break-words">{displayName || "Untitled"}</span>
           </button>
         )}
+
+        {showEditHint && !editing ? (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setEditing(true)}
+            aria-label={`Edit ${displayName || "title"}`}
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-40"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+        ) : null}
 
         <SaveStatusIndicator status={saveStatus} />
 
@@ -210,4 +240,4 @@ export function LocalizedTitleEditor({
       </div>
     </div>
   );
-}
+});
