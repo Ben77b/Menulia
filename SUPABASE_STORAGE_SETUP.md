@@ -22,25 +22,32 @@ This document provides instructions for setting up the Supabase Storage bucket r
 3. **Configure Bucket Policies**
    - After creating the bucket, click on the bucket name
    - Go to "Policies" tab
-   - Add the following policy to allow public read access:
+   - Apply the policies from migration `supabase/migrations/20250716000000_rls_security_refinement.sql`, or run:
 
    ```sql
-   -- Allow public read access to menu-images bucket
-   CREATE POLICY "Public read access for menu-images"
-   ON storage.objects FOR SELECT
-   TO anon
-   USING (bucket_id = 'menu-images');
+   -- Owners upload/update/delete only under {restaurant_id}/ paths they own
+   CREATE POLICY "Owners upload menu-images"
+   ON storage.objects FOR INSERT TO authenticated
+   WITH CHECK (
+     bucket_id = 'menu-images'
+     AND EXISTS (
+       SELECT 1 FROM public.restaurants r
+       WHERE r.user_id = auth.uid() AND name LIKE r.id::text || '/%'
+     )
+   );
+
+   -- Public read by direct object path (bucket listing via API is not granted)
+   CREATE POLICY "Public read menu-images by object path"
+   ON storage.objects FOR SELECT TO public
+   USING (
+     bucket_id = 'menu-images'
+     AND position('/' in name) > 0
+     AND coalesce(storage.extension(name), '') <> ''
+   );
    ```
 
-   - Add the following policy to allow authenticated users to upload:
-
-   ```sql
-   -- Allow authenticated users to upload to menu-images bucket
-   CREATE POLICY "Authenticated users can upload to menu-images"
-   ON storage.objects FOR INSERT
-   TO authenticated
-   WITH CHECK (bucket_id = 'menu-images');
-   ```
+   - Do **not** add a broad `SELECT` policy that allows anonymous bucket listing.
+   - Direct public URLs still work because the bucket is public.
 
 4. **Verify Setup**
    - The bucket should now be ready for image uploads

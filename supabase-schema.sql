@@ -152,17 +152,71 @@ CREATE TABLE IF NOT EXISTS restaurant_links (
 
 CREATE INDEX IF NOT EXISTS idx_restaurant_links_restaurant_id ON restaurant_links(restaurant_id);
 
--- Enable Row Level Security
+-- Row Level Security: public read, owner-scoped writes (see migration 20250716000000_rls_security_refinement.sql)
 ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dishes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE restaurant_links ENABLE ROW LEVEL SECURITY;
 
--- Create policies (for now, allow all - can be tightened later)
-CREATE POLICY "Enable all access for restaurants" ON restaurants FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable all access for categories" ON categories FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable all access for dishes" ON dishes FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable all access for restaurant_links" ON restaurant_links FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public read restaurants" ON restaurants FOR SELECT USING (true);
+CREATE POLICY "Owners insert restaurants" ON restaurants FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Owners update restaurants" ON restaurants FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Owners delete restaurants" ON restaurants FOR DELETE TO authenticated USING (auth.uid() = user_id);
+
+CREATE POLICY "Public read categories" ON categories FOR SELECT USING (true);
+CREATE POLICY "Owners insert categories" ON categories FOR INSERT TO authenticated WITH CHECK (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+);
+CREATE POLICY "Owners update categories" ON categories FOR UPDATE TO authenticated USING (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+) WITH CHECK (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+);
+CREATE POLICY "Owners delete categories" ON categories FOR DELETE TO authenticated USING (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+);
+
+CREATE POLICY "Public read dishes" ON dishes FOR SELECT USING (true);
+CREATE POLICY "Owners insert dishes" ON dishes FOR INSERT TO authenticated WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM categories c
+    JOIN restaurants r ON r.id = c.restaurant_id
+    WHERE c.id = category_id AND r.user_id = auth.uid()
+  )
+);
+CREATE POLICY "Owners update dishes" ON dishes FOR UPDATE TO authenticated USING (
+  EXISTS (
+    SELECT 1 FROM categories c
+    JOIN restaurants r ON r.id = c.restaurant_id
+    WHERE c.id = category_id AND r.user_id = auth.uid()
+  )
+) WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM categories c
+    JOIN restaurants r ON r.id = c.restaurant_id
+    WHERE c.id = category_id AND r.user_id = auth.uid()
+  )
+);
+CREATE POLICY "Owners delete dishes" ON dishes FOR DELETE TO authenticated USING (
+  EXISTS (
+    SELECT 1 FROM categories c
+    JOIN restaurants r ON r.id = c.restaurant_id
+    WHERE c.id = category_id AND r.user_id = auth.uid()
+  )
+);
+
+CREATE POLICY "Public read restaurant_links" ON restaurant_links FOR SELECT USING (true);
+CREATE POLICY "Owners insert restaurant_links" ON restaurant_links FOR INSERT TO authenticated WITH CHECK (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+);
+CREATE POLICY "Owners update restaurant_links" ON restaurant_links FOR UPDATE TO authenticated USING (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+) WITH CHECK (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+);
+CREATE POLICY "Owners delete restaurant_links" ON restaurant_links FOR DELETE TO authenticated USING (
+  EXISTS (SELECT 1 FROM restaurants r WHERE r.id = restaurant_id AND r.user_id = auth.uid())
+);
 
 -- Migration: Rename 'image' column to 'image_url' if it exists and is named 'image'
 DO $$
