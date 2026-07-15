@@ -146,6 +146,8 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     es: "Arrastra para reordenar secciones, toca cualquier plato para editarlo o cambia la visibilidad al instante.",
   },
   "builder.rapidAddPlaceholder": { en: "+ Add a dish…", es: "+ Agregar plato…" },
+  "builder.addDish": { en: "Add Dish", es: "Agregar plato" },
+  "builder.addCategory": { en: "Add Category", es: "Agregar categoría" },
   "builder.sectionNotePlaceholder": {
     en: 'Optional note (e.g. "Served with miso soup")',
     es: 'Nota opcional (p. ej. "Servido con sopa miso")',
