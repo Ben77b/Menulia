@@ -97,6 +97,39 @@ function rewriteEnglish(
   return withSecurityHeaders(rewrite, pathname);
 }
 
+function redirectWithSessionCookies(
+  request: NextRequest,
+  response: NextResponse,
+  pathname: string,
+  destination: string
+): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = destination;
+  url.search = "";
+  const redirect = NextResponse.redirect(url);
+  copyCookies(response, redirect);
+  return withSecurityHeaders(redirect, pathname);
+}
+
+function handleAuthenticatedEntryRedirect(
+  request: NextRequest,
+  response: NextResponse,
+  pathname: string,
+  user: { id: string } | null
+): NextResponse | null {
+  if (!user) return null;
+
+  if (pathname === "/") {
+    return redirectWithSessionCookies(request, response, pathname, "/dashboard");
+  }
+
+  if (pathname === "/login" || pathname === "/signup") {
+    return redirectWithSessionCookies(request, response, pathname, "/dashboard");
+  }
+
+  return null;
+}
+
 function handleMarketingLocale(request: NextRequest, response: NextResponse): NextResponse | null {
   const { pathname } = request.nextUrl;
 
@@ -177,8 +210,14 @@ export async function middleware(request: NextRequest) {
     return withSecurityHeaders(NextResponse.redirect(loginUrl), pathname);
   }
 
-  if ((pathname === "/login" || pathname === "/signup") && user) {
-    return withSecurityHeaders(response, pathname);
+  const authenticatedRedirect = handleAuthenticatedEntryRedirect(
+    request,
+    response,
+    pathname,
+    user
+  );
+  if (authenticatedRedirect) {
+    return authenticatedRedirect;
   }
 
   const localeResponse = handleMarketingLocale(request, response);
