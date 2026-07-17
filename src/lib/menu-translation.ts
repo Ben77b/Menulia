@@ -11,7 +11,6 @@ import {
   collectTextForTranslation,
   mergeLocalizedText,
   stripTranslationBrandProtection,
-  wrapTextAsNonTranslatable,
   type LocalizedTextRecord,
   type LocalizedTextValue,
   type TranslationBrandProtectionOptions,
@@ -223,9 +222,6 @@ export async function translateMenuTreeToLanguage(
   if (items.length === 0) return tree;
 
   const protectedTexts = items.map((item) => {
-    if (item.lockTitleTranslation && item.field === "name") {
-      return wrapTextAsNonTranslatable(item.text);
-    }
     return applyTranslationBrandProtection(item.text, brandProtection);
   });
 

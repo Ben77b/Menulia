@@ -8,7 +8,7 @@ import type { MenuBuilderDish } from "@/lib/menu-builder-types";
 import type { MenuContentLanguage } from "@/lib/menu-content-languages";
 import { resolveBuilderSourceText } from "@/lib/localized-text";
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
-import { hasPriceVariations } from "@/lib/price-variations";
+import { hasPriceVariations, shouldDisplayDishPrice } from "@/lib/price-variations";
 
 export function DishRow({
   dish,
@@ -43,11 +43,11 @@ export function DishRow({
   const imageSrc = normalizeImageUrl(dish.image_url);
   const isVisible = dish.is_available !== false;
   const hasVariations = hasPriceVariations(dish.price_variations);
-  const priceLabel = dish.hide_price
-    ? null
-    : hasVariations
+  const priceLabel = shouldDisplayDishPrice(dish.price, dish.price_variations)
+    ? hasVariations
       ? `from €${(dish.price ?? 0).toFixed(2)}`
-      : `€${(dish.price ?? 0).toFixed(2)}`;
+      : `€${(dish.price ?? 0).toFixed(2)}`
+    : null;
 
   return (
     <div

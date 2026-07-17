@@ -26,7 +26,7 @@ export function CurrencyInput({
         type="text"
         inputMode="decimal"
         className={cn(
-          "w-full border-0 bg-transparent p-2.5 text-sm text-slate-900 outline-none focus:ring-0",
+          "w-full border-0 bg-transparent p-2.5 text-sm text-slate-900 outline-none placeholder:text-neutral-400 focus:ring-0",
           className
         )}
         {...props}

@@ -120,7 +120,7 @@ export function MenuCarousel({ items, design, allergenLocale = "en" }: MenuCarou
                     className="mt-1 font-bold text-sm"
                     style={{ color: design.priceColor }}
                   >
-                    {!item.hide_price && formatPrice(item.price)}
+                    {item.price > 0 && formatPrice(item.price)}
                   </span>
                   {isActive && item.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap justify-center gap-1.5">

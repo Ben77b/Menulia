@@ -469,8 +469,8 @@ export function MenuBuilder() {
       tags: draft.filterableTags,
       allergens: draft.allergens,
       is_available: draft.is_available,
-      hide_price: draft.hide_price,
-      lock_title_translation: draft.lock_title_translation,
+      hide_price: false,
+      lock_title_translation: false,
       display_order: displayOrder,
     };
 
@@ -488,7 +488,7 @@ export function MenuBuilder() {
         draft.image_url,
         draft.filterableTags,
         draft.allergens,
-        draft.hide_price,
+        false,
         { displayOrder }
       );
 
@@ -497,13 +497,12 @@ export function MenuBuilder() {
         name: mergedName,
         description: mergedDescription,
         price_variations: storedVariations ?? [],
-        lock_title_translation: draft.lock_title_translation,
+        lock_title_translation: false,
         display_order: displayOrder,
       };
 
       const needsFollowUpUpdate =
         storedVariations !== null ||
-        draft.lock_title_translation ||
         secondaryName.trim() ||
         secondaryDescription.trim();
 
@@ -517,8 +516,8 @@ export function MenuBuilder() {
           draft.filterableTags,
           draft.allergens,
           draft.is_available,
-          draft.hide_price,
-          draft.lock_title_translation,
+          false,
+          false,
           storedVariations
         );
       }
@@ -649,8 +648,8 @@ export function MenuBuilder() {
       tags: draft.filterableTags,
       allergens: draft.allergens,
       is_available: draft.is_available,
-      hide_price: draft.hide_price,
-      lock_title_translation: draft.lock_title_translation,
+      hide_price: false,
+      lock_title_translation: false,
     };
 
     setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, optimisticDish));
@@ -666,8 +665,8 @@ export function MenuBuilder() {
         draft.filterableTags,
         draft.allergens,
         draft.is_available,
-        draft.hide_price,
-        draft.lock_title_translation,
+        false,
+        false,
         storedVariations
       );
       toast.success("✨ Dish updated successfully");

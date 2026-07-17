@@ -53,3 +53,16 @@ export function hasPriceVariations(
 ): variations is PriceVariation[] {
   return Array.isArray(variations) && variations.length > 0;
 }
+
+/** Public menus hide empty / zero prices automatically (no hide_price toggle). */
+export function shouldDisplayDishPrice(
+  price: number | null | undefined,
+  variations?: PriceVariation[] | null
+): boolean {
+  if (hasPriceVariations(variations)) {
+    return variations.some((entry) => Number.isFinite(entry.price) && entry.price > 0);
+  }
+
+  const numeric = typeof price === "number" ? price : Number(price);
+  return Number.isFinite(numeric) && numeric > 0;
+}

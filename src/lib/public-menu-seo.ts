@@ -105,7 +105,7 @@ function menuItemJsonLd(dish: {
     item.image = dish.image;
   }
 
-  if (!dish.hide_price && dish.price > 0) {
+  if (dish.price > 0) {
     item.offers = {
       "@type": "Offer",
       price: dish.price.toFixed(2),

@@ -11,8 +11,6 @@ export interface DishDetailDraft {
   price: string;
   usePriceVariations: boolean;
   priceVariations: PriceVariationDraft[];
-  hide_price: boolean;
-  lock_title_translation: boolean;
   image_url: string | null;
   filterableTags: string[];
   allergens: string[];

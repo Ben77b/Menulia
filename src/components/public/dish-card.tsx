@@ -7,7 +7,7 @@ import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
-import { hasPriceVariations, parsePriceVariationsFromDb, type PriceVariation } from "@/lib/price-variations";
+import { hasPriceVariations, parsePriceVariationsFromDb, shouldDisplayDishPrice, type PriceVariation } from "@/lib/price-variations";
 import type { CategoryLayoutType } from "@/lib/category-layout";
 import {
   isStackedCategoryLayout,
@@ -127,6 +127,7 @@ export function DishCard({
   const allergenLocale = lang === "es" ? "es" : "en";
   const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
+  const showPrice = display.showPrices && shouldDisplayDishPrice(dish.price, portionOptions);
 
   const isStackedTop = isStackedTopCategoryLayout(layout);
   const isStackedLeft = isStackedLeftCategoryLayout(layout);
@@ -216,7 +217,7 @@ export function DishCard({
           {localizedDescription}
         </p>
       )}
-      {display.showPrices && !dish.hide_price && portionOptions && (
+      {showPrice && portionOptions && (
         <div
           className={cn(
             "mt-2 flex flex-col gap-y-1",
@@ -297,7 +298,7 @@ export function DishCard({
           })}
         </div>
       )}
-      {display.showPrices && !dish.hide_price && !portionOptions && (
+      {showPrice && !portionOptions && (
         <p
           className={cn("font-bold", isCarouselPeek ? "text-xs sm:text-sm" : "text-base")}
           style={{

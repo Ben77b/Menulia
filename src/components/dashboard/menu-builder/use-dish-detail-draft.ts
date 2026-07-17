@@ -23,8 +23,6 @@ export const EMPTY_DISH_DRAFT: DishDetailDraft = {
   price: "",
   usePriceVariations: false,
   priceVariations: [{ label: "", price: "" }],
-  hide_price: false,
-  lock_title_translation: false,
   image_url: null,
   filterableTags: [],
   allergens: [],
@@ -57,8 +55,6 @@ export function dishToDraft(
           price: variation.price.toFixed(2),
         }))
       : [{ label: "", price: String(dish.price) }],
-    hide_price: Boolean(dish.hide_price),
-    lock_title_translation: Boolean(dish.lock_title_translation),
     image_url: dish.image_url,
     filterableTags: normalized.tags,
     allergens: normalized.allergens,
