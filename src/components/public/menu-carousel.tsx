@@ -100,7 +100,7 @@ export function MenuCarousel({ items, design, allergenLocale = "en" }: MenuCarou
                       src={item.image_url}
                       alt={item.name}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                       sizes="320px"
                       quality={75}
                     />

@@ -151,7 +151,7 @@ export function DishCard({
           src={imageSrc}
           alt={imageAlt}
           fill
-          className="object-cover"
+          className="object-contain"
           quality={75}
           sizes={
             isStackedLeft

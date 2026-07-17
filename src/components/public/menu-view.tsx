@@ -168,7 +168,7 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                             src={item.image_url}
                             alt={item.name}
                             fill
-                            className="object-cover"
+                            className="object-contain"
                             quality={75}
                             sizes="(max-width: 768px) 80px, 96px"
                           />
