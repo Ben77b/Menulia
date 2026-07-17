@@ -40,6 +40,7 @@ import {
   DashboardSectionCard,
 } from "@/components/dashboard/dashboard-section-card";
 import { SettingsTransferPanel } from "@/components/dashboard/settings-transfer-panel";
+import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 
 type SettingsTab = "general" | "hours-location" | "social-links" | "languages" | "danger";
 
