@@ -103,28 +103,36 @@ export function DishDetailInspector({
         />
       </div>
 
-      <footer className="shrink-0 space-y-3 border-t border-neutral-200/60 bg-white px-5 py-4">
-        {!isCreate && onDelete ? (
-          <Button
-            variant="outline"
-            onClick={onDelete}
-            disabled={saving}
-            className="min-h-11 w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-          >
-            {t("dish.delete")}
-          </Button>
-        ) : null}
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose} className="min-h-11 flex-1">
+      <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-neutral-200/60 bg-white px-5 py-4">
+        <div className="min-w-0">
+          {!isCreate && onDelete ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={saving}
+              className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
+            >
+              {t("dish.delete")}
+            </button>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="outline" onClick={onClose} className="min-h-11">
             {t("dish.cancel")}
           </Button>
           <Button
             variant="dark"
             disabled={saving || !draft.name.trim()}
             onClick={() => onSave(draft)}
-            className="min-h-11 flex-1"
+            className="min-h-11"
           >
-            {saving ? (isCreate ? t("dish.creating") : t("dish.saving")) : isCreate ? t("dish.create") : t("dish.save")}
+            {saving
+              ? isCreate
+                ? t("dish.creating")
+                : t("dish.saving")
+              : isCreate
+                ? t("dish.create")
+                : t("dish.save")}
           </Button>
         </div>
       </footer>

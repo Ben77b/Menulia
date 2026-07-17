@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, type FocusEvent } from "react";
+import { useState, type FocusEvent, type ReactNode } from "react";
 import { Sparkles, Loader2, Trash2, Plus } from "lucide-react";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
-import {
-  FILTERABLE_TAG_OPTIONS,
-} from "@/lib/dietary-tags";
+import { FILTERABLE_TAG_OPTIONS } from "@/lib/dietary-tags";
 import { parsePriceInput } from "@/lib/price-input";
 import {
   getMenuContentLanguageMeta,
@@ -27,10 +25,22 @@ const inputClass =
 const labelClass =
   "mb-1.5 block text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400";
 
+const sectionTitleClass =
+  "text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400";
+
 function scrollFocusedFieldIntoView(event: FocusEvent<HTMLElement>) {
   window.requestAnimationFrame(() => {
     event.currentTarget.scrollIntoView({ block: "center", behavior: "smooth" });
   });
+}
+
+function FormSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-4 rounded-2xl border border-neutral-200/60 bg-white p-4 sm:p-5">
+      <h3 className={sectionTitleClass}>{title}</h3>
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
 }
 
 interface DishDetailFormProps {
@@ -127,46 +137,109 @@ export function DishDetailForm({
   }
 
   return (
-    <div className="space-y-5">
-      <ToggleSwitch
-        label={t("dish.visibleOnMenu")}
-        description={t("dish.visibleDescription")}
-        checked={draft.is_available}
-        onChange={handleAvailabilityToggle}
-      />
+    <div className="space-y-6">
+      {/* SECTION 1: Identity & visuals */}
+      <FormSection title={t("dish.section.identity")}>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(11rem,13rem)] lg:items-start">
+          <div className="space-y-4">
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label className={cn(labelClass, "mb-0")}>Name ({primaryMeta.label})</label>
+                <SecondaryLanguageField
+                  primaryLanguage={primaryLanguage}
+                  label="name"
+                  maxLength={MAX_DISH_NAME}
+                  value={draft.nameTranslation}
+                  onChange={(value) => setDraft((prev) => ({ ...prev, nameTranslation: value }))}
+                  onSave={async () => undefined}
+                />
+              </div>
+              <input
+                value={draft.name}
+                maxLength={MAX_DISH_NAME}
+                onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
+                onFocus={scrollFocusedFieldIntoView}
+                className={inputClass}
+              />
+            </div>
 
-      <div>
-        <label className={labelClass}>{t("dish.photo")}</label>
-        <DishImageUploader
-          imageUrl={draft.image_url}
-          onImageUrlChange={(url) => setDraft((prev) => ({ ...prev, image_url: url }))}
-          onImageUpload={onImageUpload}
-          uploading={uploadingImage}
-        />
-      </div>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label className={cn(labelClass, "mb-0")}>
+                  {t("dish.description")} ({primaryMeta.label})
+                </label>
+                <div className="flex items-center gap-1">
+                  <SecondaryLanguageField
+                    primaryLanguage={primaryLanguage}
+                    label="description"
+                    value={draft.descriptionTranslation}
+                    multiline
+                    maxLength={MAX_DISH_DESCRIPTION}
+                    onChange={(value) =>
+                      setDraft((prev) => ({ ...prev, descriptionTranslation: value }))
+                    }
+                    onSave={async () => undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleGenerateDescription()}
+                    disabled={generatingDescription || saving}
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
+                    aria-label="Generate description with AI"
+                  >
+                    {generatingDescription ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    <span>
+                      {generatingDescription ? t("dish.aiWriting") : t("dish.aiWrite")}
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <div className="relative">
+                <textarea
+                  rows={4}
+                  value={draft.description}
+                  maxLength={MAX_DISH_DESCRIPTION}
+                  onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
+                  onFocus={scrollFocusedFieldIntoView}
+                  disabled={generatingDescription}
+                  placeholder={
+                    generatingDescription
+                      ? "Generating description…"
+                      : "Short sensory description for guests and search"
+                  }
+                  className={cn(
+                    inputClass,
+                    "min-h-[100px] resize-none py-2",
+                    generatingDescription && "text-neutral-500"
+                  )}
+                />
+                {generatingDescription && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-white/60">
+                    <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-      <div>
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <label className={cn(labelClass, "mb-0")}>Name ({primaryMeta.label})</label>
-          <SecondaryLanguageField
-            primaryLanguage={primaryLanguage}
-            label="name"
-            maxLength={MAX_DISH_NAME}
-            value={draft.nameTranslation}
-            onChange={(value) => setDraft((prev) => ({ ...prev, nameTranslation: value }))}
-            onSave={async () => undefined}
-          />
+          <div className="min-w-0">
+            <label className={labelClass}>{t("dish.photo")}</label>
+            <DishImageUploader
+              imageUrl={draft.image_url}
+              onImageUrlChange={(url) => setDraft((prev) => ({ ...prev, image_url: url }))}
+              onImageUpload={onImageUpload}
+              uploading={uploadingImage}
+            />
+          </div>
         </div>
-        <input
-          value={draft.name}
-          maxLength={MAX_DISH_NAME}
-          onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
-          onFocus={scrollFocusedFieldIntoView}
-          className={inputClass}
-        />
-      </div>
+      </FormSection>
 
-      <div className="space-y-4 rounded-2xl border border-neutral-200/60 bg-neutral-50/40 p-4">
+      {/* SECTION 2: Pricing & portions */}
+      <FormSection title={t("dish.section.pricing")}>
         <ToggleSwitch
           label={t("dish.hasPortions")}
           description={t("dish.hasPortionsDescription")}
@@ -238,111 +311,67 @@ export function DishDetailForm({
             </button>
           </div>
         )}
-      </div>
 
-      <ToggleSwitch
-        label={t("dish.hidePrice")}
-        description={t("dish.hidePriceDescription")}
-        checked={draft.hide_price}
-        onChange={(checked) => setDraft((prev) => ({ ...prev, hide_price: checked }))}
-      />
+        <div className="border-t border-neutral-100 pt-4">
+          <ToggleSwitch
+            label={t("dish.hidePrice")}
+            description={t("dish.hidePriceDescription")}
+            checked={draft.hide_price}
+            onChange={(checked) => setDraft((prev) => ({ ...prev, hide_price: checked }))}
+          />
+        </div>
+      </FormSection>
 
-      <ToggleSwitch
-        label={t("dish.lockTitle")}
-        description={t("dish.lockTitleDescription")}
-        checked={draft.lock_title_translation}
-        onChange={(checked) =>
-          setDraft((prev) => ({ ...prev, lock_title_translation: checked }))
-        }
-      />
+      {/* SECTION 3: Preferences & localization */}
+      <FormSection title={t("dish.section.preferences")}>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ToggleSwitch
+            label={t("dish.visibleOnMenu")}
+            description={t("dish.visibleDescription")}
+            checked={draft.is_available}
+            onChange={handleAvailabilityToggle}
+          />
+          <ToggleSwitch
+            label={t("dish.lockTitle")}
+            description={t("dish.lockTitleDescription")}
+            checked={draft.lock_title_translation}
+            onChange={(checked) =>
+              setDraft((prev) => ({ ...prev, lock_title_translation: checked }))
+            }
+          />
+        </div>
+      </FormSection>
 
-      <div>
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <label className={cn(labelClass, "mb-0")}>
-            {t("dish.description")} ({primaryMeta.label})
-          </label>
-          <div className="flex items-center gap-1">
-            <SecondaryLanguageField
-              primaryLanguage={primaryLanguage}
-              label="description"
-              value={draft.descriptionTranslation}
-              multiline
-              maxLength={MAX_DISH_DESCRIPTION}
-              onChange={(value) =>
-                setDraft((prev) => ({ ...prev, descriptionTranslation: value }))
-              }
-              onSave={async () => undefined}
-            />
-            <button
-              type="button"
-              onClick={() => void handleGenerateDescription()}
-              disabled={generatingDescription || saving}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
-              aria-label="Generate description with AI"
-            >
-              {generatingDescription ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="h-3.5 w-3.5" />
-              )}
-              <span>{generatingDescription ? t("dish.aiWriting") : t("dish.aiWrite")}</span>
-            </button>
+      {/* SECTION 4: Dietary & metadata */}
+      <FormSection title={t("dish.section.dietary")}>
+        <div>
+          <label className={labelClass}>{t("dish.filterableTags")}</label>
+          <p className="mb-3 text-xs text-neutral-500">{t("dish.filterableTagsHelp")}</p>
+          <div className="flex flex-wrap gap-2">
+            {FILTERABLE_TAG_OPTIONS.map(({ tag }) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleFilterableTag(tag)}
+                className={cn(
+                  "min-h-11 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-200 ease-in-out",
+                  draft.filterableTags.includes(tag)
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-neutral-200/60 bg-neutral-50 text-neutral-600 hover:border-neutral-300 hover:bg-white"
+                )}
+              >
+                {tag}
+              </button>
+            ))}
           </div>
         </div>
-        <div className="relative">
-          <textarea
-            rows={4}
-            value={draft.description}
-            maxLength={MAX_DISH_DESCRIPTION}
-            onChange={(e) => setDraft((p) => ({ ...p, description: e.target.value }))}
-            onFocus={scrollFocusedFieldIntoView}
-            disabled={generatingDescription}
-            placeholder={
-              generatingDescription
-                ? "Generating description…"
-                : "Short sensory description for guests and search"
-            }
-            className={cn(
-              inputClass,
-              "min-h-[100px] resize-none py-2",
-              generatingDescription && "text-neutral-500"
-            )}
-          />
-          {generatingDescription && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-white/60">
-              <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div>
-        <label className={labelClass}>{t("dish.filterableTags")}</label>
-        <p className="mb-3 text-xs text-neutral-500">{t("dish.filterableTagsHelp")}</p>
-        <div className="flex flex-wrap gap-2">
-          {FILTERABLE_TAG_OPTIONS.map(({ tag }) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => toggleFilterableTag(tag)}
-              className={cn(
-                "min-h-11 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-200 ease-in-out",
-                draft.filterableTags.includes(tag)
-                  ? "border-neutral-300 bg-neutral-100 text-neutral-900"
-                  : "border-neutral-200/60 text-neutral-500"
-              )}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <AllergenPopoverField
-        selected={draft.allergens}
-        onToggle={toggleAllergen}
-        disabled={Boolean(saving)}
-      />
+        <AllergenPopoverField
+          selected={draft.allergens}
+          onToggle={toggleAllergen}
+          disabled={Boolean(saving)}
+        />
+      </FormSection>
     </div>
   );
 }

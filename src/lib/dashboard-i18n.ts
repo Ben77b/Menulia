@@ -179,6 +179,13 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "dish.create": { en: "Add dish", es: "Agregar plato" },
   "dish.creating": { en: "Adding…", es: "Agregando…" },
   "dish.delete": { en: "Delete dish", es: "Eliminar plato" },
+  "dish.section.identity": { en: "Identity & visuals", es: "Identidad y visuales" },
+  "dish.section.pricing": { en: "Pricing & portions", es: "Precios y raciones" },
+  "dish.section.preferences": {
+    en: "Preferences & localization",
+    es: "Preferencias y localización",
+  },
+  "dish.section.dietary": { en: "Dietary & metadata", es: "Dieta y metadatos" },
   "dish.visibleOnMenu": { en: "Visible on menu", es: "Visible en el menú" },
   "dish.visibleDescription": {
     en: "Turn off to hide this dish from your public menu when it is out of stock.",
