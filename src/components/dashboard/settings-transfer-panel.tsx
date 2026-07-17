@@ -100,12 +100,18 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
         error?: string;
       };
 
+      const normalizedRecipient = recipientEmail.trim().toLowerCase();
+
       if (!response.ok || !payload.transfer) {
         console.error("[transfer:initiate.client]", payload);
         throw new Error(payload.error ?? "Failed to initiate transfer.");
       }
 
-      setPending(normalizeRestaurantTransferRecord(payload.transfer as Record<string, unknown>));
+      setPending(
+        normalizeRestaurantTransferRecord(payload.transfer as Record<string, unknown>, {
+          fallbackRecipientEmail: normalizedRecipient,
+        })
+      );
       setRecipientEmail("");
       toast.success("Transfer initiated. Share the claim link with the new owner.");
     } catch (err) {

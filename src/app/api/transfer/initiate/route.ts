@@ -68,7 +68,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "RPC returned no transfer record." }, { status: 400 });
     }
 
-    const transfer = normalizeRestaurantTransferRecord(rawRow);
+    const transfer = normalizeRestaurantTransferRecord(rawRow, {
+      fallbackRecipientEmail: recipientEmail,
+    });
     if (!parseTransferTimestamp(transfer.expires_at)) {
       return NextResponse.json({ error: "Transfer saved with an invalid expiration timestamp." }, { status: 500 });
     }

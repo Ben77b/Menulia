@@ -66,18 +66,35 @@ export function formatTransferExpiryLabel(expiresAt: unknown, createdAt: unknown
   });
 }
 
+function readRowString(row: Record<string, unknown>, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = row[key];
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+  }
+
+  return "";
+}
+
 export function normalizeRestaurantTransferRecord(
-  row: Record<string, unknown>
+  row: Record<string, unknown>,
+  options?: { fallbackRecipientEmail?: string }
 ): RestaurantTransferRecord {
-  const createdAt = String(row.created_at ?? new Date().toISOString());
+  const createdAt =
+    readRowString(row, "created_at", "createdAt") || new Date().toISOString();
+  const recipientEmail =
+    readRowString(row, "recipient_email", "recipientEmail", "recipient") ||
+    options?.fallbackRecipientEmail?.trim().toLowerCase() ||
+    "";
 
   return {
-    id: String(row.id),
-    restaurant_id: String(row.restaurant_id),
-    token: String(row.token),
-    recipient_email: String(row.recipient_email),
+    id: readRowString(row, "id"),
+    restaurant_id: readRowString(row, "restaurant_id", "restaurantId"),
+    token: readRowString(row, "token"),
+    recipient_email: recipientEmail,
     created_at: createdAt,
-    expires_at: resolveTransferExpiresAt(row.expires_at, createdAt),
+    expires_at: resolveTransferExpiresAt(row.expires_at ?? row.expiresAt, createdAt),
   };
 }
 
