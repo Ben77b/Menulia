@@ -324,7 +324,7 @@ export function DishCard({
         imageBlock
       ) : (
         <div
-          className="aspect-square h-28 w-28 rounded-xl bg-neutral-100/60 dark:bg-neutral-900/40"
+          className="aspect-square h-28 w-28 rounded-xl bg-transparent"
           aria-hidden
         />
       ));
