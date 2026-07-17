@@ -207,6 +207,11 @@ export function DishCard({
         isLeftAligned ? "text-left" : "text-center",
         isCarouselPeek && "space-y-1"
       )}
+      style={
+        isStackedLeft
+          ? { width: "100%", maxWidth: "none", margin: 0, padding: 0 }
+          : undefined
+      }
     >
       <h3
         className={cn("font-semibold uppercase leading-tight tracking-wide", titleClampClass)}
@@ -236,7 +241,8 @@ export function DishCard({
         <div
           className={cn(
             "mt-2 flex flex-col gap-y-1",
-            isStackedTop && "items-center"
+            isStackedTop && "items-center",
+            isStackedLeft && "w-full items-end"
           )}
         >
           {portionOptions.map((option) => (
@@ -244,7 +250,8 @@ export function DishCard({
               key={`${option.label}-${option.price}`}
               className={cn(
                 "font-medium tabular-nums",
-                isCarouselPeek ? "text-xs sm:text-sm" : "text-sm sm:text-base"
+                isCarouselPeek ? "text-xs sm:text-sm" : "text-sm sm:text-base",
+                isStackedLeft && "w-full text-right"
               )}
               style={{
                 color: resolvedPrice,
@@ -315,7 +322,11 @@ export function DishCard({
       )}
       {display.showPrices && !dish.hide_price && !portionOptions && (
         <p
-          className={cn("font-bold", isCarouselPeek ? "text-xs sm:text-sm" : "text-base")}
+          className={cn(
+            "font-bold",
+            isCarouselPeek ? "text-xs sm:text-sm" : "text-base",
+            isStackedLeft && "w-full text-right"
+          )}
           style={{
             color: resolvedPrice,
             fontFamily: bodyFont,
@@ -343,22 +354,52 @@ export function DishCard({
   }
 
   if (isStackedLeft) {
+    const hasImage = Boolean(imageBlock);
+
     return (
-      <article className="flex w-full items-center gap-4">
+      <article
+        className={cn(
+          "flex w-full gap-4",
+          hasImage ? "items-center" : "items-start"
+        )}
+        style={{
+          display: "flex",
+          width: "100%",
+          height: hasImage ? undefined : "auto",
+          alignItems: hasImage ? "center" : "flex-start",
+          gap: 16,
+        }}
+      >
         {display.showImages ? (
-          imageBlock ?? (
+          hasImage ? (
+            imageBlock
+          ) : (
             <div
               aria-hidden
               className="shrink-0 bg-transparent"
               style={{
                 width: STACKED_LEFT_IMAGE_WIDTH_PX,
                 flexShrink: 0,
+                height: "auto",
                 backgroundColor: "transparent",
               }}
             />
           )
         ) : null}
-        <div className="min-w-0 w-full flex-1 text-left">{textBlock}</div>
+        <div
+          className="text-left"
+          style={{
+            flexGrow: 1,
+            flex: "1 1 0%",
+            minWidth: 0,
+            width: "100%",
+            maxWidth: "none",
+            marginRight: 0,
+            paddingRight: 0,
+          }}
+        >
+          {textBlock}
+        </div>
       </article>
     );
   }
