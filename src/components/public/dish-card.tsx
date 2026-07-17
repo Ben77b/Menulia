@@ -138,20 +138,23 @@ export function DishCard({
     showImage && imageSrc ? (
       <div
         className={cn(
-          "relative aspect-square overflow-hidden rounded-2xl",
-          imageClassName
+          "relative flex shrink-0 items-center justify-center",
+          isStackedLeft ? "h-20 w-20" : cn("aspect-square", imageClassName)
         )}
       >
         <Image
           src={imageSrc}
           alt={imageAlt}
           fill
-          className="object-cover"
+          className="object-contain object-center"
+          style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.08))" }}
           quality={75}
           sizes={
-            layout === "carousel"
-              ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
-              : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
+            isStackedLeft
+              ? "80px"
+              : layout === "carousel"
+                ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
+                : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
           }
           priority={priority}
           loading={priority ? undefined : "lazy"}
@@ -315,23 +318,13 @@ export function DishCard({
   }
 
   if (isStackedLeft) {
-    const stackedLeftImageColumnClass = "w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]";
-    const stackedLeftMedia =
-      display.showImages &&
-      (showImage && imageBlock ? (
-        imageBlock
-      ) : (
-        <div
-          className="aspect-square w-full rounded-2xl bg-neutral-100/60 dark:bg-neutral-900/40"
-          aria-hidden
-        />
-      ));
+    const imageColumn = display.showImages ? (
+      <div className="h-20 w-20 shrink-0">{imageBlock}</div>
+    ) : null;
 
     return (
-      <article className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-        {stackedLeftMedia ? (
-          <div className={stackedLeftImageColumnClass}>{stackedLeftMedia}</div>
-        ) : null}
+      <article className="flex w-full flex-row items-start gap-4">
+        {imageColumn}
         <div className="min-w-0 flex-1 items-start text-left">{textBlock}</div>
       </article>
     );

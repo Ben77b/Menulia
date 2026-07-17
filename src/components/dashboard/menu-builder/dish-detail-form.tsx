@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useState, type FocusEvent } from "react";
-import { Upload, Camera, X, Sparkles, Loader2, Trash2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, type FocusEvent } from "react";
+import { Sparkles, Loader2, Trash2, Plus } from "lucide-react";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { useToast } from "@/components/ui/toast";
@@ -18,6 +17,7 @@ import {
 } from "@/lib/menu-content-languages";
 import { SecondaryLanguageField } from "./secondary-language-field";
 import { AllergenPopoverField } from "./allergen-popover-field";
+import { DishImageUploader } from "./dish-image-uploader";
 import { MAX_DISH_DESCRIPTION, MAX_DISH_NAME, clampMenuText } from "@/lib/menu-limits";
 import type { DishDetailDraft, PriceVariationDraft } from "./dish-detail-types";
 
@@ -71,7 +71,6 @@ export function DishDetailForm({
   const { t } = useDashboardLocale();
   const toast = useToast();
   const [generatingDescription, setGeneratingDescription] = useState(false);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const primaryMeta = getMenuContentLanguageMeta(primaryLanguage);
 
   async function handleAvailabilityToggle(checked: boolean) {
@@ -84,13 +83,6 @@ export function DishDetailForm({
       setDraft((prev) => ({ ...prev, is_available: !checked }));
       throw new Error("Failed to update dish visibility");
     }
-  }
-
-  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await onImageUpload(file);
-    if (url) setDraft((prev) => ({ ...prev, image_url: url }));
   }
 
   async function handleGenerateDescription() {
@@ -145,46 +137,12 @@ export function DishDetailForm({
 
       <div>
         <label className={labelClass}>{t("dish.photo")}</label>
-        <div className="flex items-center gap-4">
-          {draft.image_url ? (
-            <div className="relative">
-              <img
-                src={draft.image_url}
-                alt={draft.name}
-                className="h-24 w-24 rounded-xl border border-neutral-200/60 object-cover"
-              />
-              <button
-                type="button"
-                onClick={() => setDraft((p) => ({ ...p, image_url: null }))}
-                className="absolute -right-2 -top-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-red-500 text-white"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-neutral-200/60 bg-neutral-50 dark:border-neutral-800/60 dark:bg-neutral-900">
-              <Camera className="h-7 w-7 text-neutral-400" />
-            </div>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={uploadingImage}
-            onClick={() => imageInputRef.current?.click()}
-            className="min-h-11 gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            {uploadingImage ? t("dish.uploading") : t("dish.upload")}
-          </Button>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={handleImageChange}
-          />
-        </div>
+        <DishImageUploader
+          imageUrl={draft.image_url}
+          onImageUrlChange={(url) => setDraft((prev) => ({ ...prev, image_url: url }))}
+          onImageUpload={onImageUpload}
+          uploading={uploadingImage}
+        />
       </div>
 
       <div>

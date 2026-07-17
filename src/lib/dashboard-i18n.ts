@@ -187,6 +187,19 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "dish.photo": { en: "Photo", es: "Foto" },
   "dish.upload": { en: "Upload", es: "Subir" },
   "dish.uploading": { en: "Uploading…", es: "Subiendo…" },
+  "dish.uploadHintTitle": {
+    en: "Drop, paste, or upload a photo",
+    es: "Arrastra, pega o sube una foto",
+  },
+  "dish.uploadHintBody": {
+    en: "Drag a file here, paste a copied sticker (Cmd+V / Ctrl+V), choose from your gallery, or paste an image URL below.",
+    es: "Arrastra un archivo, pega un sticker copiado (Cmd+V / Ctrl+V), elige de tu galería o pega una URL de imagen abajo.",
+  },
+  "dish.imageUrlPlaceholder": {
+    en: "https://example.com/dish-photo.png",
+    es: "https://ejemplo.com/foto-plato.png",
+  },
+  "dish.useImageUrl": { en: "Use URL", es: "Usar URL" },
   "dish.price": { en: "Price", es: "Precio" },
   "dish.hasPortions": {
     en: "Has multiple sizes or portions?",

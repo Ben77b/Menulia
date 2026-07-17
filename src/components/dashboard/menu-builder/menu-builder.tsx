@@ -301,17 +301,28 @@ export function MenuBuilder() {
 
   async function handleImageUpload(file: File): Promise<string | null> {
     if (!currentRestaurant?.id) return null;
-    const allowed = ["image/png", "image/jpeg", "image/webp"];
-    if (!allowed.includes(file.type) || file.size > 5 * 1024 * 1024) return null;
+
+    const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+    const isImage = file.type.startsWith("image/") && (allowed.includes(file.type) || file.type === "image/jpg");
+    if (!isImage || file.size > 5 * 1024 * 1024) return null;
 
     setUploadingImage(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const ext = file.name.split(".").pop();
+      const extensionFromType: Record<string, string> = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/webp": "webp",
+        "image/gif": "gif",
+      };
+      const ext =
+        file.name.includes(".")
+          ? file.name.split(".").pop()?.toLowerCase() ?? "png"
+          : extensionFromType[file.type] ?? "png";
       const fileName = `${currentRestaurant.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("menu-images")
-        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+        .upload(fileName, file, { cacheControl: "3600", upsert: false, contentType: file.type || undefined });
       if (uploadError) throw uploadError;
       const { data } = supabase.storage.from("menu-images").getPublicUrl(fileName);
       return data.publicUrl;
