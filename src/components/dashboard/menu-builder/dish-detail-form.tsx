@@ -158,7 +158,9 @@ export function DishDetailForm({
         </div>
 
         <div>
-          <label className={labelClass}>Name ({primaryMeta.label})</label>
+          <label className={labelClass}>
+            Name ({primaryMeta.label.toUpperCase()})
+          </label>
           <input
             value={draft.name}
             maxLength={MAX_DISH_NAME}
@@ -191,7 +193,7 @@ export function DishDetailForm({
         <div>
           <div className="mb-1.5 flex flex-col gap-2">
             <label className={cn(labelClass, "mb-0")}>
-              {t("dish.description")} ({primaryMeta.label})
+              {t("dish.description")} ({primaryMeta.label.toUpperCase()})
             </label>
             <button
               type="button"

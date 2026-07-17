@@ -1089,9 +1089,8 @@ export function MenuBuilder() {
             Food, Drinks, or Desserts.
           </p>
           <Button
-            variant="dark"
             size="lg"
-            className="mt-8 gap-2"
+            className="mt-8 gap-2 bg-zinc-900 text-white shadow-sm hover:bg-zinc-800"
             onClick={() => setAddingSection(true)}
             disabled={busy || tree.sections.length >= MAX_SECTIONS}
           >
@@ -1101,7 +1100,7 @@ export function MenuBuilder() {
         </div>
       ) : (
         <>
-          <div className="mb-8 flex flex-wrap items-center gap-2">
+          <div className="mb-6 space-y-4">
             <CapsuleNav
               items={(tree.sections ?? [])
                 .filter((section): section is MenuBuilderSection => Boolean(section?.id))
@@ -1114,63 +1113,64 @@ export function MenuBuilder() {
                 if (sectionId) setActiveSectionId(sectionId);
               }}
               ariaLabel="Menu sections"
-              className="min-w-0 flex-1"
+              className="w-full"
             />
-            {tree.sections.length > 1 && activeSection?.id && (
-              <ReorderButtons
-                revealOnHover
-                mobileEnabled={reorderMode}
-                onMoveUp={() => handleReorderSection(activeSection.id, -1)}
-                onMoveDown={() => handleReorderSection(activeSection.id, 1)}
-                canMoveUp={activeSectionIndex > 0}
-                canMoveDown={
-                  activeSectionIndex >= 0 && activeSectionIndex < (tree.sections?.length ?? 0) - 1
-                }
-                disabled={busy}
-              />
-            )}
-            {activeSection?.id && (
+            <div className="flex flex-wrap items-center gap-2">
+              {tree.sections.length > 1 && activeSection?.id && (
+                <ReorderButtons
+                  revealOnHover
+                  mobileEnabled={reorderMode}
+                  onMoveUp={() => handleReorderSection(activeSection.id, -1)}
+                  onMoveDown={() => handleReorderSection(activeSection.id, 1)}
+                  canMoveUp={activeSectionIndex > 0}
+                  canMoveDown={
+                    activeSectionIndex >= 0 && activeSectionIndex < (tree.sections?.length ?? 0) - 1
+                  }
+                  disabled={busy}
+                />
+              )}
+              {activeSection?.id && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+                  onClick={() => handleDeleteSection(activeSection)}
+                  disabled={busy}
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  Delete section
+                </Button>
+              )}
               <Button
+                variant="outline"
                 size="sm"
-                variant="ghost"
-                className="shrink-0 text-red-500 hover:bg-red-50 hover:text-red-600"
-                onClick={() => handleDeleteSection(activeSection)}
+                className={cn(
+                  "shrink-0 gap-2",
+                  reorderMode && "border-emerald-300 bg-emerald-50 text-emerald-800"
+                )}
+                onClick={() => setReorderMode((current) => !current)}
                 disabled={busy}
               >
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Delete section
+                <ArrowUpDown className="h-4 w-4" />
+                {reorderMode ? t("builder.doneReordering") : t("builder.reorderMode")}
               </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(
-                "shrink-0 gap-2",
-                reorderMode && "border-emerald-300 bg-emerald-50 text-emerald-800"
-              )}
-              onClick={() => setReorderMode((current) => !current)}
-              disabled={busy}
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              {reorderMode ? t("builder.doneReordering") : t("builder.reorderMode")}
-            </Button>
-            <Button
-              variant="dark"
-              size="sm"
-              className="shrink-0 gap-2"
-              onClick={() => setAddingSection(true)}
-              disabled={busy || tree.sections.length >= MAX_SECTIONS}
-            >
-              <Plus className="h-4 w-4" />
-              Add Section
-            </Button>
+              <Button
+                size="sm"
+                className="shrink-0 gap-2 bg-zinc-900 text-white shadow-sm hover:bg-zinc-800"
+                onClick={() => setAddingSection(true)}
+                disabled={busy || tree.sections.length >= MAX_SECTIONS}
+              >
+                <Plus className="h-4 w-4" />
+                Add Section
+              </Button>
+            </div>
           </div>
 
           {activeSection && (
-            <div className="space-y-10">
+            <div className="space-y-6">
               {(activeSection.categories ?? []).length === 0 &&
               addingCategoryForSection !== activeSection.id ? (
-                <div className="rounded-2xl border border-neutral-100 bg-white px-6 py-16 text-center text-sm text-neutral-500">
+                <div className="rounded-2xl border border-neutral-200/80 bg-white px-6 py-16 text-center text-sm text-neutral-500 shadow-sm">
                   No categories yet. Add one below to start building your menu.
                 </div>
               ) : null}
@@ -1210,7 +1210,7 @@ export function MenuBuilder() {
               )}
 
               {addingCategoryForSection === activeSection.id ? (
-                <div className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 sm:flex-row sm:items-center">
+                <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm">
                   <input
                     autoFocus
                     placeholder="Category name (e.g. Starters, Mains)"
@@ -1218,17 +1218,17 @@ export function MenuBuilder() {
                     maxLength={MAX_CATEGORY_NAME}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAddCategory(activeSection.id)}
-                    className="min-h-[52px] flex-1 rounded-xl border border-neutral-100 bg-white px-4 py-3 text-base transition-colors focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200/80"
+                    className="min-h-[52px] w-full rounded-xl border border-neutral-200/80 bg-white px-4 py-3 text-base shadow-sm transition-colors placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
                     <Button
-                      variant="dark"
+                      className="bg-zinc-900 text-white shadow-sm hover:bg-zinc-800"
                       onClick={() => handleAddCategory(activeSection.id)}
                       disabled={!newCategoryName.trim() || busy}
                     >
                       Save
                     </Button>
-                    <Button variant="outline" onClick={() => setAddingCategoryForSection(null)}>
+                    <Button variant="ghost" onClick={() => setAddingCategoryForSection(null)}>
                       Cancel
                     </Button>
                   </div>
@@ -1241,7 +1241,7 @@ export function MenuBuilder() {
                     busy ||
                     (activeSection.categories?.length ?? 0) >= MAX_CATEGORIES_PER_SECTION
                   }
-                  className="flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-200 bg-white p-5 text-base font-semibold text-neutral-600 transition-colors hover:border-neutral-300 hover:bg-neutral-50 active:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-neutral-200/80 bg-white p-5 text-base font-semibold text-neutral-600 shadow-sm transition-colors hover:border-neutral-300 hover:bg-neutral-50 active:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Plus className="h-5 w-5" />
                   {t("builder.addCategory")}
@@ -1435,8 +1435,11 @@ function DishesCanvas({
   const dishes = category.dishes ?? [];
 
   return (
-    <section id={categoryCardId(category.id)} className="space-y-3">
-      <div className="flex items-center justify-between gap-3 px-1">
+    <section
+      id={categoryCardId(category.id)}
+      className="space-y-4 rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm sm:p-5"
+    >
+      <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {reorderMode ? (
             <>
@@ -1476,7 +1479,7 @@ function DishesCanvas({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white divide-y divide-neutral-100">
+      <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-neutral-50/30 divide-y divide-neutral-100">
         {dishes.map((dish, dishIndex) =>
           dish ? (
             <DishRow
@@ -1508,9 +1511,9 @@ function DishesCanvas({
           type="button"
           onClick={onStartAddDish}
           disabled={busy}
-          className="flex min-h-[56px] w-full items-center justify-center gap-2 px-4 py-4 text-base font-semibold text-sky-600 transition-colors hover:bg-sky-50/60 active:bg-sky-50 sm:px-5 sm:py-5 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-[52px] w-full items-center justify-center gap-2 bg-white px-4 py-4 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Plus className="h-5 w-5 shrink-0" aria-hidden />
+          <Plus className="h-4 w-4 shrink-0" aria-hidden />
           {t("builder.addDish")}
         </button>
       </div>

@@ -246,9 +246,15 @@
   }
 
   .air-capsule-nav {
-    @apply inline-flex w-full max-w-full gap-1 overflow-x-auto rounded-xl border border-neutral-200/40 bg-neutral-100/60 p-1;
+    @apply inline-flex w-full max-w-full flex-wrap items-center gap-1 rounded-2xl border border-neutral-200/50 bg-neutral-100/80 p-1.5 shadow-inner;
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  @media (max-width: 640px) {
+    .air-capsule-nav {
+      @apply flex-nowrap overflow-x-auto;
+    }
   }
 
   .air-capsule-nav::-webkit-scrollbar {
@@ -265,11 +271,11 @@
   }
 
   .air-capsule-nav-item {
-    @apply min-w-0 whitespace-normal break-words line-clamp-2 rounded-lg px-3.5 py-2 text-sm font-medium text-neutral-500 transition-all duration-200 hover:bg-neutral-50/80 hover:text-neutral-800;
+    @apply min-h-10 min-w-0 shrink-0 snap-start whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium text-neutral-500 transition-all duration-200 ease-out hover:text-neutral-800;
   }
 
   .air-capsule-nav-item-active {
-    @apply bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.06)] ring-1 ring-neutral-200/50;
+    @apply bg-white text-neutral-900 shadow-sm ring-1 ring-black/5;
   }
 
   .air-sidebar-link {

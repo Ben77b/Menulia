@@ -24,26 +24,28 @@ export function CapsuleNav<T extends string>({
 }: CapsuleNavProps<T>) {
   return (
     <nav
-      className={cn(
-        "flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 scrollbar-none snap-x snap-mandatory",
-        "air-capsule-nav",
-        className
-      )}
+      className={cn("air-capsule-nav", className)}
       aria-label={ariaLabel}
+      role="tablist"
     >
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => onChange(item.id)}
-          className={cn(
-            "air-capsule-nav-item min-h-11 max-w-[12rem] snap-start rounded-xl px-4 py-2 text-sm font-medium",
-            active === item.id && "air-capsule-nav-item-active"
-          )}
-        >
-          {item.label}
-        </button>
-      ))}
+      {items.map((item) => {
+        const isActive = active === item.id;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onChange(item.id)}
+            className={cn(
+              "air-capsule-nav-item",
+              isActive && "air-capsule-nav-item-active"
+            )}
+          >
+            {item.label}
+          </button>
+        );
+      })}
     </nav>
   );
 }
