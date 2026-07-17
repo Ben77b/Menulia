@@ -426,7 +426,14 @@ export function PublicMenuLayout({
             </p>
           </div>
         ) : (
-          <section className="mx-auto w-full max-w-4xl">
+          <section
+            className={cn(
+              "mx-auto w-full",
+              isStackedLeftCategoryLayout(activeSubcategory.layout_type)
+                ? "md:max-w-[720px]"
+                : "max-w-4xl"
+            )}
+          >
             <DishSection
               subcategory={activeSubcategory}
               restaurantName={restaurantName}
