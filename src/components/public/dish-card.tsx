@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { cn, formatPrice } from "@/lib/utils";
 import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
@@ -10,6 +11,8 @@ import { hasPriceVariations, parsePriceVariationsFromDb, type PriceVariation } f
 import type { CategoryLayoutType } from "@/lib/category-layout";
 import {
   isStackedCategoryLayout,
+  isStackedLeftCategoryLayout,
+  isStackedTopCategoryLayout,
 } from "@/lib/category-layout";
 
 export interface PublicMenuDish {
@@ -48,6 +51,9 @@ interface DishCardProps {
   imageClassName?: string;
   priority?: boolean;
 }
+
+/** Fixed image column width for stacked_left — keep spacer identical. */
+const STACKED_LEFT_IMAGE_WIDTH_PX = 112;
 
 function TagBadge({
   icon,
@@ -125,68 +131,56 @@ export function DishCard({
   const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
 
+  const isStackedTop = isStackedTopCategoryLayout(layout);
+  const isStackedLeft = isStackedLeftCategoryLayout(layout);
   const isStackedLayout = isStackedCategoryLayout(layout);
   const isCarouselPeek = layout === "carousel" && compact;
-  // Public list layouts (stacked + stacked_left) share the side-image row
-  const useSideImageRow = isStackedLayout;
-  const isLeftAligned = useSideImageRow;
-
-  // Hard inline styles — bypass Tailwind purge/cache for public stacked-left cards
-  const STACKED_LEFT_FRAME = {
-    width: "112px",
-    height: "112px",
-    borderRadius: "16px",
-    overflow: "hidden",
-    flexShrink: 0,
-    position: "relative",
-    backgroundColor: "transparent",
-  } as const;
-
-  const STACKED_LEFT_IMG = {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    objectPosition: "center",
-    display: "block",
-    backgroundColor: "transparent",
-  } as const;
+  const isLeftAligned = isStackedLeft;
 
   const imageBlock =
     showImage && imageSrc ? (
-      useSideImageRow ? (
-        <div style={STACKED_LEFT_FRAME} data-menulia-dish-image="stacked-left-v3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+      isStackedLeft ? (
+        <div
+          className="relative shrink-0 overflow-hidden rounded-2xl bg-transparent"
+          style={{
+            width: STACKED_LEFT_IMAGE_WIDTH_PX,
+            height: STACKED_LEFT_IMAGE_WIDTH_PX,
+            flexShrink: 0,
+          }}
+        >
+          <Image
             src={imageSrc}
             alt={imageAlt}
-            loading={priority ? "eager" : "lazy"}
-            decoding="async"
+            fill
+            className="object-cover object-center"
+            quality={75}
+            sizes={`${STACKED_LEFT_IMAGE_WIDTH_PX}px`}
+            priority={priority}
+            loading={priority ? undefined : "lazy"}
             onError={() => setImageFailed(true)}
-            style={STACKED_LEFT_IMG}
           />
         </div>
       ) : (
         <div
-          style={{
-            position: "relative",
-            width: "100%",
-            aspectRatio: "1 / 1",
-            borderRadius: "16px",
-            overflow: "hidden",
-            backgroundColor: "transparent",
-            flexShrink: 0,
-          }}
-          className={imageClassName}
-          data-menulia-dish-image="square-v3"
+          className={cn(
+            "relative aspect-square shrink-0 overflow-hidden rounded-2xl bg-transparent",
+            imageClassName
+          )}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={imageSrc}
             alt={imageAlt}
-            loading={priority ? "eager" : "lazy"}
-            decoding="async"
+            fill
+            className="object-cover object-center"
+            quality={75}
+            sizes={
+              layout === "carousel"
+                ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
+                : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
+            }
+            priority={priority}
+            loading={priority ? undefined : "lazy"}
             onError={() => setImageFailed(true)}
-            style={STACKED_LEFT_IMG}
           />
         </div>
       )
@@ -242,7 +236,7 @@ export function DishCard({
         <div
           className={cn(
             "mt-2 flex flex-col gap-y-1",
-            !isLeftAligned && "items-center"
+            isStackedTop && "items-center"
           )}
         >
           {portionOptions.map((option) => (
@@ -335,56 +329,46 @@ export function DishCard({
     </div>
   );
 
-  if (useSideImageRow) {
+  if (isStackedTop) {
     return (
-      <article
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-          width: "100%",
-        }}
-        data-menulia-card="stacked-left-v3"
-      >
+      <article className="flex w-full flex-col items-center justify-center gap-4">
+        {imageBlock && (
+          <div className="mx-auto aspect-square w-full max-w-[240px] sm:max-w-[260px]">
+            {imageBlock}
+          </div>
+        )}
+        <div className="flex w-full flex-col items-center text-center">{textBlock}</div>
+      </article>
+    );
+  }
+
+  if (isStackedLeft) {
+    return (
+      <article className="flex w-full items-center gap-4">
         {display.showImages ? (
           imageBlock ?? (
             <div
               aria-hidden
+              className="shrink-0 bg-transparent"
               style={{
-                width: "112px",
-                height: "112px",
+                width: STACKED_LEFT_IMAGE_WIDTH_PX,
                 flexShrink: 0,
                 backgroundColor: "transparent",
               }}
             />
           )
         ) : null}
-        <div
-          style={{
-            flex: "1 1 0%",
-            minWidth: "0px",
-            width: "100%",
-            textAlign: "left",
-          }}
-        >
-          {textBlock}
-        </div>
+        <div className="min-w-0 w-full flex-1 text-left">{textBlock}</div>
       </article>
     );
   }
 
   return (
-    <article
-      style={{
-        display: "flex",
-        width: "100%",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-      data-menulia-card="carousel-v3"
-    >
+    <article className={cn("flex w-full flex-col items-center", imageBlock ? "" : "w-full")}>
       {imageBlock}
-      <div style={{ width: "100%", marginTop: imageBlock ? "12px" : 0 }}>{textBlock}</div>
+      <div className={cn(imageBlock ? "mt-3 sm:mt-4" : "w-full", isCarouselPeek && "mt-2 sm:mt-4")}>
+        {textBlock}
+      </div>
     </article>
   );
 }
