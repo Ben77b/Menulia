@@ -8,7 +8,7 @@ import {
   buildTransferClaimUrl,
   cancelRestaurantTransfer,
   fetchPendingRestaurantTransfer,
-  initiateRestaurantTransfer,
+  transferInitiateErrorMessage,
   type RestaurantTransferRecord,
 } from "@/lib/restaurant-transfer";
 import { useToast } from "@/components/ui/toast";
@@ -51,12 +51,29 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
     setSubmitting(true);
     setError(null);
     try {
-      const created = await initiateRestaurantTransfer(supabase, restaurantId, recipientEmail);
-      setPending(created);
+      const response = await fetch("/api/transfer/initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          restaurantId,
+          recipientEmail: recipientEmail.trim(),
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        transfer?: RestaurantTransferRecord;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.transfer) {
+        throw new Error(payload.error ?? "Failed to initiate transfer.");
+      }
+
+      setPending(payload.transfer);
       setRecipientEmail("");
       toast.success("Transfer initiated. Share the claim link with the new owner.");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to initiate transfer.";
+      const message = transferInitiateErrorMessage(err);
       setError(message);
       toast.error(message);
     } finally {

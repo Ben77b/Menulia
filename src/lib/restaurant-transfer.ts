@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSiteUrl } from "@/lib/site-url";
-import { logSupabaseFailure } from "@/lib/auth/errors";
+import { logSupabaseFailure, formatSupabaseError } from "@/lib/auth/errors";
 
 export interface RestaurantTransferRecord {
   id: string;
@@ -17,8 +17,6 @@ export interface RestaurantTransferPreview {
   expiresAt: string;
   isValid: boolean;
 }
-
-const TRANSFER_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function buildTransferClaimUrl(token: string): string {
   return `${getSiteUrl()}/transfer/claim?token=${encodeURIComponent(token)}`;
@@ -60,44 +58,25 @@ export async function initiateRestaurantTransfer(
 ): Promise<RestaurantTransferRecord> {
   const normalizedEmail = recipientEmail.trim().toLowerCase();
   if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-    throw new Error("Enter a valid email address for the new owner.");
+    throw new Error("invalid_email");
   }
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.rpc("initiate_restaurant_transfer", {
+    p_restaurant_id: restaurantId,
+    p_recipient_email: normalizedEmail,
+  });
 
-  if (authError || !user?.email) {
-    throw new Error("You must be signed in to initiate a transfer.");
-  }
-
-  if (user.email.trim().toLowerCase() === normalizedEmail) {
-    throw new Error("The new owner must use a different email address.");
-  }
-
-  await supabase.from("restaurant_transfers").delete().eq("restaurant_id", restaurantId);
-
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + TRANSFER_TTL_MS).toISOString();
-
-  const { data, error } = await supabase
-    .from("restaurant_transfers")
-    .insert({
-      restaurant_id: restaurantId,
-      token,
-      recipient_email: normalizedEmail,
-      expires_at: expiresAt,
-    })
-    .select("id, restaurant_id, token, recipient_email, expires_at, created_at")
-    .single();
-
-  if (error || !data) {
+  if (error) {
     logSupabaseFailure("transfer.initiate", error);
-    throw error ?? new Error("Failed to initiate transfer.");
+    throw error;
   }
 
-  return data as RestaurantTransferRecord;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    throw new Error("Failed to initiate transfer.");
+  }
+
+  return row as RestaurantTransferRecord;
 }
 
 export async function cancelRestaurantTransfer(
@@ -162,6 +141,32 @@ export async function claimRestaurantTransfer(
   }
 
   return String(data);
+}
+
+export function transferInitiateErrorMessage(error: unknown): string {
+  const message = formatSupabaseError(error);
+
+  if (/not_authenticated/i.test(message)) {
+    return "You must be signed in to initiate a transfer.";
+  }
+
+  if (/not_owner/i.test(message)) {
+    return "You do not have permission to transfer this restaurant.";
+  }
+
+  if (/same_email/i.test(message)) {
+    return "The new owner must use a different email address.";
+  }
+
+  if (/invalid_email/i.test(message)) {
+    return "Enter a valid email address for the new owner.";
+  }
+
+  if (/42703|does not exist|PGRST202/i.test(message)) {
+    return "Transfer setup is incomplete. Apply the latest Supabase migrations for restaurant_transfers.";
+  }
+
+  return message || "Failed to initiate transfer.";
 }
 
 export function transferClaimErrorMessage(error: unknown): string {

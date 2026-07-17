@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -18,10 +19,16 @@ export function SignupForm() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+
+  const loginHref = searchParams.get("next")
+    ? `/login?next=${encodeURIComponent(searchParams.get("next")!)}`
+    : "/login";
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    setConfirmationEmail(null);
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
@@ -68,7 +75,7 @@ export function SignupForm() {
         if (signInError) {
           console.error("[auth:signup.signInAfterSignUp]");
           console.dir(signInError, { depth: null });
-          setError("Account created. Please confirm your email address, then log in.");
+          setConfirmationEmail(trimmedEmail);
           return;
         }
       }
@@ -98,6 +105,27 @@ export function SignupForm() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (confirmationEmail) {
+    return (
+      <div className="air-alert-success text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <CheckCircle2 className="h-6 w-6" aria-hidden />
+        </div>
+        <h2 className="text-lg font-semibold text-emerald-950">
+          Almost there! Please check your inbox
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-emerald-800/90">
+          We sent a secure confirmation link to{" "}
+          <span className="font-medium text-emerald-950">{confirmationEmail}</span>. Click the
+          link to activate your account and build your menu.
+        </p>
+        <Button asChild className="mt-6 w-full" size="lg" variant="outline">
+          <Link href={loginHref}>Back to log in</Link>
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -145,7 +173,7 @@ export function SignupForm() {
         />
       </div>
 
-      {error && <p className="air-alert-error">{error}</p>}
+      {error ? <p className="air-alert-error">{error}</p> : null}
 
       <Button type="submit" className="w-full" size="lg" disabled={submitting}>
         {submitting ? "Creating account..." : "Create account"}
@@ -153,7 +181,7 @@ export function SignupForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="air-link">
+        <Link href={loginHref} className="air-link">
           Log in
         </Link>
       </p>
