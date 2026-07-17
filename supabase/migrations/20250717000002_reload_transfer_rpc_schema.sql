@@ -1,6 +1,4 @@
--- Secure server-side transfer initiation + table grants
-
-GRANT SELECT, INSERT, DELETE ON public.restaurant_transfers TO authenticated;
+-- Ensure PostgREST picks up initiate_restaurant_transfer after manual SQL runs
 
 CREATE OR REPLACE FUNCTION public.menulia_user_email_exists(p_email TEXT)
 RETURNS BOOLEAN
@@ -13,11 +11,6 @@ AS $$
     SELECT 1
     FROM auth.users u
     WHERE LOWER(TRIM(u.email)) = LOWER(TRIM(p_email))
-  )
-  OR EXISTS (
-    SELECT 1
-    FROM public.profiles p
-    WHERE LOWER(TRIM(p.email)) = LOWER(TRIM(p_email))
   );
 $$;
 
@@ -64,8 +57,6 @@ BEGIN
     RAISE EXCEPTION 'not_owner';
   END IF;
 
-  -- Recipient lookup uses auth.users + profiles (SECURITY DEFINER). Transfers still
-  -- work for emails without an account yet — the claim link lets them sign up first.
   PERFORM public.menulia_user_email_exists(v_recipient_email);
 
   DELETE FROM public.restaurant_transfers

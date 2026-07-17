@@ -1,12 +1,13 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  initiateRestaurantTransfer,
-  transferInitiateErrorMessage,
-} from "@/lib/restaurant-transfer";
+import type { RestaurantTransferRecord } from "@/lib/restaurant-transfer";
+import { getSupabaseErrorFields } from "@/lib/auth/errors";
 import { createAuthenticatedSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
+
+const TRANSFER_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const bodySchema = z.object({
   restaurantId: z.string().uuid(),
@@ -14,6 +15,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  let restaurantId: string | undefined;
+  let recipientEmail: string | undefined;
+
   try {
     const supabase = await createAuthenticatedSupabaseServerClient();
     const {
@@ -26,21 +30,52 @@ export async function POST(request: Request) {
 
     const parsed = bodySchema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ error: "Enter a valid email address for the new owner." }, { status: 400 });
+      return NextResponse.json({ error: parsed.error.message }, { status: 400 });
     }
 
-    const transfer = await initiateRestaurantTransfer(
-      supabase,
-      parsed.data.restaurantId,
-      parsed.data.recipientEmail
-    );
+    restaurantId = parsed.data.restaurantId;
+    recipientEmail = parsed.data.recipientEmail.trim().toLowerCase();
 
-    return NextResponse.json({ transfer });
+    const generatedToken = randomUUID();
+    const expiresAt = new Date(Date.now() + TRANSFER_TTL_MS).toISOString();
+
+    const { data, error } = await supabase.rpc("initiate_restaurant_transfer", {
+      p_restaurant_id: restaurantId,
+      p_recipient_email: recipientEmail,
+      p_token: generatedToken,
+      p_expires_at: expiresAt,
+    });
+
+    if (error) {
+      console.error("[transfer:initiate]", {
+        rpc: "initiate_restaurant_transfer",
+        restaurantId,
+        recipientEmail,
+        ...getSupabaseErrorFields(error),
+      });
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    const row = (Array.isArray(data) ? data[0] : data) as RestaurantTransferRecord | null;
+    if (!row) {
+      return NextResponse.json({ error: "RPC returned no transfer record." }, { status: 400 });
+    }
+
+    return NextResponse.json({ transfer: row });
   } catch (error) {
-    console.error("[transfer:initiate]", error);
+    const { message } = getSupabaseErrorFields(error);
+
+    console.error("[transfer:initiate]", {
+      rpc: "initiate_restaurant_transfer",
+      restaurantId,
+      recipientEmail,
+      message,
+      error,
+    });
+
     return NextResponse.json(
-      { error: transferInitiateErrorMessage(error) },
-      { status: 400 }
+      { error: error instanceof Error ? error.message : message },
+      { status: 500 }
     );
   }
 }

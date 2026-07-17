@@ -8,7 +8,6 @@ import {
   buildTransferClaimUrl,
   cancelRestaurantTransfer,
   fetchPendingRestaurantTransfer,
-  transferInitiateErrorMessage,
   type RestaurantTransferRecord,
 } from "@/lib/restaurant-transfer";
 import { useToast } from "@/components/ui/toast";
@@ -66,6 +65,7 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
       };
 
       if (!response.ok || !payload.transfer) {
+        console.error("[transfer:initiate.client]", payload);
         throw new Error(payload.error ?? "Failed to initiate transfer.");
       }
 
@@ -73,7 +73,7 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
       setRecipientEmail("");
       toast.success("Transfer initiated. Share the claim link with the new owner.");
     } catch (err) {
-      const message = transferInitiateErrorMessage(err);
+      const message = err instanceof Error ? err.message : "Failed to initiate transfer.";
       setError(message);
       toast.error(message);
     } finally {

@@ -60,3 +60,26 @@ export function formatSupabaseError(error: unknown): string {
 
   return String(error);
 }
+
+export function getSupabaseErrorFields(error: unknown): {
+  code?: string;
+  message: string;
+  details?: string;
+  hint?: string;
+} {
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const supabaseError = error as PostgrestError;
+    return {
+      code: supabaseError.code,
+      message: supabaseError.message ?? formatSupabaseError(error),
+      details: supabaseError.details,
+      hint: supabaseError.hint,
+    };
+  }
+
+  if (error instanceof Error) {
+    return { message: error.message };
+  }
+
+  return { message: formatSupabaseError(error) };
+}

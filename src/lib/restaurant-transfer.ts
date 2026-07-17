@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSiteUrl } from "@/lib/site-url";
-import { logSupabaseFailure, formatSupabaseError } from "@/lib/auth/errors";
+import {
+  logSupabaseFailure,
+} from "@/lib/auth/errors";
 
 export interface RestaurantTransferRecord {
   id: string;
@@ -49,34 +51,6 @@ export async function fetchPendingRestaurantTransfer(
   }
 
   return data as RestaurantTransferRecord;
-}
-
-export async function initiateRestaurantTransfer(
-  supabase: SupabaseClient,
-  restaurantId: string,
-  recipientEmail: string
-): Promise<RestaurantTransferRecord> {
-  const normalizedEmail = recipientEmail.trim().toLowerCase();
-  if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-    throw new Error("invalid_email");
-  }
-
-  const { data, error } = await supabase.rpc("initiate_restaurant_transfer", {
-    p_restaurant_id: restaurantId,
-    p_recipient_email: normalizedEmail,
-  });
-
-  if (error) {
-    logSupabaseFailure("transfer.initiate", error);
-    throw error;
-  }
-
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) {
-    throw new Error("Failed to initiate transfer.");
-  }
-
-  return row as RestaurantTransferRecord;
 }
 
 export async function cancelRestaurantTransfer(
@@ -141,32 +115,6 @@ export async function claimRestaurantTransfer(
   }
 
   return String(data);
-}
-
-export function transferInitiateErrorMessage(error: unknown): string {
-  const message = formatSupabaseError(error);
-
-  if (/not_authenticated/i.test(message)) {
-    return "You must be signed in to initiate a transfer.";
-  }
-
-  if (/not_owner/i.test(message)) {
-    return "You do not have permission to transfer this restaurant.";
-  }
-
-  if (/same_email/i.test(message)) {
-    return "The new owner must use a different email address.";
-  }
-
-  if (/invalid_email/i.test(message)) {
-    return "Enter a valid email address for the new owner.";
-  }
-
-  if (/42703|does not exist|PGRST202/i.test(message)) {
-    return "Transfer setup is incomplete. Apply the latest Supabase migrations for restaurant_transfers.";
-  }
-
-  return message || "Failed to initiate transfer.";
 }
 
 export function transferClaimErrorMessage(error: unknown): string {

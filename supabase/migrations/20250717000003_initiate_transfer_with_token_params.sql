@@ -1,29 +1,12 @@
--- Secure server-side transfer initiation + table grants
+-- Accept server-generated token + expiry for initiate_restaurant_transfer
 
-GRANT SELECT, INSERT, DELETE ON public.restaurant_transfers TO authenticated;
-
-CREATE OR REPLACE FUNCTION public.menulia_user_email_exists(p_email TEXT)
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM auth.users u
-    WHERE LOWER(TRIM(u.email)) = LOWER(TRIM(p_email))
-  )
-  OR EXISTS (
-    SELECT 1
-    FROM public.profiles p
-    WHERE LOWER(TRIM(p.email)) = LOWER(TRIM(p_email))
-  );
-$$;
+DROP FUNCTION IF EXISTS public.initiate_restaurant_transfer(UUID, TEXT);
 
 CREATE OR REPLACE FUNCTION public.initiate_restaurant_transfer(
   p_restaurant_id UUID,
-  p_recipient_email TEXT
+  p_recipient_email TEXT,
+  p_token TEXT,
+  p_expires_at TIMESTAMPTZ
 )
 RETURNS SETOF public.restaurant_transfers
 LANGUAGE plpgsql
@@ -55,6 +38,14 @@ BEGIN
     RAISE EXCEPTION 'same_email';
   END IF;
 
+  IF p_token IS NULL OR TRIM(p_token) = '' THEN
+    RAISE EXCEPTION 'invalid_token';
+  END IF;
+
+  IF p_expires_at IS NULL OR p_expires_at <= NOW() THEN
+    RAISE EXCEPTION 'invalid_expires_at';
+  END IF;
+
   IF NOT EXISTS (
     SELECT 1
     FROM public.restaurants r
@@ -64,8 +55,6 @@ BEGIN
     RAISE EXCEPTION 'not_owner';
   END IF;
 
-  -- Recipient lookup uses auth.users + profiles (SECURITY DEFINER). Transfers still
-  -- work for emails without an account yet — the claim link lets them sign up first.
   PERFORM public.menulia_user_email_exists(v_recipient_email);
 
   DELETE FROM public.restaurant_transfers
@@ -78,9 +67,9 @@ BEGIN
     expires_at
   ) VALUES (
     p_restaurant_id,
-    gen_random_uuid()::text,
+    TRIM(p_token),
     v_recipient_email,
-    NOW() + INTERVAL '7 days'
+    p_expires_at
   )
   RETURNING * INTO v_transfer;
 
@@ -88,10 +77,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.menulia_user_email_exists(TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.menulia_user_email_exists(TEXT) TO authenticated;
-
-REVOKE ALL ON FUNCTION public.initiate_restaurant_transfer(UUID, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.initiate_restaurant_transfer(UUID, TEXT) TO authenticated;
+REVOKE ALL ON FUNCTION public.initiate_restaurant_transfer(UUID, TEXT, TEXT, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.initiate_restaurant_transfer(UUID, TEXT, TEXT, TIMESTAMPTZ) TO authenticated;
 
 NOTIFY pgrst, 'reload schema';
