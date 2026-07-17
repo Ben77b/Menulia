@@ -134,34 +134,75 @@ export function DishCard({
   const isCarouselPeek = layout === "carousel" && compact;
   const isLeftAligned = isStackedLeft;
 
-  const stackedLeftImageColumnClass = "h-20 w-20 shrink-0";
-  const imageFrameClass = cn(
-    "relative aspect-square shrink-0 overflow-hidden rounded-lg bg-transparent",
-    isStackedLeft ? stackedLeftImageColumnClass : cn("w-full", imageClassName)
-  );
+  const STACKED_LEFT_IMAGE_PX = 80;
+  const stackedLeftImageStyle = {
+    width: STACKED_LEFT_IMAGE_PX,
+    height: STACKED_LEFT_IMAGE_PX,
+    flexShrink: 0,
+  } as const;
 
   const imageBlock =
     showImage && imageSrc ? (
-      <div className={imageFrameClass}>
-        <Image
-          src={imageSrc}
-          alt={imageAlt}
-          fill
-          className="object-contain object-center"
-          style={{ filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.08))" }}
-          quality={75}
-          sizes={
-            isStackedLeft
-              ? "80px"
-              : layout === "carousel"
+      isStackedLeft ? (
+        <div
+          className="relative flex items-center justify-center overflow-hidden rounded-lg bg-transparent drop-shadow-md"
+          style={{
+            ...stackedLeftImageStyle,
+            borderRadius: 8,
+            backgroundColor: "transparent",
+          }}
+        >
+          {/* Native img + inline styles: avoid Next/Image fill collapsing in flex rows */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            onError={() => setImageFailed(true)}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              objectPosition: "center",
+              display: "block",
+              filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.08))",
+            }}
+          />
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-transparent drop-shadow-md",
+            imageClassName
+          )}
+          style={{
+            aspectRatio: "1 / 1",
+            borderRadius: 8,
+            backgroundColor: "transparent",
+          }}
+        >
+          <Image
+            src={imageSrc}
+            alt={imageAlt}
+            fill
+            className="object-contain object-center"
+            style={{
+              objectFit: "contain",
+              filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.08))",
+            }}
+            quality={75}
+            sizes={
+              layout === "carousel"
                 ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
                 : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
-          }
-          priority={priority}
-          loading={priority ? undefined : "lazy"}
-          onError={() => setImageFailed(true)}
-        />
-      </div>
+            }
+            priority={priority}
+            loading={priority ? undefined : "lazy"}
+            onError={() => setImageFailed(true)}
+          />
+        </div>
+      )
     ) : null;
 
   const titleClampClass = isStackedLayout
@@ -311,7 +352,10 @@ export function DishCard({
     return (
       <article className="flex w-full flex-col items-center justify-center gap-4">
         {imageBlock && (
-          <div className="mx-auto aspect-square w-full max-w-[240px] sm:max-w-[260px]">
+          <div
+            className="mx-auto w-full max-w-[240px] sm:max-w-[260px]"
+            style={{ aspectRatio: "1 / 1", width: "100%", maxWidth: 260 }}
+          >
             {imageBlock}
           </div>
         )}
@@ -322,13 +366,27 @@ export function DishCard({
 
   if (isStackedLeft) {
     return (
-      <article className="flex w-full flex-row items-center gap-4">
+      <article
+        className="flex w-full items-center gap-4"
+        style={{ display: "flex", alignItems: "center", width: "100%", gap: 16 }}
+      >
         {display.showImages ? (
-          <div className={stackedLeftImageColumnClass} aria-hidden={!imageBlock}>
-            {imageBlock ?? <div className="h-full w-full bg-transparent" />}
-          </div>
+          imageBlock ?? (
+            <div
+              aria-hidden
+              style={{
+                ...stackedLeftImageStyle,
+                backgroundColor: "transparent",
+              }}
+            />
+          )
         ) : null}
-        <div className="min-w-0 w-full flex-1 grow text-left">{textBlock}</div>
+        <div
+          className="min-w-0 text-left"
+          style={{ flex: 1, width: "100%", minWidth: 0 }}
+        >
+          {textBlock}
+        </div>
       </article>
     );
   }
