@@ -96,7 +96,8 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
       });
 
       const payload = (await response.json()) as {
-        transfer?: RestaurantTransferRecord;
+        success?: boolean;
+        transfer?: RestaurantTransferRecord | Record<string, unknown>;
         error?: string;
       };
 
@@ -107,11 +108,19 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
         throw new Error(payload.error ?? "Failed to initiate transfer.");
       }
 
-      setPending(
-        normalizeRestaurantTransferRecord(payload.transfer as Record<string, unknown>, {
+      const transfer = normalizeRestaurantTransferRecord(
+        payload.transfer as Record<string, unknown>,
+        {
           fallbackRecipientEmail: normalizedRecipient,
-        })
+          fallbackRestaurantId: restaurantId,
+        }
       );
+
+      if (!transfer.token) {
+        throw new Error("Transfer was created but no claim token was returned.");
+      }
+
+      setPending(transfer);
       setRecipientEmail("");
       toast.success("Transfer initiated. Share the claim link with the new owner.");
     } catch (err) {
@@ -141,7 +150,11 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
   }
 
   async function handleCopyLink() {
-    if (!pending) return;
+    if (!pending?.token) {
+      toast.error("Transfer link is not ready yet.");
+      return;
+    }
+
     const url = buildTransferClaimUrl(pending.token);
     const didCopy = await copyTextToClipboard(url);
 
@@ -155,7 +168,7 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
     window.setTimeout(() => setCopied(false), 2000);
   }
 
-  const claimUrl = pending ? buildTransferClaimUrl(pending.token) : "";
+  const claimUrl = pending?.token ? buildTransferClaimUrl(pending.token) : "";
 
   return (
     <section className="rounded-2xl border-2 border-amber-200 bg-white p-6 shadow-sm md:p-8">
@@ -190,28 +203,34 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
             <span className="font-semibold">{pending.recipient_email}</span>
           </p>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Transfer link
-            </label>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                readOnly
-                value={claimUrl}
-                className="air-input min-h-11 flex-1 font-mono text-xs text-slate-700"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11 shrink-0 gap-2"
-                onClick={() => void handleCopyLink()}
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied!" : "Copy link"}
-              </Button>
+          {!claimUrl ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              Claim link is still loading. Refresh the page if this message persists.
+            </p>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Transfer link
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="text"
+                  readOnly
+                  value={claimUrl}
+                  className="air-input min-h-11 flex-1 font-mono text-xs text-slate-700"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 shrink-0 gap-2"
+                  onClick={() => void handleCopyLink()}
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "Copied!" : "Copy link"}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           <p className="text-xs text-slate-500">
             {formattedExpiry ? `Expires on ${formattedExpiry}` : null}

@@ -79,7 +79,11 @@ function readRowString(row: Record<string, unknown>, ...keys: string[]): string 
 
 export function normalizeRestaurantTransferRecord(
   row: Record<string, unknown>,
-  options?: { fallbackRecipientEmail?: string }
+  options?: {
+    fallbackRecipientEmail?: string;
+    fallbackToken?: string;
+    fallbackRestaurantId?: string;
+  }
 ): RestaurantTransferRecord {
   const createdAt =
     readRowString(row, "created_at", "createdAt") || new Date().toISOString();
@@ -87,11 +91,18 @@ export function normalizeRestaurantTransferRecord(
     readRowString(row, "recipient_email", "recipientEmail", "recipient") ||
     options?.fallbackRecipientEmail?.trim().toLowerCase() ||
     "";
+  const token =
+    readRowString(row, "token", "tokenString", "transfer_token") ||
+    options?.fallbackToken?.trim() ||
+    "";
 
   return {
     id: readRowString(row, "id"),
-    restaurant_id: readRowString(row, "restaurant_id", "restaurantId"),
-    token: readRowString(row, "token"),
+    restaurant_id:
+      readRowString(row, "restaurant_id", "restaurantId") ||
+      options?.fallbackRestaurantId ||
+      "",
+    token,
     recipient_email: recipientEmail,
     created_at: createdAt,
     expires_at: resolveTransferExpiresAt(row.expires_at ?? row.expiresAt, createdAt),
@@ -99,7 +110,12 @@ export function normalizeRestaurantTransferRecord(
 }
 
 export function buildTransferClaimUrl(token: string): string {
-  return `${getSiteUrl()}/transfer/claim?token=${encodeURIComponent(token)}`;
+  const trimmed = token.trim();
+  if (!trimmed) {
+    return `${getSiteUrl()}/transfer/claim`;
+  }
+
+  return `${getSiteUrl()}/transfer/claim?token=${encodeURIComponent(trimmed)}`;
 }
 
 export function isTransferExpired(expiresAt: string, createdAt?: string): boolean {

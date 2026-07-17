@@ -57,6 +57,7 @@ export async function POST(request: Request) {
         rpc: "initiate_restaurant_transfer",
         restaurantId,
         recipientEmail,
+        generatedToken,
         expiresAt,
         ...getSupabaseErrorFields(error),
       });
@@ -65,17 +66,36 @@ export async function POST(request: Request) {
 
     const rawRow = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
     if (!rawRow) {
+      console.error("[transfer:initiate] RPC returned no transfer record.", {
+        restaurantId,
+        recipientEmail,
+        generatedToken,
+      });
       return NextResponse.json({ error: "RPC returned no transfer record." }, { status: 400 });
     }
 
     const transfer = normalizeRestaurantTransferRecord(rawRow, {
       fallbackRecipientEmail: recipientEmail,
+      fallbackToken: generatedToken,
+      fallbackRestaurantId: restaurantId,
     });
-    if (!parseTransferTimestamp(transfer.expires_at)) {
-      return NextResponse.json({ error: "Transfer saved with an invalid expiration timestamp." }, { status: 500 });
+
+    if (!transfer.token) {
+      transfer.token = generatedToken;
     }
 
-    return NextResponse.json({ transfer });
+    if (!parseTransferTimestamp(transfer.expires_at)) {
+      transfer.expires_at = expiresAt;
+    }
+
+    if (!transfer.token) {
+      return NextResponse.json({ error: "Transfer saved without a claim token." }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      transfer,
+    });
   } catch (error) {
     const { message } = getSupabaseErrorFields(error);
 
