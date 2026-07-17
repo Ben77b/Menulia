@@ -139,11 +139,11 @@ export function DishCard({
       <div
         className={cn(
           "relative aspect-square overflow-hidden rounded-xl",
-          isStackedLeft ? "h-28 w-28 shrink-0" : imageClassName
+          isStackedLeft ? "h-32 w-32 shrink-0" : imageClassName
         )}
         style={
           isStackedLeft
-            ? { width: 112, height: 112, flexShrink: 0, borderRadius: 12 }
+            ? { width: 128, height: 128, flexShrink: 0, borderRadius: 12 }
             : undefined
         }
       >
@@ -155,7 +155,7 @@ export function DishCard({
           quality={75}
           sizes={
             isStackedLeft
-              ? "112px"
+              ? "128px"
               : layout === "carousel"
                 ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
                 : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
@@ -323,16 +323,24 @@ export function DishCard({
 
   if (isStackedLeft) {
     return (
-      <article className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-        {imageBlock ? (
-          <div
-            className="h-28 w-28 shrink-0"
-            style={{ width: 112, height: 112, flexShrink: 0 }}
-          >
-            {imageBlock}
-          </div>
+      <article className="flex w-full items-center gap-6">
+        {display.showImages ? (
+          imageBlock ? (
+            <div
+              className="h-32 w-32 shrink-0"
+              style={{ width: 128, height: 128, flexShrink: 0 }}
+            >
+              {imageBlock}
+            </div>
+          ) : (
+            <div
+              className="w-32 shrink-0 bg-transparent"
+              style={{ width: 128, flexShrink: 0 }}
+              aria-hidden
+            />
+          )
         ) : null}
-        <div className="min-w-0 flex-1 items-start text-left">{textBlock}</div>
+        <div className="min-w-0 w-full flex-1 text-left">{textBlock}</div>
       </article>
     );
   }
