@@ -143,7 +143,7 @@ export function DishCard({
         )}
         style={
           isStackedLeft
-            ? { width: 160, height: 160, flexShrink: 0, borderRadius: 12 }
+            ? { width: "160px", height: "160px", flexShrink: 0, borderRadius: "12px" }
             : undefined
         }
       >
@@ -328,19 +328,22 @@ export function DishCard({
           imageBlock ? (
             <div
               className="h-40 w-40 shrink-0"
-              style={{ width: 160, height: 160, flexShrink: 0 }}
+              style={{ width: "160px", height: "160px", flexShrink: 0 }}
             >
               {imageBlock}
             </div>
           ) : (
             <div
               className="w-40 shrink-0 bg-transparent"
-              style={{ width: 160, flexShrink: 0 }}
+              style={{ width: "160px", flexShrink: 0 }}
               aria-hidden
             />
           )
         ) : null}
-        <div className="min-w-0 w-full flex-1 text-left" style={{ flex: "1 1 0%", minWidth: 0, width: "100%" }}>
+        <div
+          className="text-left"
+          style={{ flex: "1 1 0%", minWidth: 0, width: "100%" }}
+        >
           {textBlock}
         </div>
       </article>
