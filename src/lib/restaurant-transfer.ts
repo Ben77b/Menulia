@@ -25,7 +25,9 @@ export function buildTransferClaimUrl(token: string): string {
 }
 
 export function isTransferExpired(expiresAt: string): boolean {
-  return new Date(expiresAt).getTime() <= Date.now();
+  const parsed = new Date(expiresAt);
+  if (Number.isNaN(parsed.getTime())) return true;
+  return parsed.getTime() <= Date.now();
 }
 
 export async function fetchPendingRestaurantTransfer(
@@ -77,18 +79,71 @@ export async function lookupRestaurantTransferPreview(
   });
 
   if (error) {
-    logSupabaseFailure("transfer.lookup", error);
+    logSupabaseFailure("transfer.lookup.rpc", error);
     throw error;
   }
 
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) return null;
 
+  return mapTransferPreviewRow(row);
+}
+
+type TransferPreviewRow = {
+  restaurant_name?: unknown;
+  recipient_email?: unknown;
+  expires_at?: unknown;
+  is_valid?: unknown;
+};
+
+type TransferJoinRow = {
+  recipient_email?: unknown;
+  expires_at?: unknown;
+  restaurants?: { name?: unknown } | { name?: unknown }[] | null;
+};
+
+function mapTransferPreviewRow(row: TransferPreviewRow): RestaurantTransferPreview {
+  const expiresAt = String(row.expires_at ?? "");
   return {
     restaurantName: String(row.restaurant_name ?? ""),
     recipientEmail: String(row.recipient_email ?? ""),
-    expiresAt: String(row.expires_at ?? ""),
-    isValid: Boolean(row.is_valid),
+    expiresAt,
+    isValid:
+      row.is_valid !== undefined && row.is_valid !== null
+        ? Boolean(row.is_valid)
+        : !isTransferExpired(expiresAt),
+  };
+}
+
+export async function lookupRestaurantTransferByToken(
+  supabase: SupabaseClient,
+  token: string
+): Promise<RestaurantTransferPreview | null> {
+  const trimmed = token.trim();
+  if (!trimmed) return null;
+
+  const { data, error } = await supabase
+    .from("restaurant_transfers")
+    .select("recipient_email, expires_at, restaurants(name)")
+    .eq("token", trimmed)
+    .maybeSingle();
+
+  if (error) {
+    logSupabaseFailure("transfer.lookup.direct", error);
+    throw error;
+  }
+
+  if (!data) return null;
+
+  const row = data as TransferJoinRow;
+  const restaurant = Array.isArray(row.restaurants) ? row.restaurants[0] : row.restaurants;
+  const expiresAt = String(row.expires_at ?? "");
+
+  return {
+    restaurantName: String(restaurant?.name ?? ""),
+    recipientEmail: String(row.recipient_email ?? ""),
+    expiresAt,
+    isValid: !isTransferExpired(expiresAt),
   };
 }
 
