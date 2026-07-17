@@ -184,13 +184,16 @@ export function DishCard({
   const textBlock = (
     <div
       className={cn(
-        "flex w-full flex-col space-y-2",
+        "flex w-full max-w-none flex-col space-y-2",
         isLeftAligned ? "text-left" : "text-center",
         isCarouselPeek && "space-y-1"
       )}
     >
       <h3
-        className={cn("font-semibold uppercase leading-tight tracking-wide", titleClampClass)}
+        className={cn(
+          "w-full max-w-none font-semibold uppercase leading-tight tracking-wide",
+          titleClampClass
+        )}
         style={{
           color: resolvedTitle,
           fontFamily: titleFont,
@@ -202,7 +205,7 @@ export function DishCard({
       </h3>
       {display.showDescriptions && localizedDescription && (
         <p
-          className={descriptionClampClass}
+          className={cn("w-full max-w-none", descriptionClampClass)}
           style={{
             color: resolvedDescription,
             fontFamily: bodyFont,
@@ -341,8 +344,8 @@ export function DishCard({
           )
         ) : null}
         <div
-          className="text-left"
-          style={{ flex: "1 1 0%", minWidth: 0, width: "100%" }}
+          className="w-full max-w-none text-left"
+          style={{ flex: "1 1 0%", minWidth: "0px", width: "100%" }}
         >
           {textBlock}
         </div>

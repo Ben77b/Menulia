@@ -175,7 +175,7 @@ function DishSection({
       {sectionNote}
       <div
         className={cn(
-          "mx-auto w-full max-w-3xl space-y-12 px-4",
+          "w-full space-y-12",
           centerDishes && "flex flex-col items-center"
         )}
       >
