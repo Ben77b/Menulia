@@ -138,8 +138,8 @@ export function DishCard({
     showImage && imageSrc ? (
       <div
         className={cn(
-          "relative aspect-square overflow-hidden rounded-2xl",
-          imageClassName
+          "relative aspect-square overflow-hidden rounded-xl",
+          isStackedLeft ? "h-28 w-28 shrink-0" : imageClassName
         )}
       >
         <Image
@@ -149,9 +149,11 @@ export function DishCard({
           className="object-cover"
           quality={75}
           sizes={
-            layout === "carousel"
-              ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
-              : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
+            isStackedLeft
+              ? "112px"
+              : layout === "carousel"
+                ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
+                : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
           }
           priority={priority}
           loading={priority ? undefined : "lazy"}
@@ -315,14 +317,14 @@ export function DishCard({
   }
 
   if (isStackedLeft) {
-    const stackedLeftImageColumnClass = "w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]";
+    const stackedLeftImageColumnClass = "h-28 w-28 shrink-0";
     const stackedLeftMedia =
       display.showImages &&
       (showImage && imageBlock ? (
         imageBlock
       ) : (
         <div
-          className="aspect-square w-full rounded-2xl bg-neutral-100/60 dark:bg-neutral-900/40"
+          className="aspect-square h-28 w-28 rounded-xl bg-neutral-100/60 dark:bg-neutral-900/40"
           aria-hidden
         />
       ));
