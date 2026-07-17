@@ -340,7 +340,9 @@ export function DishCard({
             />
           )
         ) : null}
-        <div className="min-w-0 w-full flex-1 text-left">{textBlock}</div>
+        <div className="min-w-0 w-full flex-1 text-left" style={{ flex: "1 1 0%", minWidth: 0, width: "100%" }}>
+          {textBlock}
+        </div>
       </article>
     );
   }
