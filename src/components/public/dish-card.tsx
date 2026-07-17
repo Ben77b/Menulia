@@ -139,11 +139,11 @@ export function DishCard({
       <div
         className={cn(
           "relative aspect-square overflow-hidden rounded-xl",
-          isStackedLeft ? "h-32 w-32 shrink-0" : imageClassName
+          isStackedLeft ? "h-40 w-40 shrink-0" : imageClassName
         )}
         style={
           isStackedLeft
-            ? { width: 128, height: 128, flexShrink: 0, borderRadius: 12 }
+            ? { width: 160, height: 160, flexShrink: 0, borderRadius: 12 }
             : undefined
         }
       >
@@ -155,7 +155,7 @@ export function DishCard({
           quality={75}
           sizes={
             isStackedLeft
-              ? "128px"
+              ? "160px"
               : layout === "carousel"
                 ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
                 : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
@@ -327,15 +327,15 @@ export function DishCard({
         {display.showImages ? (
           imageBlock ? (
             <div
-              className="h-32 w-32 shrink-0"
-              style={{ width: 128, height: 128, flexShrink: 0 }}
+              className="h-40 w-40 shrink-0"
+              style={{ width: 160, height: 160, flexShrink: 0 }}
             >
               {imageBlock}
             </div>
           ) : (
             <div
-              className="w-32 shrink-0 bg-transparent"
-              style={{ width: 128, flexShrink: 0 }}
+              className="w-40 shrink-0 bg-transparent"
+              style={{ width: 160, flexShrink: 0 }}
               aria-hidden
             />
           )
