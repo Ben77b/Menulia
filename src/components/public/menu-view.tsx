@@ -161,20 +161,55 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                     key={item.id}
                     className="rounded-2xl border border-border bg-white p-4 shadow-sm"
                   >
-                    <div className="flex gap-4">
-                      {item.image_url && (
-                        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl">
-                          <Image
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "20px",
+                        width: "100%",
+                      }}
+                    >
+                      {item.image_url ? (
+                        <div
+                          style={{
+                            width: "112px",
+                            height: "112px",
+                            borderRadius: "16px",
+                            overflow: "hidden",
+                            flexShrink: 0,
+                            position: "relative",
+                            backgroundColor: "transparent",
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
                             src={item.image_url}
                             alt={item.name}
-                            fill
-                            className="object-cover"
-                            quality={75}
-                            sizes="(max-width: 768px) 80px, 96px"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
                           />
                         </div>
+                      ) : (
+                        <div
+                          aria-hidden
+                          style={{
+                            width: "112px",
+                            height: "112px",
+                            flexShrink: 0,
+                            backgroundColor: "transparent",
+                          }}
+                        />
                       )}
-                      <div className="flex-1">
+                      <div
+                        style={{
+                          flex: "1 1 0%",
+                          minWidth: "0px",
+                          width: "100%",
+                        }}
+                      >
                         <h3 className={`font-semibold ${fontClasses?.heading || ''}`} style={{ color: design.mainContentFontColor }}>{item.name}</h3>
                         <p className={`mt-1 text-sm line-clamp-2 ${fontClasses?.body || ''}`} style={{ color: design.mainContentFontColor }}>
                           {item.description}

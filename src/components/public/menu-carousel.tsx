@@ -94,7 +94,17 @@ export function MenuCarousel({ items, design, allergenLocale = "en" }: MenuCarou
                   ${isActive ? 'scale-100 opacity-100' : isAdjacent ? 'scale-75 opacity-50' : 'scale-50 opacity-20'}
                 `}
               >
-                <div className="relative aspect-square w-full shrink-0 bg-transparent rounded-2xl overflow-hidden">
+                <div
+                  style={{
+                    position: "relative",
+                    aspectRatio: "1 / 1",
+                    width: "100%",
+                    flexShrink: 0,
+                    backgroundColor: "transparent",
+                    borderRadius: "16px",
+                    overflow: "hidden",
+                  }}
+                >
                   {item.image_url ? (
                     <Image
                       src={item.image_url}
@@ -103,6 +113,7 @@ export function MenuCarousel({ items, design, allergenLocale = "en" }: MenuCarou
                       className="object-cover"
                       sizes="320px"
                       quality={75}
+                      style={{ objectFit: "cover", borderRadius: "16px" }}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-4xl bg-muted rounded-2xl">🍽️</div>

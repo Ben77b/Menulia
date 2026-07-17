@@ -17,7 +17,7 @@ import {
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
-import { isCarouselCategoryLayout, isStackedLeftCategoryLayout } from "@/lib/category-layout";
+import { isCarouselCategoryLayout } from "@/lib/category-layout";
 import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
 import { CategorySectionHeader } from "./category-section-header";
@@ -161,8 +161,6 @@ function DishSection({
     );
   }
 
-  const centerDishes = !isStackedLeftCategoryLayout(subcategory.layout_type);
-
   return (
     <PreviewHotspot
       id="menuItem"
@@ -173,19 +171,13 @@ function DishSection({
     >
       {categoryHeading}
       {sectionNote}
-      <div
-        className={cn(
-          "w-full space-y-10 md:space-y-12",
-          centerDishes && "flex w-full flex-col items-center"
-        )}
-        style={{ width: "100%" }}
-      >
+      <div className="w-full space-y-10 md:space-y-12" style={{ width: "100%" }}>
         {(filteredDishes ?? []).map((dish, index) => {
           if (!dish?.id) return null;
           return (
           <div
             key={dish.id || `dish-${index}`}
-            className={cn("w-full", centerDishes && "flex justify-center")}
+            style={{ width: "100%" }}
           >
           <DishCard
             dish={dish}
@@ -406,13 +398,26 @@ export function PublicMenuLayout({
       </PreviewHotspot>
 
       <main
-        className="flex w-full flex-1 flex-col items-center justify-center"
-        style={{ borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}` }}
+        style={{
+          flex: 1,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}`,
+        }}
       >
         {!hasMenu || !activeSubcategory ? (
           <div
-            className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center px-4 py-16 text-center md:px-6"
-            style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}
+            style={{
+              maxWidth: "680px",
+              margin: "0 auto",
+              width: "100%",
+              padding: "64px 16px",
+              textAlign: "center",
+              color: themedColor(isPreview, "itemTitle", theme.itemTitleText),
+            }}
           >
             <p
               className="text-lg font-semibold uppercase tracking-wide"
@@ -431,10 +436,15 @@ export function PublicMenuLayout({
           </div>
         ) : (
           <section
-            className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center px-4 py-8 md:px-6"
-            style={{ width: "100%", maxWidth: 672, marginLeft: "auto", marginRight: "auto" }}
+            data-menulia-menu-column="v3"
+            style={{
+              maxWidth: "680px",
+              margin: "0 auto",
+              width: "100%",
+              padding: "32px 16px",
+            }}
           >
-            <div className="w-full">
+            <div style={{ width: "100%" }}>
               <DishSection
                 subcategory={activeSubcategory}
                 restaurantName={restaurantName}
