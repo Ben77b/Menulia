@@ -14,6 +14,7 @@ const LOCALE_SKIP_PREFIXES = [
   "/logout",
   "/onboarding",
   "/menu",
+  "/transfer",
   "/api",
   "/auth",
   "/legal",

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -11,6 +12,7 @@ import { ensureAuthSessionCommitted } from "@/lib/auth/session";
 import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
 
 export function SignupForm() {
+  const searchParams = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -78,7 +80,12 @@ export function SignupForm() {
       const profile = buildUserProfile(session.user);
       await syncUserProfileRecord(supabase, profile);
 
-      window.location.assign("/dashboard");
+      const nextParam = searchParams.get("next");
+      const destination =
+        nextParam?.startsWith("/transfer/") || nextParam?.startsWith("/dashboard")
+          ? nextParam
+          : "/dashboard";
+      window.location.assign(destination);
     } catch (submitError) {
       console.error("[auth:signup.submit]");
       console.dir(submitError, { depth: null });

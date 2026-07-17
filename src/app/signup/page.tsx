@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { SignupForm } from "@/components/auth/signup-form";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PublicLandingShell } from "@/components/marketing/public-landing-shell";
 
 export const metadata = { title: "Sign up" };
@@ -14,7 +16,9 @@ export default function SignupPage() {
             Sign up with your name, email, and password. You can add your restaurant after.
           </p>
         </div>
-        <SignupForm />
+        <Suspense fallback={<LoadingSpinner label="Preparing signup..." />}>
+          <SignupForm />
+        </Suspense>
       </div>
     </PublicLandingShell>
   );

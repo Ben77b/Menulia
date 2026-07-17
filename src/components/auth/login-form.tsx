@@ -10,6 +10,13 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { completeAuthenticatedLogin } from "@/lib/auth/profile";
 import { logAuthDiagnostic, toFriendlyAuthError } from "@/lib/auth/messages";
 
+function resolvePostLoginDestination(nextParam: string | null, fallback: string): string {
+  if (!nextParam || !nextParam.startsWith("/")) return fallback;
+  if (nextParam.startsWith("/dashboard")) return nextParam;
+  if (nextParam.startsWith("/transfer/")) return nextParam;
+  return fallback;
+}
+
 export function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -68,19 +75,14 @@ export function LoginForm() {
 
         const { destination } = await completeAuthenticatedLogin(supabase, fallbackSession.user);
         const nextParam = searchParams.get("next");
-        const finalDestination =
-          nextParam && nextParam.startsWith("/dashboard") ? nextParam : destination;
-        window.location.assign(finalDestination);
+        window.location.assign(resolvePostLoginDestination(nextParam, destination));
         return;
       }
 
       const { destination } = await completeAuthenticatedLogin(supabase, data.session.user);
 
       const nextParam = searchParams.get("next");
-      const finalDestination =
-        nextParam && nextParam.startsWith("/dashboard") ? nextParam : destination;
-
-      window.location.assign(finalDestination);
+      window.location.assign(resolvePostLoginDestination(nextParam, destination));
     } catch (submitError) {
       console.error("[auth:login.submit]");
       console.dir(submitError, { depth: null });
@@ -142,7 +144,14 @@ export function LoginForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         New to Menulia?{" "}
-        <Link href="/signup" className="air-link">
+        <Link
+          href={
+            searchParams.get("next")
+              ? `/signup?next=${encodeURIComponent(searchParams.get("next")!)}`
+              : "/signup"
+          }
+          className="air-link"
+        >
           Create an account
         </Link>
       </p>

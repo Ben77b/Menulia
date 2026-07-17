@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { DashboardAuthGuard } from "@/components/dashboard/dashboard-auth-guard";
 import { DashboardLocaleProvider } from "@/contexts/dashboard-locale-context";
 import { ToastProvider } from "@/components/ui/toast";
+import { DashboardFlashToast } from "@/components/dashboard/dashboard-flash-toast";
 import { Menu as MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardLocaleToggle } from "@/components/dashboard/dashboard-locale-toggle";
@@ -20,6 +21,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     <DashboardAuthGuard>
       <DashboardLocaleProvider>
         <ToastProvider>
+        <DashboardFlashToast />
         <div className="air-dashboard flex min-h-screen bg-neutral-50/80">
           <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
 

@@ -39,7 +39,7 @@ import {
   DashboardFieldLabel,
   DashboardSectionCard,
 } from "@/components/dashboard/dashboard-section-card";
-import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
+import { SettingsTransferPanel } from "@/components/dashboard/settings-transfer-panel";
 
 type SettingsTab = "general" | "hours-location" | "social-links" | "languages" | "danger";
 
@@ -485,7 +485,10 @@ function SettingsPageContent() {
           )}
 
           {activeTab === "danger" && (
-            <section className="rounded-2xl border-2 border-red-200 bg-white p-6 shadow-sm md:p-8">
+            <div className="space-y-6">
+              <SettingsTransferPanel restaurantId={activeRestaurant.id} />
+
+              <section className="rounded-2xl border-2 border-red-200 bg-white p-6 shadow-sm md:p-8">
               <div className="mb-6 flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
                   <AlertTriangle className="h-5 w-5" />
@@ -519,6 +522,7 @@ function SettingsPageContent() {
                 </Button>
               </div>
             </section>
+            </div>
           )}
 
           {activeTab !== "danger" && activeTab !== "languages" && (
