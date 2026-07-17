@@ -16,6 +16,42 @@ interface SettingsTransferPanelProps {
   restaurantId: string;
 }
 
+function parseTransferExpiresAt(value: unknown): Date | null {
+  if (!value) return null;
+
+  const parsed = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall through to legacy copy.
+    }
+  }
+
+  if (typeof document === "undefined") return false;
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelProps) {
   const toast = useToast();
   const supabase = getSupabaseBrowserClient();
@@ -27,6 +63,33 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [formattedExpiry, setFormattedExpiry] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!pending?.expires_at) {
+      setFormattedExpiry(null);
+      return;
+    }
+
+    const expiresAt = parseTransferExpiresAt(pending.expires_at);
+    if (!expiresAt) {
+      setFormattedExpiry(null);
+      return;
+    }
+
+    setFormattedExpiry(
+      expiresAt.toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    );
+  }, [pending?.expires_at]);
 
   const loadPending = useCallback(async () => {
     setLoading(true);
@@ -101,14 +164,16 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
   async function handleCopyLink() {
     if (!pending) return;
     const url = buildTransferClaimUrl(pending.token);
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast.success("Transfer link copied.");
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
+    const didCopy = await copyTextToClipboard(url);
+
+    if (!didCopy) {
       toast.error("Unable to copy link.");
+      return;
     }
+
+    setCopied(true);
+    toast.success("Transfer link copied.");
+    window.setTimeout(() => setCopied(false), 2000);
   }
 
   const claimUrl = pending ? buildTransferClaimUrl(pending.token) : "";
@@ -164,13 +229,15 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
                 onClick={() => void handleCopyLink()}
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied" : "Copy link"}
+                {copied ? "Copied!" : "Copy link"}
               </Button>
             </div>
           </div>
 
           <p className="text-xs text-slate-500">
-            Expires {new Date(pending.expires_at).toLocaleString()}
+            {mounted && formattedExpiry
+              ? `Expires on ${formattedExpiry}`
+              : "Expires on …"}
           </p>
 
           <Button
