@@ -426,7 +426,7 @@ export function PublicMenuLayout({
             </p>
           </div>
         ) : (
-          <section className="mx-auto w-full max-w-3xl">
+          <section className="mx-auto w-full max-w-4xl">
             <DishSection
               subcategory={activeSubcategory}
               restaurantName={restaurantName}

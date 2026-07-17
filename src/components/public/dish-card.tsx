@@ -139,11 +139,11 @@ export function DishCard({
       <div
         className={cn(
           "relative aspect-square overflow-hidden rounded-xl",
-          isStackedLeft ? "h-40 w-40 shrink-0" : imageClassName
+          isStackedLeft ? "h-44 w-44 shrink-0" : imageClassName
         )}
         style={
           isStackedLeft
-            ? { width: "160px", height: "160px", flexShrink: 0, borderRadius: "12px" }
+            ? { width: "176px", height: "176px", flexShrink: 0, borderRadius: "12px" }
             : undefined
         }
       >
@@ -155,7 +155,7 @@ export function DishCard({
           quality={75}
           sizes={
             isStackedLeft
-              ? "160px"
+              ? "176px"
               : layout === "carousel"
                 ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
                 : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
@@ -184,7 +184,7 @@ export function DishCard({
   const textBlock = (
     <div
       className={cn(
-        "flex w-full max-w-none flex-col space-y-2",
+        "flex w-full min-w-0 max-w-none flex-1 flex-col space-y-2",
         isLeftAligned ? "text-left" : "text-center",
         isCarouselPeek && "space-y-1"
       )}
@@ -330,21 +330,21 @@ export function DishCard({
         {display.showImages ? (
           imageBlock ? (
             <div
-              className="h-40 w-40 shrink-0"
-              style={{ width: "160px", height: "160px", flexShrink: 0 }}
+              className="h-44 w-44 shrink-0"
+              style={{ width: "176px", height: "176px", flexShrink: 0 }}
             >
               {imageBlock}
             </div>
           ) : (
             <div
-              className="w-40 shrink-0 bg-transparent"
-              style={{ width: "160px", flexShrink: 0 }}
+              className="w-44 shrink-0 bg-transparent"
+              style={{ width: "176px", flexShrink: 0 }}
               aria-hidden
             />
           )
         ) : null}
         <div
-          className="w-full max-w-none text-left"
+          className="w-full min-w-0 max-w-none flex-1 text-left"
           style={{ flex: "1 1 0%", minWidth: "0px", width: "100%" }}
         >
           {textBlock}
