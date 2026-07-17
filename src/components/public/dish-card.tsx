@@ -134,25 +134,26 @@ export function DishCard({
   const isCarouselPeek = layout === "carousel" && compact;
   const isLeftAligned = isStackedLeft;
 
-  const STACKED_LEFT_IMAGE_PX = 80;
+  const STACKED_LEFT_IMAGE_PX = 112;
   const stackedLeftImageStyle = {
     width: STACKED_LEFT_IMAGE_PX,
     height: STACKED_LEFT_IMAGE_PX,
     flexShrink: 0,
+    aspectRatio: "1 / 1",
   } as const;
 
   const imageBlock =
     showImage && imageSrc ? (
       isStackedLeft ? (
         <div
-          className="relative flex items-center justify-center overflow-hidden rounded-lg bg-transparent drop-shadow-md"
+          className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-transparent"
           style={{
             ...stackedLeftImageStyle,
-            borderRadius: 8,
+            borderRadius: 12,
             backgroundColor: "transparent",
           }}
         >
-          {/* Native img + inline styles: avoid Next/Image fill collapsing in flex rows */}
+          {/* Native img + inline styles keep 1:1 frame stable in flex rows */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageSrc}
@@ -163,9 +164,10 @@ export function DishCard({
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "contain",
+              objectFit: "cover",
               objectPosition: "center",
               display: "block",
+              backgroundColor: "transparent",
               filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.08))",
             }}
           />
@@ -173,12 +175,12 @@ export function DishCard({
       ) : (
         <div
           className={cn(
-            "relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-transparent drop-shadow-md",
+            "relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-transparent",
             imageClassName
           )}
           style={{
             aspectRatio: "1 / 1",
-            borderRadius: 8,
+            borderRadius: 12,
             backgroundColor: "transparent",
           }}
         >
@@ -186,9 +188,10 @@ export function DishCard({
             src={imageSrc}
             alt={imageAlt}
             fill
-            className="object-contain object-center"
+            className="object-cover object-center"
             style={{
-              objectFit: "contain",
+              objectFit: "cover",
+              backgroundColor: "transparent",
               filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.08))",
             }}
             quality={75}
@@ -367,13 +370,14 @@ export function DishCard({
   if (isStackedLeft) {
     return (
       <article
-        className="flex w-full items-center gap-4"
-        style={{ display: "flex", alignItems: "center", width: "100%", gap: 16 }}
+        className="flex w-full items-center gap-4 sm:gap-5"
+        style={{ display: "flex", alignItems: "center", width: "100%" }}
       >
         {display.showImages ? (
           imageBlock ?? (
             <div
               aria-hidden
+              className="shrink-0 bg-transparent"
               style={{
                 ...stackedLeftImageStyle,
                 backgroundColor: "transparent",
@@ -382,8 +386,8 @@ export function DishCard({
           )
         ) : null}
         <div
-          className="min-w-0 text-left"
-          style={{ flex: 1, width: "100%", minWidth: 0 }}
+          className="min-w-0 w-full grow text-left"
+          style={{ flexGrow: 1, flex: "1 1 0%", width: "100%", minWidth: 0 }}
         >
           {textBlock}
         </div>
