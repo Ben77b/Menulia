@@ -17,7 +17,7 @@ import {
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
-import { isCarouselCategoryLayout } from "@/lib/category-layout";
+import { isCarouselCategoryLayout, isStackedLeftCategoryLayout } from "@/lib/category-layout";
 import { DishCarousel } from "./dish-carousel";
 import { DishCard } from "./dish-card";
 import { CategorySectionHeader } from "./category-section-header";
@@ -161,6 +161,8 @@ function DishSection({
     );
   }
 
+  const centerDishes = !isStackedLeftCategoryLayout(subcategory.layout_type);
+
   return (
     <PreviewHotspot
       id="menuItem"
@@ -171,13 +173,18 @@ function DishSection({
     >
       {categoryHeading}
       {sectionNote}
-      <div className="w-full space-y-10 md:space-y-12" style={{ width: "100%" }}>
+      <div
+        className={cn(
+          "mx-auto max-w-3xl space-y-12",
+          centerDishes && "flex flex-col items-center"
+        )}
+      >
         {(filteredDishes ?? []).map((dish, index) => {
           if (!dish?.id) return null;
           return (
           <div
             key={dish.id || `dish-${index}`}
-            style={{ width: "100%" }}
+            className={cn("w-full", centerDishes && "flex justify-center")}
           >
           <DishCard
             dish={dish}
@@ -398,27 +405,11 @@ export function PublicMenuLayout({
       </PreviewHotspot>
 
       <main
-        style={{
-          flex: 1,
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}`,
-        }}
+        className="flex-1 px-4 py-8 sm:px-6"
+        style={{ borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}` }}
       >
         {!hasMenu || !activeSubcategory ? (
-          <div
-            style={{
-              maxWidth: "680px",
-              margin: "0 auto",
-              width: "100%",
-              padding: "64px 16px",
-              textAlign: "center",
-              color: themedColor(isPreview, "itemTitle", theme.itemTitleText),
-            }}
-          >
+          <div className="py-16 text-center" style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}>
             <p
               className="text-lg font-semibold uppercase tracking-wide"
               style={{
@@ -435,34 +426,24 @@ export function PublicMenuLayout({
             </p>
           </div>
         ) : (
-          <section
-            data-menulia-menu-column="v3"
-            style={{
-              maxWidth: "680px",
-              margin: "0 auto",
-              width: "100%",
-              padding: "32px 16px",
-            }}
-          >
-            <div style={{ width: "100%" }}>
-              <DishSection
-                subcategory={activeSubcategory}
-                restaurantName={restaurantName}
-                theme={theme}
-                isPreview={isPreview}
-                titleFont={titleFont}
-                bodyFont={bodyFont}
-                titleFontWeight={titleFontWeight}
-                titleFontStyle={titleFontStyle}
-                bodyFontWeight={bodyFontWeight}
-                bodyFontStyle={bodyFontStyle}
-                locale={locale}
-                primaryLocale={defaultLocale}
-                activeFilters={effectiveFilters}
-                display={display}
-                previewInteractive={previewInteractive}
-              />
-            </div>
+          <section className="mx-auto max-w-5xl">
+            <DishSection
+              subcategory={activeSubcategory}
+              restaurantName={restaurantName}
+              theme={theme}
+              isPreview={isPreview}
+              titleFont={titleFont}
+              bodyFont={bodyFont}
+              titleFontWeight={titleFontWeight}
+              titleFontStyle={titleFontStyle}
+              bodyFontWeight={bodyFontWeight}
+              bodyFontStyle={bodyFontStyle}
+              locale={locale}
+              primaryLocale={defaultLocale}
+              activeFilters={effectiveFilters}
+              display={display}
+              previewInteractive={previewInteractive}
+            />
           </section>
         )}
       </main>

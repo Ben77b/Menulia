@@ -77,7 +77,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
   const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
 
   return (
-    <div className="public-menu-enter" data-menulia-public-menu="v3">
+    <div className="public-menu-enter">
       <PublicMenuJsonLd
         restaurant={profile}
         menu={menu}

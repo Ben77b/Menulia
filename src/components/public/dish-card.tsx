@@ -52,9 +52,6 @@ interface DishCardProps {
   priority?: boolean;
 }
 
-/** Fixed image column width for stacked_left — keep spacer identical. */
-const STACKED_LEFT_IMAGE_WIDTH_PX = 112;
-
 function TagBadge({
   icon,
   label,
@@ -139,51 +136,28 @@ export function DishCard({
 
   const imageBlock =
     showImage && imageSrc ? (
-      isStackedLeft ? (
-        <div
-          className="relative shrink-0 overflow-hidden rounded-2xl bg-transparent"
-          style={{
-            width: STACKED_LEFT_IMAGE_WIDTH_PX,
-            height: STACKED_LEFT_IMAGE_WIDTH_PX,
-            flexShrink: 0,
-          }}
-        >
-          <Image
-            src={imageSrc}
-            alt={imageAlt}
-            fill
-            className="object-cover object-center"
-            quality={75}
-            sizes={`${STACKED_LEFT_IMAGE_WIDTH_PX}px`}
-            priority={priority}
-            loading={priority ? undefined : "lazy"}
-            onError={() => setImageFailed(true)}
-          />
-        </div>
-      ) : (
-        <div
-          className={cn(
-            "relative aspect-square shrink-0 overflow-hidden rounded-2xl bg-transparent",
-            imageClassName
-          )}
-        >
-          <Image
-            src={imageSrc}
-            alt={imageAlt}
-            fill
-            className="object-cover object-center"
-            quality={75}
-            sizes={
-              layout === "carousel"
-                ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
-                : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
-            }
-            priority={priority}
-            loading={priority ? undefined : "lazy"}
-            onError={() => setImageFailed(true)}
-          />
-        </div>
-      )
+      <div
+        className={cn(
+          "relative aspect-square overflow-hidden rounded-2xl",
+          imageClassName
+        )}
+      >
+        <Image
+          src={imageSrc}
+          alt={imageAlt}
+          fill
+          className="object-cover"
+          quality={75}
+          sizes={
+            layout === "carousel"
+              ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
+              : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
+          }
+          priority={priority}
+          loading={priority ? undefined : "lazy"}
+          onError={() => setImageFailed(true)}
+        />
+      </div>
     ) : null;
 
   const titleClampClass = isStackedLayout
@@ -207,11 +181,6 @@ export function DishCard({
         isLeftAligned ? "text-left" : "text-center",
         isCarouselPeek && "space-y-1"
       )}
-      style={
-        isStackedLeft
-          ? { width: "100%", maxWidth: "none", margin: 0, padding: 0 }
-          : undefined
-      }
     >
       <h3
         className={cn("font-semibold uppercase leading-tight tracking-wide", titleClampClass)}
@@ -241,8 +210,7 @@ export function DishCard({
         <div
           className={cn(
             "mt-2 flex flex-col gap-y-1",
-            isStackedTop && "items-center",
-            isStackedLeft && "w-full items-end"
+            isStackedTop && "items-center"
           )}
         >
           {portionOptions.map((option) => (
@@ -250,8 +218,7 @@ export function DishCard({
               key={`${option.label}-${option.price}`}
               className={cn(
                 "font-medium tabular-nums",
-                isCarouselPeek ? "text-xs sm:text-sm" : "text-sm sm:text-base",
-                isStackedLeft && "w-full text-right"
+                isCarouselPeek ? "text-xs sm:text-sm" : "text-sm sm:text-base"
               )}
               style={{
                 color: resolvedPrice,
@@ -322,11 +289,7 @@ export function DishCard({
       )}
       {display.showPrices && !dish.hide_price && !portionOptions && (
         <p
-          className={cn(
-            "font-bold",
-            isCarouselPeek ? "text-xs sm:text-sm" : "text-base",
-            isStackedLeft && "w-full text-right"
-          )}
+          className={cn("font-bold", isCarouselPeek ? "text-xs sm:text-sm" : "text-base")}
           style={{
             color: resolvedPrice,
             fontFamily: bodyFont,
@@ -344,9 +307,7 @@ export function DishCard({
     return (
       <article className="flex w-full flex-col items-center justify-center gap-4">
         {imageBlock && (
-          <div className="mx-auto aspect-square w-full max-w-[240px] sm:max-w-[260px]">
-            {imageBlock}
-          </div>
+          <div className="mx-auto w-full max-w-[240px] sm:max-w-[260px]">{imageBlock}</div>
         )}
         <div className="flex w-full flex-col items-center text-center">{textBlock}</div>
       </article>
@@ -354,52 +315,24 @@ export function DishCard({
   }
 
   if (isStackedLeft) {
-    const hasImage = Boolean(imageBlock);
+    const stackedLeftImageColumnClass = "w-full max-w-sm shrink-0 sm:max-w-[min(42%,280px)]";
+    const stackedLeftMedia =
+      display.showImages &&
+      (showImage && imageBlock ? (
+        imageBlock
+      ) : (
+        <div
+          className="aspect-square w-full rounded-2xl bg-neutral-100/60 dark:bg-neutral-900/40"
+          aria-hidden
+        />
+      ));
 
     return (
-      <article
-        className={cn(
-          "flex w-full gap-4",
-          hasImage ? "items-center" : "items-start"
-        )}
-        style={{
-          display: "flex",
-          width: "100%",
-          height: hasImage ? undefined : "auto",
-          alignItems: hasImage ? "center" : "flex-start",
-          gap: 16,
-        }}
-      >
-        {display.showImages ? (
-          hasImage ? (
-            imageBlock
-          ) : (
-            <div
-              aria-hidden
-              className="shrink-0 bg-transparent"
-              style={{
-                width: STACKED_LEFT_IMAGE_WIDTH_PX,
-                flexShrink: 0,
-                height: "auto",
-                backgroundColor: "transparent",
-              }}
-            />
-          )
+      <article className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+        {stackedLeftMedia ? (
+          <div className={stackedLeftImageColumnClass}>{stackedLeftMedia}</div>
         ) : null}
-        <div
-          className="text-left"
-          style={{
-            flexGrow: 1,
-            flex: "1 1 0%",
-            minWidth: 0,
-            width: "100%",
-            maxWidth: "none",
-            marginRight: 0,
-            paddingRight: 0,
-          }}
-        >
-          {textBlock}
-        </div>
+        <div className="min-w-0 flex-1 items-start text-left">{textBlock}</div>
       </article>
     );
   }
