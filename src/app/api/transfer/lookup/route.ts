@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { getSupabaseErrorFields } from "@/lib/auth/errors";
-import { createAnonClient } from "@/lib/supabase";
-import { createServiceRoleSupabaseClient } from "@/lib/supabase-admin";
 import {
   lookupRestaurantTransferByToken,
-  lookupRestaurantTransferPreview,
 } from "@/lib/restaurant-transfer";
+import {
+  createServiceRoleSupabaseClient,
+  isServiceRoleConfigured,
+} from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
+
+const SERVICE_ROLE_MISSING_MESSAGE =
+  "Transfer lookup is not configured on the server. Set SUPABASE_SERVICE_ROLE_KEY in the deployment environment.";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -17,15 +21,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing transfer token." }, { status: 400 });
   }
 
-  const lookupMethod = createServiceRoleSupabaseClient()
-    ? "service_role_direct"
-    : "anon_rpc";
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.");
+    return NextResponse.json({ error: SERVICE_ROLE_MISSING_MESSAGE }, { status: 503 });
+  }
+
+  if (!isServiceRoleConfigured()) {
+    console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.");
+    return NextResponse.json(
+      { error: "Transfer lookup is misconfigured. NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required." },
+      { status: 503 }
+    );
+  }
+
+  const serviceRoleClient = createServiceRoleSupabaseClient();
+  if (!serviceRoleClient) {
+    console.error("CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.");
+    return NextResponse.json({ error: SERVICE_ROLE_MISSING_MESSAGE }, { status: 503 });
+  }
 
   try {
-    const serviceRoleClient = createServiceRoleSupabaseClient();
-    const preview = serviceRoleClient
-      ? await lookupRestaurantTransferByToken(serviceRoleClient, token)
-      : await lookupRestaurantTransferPreview(createAnonClient(), token);
+    const preview = await lookupRestaurantTransferByToken(serviceRoleClient, token);
 
     if (!preview) {
       console.warn("[transfer:lookup] No transfer found for token.", { tokenLength: token.length });
@@ -34,6 +50,7 @@ export async function GET(request: Request) {
         expired: true,
         restaurantName: null,
         recipientEmail: null,
+        error: "No transfer record matches this token.",
       });
     }
 
@@ -49,7 +66,7 @@ export async function GET(request: Request) {
 
     console.error("[transfer:lookup]", {
       tokenLength: token.length,
-      lookupMethod,
+      lookupMethod: "service_role_direct",
       ...details,
       error,
     });

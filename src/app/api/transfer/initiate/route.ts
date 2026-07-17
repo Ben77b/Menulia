@@ -1,13 +1,15 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { RestaurantTransferRecord } from "@/lib/restaurant-transfer";
+import {
+  buildTransferExpiresAtIso,
+  normalizeRestaurantTransferRecord,
+  parseTransferTimestamp,
+} from "@/lib/restaurant-transfer";
 import { getSupabaseErrorFields } from "@/lib/auth/errors";
 import { createAuthenticatedSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
-
-const TRANSFER_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const bodySchema = z.object({
   restaurantId: z.string().uuid(),
@@ -36,8 +38,12 @@ export async function POST(request: Request) {
     restaurantId = parsed.data.restaurantId;
     recipientEmail = parsed.data.recipientEmail.trim().toLowerCase();
 
-    const generatedToken = randomUUID();
-    const expiresAt = new Date(Date.now() + TRANSFER_TTL_MS).toISOString();
+    const generatedToken = randomUUID().trim();
+    const expiresAt = buildTransferExpiresAtIso();
+
+    if (!generatedToken || !parseTransferTimestamp(expiresAt)) {
+      return NextResponse.json({ error: "Failed to compute a valid transfer expiration." }, { status: 500 });
+    }
 
     const { data, error } = await supabase.rpc("initiate_restaurant_transfer", {
       p_restaurant_id: restaurantId,
@@ -51,17 +57,23 @@ export async function POST(request: Request) {
         rpc: "initiate_restaurant_transfer",
         restaurantId,
         recipientEmail,
+        expiresAt,
         ...getSupabaseErrorFields(error),
       });
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const row = (Array.isArray(data) ? data[0] : data) as RestaurantTransferRecord | null;
-    if (!row) {
+    const rawRow = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null;
+    if (!rawRow) {
       return NextResponse.json({ error: "RPC returned no transfer record." }, { status: 400 });
     }
 
-    return NextResponse.json({ transfer: row });
+    const transfer = normalizeRestaurantTransferRecord(rawRow);
+    if (!parseTransferTimestamp(transfer.expires_at)) {
+      return NextResponse.json({ error: "Transfer saved with an invalid expiration timestamp." }, { status: 500 });
+    }
+
+    return NextResponse.json({ transfer });
   } catch (error) {
     const { message } = getSupabaseErrorFields(error);
 

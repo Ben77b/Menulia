@@ -20,13 +20,74 @@ export interface RestaurantTransferPreview {
   isValid: boolean;
 }
 
+export const TRANSFER_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function buildTransferExpiresAtIso(fromMs: number = Date.now()): string {
+  return new Date(fromMs + TRANSFER_TTL_MS).toISOString();
+}
+
+export function parseTransferTimestamp(value: unknown): Date | null {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function resolveTransferExpiresAt(expiresAt: unknown, createdAt: unknown): string {
+  const parsedExpiry = parseTransferTimestamp(expiresAt);
+  if (parsedExpiry) {
+    return parsedExpiry.toISOString();
+  }
+
+  const parsedCreated = parseTransferTimestamp(createdAt);
+  if (parsedCreated) {
+    return new Date(parsedCreated.getTime() + TRANSFER_TTL_MS).toISOString();
+  }
+
+  return buildTransferExpiresAtIso();
+}
+
+export function formatTransferExpiryLabel(expiresAt: unknown, createdAt: unknown): string {
+  const resolved = resolveTransferExpiresAt(expiresAt, createdAt);
+  const parsed = parseTransferTimestamp(resolved);
+  if (!parsed) return "unknown date";
+
+  return parsed.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+export function normalizeRestaurantTransferRecord(
+  row: Record<string, unknown>
+): RestaurantTransferRecord {
+  const createdAt = String(row.created_at ?? new Date().toISOString());
+
+  return {
+    id: String(row.id),
+    restaurant_id: String(row.restaurant_id),
+    token: String(row.token),
+    recipient_email: String(row.recipient_email),
+    created_at: createdAt,
+    expires_at: resolveTransferExpiresAt(row.expires_at, createdAt),
+  };
+}
+
 export function buildTransferClaimUrl(token: string): string {
   return `${getSiteUrl()}/transfer/claim?token=${encodeURIComponent(token)}`;
 }
 
-export function isTransferExpired(expiresAt: string): boolean {
-  const parsed = new Date(expiresAt);
-  if (Number.isNaN(parsed.getTime())) return true;
+export function isTransferExpired(expiresAt: string, createdAt?: string): boolean {
+  const parsed = parseTransferTimestamp(resolveTransferExpiresAt(expiresAt, createdAt));
+  if (!parsed) return true;
   return parsed.getTime() <= Date.now();
 }
 
@@ -47,12 +108,14 @@ export async function fetchPendingRestaurantTransfer(
 
   if (!data) return null;
 
-  if (isTransferExpired(data.expires_at)) {
-    await supabase.from("restaurant_transfers").delete().eq("id", data.id);
+  const record = normalizeRestaurantTransferRecord(data as Record<string, unknown>);
+
+  if (isTransferExpired(record.expires_at, record.created_at)) {
+    await supabase.from("restaurant_transfers").delete().eq("id", record.id);
     return null;
   }
 
-  return data as RestaurantTransferRecord;
+  return record;
 }
 
 export async function cancelRestaurantTransfer(
@@ -99,11 +162,12 @@ type TransferPreviewRow = {
 type TransferJoinRow = {
   recipient_email?: unknown;
   expires_at?: unknown;
+  created_at?: unknown;
   restaurants?: { name?: unknown } | { name?: unknown }[] | null;
 };
 
 function mapTransferPreviewRow(row: TransferPreviewRow): RestaurantTransferPreview {
-  const expiresAt = String(row.expires_at ?? "");
+  const expiresAt = resolveTransferExpiresAt(row.expires_at, null);
   return {
     restaurantName: String(row.restaurant_name ?? ""),
     recipientEmail: String(row.recipient_email ?? ""),
@@ -124,7 +188,7 @@ export async function lookupRestaurantTransferByToken(
 
   const { data, error } = await supabase
     .from("restaurant_transfers")
-    .select("recipient_email, expires_at, restaurants(name)")
+    .select("recipient_email, expires_at, created_at, restaurants(name)")
     .eq("token", trimmed)
     .maybeSingle();
 
@@ -137,13 +201,13 @@ export async function lookupRestaurantTransferByToken(
 
   const row = data as TransferJoinRow;
   const restaurant = Array.isArray(row.restaurants) ? row.restaurants[0] : row.restaurants;
-  const expiresAt = String(row.expires_at ?? "");
+  const expiresAt = resolveTransferExpiresAt(row.expires_at, row.created_at);
 
   return {
     restaurantName: String(restaurant?.name ?? ""),
     recipientEmail: String(row.recipient_email ?? ""),
     expiresAt,
-    isValid: !isTransferExpired(expiresAt),
+    isValid: !isTransferExpired(expiresAt, String(row.created_at ?? "")),
   };
 }
 

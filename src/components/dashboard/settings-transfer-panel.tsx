@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowRightLeft, Check, Copy, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -8,19 +8,14 @@ import {
   buildTransferClaimUrl,
   cancelRestaurantTransfer,
   fetchPendingRestaurantTransfer,
+  formatTransferExpiryLabel,
+  normalizeRestaurantTransferRecord,
   type RestaurantTransferRecord,
 } from "@/lib/restaurant-transfer";
 import { useToast } from "@/components/ui/toast";
 
 interface SettingsTransferPanelProps {
   restaurantId: string;
-}
-
-function parseTransferExpiresAt(value: unknown): Date | null {
-  if (!value) return null;
-
-  const parsed = value instanceof Date ? value : new Date(String(value));
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 async function copyTextToClipboard(text: string): Promise<boolean> {
@@ -63,33 +58,11 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [formattedExpiry, setFormattedExpiry] = useState<string | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!pending?.expires_at) {
-      setFormattedExpiry(null);
-      return;
-    }
-
-    const expiresAt = parseTransferExpiresAt(pending.expires_at);
-    if (!expiresAt) {
-      setFormattedExpiry(null);
-      return;
-    }
-
-    setFormattedExpiry(
-      expiresAt.toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    );
-  }, [pending?.expires_at]);
+  const formattedExpiry = useMemo(() => {
+    if (!pending) return null;
+    return formatTransferExpiryLabel(pending.expires_at, pending.created_at);
+  }, [pending]);
 
   const loadPending = useCallback(async () => {
     setLoading(true);
@@ -132,7 +105,7 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
         throw new Error(payload.error ?? "Failed to initiate transfer.");
       }
 
-      setPending(payload.transfer);
+      setPending(normalizeRestaurantTransferRecord(payload.transfer as Record<string, unknown>));
       setRecipientEmail("");
       toast.success("Transfer initiated. Share the claim link with the new owner.");
     } catch (err) {
@@ -235,9 +208,7 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
           </div>
 
           <p className="text-xs text-slate-500">
-            {mounted && formattedExpiry
-              ? `Expires on ${formattedExpiry}`
-              : "Expires on …"}
+            {formattedExpiry ? `Expires on ${formattedExpiry}` : null}
           </p>
 
           <Button
