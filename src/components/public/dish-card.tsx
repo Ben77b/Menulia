@@ -134,14 +134,15 @@ export function DishCard({
   const isCarouselPeek = layout === "carousel" && compact;
   const isLeftAligned = isStackedLeft;
 
+  const stackedLeftImageColumnClass = "h-20 w-20 shrink-0";
+  const imageFrameClass = cn(
+    "relative aspect-square shrink-0 overflow-hidden rounded-lg bg-transparent",
+    isStackedLeft ? stackedLeftImageColumnClass : cn("w-full", imageClassName)
+  );
+
   const imageBlock =
     showImage && imageSrc ? (
-      <div
-        className={cn(
-          "relative flex shrink-0 items-center justify-center",
-          isStackedLeft ? "h-20 w-20" : cn("aspect-square", imageClassName)
-        )}
-      >
+      <div className={imageFrameClass}>
         <Image
           src={imageSrc}
           alt={imageAlt}
@@ -310,7 +311,9 @@ export function DishCard({
     return (
       <article className="flex w-full flex-col items-center justify-center gap-4">
         {imageBlock && (
-          <div className="mx-auto w-full max-w-[240px] sm:max-w-[260px]">{imageBlock}</div>
+          <div className="mx-auto aspect-square w-full max-w-[240px] sm:max-w-[260px]">
+            {imageBlock}
+          </div>
         )}
         <div className="flex w-full flex-col items-center text-center">{textBlock}</div>
       </article>
@@ -318,14 +321,14 @@ export function DishCard({
   }
 
   if (isStackedLeft) {
-    const imageColumn = display.showImages ? (
-      <div className="h-20 w-20 shrink-0">{imageBlock}</div>
-    ) : null;
-
     return (
-      <article className="flex w-full flex-row items-start gap-4">
-        {imageColumn}
-        <div className="min-w-0 flex-1 items-start text-left">{textBlock}</div>
+      <article className="flex w-full flex-row items-center gap-4">
+        {display.showImages ? (
+          <div className={stackedLeftImageColumnClass} aria-hidden={!imageBlock}>
+            {imageBlock ?? <div className="h-full w-full bg-transparent" />}
+          </div>
+        ) : null}
+        <div className="min-w-0 w-full flex-1 grow text-left">{textBlock}</div>
       </article>
     );
   }
