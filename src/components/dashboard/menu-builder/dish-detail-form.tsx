@@ -20,7 +20,7 @@ import { MAX_DISH_DESCRIPTION, MAX_DISH_NAME, clampMenuText } from "@/lib/menu-l
 import type { DishDetailDraft, PriceVariationDraft } from "./dish-detail-types";
 
 const inputClass =
-  "w-full rounded-xl border border-neutral-200/60 bg-white px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 transition-all duration-200 ease-in-out focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 dark:border-neutral-800/60 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-500";
+  "w-full rounded-xl border border-neutral-200/70 bg-white px-3 py-2.5 text-sm text-neutral-800 placeholder:text-neutral-400 transition-all duration-200 ease-in-out focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5";
 
 const labelClass =
   "mb-1.5 block text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400";
@@ -328,8 +328,8 @@ export function DishDetailForm({
                 className={cn(
                   "min-h-11 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-200 ease-in-out",
                   draft.filterableTags.includes(tag)
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-200/60 bg-neutral-50 text-neutral-600 hover:border-neutral-300 hover:bg-white"
+                    ? "border-neutral-200 bg-neutral-100 text-neutral-800 shadow-sm"
+                    : "border-neutral-200/70 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700"
                 )}
               >
                 {tag}

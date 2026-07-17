@@ -77,15 +77,19 @@ export function DishDetailSheet({
               <span aria-hidden />
             )}
           </div>
-          <div className="flex shrink-0 gap-2">
-            <Button variant="outline" onClick={onClose} className="min-h-11">
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-800"
+            >
               {t("dish.cancel")}
-            </Button>
+            </button>
             <Button
-              variant="dark"
+              variant="light"
               disabled={saving || !draft.name.trim()}
               onClick={() => onSave(draft)}
-              className="min-h-11"
+              className="min-h-11 border border-neutral-200 bg-white text-neutral-900 shadow-sm hover:bg-neutral-50"
             >
               {saving
                 ? isCreate

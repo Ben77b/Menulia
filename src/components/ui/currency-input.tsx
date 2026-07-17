@@ -17,7 +17,7 @@ export function CurrencyInput({
   return (
     <div
       className={cn(
-        "flex items-center rounded-xl border border-slate-200 bg-white transition-all focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20",
+        "flex items-center rounded-xl border border-neutral-200/70 bg-white transition-all focus-within:border-neutral-300 focus-within:ring-2 focus-within:ring-neutral-900/5",
         wrapperClassName
       )}
     >
@@ -26,7 +26,7 @@ export function CurrencyInput({
         type="text"
         inputMode="decimal"
         className={cn(
-          "w-full border-0 bg-transparent p-2.5 text-sm text-slate-900 outline-none placeholder:text-neutral-400 focus:ring-0",
+          "w-full border-0 bg-transparent p-2.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 focus:ring-0",
           className
         )}
         {...props}
