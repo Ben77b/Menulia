@@ -176,8 +176,9 @@ function DishSection({
       <div
         className={cn(
           "w-full space-y-10 md:space-y-12",
-          centerDishes && "flex flex-col items-center"
+          centerDishes && "flex w-full flex-col items-center"
         )}
+        style={{ width: "100%" }}
       >
         {(filteredDishes ?? []).map((dish, index) => {
           if (!dish?.id) return null;
@@ -405,12 +406,12 @@ export function PublicMenuLayout({
       </PreviewHotspot>
 
       <main
-        className="flex-1 w-full"
+        className="flex w-full flex-1 flex-col items-center justify-center"
         style={{ borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}` }}
       >
         {!hasMenu || !activeSubcategory ? (
           <div
-            className="mx-auto w-full max-w-3xl px-4 py-16 text-center md:px-6"
+            className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center px-4 py-16 text-center md:px-6"
             style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}
           >
             <p
@@ -429,24 +430,29 @@ export function PublicMenuLayout({
             </p>
           </div>
         ) : (
-          <section className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
-            <DishSection
-              subcategory={activeSubcategory}
-              restaurantName={restaurantName}
-              theme={theme}
-              isPreview={isPreview}
-              titleFont={titleFont}
-              bodyFont={bodyFont}
-              titleFontWeight={titleFontWeight}
-              titleFontStyle={titleFontStyle}
-              bodyFontWeight={bodyFontWeight}
-              bodyFontStyle={bodyFontStyle}
-              locale={locale}
-              primaryLocale={defaultLocale}
-              activeFilters={effectiveFilters}
-              display={display}
-              previewInteractive={previewInteractive}
-            />
+          <section
+            className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center px-4 py-8 md:px-6"
+            style={{ width: "100%", maxWidth: 672, marginLeft: "auto", marginRight: "auto" }}
+          >
+            <div className="w-full">
+              <DishSection
+                subcategory={activeSubcategory}
+                restaurantName={restaurantName}
+                theme={theme}
+                isPreview={isPreview}
+                titleFont={titleFont}
+                bodyFont={bodyFont}
+                titleFontWeight={titleFontWeight}
+                titleFontStyle={titleFontStyle}
+                bodyFontWeight={bodyFontWeight}
+                bodyFontStyle={bodyFontStyle}
+                locale={locale}
+                primaryLocale={defaultLocale}
+                activeFilters={effectiveFilters}
+                display={display}
+                previewInteractive={previewInteractive}
+              />
+            </div>
           </section>
         )}
       </main>

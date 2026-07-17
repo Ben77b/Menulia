@@ -134,7 +134,7 @@ export function DishCard({
   const isCarouselPeek = layout === "carousel" && compact;
   const isLeftAligned = isStackedLeft;
 
-  const STACKED_LEFT_IMAGE_PX = 112;
+  const STACKED_LEFT_IMAGE_PX = 120;
   const stackedLeftImageStyle = {
     width: STACKED_LEFT_IMAGE_PX,
     height: STACKED_LEFT_IMAGE_PX,
@@ -146,10 +146,10 @@ export function DishCard({
     showImage && imageSrc ? (
       isStackedLeft ? (
         <div
-          className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-transparent"
+          className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-transparent"
           style={{
             ...stackedLeftImageStyle,
-            borderRadius: 12,
+            borderRadius: 16,
             backgroundColor: "transparent",
           }}
         >
@@ -175,12 +175,12 @@ export function DishCard({
       ) : (
         <div
           className={cn(
-            "relative flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-transparent",
+            "relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-transparent",
             imageClassName
           )}
           style={{
             aspectRatio: "1 / 1",
-            borderRadius: 12,
+            borderRadius: 16,
             backgroundColor: "transparent",
           }}
         >
@@ -370,16 +370,23 @@ export function DishCard({
   if (isStackedLeft) {
     return (
       <article
-        className="flex w-full items-center gap-4"
-        style={{ display: "flex", alignItems: "center", width: "100%", gap: 16 }}
+        className="flex w-full items-center gap-5"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          width: "100%",
+        }}
       >
         {display.showImages ? (
           imageBlock ?? (
             <div
               aria-hidden
-              className="h-28 w-28 shrink-0 bg-transparent"
+              className="h-32 w-32 shrink-0 bg-transparent"
               style={{
-                ...stackedLeftImageStyle,
+                width: 120,
+                height: 120,
+                flexShrink: 0,
                 backgroundColor: "transparent",
               }}
             />
@@ -387,7 +394,7 @@ export function DishCard({
         ) : null}
         <div
           className="min-w-0 w-full flex-1 text-left"
-          style={{ flex: "1 1 0%", width: "100%", minWidth: 0 }}
+          style={{ flex: 1, width: "100%", minWidth: 0 }}
         >
           {textBlock}
         </div>
