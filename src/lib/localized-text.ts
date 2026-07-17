@@ -128,9 +128,8 @@ export function collectTextForTranslation(
     return "";
   }
 
-  const counterpart = targetLang === primaryLang ? (primaryLang === "en" ? "es" : "en") : primaryLang;
-  if (normalizeText(value[counterpart]).trim()) {
-    return value[counterpart].trim();
+  if (normalizeText(value[primaryLang]).trim()) {
+    return value[primaryLang].trim();
   }
 
   for (const [lang, text] of Object.entries(value)) {

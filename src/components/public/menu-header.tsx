@@ -24,6 +24,7 @@ interface MenuHeaderProps {
   lang: PublicMenuLocale;
   onLangChange: (lang: PublicMenuLocale) => void;
   primaryLocale?: PublicMenuLocale;
+  availableLocales?: string[];
   showLanguageSelector?: boolean;
 }
 
@@ -39,6 +40,7 @@ export function MenuHeader({
   lang,
   onLangChange,
   primaryLocale,
+  availableLocales,
   showLanguageSelector = false,
 }: MenuHeaderProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -118,6 +120,7 @@ export function MenuHeader({
                 lang={lang}
                 onLangChange={onLangChange}
                 primaryLocale={primaryLocale}
+                availableLocales={availableLocales}
                 headerBackgroundColor={headerBackgroundColor}
               />
             ) : (

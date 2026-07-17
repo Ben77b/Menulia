@@ -3,6 +3,12 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { runtimeEnv } from "@/lib/runtime-env";
+import {
+  buildTranslationCacheKey,
+  lookupTranslationCache,
+  saveTranslationCacheEntries,
+  translationCacheCompositeKey,
+} from "@/lib/translation-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +17,7 @@ const DEEPL_BATCH_SIZE = 50;
 const requestSchema = z.object({
   texts: z.array(z.string()).min(1).max(500),
   source_lang: z.string().optional(),
-  target_lang: z.string().min(2).max(5),
+  target_lang: z.string().min(2).max(8),
   tag_handling: z.enum(["html", "xml"]).optional(),
 });
 
@@ -121,23 +127,57 @@ export async function POST(request: Request) {
     }
 
     const { texts, source_lang, target_lang, tag_handling } = parsed.data;
-    const translations: string[] = [];
-    const detectedSourceLanguages: string[] = [];
+    const cacheKeys = texts.map((text) =>
+      buildTranslationCacheKey(text, source_lang, target_lang, tag_handling)
+    );
+    const cacheHits = await lookupTranslationCache(cacheKeys);
 
-    for (let index = 0; index < texts.length; index += DEEPL_BATCH_SIZE) {
-      const chunk = texts.slice(index, index + DEEPL_BATCH_SIZE);
+    const translations: string[] = new Array(texts.length).fill("");
+    const detectedSourceLanguages: string[] = new Array(texts.length).fill("");
+    const missIndexes: number[] = [];
+
+    texts.forEach((_, index) => {
+      const composite = translationCacheCompositeKey(cacheKeys[index]);
+      const hit = cacheHits.get(composite);
+      if (hit) {
+        translations[index] = hit.translatedText;
+        detectedSourceLanguages[index] = hit.detectedSourceLanguage ?? "";
+        return;
+      }
+      missIndexes.push(index);
+    });
+
+    const cacheWrites: Array<
+      ReturnType<typeof buildTranslationCacheKey> & {
+        translatedText: string;
+        detectedSourceLanguage?: string;
+      }
+    > = [];
+
+    for (let offset = 0; offset < missIndexes.length; offset += DEEPL_BATCH_SIZE) {
+      const batchIndexes = missIndexes.slice(offset, offset + DEEPL_BATCH_SIZE);
+      const batchTexts = batchIndexes.map((index) => texts[index]);
       const chunkTranslations = await translateBatch(
         apiKey,
-        chunk,
+        batchTexts,
         source_lang,
         target_lang,
         tag_handling
       );
-      translations.push(...chunkTranslations.map((entry) => entry.text));
-      detectedSourceLanguages.push(
-        ...chunkTranslations.map((entry) => entry.detectedSourceLanguage ?? "")
-      );
+
+      chunkTranslations.forEach((entry, batchOffset) => {
+        const index = batchIndexes[batchOffset];
+        translations[index] = entry.text;
+        detectedSourceLanguages[index] = entry.detectedSourceLanguage ?? "";
+        cacheWrites.push({
+          ...cacheKeys[index],
+          translatedText: entry.text,
+          detectedSourceLanguage: entry.detectedSourceLanguage,
+        });
+      });
     }
+
+    await saveTranslationCacheEntries(cacheWrites);
 
     return NextResponse.json({ translations, detected_source_languages: detectedSourceLanguages });
   } catch (error) {

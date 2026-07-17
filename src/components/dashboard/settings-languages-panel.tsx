@@ -116,7 +116,7 @@ export function SettingsLanguagesPanel({
           <p className="mb-3 text-sm font-medium text-slate-700">
             {t("settings.primaryMenuLanguage")}
           </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {MENU_CONTENT_LANGUAGES.map((language) => {
               const selected = primaryLanguage === language.code;
               return (

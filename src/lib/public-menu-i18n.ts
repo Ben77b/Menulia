@@ -1,12 +1,18 @@
-import type { LanguageCode } from "./languages";
-import { LANGUAGES } from "./languages";
+import {
+  MENU_CONTENT_LANGUAGES,
+  getSecondaryLanguage,
+  isMenuContentLanguage,
+  type MenuContentLanguage,
+} from "./menu-content-languages";
 
-export type PublicMenuLocale = LanguageCode;
+export type PublicMenuLocale = MenuContentLanguage;
 
 /** Languages available on the public menu content + UI toggle */
-export const PUBLIC_MENU_LANGUAGES = LANGUAGES.filter(
-  (language) => language.code === "en" || language.code === "es"
-);
+export const PUBLIC_MENU_LANGUAGES = MENU_CONTENT_LANGUAGES.map((language) => ({
+  code: language.code,
+  label: language.label,
+  flag: language.flag,
+}));
 
 /** Languages shown in the public menu header dropdown */
 export const HEADER_LANGUAGES = PUBLIC_MENU_LANGUAGES;
@@ -77,10 +83,23 @@ const UI_STRINGS: Record<string, Record<string, string>> = {
     allDishes: "Tutti i piatti",
     disclaimerLink: "Avvertenza allergeni e responsabilità",
   },
+  pt: {
+    openHours: "Horário",
+    locationContact: "Localização e contacto",
+    filterTitle: "Filtrar pratos",
+    allergens: "Alergénios",
+    noDishes: "Não há pratos nesta categoria.",
+    noFilterMatch: "Nenhum prato corresponde aos filtros.",
+    links: "Ligações",
+    poweredBy: "Powered by Menulia.net",
+    language: "Idioma",
+    allDishes: "Todos os pratos",
+    disclaimerLink: "Aviso de Alergénios e Responsabilidade",
+  },
 };
 
 export function getSecondaryMenuLocale(primary: PublicMenuLocale): PublicMenuLocale {
-  return primary === "es" ? "en" : "es";
+  return getSecondaryLanguage(primary);
 }
 
 /** Legal/footer links only support en | es — never throws. */
@@ -90,6 +109,10 @@ export function normalizePublicMenuLocale(locale: unknown): "en" | "es" {
   } catch {
     return "en";
   }
+}
+
+export function isPublicMenuLocale(value: unknown): value is PublicMenuLocale {
+  return isMenuContentLanguage(value);
 }
 
 export function menuUiString(locale: PublicMenuLocale, key: string): string {

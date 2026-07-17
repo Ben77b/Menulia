@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
 import {
-  getSecondaryMenuLocale,
   PUBLIC_MENU_LANGUAGES,
+  isPublicMenuLocale,
   type PublicMenuLocale,
 } from "@/lib/public-menu-i18n";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ interface MenuLanguageSelectorProps {
   lang: PublicMenuLocale;
   onLangChange: (lang: PublicMenuLocale) => void;
   primaryLocale?: PublicMenuLocale;
+  availableLocales?: string[];
   headerBackgroundColor?: string;
 }
 
@@ -21,6 +22,7 @@ export function MenuLanguageSelector({
   lang,
   onLangChange,
   primaryLocale,
+  availableLocales,
   headerBackgroundColor = "#111827",
 }: MenuLanguageSelectorProps) {
   const [open, setOpen] = useState(false);
@@ -29,12 +31,19 @@ export function MenuLanguageSelector({
   const panelBackground = contrastingTextColor(textColor);
 
   const availableLanguages = useMemo(() => {
-    if (!primaryLocale) return PUBLIC_MENU_LANGUAGES;
-    const secondary = getSecondaryMenuLocale(primaryLocale);
-    return PUBLIC_MENU_LANGUAGES.filter(
-      (language) => language.code === primaryLocale || language.code === secondary
+    const localeSet = new Set(
+      (availableLocales ?? [])
+        .filter(isPublicMenuLocale)
+        .concat(primaryLocale && isPublicMenuLocale(primaryLocale) ? [primaryLocale] : [])
     );
-  }, [primaryLocale]);
+
+    if (localeSet.size === 0) {
+      return PUBLIC_MENU_LANGUAGES;
+    }
+
+    const matched = PUBLIC_MENU_LANGUAGES.filter((language) => localeSet.has(language.code));
+    return matched.length > 0 ? matched : PUBLIC_MENU_LANGUAGES;
+  }, [availableLocales, primaryLocale]);
 
   const currentLanguage =
     availableLanguages.find((language) => language.code === lang) ?? availableLanguages[0];

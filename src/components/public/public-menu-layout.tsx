@@ -10,6 +10,7 @@ import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import {
   collectAllDishes,
+  collectGuestMenuLocales,
   filterDishesByTags,
   menuHasGuestTranslations,
   sanitizePublicMenuTree,
@@ -254,6 +255,11 @@ export function PublicMenuLayout({
     [safeMenu, safeFlatCategories, hasNestedStructure]
   );
 
+  const availableLocales = useMemo(
+    () => collectGuestMenuLocales(safeMenu, safeFlatCategories, hasNestedStructure),
+    [safeMenu, safeFlatCategories, hasNestedStructure]
+  );
+
   const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
   const { activeFilters, toggleFilter, isMounted: filtersMounted } = usePublicMenuFilters();
   const effectiveFilters = filtersMounted ? activeFilters : new Set<string>();
@@ -345,6 +351,7 @@ export function PublicMenuLayout({
           lang={locale}
           onLangChange={setLocale}
           primaryLocale={defaultLocale}
+          availableLocales={availableLocales}
           showLanguageSelector={showLanguageSelector}
         />
       </PreviewHotspot>

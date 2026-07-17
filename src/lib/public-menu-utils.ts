@@ -148,3 +148,24 @@ export function menuHasGuestTranslations(
     fieldHasGuestTranslations
   );
 }
+
+/** Locale codes present in guest-facing menu copy (for the language selector). */
+export function collectGuestMenuLocales(
+  menu: PublicMenuParentCategory[],
+  flatCategories: PublicMenuSubcategory[],
+  hasNestedStructure: boolean
+): string[] {
+  const locales = new Set<string>();
+
+  for (const field of collectMenuTextFields(menu, flatCategories, hasNestedStructure)) {
+    if (typeof field === "string") continue;
+    if (!field || typeof field !== "object") continue;
+    for (const [lang, text] of Object.entries(field)) {
+      if (typeof text === "string" && text.trim()) {
+        locales.add(lang);
+      }
+    }
+  }
+
+  return Array.from(locales).sort();
+}
