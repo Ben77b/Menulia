@@ -15,4 +15,5 @@ export interface DishDetailDraft {
   filterableTags: string[];
   allergens: string[];
   is_available: boolean;
+  lock_title_translation: boolean;
 }

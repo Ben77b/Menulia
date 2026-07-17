@@ -13,20 +13,19 @@ import {
   getMenuContentLanguageMeta,
   type MenuContentLanguage,
 } from "@/lib/menu-content-languages";
-import { SecondaryLanguageField } from "./secondary-language-field";
 import { AllergenPopoverField } from "./allergen-popover-field";
 import { DishImageUploader } from "./dish-image-uploader";
 import { MAX_DISH_DESCRIPTION, MAX_DISH_NAME, clampMenuText } from "@/lib/menu-limits";
 import type { DishDetailDraft, PriceVariationDraft } from "./dish-detail-types";
 
 const inputClass =
-  "w-full rounded-xl border border-neutral-200/70 bg-white px-3 py-2.5 text-sm text-neutral-800 placeholder:text-neutral-400 transition-all duration-200 ease-in-out focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5";
+  "w-full rounded-xl border border-neutral-200/80 bg-white px-3 py-2.5 text-sm text-neutral-800 shadow-sm placeholder:text-neutral-400 transition-all duration-200 ease-in-out focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5";
 
 const labelClass =
-  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400";
+  "mb-1.5 block text-xs font-medium uppercase tracking-wide text-neutral-500";
 
 const sectionTitleClass =
-  "text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400";
+  "text-xs font-semibold uppercase tracking-wider text-neutral-500";
 
 function scrollFocusedFieldIntoView(event: FocusEvent<HTMLElement>) {
   window.requestAnimationFrame(() => {
@@ -36,7 +35,7 @@ function scrollFocusedFieldIntoView(event: FocusEvent<HTMLElement>) {
 
 function FormSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col space-y-4 rounded-2xl border border-neutral-200/60 bg-white p-4 sm:p-5">
+    <section className="flex flex-col space-y-4 rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm sm:p-5">
       <h3 className={sectionTitleClass}>{title}</h3>
       <div className="flex flex-col space-y-4">{children}</div>
     </section>
@@ -138,12 +137,14 @@ export function DishDetailForm({
 
   return (
     <div className="flex flex-col space-y-5">
-      <ToggleSwitch
-        label={t("dish.visibleOnMenu")}
-        description={t("dish.visibleDescription")}
-        checked={draft.is_available}
-        onChange={handleAvailabilityToggle}
-      />
+      <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm">
+        <ToggleSwitch
+          label={t("dish.visibleOnMenu")}
+          description={t("dish.visibleDescription")}
+          checked={draft.is_available}
+          onChange={handleAvailabilityToggle}
+        />
+      </div>
 
       <FormSection title={t("dish.section.identity")}>
         <div>
@@ -157,17 +158,7 @@ export function DishDetailForm({
         </div>
 
         <div>
-          <div className="mb-1.5 flex flex-col gap-2">
-            <label className={cn(labelClass, "mb-0")}>Name ({primaryMeta.label})</label>
-            <SecondaryLanguageField
-              primaryLanguage={primaryLanguage}
-              label="name"
-              maxLength={MAX_DISH_NAME}
-              value={draft.nameTranslation}
-              onChange={(value) => setDraft((prev) => ({ ...prev, nameTranslation: value }))}
-              onSave={async () => undefined}
-            />
-          </div>
+          <label className={labelClass}>Name ({primaryMeta.label})</label>
           <input
             value={draft.name}
             maxLength={MAX_DISH_NAME}
@@ -176,6 +167,25 @@ export function DishDetailForm({
             placeholder="Dish name"
             className={inputClass}
           />
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-neutral-200/70 bg-neutral-50/60 px-3 py-2.5 shadow-sm transition-colors hover:bg-neutral-50">
+            <input
+              type="checkbox"
+              checked={draft.lock_title_translation}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  lock_title_translation: e.target.checked,
+                }))
+              }
+              className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-zinc-900 focus:ring-zinc-900/20"
+            />
+            <span className="text-sm text-neutral-700">
+              {t("dish.lockTitle")}
+              <span className="mt-0.5 block text-xs text-neutral-500">
+                {t("dish.lockTitleDescription")}
+              </span>
+            </span>
+          </label>
         </div>
 
         <div>
@@ -183,33 +193,20 @@ export function DishDetailForm({
             <label className={cn(labelClass, "mb-0")}>
               {t("dish.description")} ({primaryMeta.label})
             </label>
-            <div className="flex flex-col gap-1">
-              <SecondaryLanguageField
-                primaryLanguage={primaryLanguage}
-                label="description"
-                value={draft.descriptionTranslation}
-                multiline
-                maxLength={MAX_DISH_DESCRIPTION}
-                onChange={(value) =>
-                  setDraft((prev) => ({ ...prev, descriptionTranslation: value }))
-                }
-                onSave={async () => undefined}
-              />
-              <button
-                type="button"
-                onClick={() => void handleGenerateDescription()}
-                disabled={generatingDescription || saving}
-                className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
-                aria-label="Generate description with AI"
-              >
-                {generatingDescription ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
-                )}
-                <span>{generatingDescription ? t("dish.aiWriting") : t("dish.aiWrite")}</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => void handleGenerateDescription()}
+              disabled={generatingDescription || saving}
+              className="inline-flex min-h-10 w-fit items-center gap-1.5 rounded-lg border border-neutral-200/80 bg-white px-3 py-2 text-xs font-medium text-neutral-600 shadow-sm transition-all duration-200 ease-in-out hover:bg-neutral-50 hover:text-neutral-900 disabled:opacity-50"
+              aria-label="Generate description with AI"
+            >
+              {generatingDescription ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              <span>{generatingDescription ? t("dish.aiWriting") : t("dish.aiWrite")}</span>
+            </button>
           </div>
           <div className="relative">
             <textarea
@@ -261,7 +258,7 @@ export function DishDetailForm({
               }
               placeholder="12.50"
               className="placeholder:text-neutral-400"
-              wrapperClassName="mt-1.5"
+              wrapperClassName="mt-1.5 shadow-sm"
             />
           </div>
         ) : (
@@ -269,7 +266,10 @@ export function DishDetailForm({
             <label className={cn(labelClass, "mb-0")}>{t("dish.portionsAndPrices")}</label>
             <div className="flex flex-col space-y-2">
               {draft.priceVariations.map((row, index) => (
-                <div key={index} className="flex flex-col gap-2 rounded-xl border border-neutral-100 bg-neutral-50/50 p-3">
+                <div
+                  key={index}
+                  className="flex flex-col gap-2 rounded-xl border border-neutral-200/70 bg-neutral-50/50 p-3 shadow-sm"
+                >
                   <input
                     value={row.label}
                     onChange={(e) => updatePriceVariation(index, { label: e.target.value })}
@@ -294,7 +294,7 @@ export function DishDetailForm({
                     type="button"
                     onClick={() => removePriceVariation(index)}
                     disabled={draft.priceVariations.length <= 1}
-                    className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-xl border border-neutral-200/60 bg-white px-3 text-sm text-neutral-500 transition-all duration-200 ease-in-out hover:border-red-200 hover:bg-red-50 hover:text-red-500 disabled:opacity-30"
+                    className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-xl border border-neutral-200/60 bg-white px-3 text-sm text-neutral-500 shadow-sm transition-all duration-200 ease-in-out hover:border-red-200 hover:bg-red-50 hover:text-red-500 disabled:opacity-30"
                     aria-label={t("dish.removePortion")}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -306,7 +306,7 @@ export function DishDetailForm({
             <button
               type="button"
               onClick={addPriceVariation}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-neutral-200/60 px-3 text-sm font-medium text-neutral-600 transition-all duration-200 ease-in-out hover:border-sky-200 hover:bg-sky-50/60 hover:text-sky-700"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-neutral-200/80 px-3 text-sm font-medium text-neutral-600 shadow-sm transition-all duration-200 ease-in-out hover:border-sky-200 hover:bg-sky-50/60 hover:text-sky-700"
             >
               <Plus className="h-4 w-4" />
               {t("dish.addSizeOption")}
@@ -326,9 +326,9 @@ export function DishDetailForm({
                 type="button"
                 onClick={() => toggleFilterableTag(tag)}
                 className={cn(
-                  "min-h-11 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-200 ease-in-out",
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 ease-in-out",
                   draft.filterableTags.includes(tag)
-                    ? "border-neutral-200 bg-neutral-100 text-neutral-800 shadow-sm"
+                    ? "border-neutral-200/60 bg-neutral-100 text-neutral-800 shadow-sm"
                     : "border-neutral-200/70 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700"
                 )}
               >

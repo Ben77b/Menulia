@@ -470,7 +470,7 @@ export function MenuBuilder() {
       allergens: draft.allergens,
       is_available: draft.is_available,
       hide_price: false,
-      lock_title_translation: false,
+      lock_title_translation: draft.lock_title_translation,
       display_order: displayOrder,
     };
 
@@ -497,12 +497,13 @@ export function MenuBuilder() {
         name: mergedName,
         description: mergedDescription,
         price_variations: storedVariations ?? [],
-        lock_title_translation: false,
+        lock_title_translation: draft.lock_title_translation,
         display_order: displayOrder,
       };
 
       const needsFollowUpUpdate =
         storedVariations !== null ||
+        draft.lock_title_translation ||
         secondaryName.trim() ||
         secondaryDescription.trim();
 
@@ -517,7 +518,7 @@ export function MenuBuilder() {
           draft.allergens,
           draft.is_available,
           false,
-          false,
+          draft.lock_title_translation,
           storedVariations
         );
       }
@@ -649,7 +650,7 @@ export function MenuBuilder() {
       allergens: draft.allergens,
       is_available: draft.is_available,
       hide_price: false,
-      lock_title_translation: false,
+      lock_title_translation: draft.lock_title_translation,
     };
 
     setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, optimisticDish));
@@ -666,7 +667,7 @@ export function MenuBuilder() {
         draft.allergens,
         draft.is_available,
         false,
-        false,
+        draft.lock_title_translation,
         storedVariations
       );
       toast.success("✨ Dish updated successfully");

@@ -86,10 +86,9 @@ export function DishDetailSheet({
               {t("dish.cancel")}
             </button>
             <Button
-              variant="light"
               disabled={saving || !draft.name.trim()}
               onClick={() => onSave(draft)}
-              className="min-h-11 border border-neutral-200 bg-white text-neutral-900 shadow-sm hover:bg-neutral-50"
+              className="min-h-11 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-zinc-800"
             >
               {saving
                 ? isCreate

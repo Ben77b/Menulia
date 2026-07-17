@@ -27,6 +27,7 @@ export const EMPTY_DISH_DRAFT: DishDetailDraft = {
   filterableTags: [],
   allergens: [],
   is_available: true,
+  lock_title_translation: false,
 };
 
 export function dishToDraft(
@@ -59,6 +60,7 @@ export function dishToDraft(
     filterableTags: normalized.tags,
     allergens: normalized.allergens,
     is_available: dish.is_available !== false,
+    lock_title_translation: Boolean(dish.lock_title_translation),
   };
 }
 
