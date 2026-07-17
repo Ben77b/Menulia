@@ -175,7 +175,7 @@ function DishSection({
       {sectionNote}
       <div
         className={cn(
-          "mx-auto max-w-3xl space-y-12",
+          "w-full space-y-10 md:space-y-12",
           centerDishes && "flex flex-col items-center"
         )}
       >
@@ -405,11 +405,14 @@ export function PublicMenuLayout({
       </PreviewHotspot>
 
       <main
-        className="flex-1 px-4 py-8 sm:px-6"
+        className="flex-1 w-full"
         style={{ borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}` }}
       >
         {!hasMenu || !activeSubcategory ? (
-          <div className="py-16 text-center" style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}>
+          <div
+            className="mx-auto w-full max-w-3xl px-4 py-16 text-center md:px-6"
+            style={{ color: themedColor(isPreview, "itemTitle", theme.itemTitleText) }}
+          >
             <p
               className="text-lg font-semibold uppercase tracking-wide"
               style={{
@@ -426,7 +429,7 @@ export function PublicMenuLayout({
             </p>
           </div>
         ) : (
-          <section className="mx-auto max-w-5xl">
+          <section className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6">
             <DishSection
               subcategory={activeSubcategory}
               restaurantName={restaurantName}
