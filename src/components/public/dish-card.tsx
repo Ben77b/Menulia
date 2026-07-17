@@ -141,6 +141,11 @@ export function DishCard({
           "relative aspect-square overflow-hidden rounded-xl",
           isStackedLeft ? "h-28 w-28 shrink-0" : imageClassName
         )}
+        style={
+          isStackedLeft
+            ? { width: 112, height: 112, flexShrink: 0, borderRadius: 12 }
+            : undefined
+        }
       >
         <Image
           src={imageSrc}
@@ -317,22 +322,15 @@ export function DishCard({
   }
 
   if (isStackedLeft) {
-    const stackedLeftImageColumnClass = "h-28 w-28 shrink-0";
-    const stackedLeftMedia =
-      display.showImages &&
-      (showImage && imageBlock ? (
-        imageBlock
-      ) : (
-        <div
-          className="aspect-square h-28 w-28 rounded-xl bg-transparent"
-          aria-hidden
-        />
-      ));
-
     return (
       <article className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-        {stackedLeftMedia ? (
-          <div className={stackedLeftImageColumnClass}>{stackedLeftMedia}</div>
+        {imageBlock ? (
+          <div
+            className="h-28 w-28 shrink-0"
+            style={{ width: 112, height: 112, flexShrink: 0 }}
+          >
+            {imageBlock}
+          </div>
         ) : null}
         <div className="min-w-0 flex-1 items-start text-left">{textBlock}</div>
       </article>
