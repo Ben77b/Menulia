@@ -9,16 +9,32 @@ import { getPublicMenuUrl } from "@/lib/site-url";
 import { buildMenuEmbedSnippet } from "@/lib/menu-embed-snippet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Check, Code2, Copy, Download, Link2, QrCode, Share2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  Code2,
+  Copy,
+  Download,
+  Link2,
+  QrCode,
+  Share2,
+} from "lucide-react";
 import QRCode from "react-qr-code";
 
 const QR_PREVIEW_SIZE = 256;
 const QR_EXPORT_SIZE = 1024;
 
+const QR_COLOR_PRESETS = [
+  { label: "Charcoal Black", value: "#111111" },
+  { label: "Minimal Slate", value: "#475569" },
+  { label: "Deep Burgundy", value: "#7F1D1D" },
+  { label: "Forest Green", value: "#14532D" },
+] as const;
+
 export default function ShareMenuPage() {
   const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
   const { t } = useDashboardLocale();
-  const [qrColor, setQrColor] = useState("#000000");
+  const [qrColor, setQrColor] = useState("#111111");
   const [transparentBackground, setTransparentBackground] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
@@ -97,8 +113,9 @@ export default function ShareMenuPage() {
         <p className="air-page-subtitle">{t("share.pageSubtitle")}</p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8 xl:col-span-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left — QR customizer */}
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8 lg:col-span-7">
           <div className="mb-6">
             <div className="flex items-center gap-3">
               <QrCode className="h-5 w-5 text-slate-500" />
@@ -107,10 +124,10 @@ export default function ShareMenuPage() {
             <p className="mt-1 text-xs text-slate-400">{t("share.qrDescription")}</p>
           </div>
 
-          <div className="flex flex-col items-start gap-8 lg:flex-row">
+          <div className="flex flex-col items-start gap-8 sm:flex-row">
             <div
               className={cn(
-                "air-card p-6",
+                "shrink-0 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm",
                 transparentBackground &&
                   "bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb),linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb)] bg-[length:16px_16px] bg-[position:0_0,8px_8px]"
               )}
@@ -126,18 +143,40 @@ export default function ShareMenuPage() {
               </div>
             </div>
 
-            <div className="flex w-full max-w-md flex-1 flex-col gap-5">
+            <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
               <div>
                 <label className="air-label">{t("share.qrColor")}</label>
-                <div className="mt-1.5 flex items-center gap-3">
+                <div className="mt-1.5 flex flex-wrap items-center gap-3">
                   <input
                     type="color"
                     value={qrColor}
                     onChange={(event) => setQrColor(event.target.value)}
-                    className="h-11 w-16 cursor-pointer rounded-[10px] border border-input"
+                    className="h-11 w-14 cursor-pointer rounded-[10px] border border-input bg-white p-1"
                     aria-label={t("share.qrColor")}
                   />
                   <span className="font-mono text-sm text-muted-foreground">{qrColor}</span>
+                  <div className="flex items-center gap-2">
+                    {QR_COLOR_PRESETS.map((preset) => {
+                      const active = qrColor.toLowerCase() === preset.value.toLowerCase();
+                      return (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          title={preset.label}
+                          aria-label={preset.label}
+                          aria-pressed={active}
+                          onClick={() => setQrColor(preset.value)}
+                          className={cn(
+                            "h-7 w-7 rounded-full border-2 transition-transform hover:scale-110",
+                            active
+                              ? "border-slate-900 ring-2 ring-slate-900/15 ring-offset-1"
+                              : "border-white shadow-[0_0_0_1px_rgba(15,23,42,0.12)]"
+                          )}
+                          style={{ backgroundColor: preset.value }}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -156,48 +195,85 @@ export default function ShareMenuPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
-          <div className="mb-4">
-            <div className="flex items-center gap-3">
-              <Link2 className="h-5 w-5 text-slate-500" />
-              <h2 className="text-base font-semibold text-slate-900">{t("share.directLinkTitle")}</h2>
+        {/* Right — distribution cards */}
+        <div className="flex flex-col gap-6 lg:col-span-5">
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+            <div className="mb-4">
+              <div className="flex items-center gap-3">
+                <Link2 className="h-5 w-5 text-slate-500" />
+                <h2 className="text-base font-semibold text-slate-900">
+                  {t("share.directLinkTitle")}
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">{t("share.directLinkDescription")}</p>
             </div>
-            <p className="mt-1 text-xs text-slate-400">{t("share.directLinkDescription")}</p>
-          </div>
-          <div className="rounded-[10px] border border-border bg-muted p-3">
-            <code className="break-all text-sm text-slate-700">{restaurantUrl}</code>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-4 w-full gap-2"
-            onClick={() => void copyText(restaurantUrl, setLinkCopied)}
-          >
-            {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {linkCopied ? t("common.copied") : t("common.copyLink")}
-          </Button>
-        </div>
 
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
-          <div className="mb-4">
-            <div className="flex items-center gap-3">
-              <Code2 className="h-5 w-5 text-slate-500" />
-              <h2 className="text-base font-semibold text-slate-900">{t("share.embedTitle")}</h2>
+            <div className="flex items-center gap-1.5 rounded-xl bg-slate-50 px-2 py-1.5">
+              <input
+                type="text"
+                readOnly
+                value={restaurantUrl}
+                aria-label={t("share.directLinkTitle")}
+                className="min-w-0 flex-1 border-0 bg-transparent px-2 py-2 text-sm text-slate-700 outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => void copyText(restaurantUrl, setLinkCopied)}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white hover:text-slate-900"
+                aria-label={linkCopied ? t("common.copied") : t("common.copyLink")}
+              >
+                {linkCopied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+              </button>
             </div>
-            <p className="mt-1 text-xs text-slate-400">{t("share.embedDescription")}</p>
+
+            <a
+              href={restaurantUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900"
+            >
+              {t("share.viewLiveMenu")}
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            </a>
           </div>
-          <pre className="max-h-40 overflow-auto rounded-lg bg-slate-50 p-3 text-xs text-slate-800">
-            <code>{embedSnippet}</code>
-          </pre>
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-4 w-full gap-2"
-            onClick={() => void copyText(embedSnippet, setEmbedCopied)}
-          >
-            {embedCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {embedCopied ? t("common.copied") : t("common.copyEmbed")}
-          </Button>
+
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm md:p-8">
+            <div className="mb-4">
+              <div className="flex items-center gap-3">
+                <Code2 className="h-5 w-5 text-slate-500" />
+                <h2 className="text-base font-semibold text-slate-900">{t("share.embedTitle")}</h2>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">{t("share.embedDescription")}</p>
+            </div>
+
+            <div className="flex items-center gap-1.5 rounded-xl bg-slate-50 px-2 py-1.5">
+              <input
+                type="text"
+                readOnly
+                value={embedSnippet}
+                aria-label={t("share.embedTitle")}
+                className="min-w-0 flex-1 truncate border-0 bg-transparent px-2 py-2 font-mono text-xs text-slate-700 outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => void copyText(embedSnippet, setEmbedCopied)}
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-slate-600 transition-colors hover:bg-white hover:text-slate-900"
+                aria-label={embedCopied ? t("common.copied") : t("share.copySnippet")}
+              >
+                {embedCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>{t("common.copied")}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>{t("share.copySnippet")}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

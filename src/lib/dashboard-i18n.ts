@@ -71,6 +71,8 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     en: "Share this URL in messages, social posts, or your Google Business profile.",
     es: "Comparte esta URL en mensajes, redes sociales o tu perfil de Google Business.",
   },
+  "share.viewLiveMenu": { en: "View Live Menu", es: "Ver menú en vivo" },
+  "share.copySnippet": { en: "Copy Snippet", es: "Copiar código" },
   "share.embedTitle": { en: "Website Embed", es: "Incrustar en web" },
   "share.embedDescription": {
     en: "Paste this iframe into your website builder or HTML to embed your live menu.",
