@@ -1,14 +1,14 @@
 import {
-  MENU_CONTENT_LANGUAGES,
+  GUEST_AUTO_TRANSLATE_LANGUAGES,
   getSecondaryLanguage,
-  isMenuContentLanguage,
+  isGuestAutoTranslateLanguage,
   type MenuContentLanguage,
 } from "./menu-content-languages";
 
 export type PublicMenuLocale = MenuContentLanguage;
 
-/** Languages available on the public menu content + UI toggle */
-export const PUBLIC_MENU_LANGUAGES = MENU_CONTENT_LANGUAGES.map((language) => ({
+/** Languages available on the public menu content + UI toggle (EN / ES / FR / DE) */
+export const PUBLIC_MENU_LANGUAGES = GUEST_AUTO_TRANSLATE_LANGUAGES.map((language) => ({
   code: language.code,
   label: language.label,
   flag: language.flag,
@@ -118,7 +118,7 @@ export function normalizePublicMenuLocale(locale: unknown): "en" | "es" {
 }
 
 export function isPublicMenuLocale(value: unknown): value is PublicMenuLocale {
-  return isMenuContentLanguage(value);
+  return isGuestAutoTranslateLanguage(value);
 }
 
 export function menuUiString(locale: PublicMenuLocale, key: string): string {

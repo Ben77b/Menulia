@@ -332,13 +332,17 @@ export function PublicMenuLayout({
     const detected = detectGuestMenuLanguage(
       typeof navigator !== "undefined" ? navigator.language : null
     );
-    if (!detected || detected === defaultLocale) {
-      void ensureLocaleTranslated(defaultLocale);
+
+    // Outside EN/ES/FR/DE → stay on restaurant primary, no background translate API
+    if (!detected) {
+      setLocale(defaultLocale);
       return;
     }
 
     setLocale(detected);
-    void ensureLocaleTranslated(detected);
+    if (detected !== defaultLocale) {
+      void ensureLocaleTranslated(detected);
+    }
   }, [defaultLocale, ensureLocaleTranslated, restaurantSlug]);
 
   const {

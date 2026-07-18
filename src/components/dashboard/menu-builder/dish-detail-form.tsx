@@ -177,48 +177,25 @@ export function DishDetailForm({
             placeholder="Dish name"
             className={inputClass}
           />
-          <button
-            type="button"
-            role="switch"
-            aria-checked={draft.lock_title_translation}
-            onClick={() =>
-              setDraft((prev) => ({
-                ...prev,
-                lock_title_translation: !prev.lock_title_translation,
-              }))
-            }
-            className="mt-3 flex w-full cursor-pointer items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-neutral-50/50 p-3 text-left dark:border-neutral-800 dark:bg-neutral-900/50"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                  {t("dish.lockTitle")}
-                </p>
-                <span className="inline-flex max-w-full rounded-md border border-amber-200/80 bg-amber-50 px-2 py-0.5 text-[11px] font-medium leading-snug text-amber-900">
-                  {t("dish.lockTitleBadge")}
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                {t("dish.lockTitleDescription")}
-              </p>
-            </div>
-            <span
-              className={cn(
-                "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors",
-                draft.lock_title_translation
-                  ? "border-zinc-900 bg-zinc-900"
-                  : "border-neutral-300 bg-neutral-200/80 dark:border-neutral-600 dark:bg-neutral-700"
-              )}
-              aria-hidden
-            >
-              <span
-                className={cn(
-                  "inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
-                  draft.lock_title_translation ? "translate-x-6" : "translate-x-1"
-                )}
-              />
+          <label className="mt-2.5 flex cursor-pointer items-start gap-2">
+            <input
+              type="checkbox"
+              checked={draft.lock_title_translation}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  lock_title_translation: e.target.checked,
+                }))
+              }
+              className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-zinc-900 focus:ring-zinc-900/20"
+            />
+            <span className="min-w-0">
+              <span className="text-sm text-neutral-700">{t("dish.lockTitle")}</span>
+              <span className="mt-0.5 block text-xs text-amber-800/90">
+                {t("dish.lockTitleBadge")}
+              </span>
             </span>
-          </button>
+          </label>
         </div>
 
         <div>

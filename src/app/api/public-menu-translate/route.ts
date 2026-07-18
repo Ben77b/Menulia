@@ -4,7 +4,7 @@ import { runtimeEnv } from "@/lib/runtime-env";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase-admin";
 import {
   getMenuContentLanguageMeta,
-  isMenuContentLanguage,
+  isGuestAutoTranslateLanguage,
   normalizePrimaryLanguage,
   type MenuContentLanguage,
 } from "@/lib/menu-content-languages";
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
 
     const slug = parsed.data.slug.trim().toLowerCase();
     const targetLangRaw = parsed.data.target_lang.trim().toLowerCase();
-    if (!isMenuContentLanguage(targetLangRaw)) {
+    if (!isGuestAutoTranslateLanguage(targetLangRaw)) {
       return NextResponse.json({ error: "Unsupported target language." }, { status: 400 });
     }
     const targetLang = targetLangRaw;
