@@ -15,6 +15,7 @@ import {
   menuHasGuestTranslations,
   sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
+import { collectMenuTagAppearances } from "@/lib/dietary-tags";
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
@@ -261,8 +262,19 @@ export function PublicMenuLayout({
   );
 
   const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
-  const { activeFilters, toggleFilter, isMounted: filtersMounted } = usePublicMenuFilters();
+  const {
+    activeFilters,
+    toggleFilter,
+    clearFilters,
+    isMounted: filtersMounted,
+  } = usePublicMenuFilters();
   const effectiveFilters = filtersMounted ? activeFilters : new Set<string>();
+  const filterTags = useMemo(() => {
+    const rawTags = collectAllDishes(safeMenu, safeFlatCategories, hasNestedStructure).flatMap(
+      (dish) => dish.tags ?? []
+    );
+    return collectMenuTagAppearances(rawTags);
+  }, [safeMenu, safeFlatCategories, hasNestedStructure]);
   const [activeParentId, setActiveParentId] = useState(safeMenu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
     safeMenu[0]?.subcategories?.[0]?.id ?? safeFlatCategories[0]?.id ?? ""
@@ -482,7 +494,9 @@ export function PublicMenuLayout({
             bodyFontStyle={bodyFontStyle}
             locale={locale}
             activeFilters={effectiveFilters}
+            filterTags={filterTags}
             onToggleFilter={toggleFilter}
+            onClearFilters={clearFilters}
           />
         </PreviewHotspot>
       )}

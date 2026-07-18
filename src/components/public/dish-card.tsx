@@ -59,6 +59,7 @@ function TagBadge({
   bodyFont,
   bodyFontWeight,
   bodyFontStyle,
+  backgroundColor,
   iconOnly = false,
 }: {
   icon: string;
@@ -67,6 +68,7 @@ function TagBadge({
   bodyFont: string;
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
+  backgroundColor?: string;
   iconOnly?: boolean;
 }) {
   return (
@@ -78,8 +80,9 @@ function TagBadge({
         iconOnly
           ? undefined
           : {
-              color: textColor,
-              border: `1px solid ${textColor}`,
+              color: backgroundColor ? "#262626" : textColor,
+              backgroundColor: backgroundColor ?? "transparent",
+              border: `1px solid ${backgroundColor ?? textColor}`,
               fontFamily: bodyFont,
               fontWeight: bodyFontWeight ?? 400,
               fontStyle: bodyFontStyle ?? "normal",
@@ -260,9 +263,10 @@ export function DishCard({
             const meta = getTagMeta(tag);
             return (
               <TagBadge
-                key={tag}
+                key={meta.label}
                 icon={meta.icon}
                 label={meta.label}
+                backgroundColor={meta.color}
                 textColor={resolvedTitle}
                 bodyFont={bodyFont}
                 bodyFontWeight={bodyFontWeight}

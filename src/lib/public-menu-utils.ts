@@ -1,7 +1,7 @@
 import type { PublicMenuDish } from "@/components/public/dish-card";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/localized-text";
-import { isFilterableTag } from "@/lib/dietary-tags";
+import { dishTagLabel } from "@/lib/dietary-tags";
 import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 import { parsePriceVariationsFromDb } from "@/lib/price-variations";
 
@@ -99,8 +99,14 @@ export function filterDishesByTags(
   activeFilters: Set<string>
 ): PublicMenuDish[] {
   if (activeFilters.size === 0) return dishes;
+  const normalizedFilters = new Set(
+    [...activeFilters].map((tag) => dishTagLabel(tag).toLowerCase()).filter(Boolean)
+  );
   return dishes.filter((dish) =>
-    (dish.tags ?? []).some((tag) => isFilterableTag(tag) && activeFilters.has(tag))
+    (dish.tags ?? []).some((tag) => {
+      const label = dishTagLabel(tag).toLowerCase();
+      return label && normalizedFilters.has(label);
+    })
   );
 }
 

@@ -8,24 +8,29 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { FILTERABLE_TAGS } from "@/lib/dietary-tags";
+import { dishTagLabel } from "@/lib/dietary-tags";
 
 const FILTER_SEARCH_PARAM = "diet";
-const FILTERABLE_TAG_SET = new Set<string>(FILTERABLE_TAGS);
 
 interface PublicMenuFilterContextValue {
   activeFilters: Set<string>;
   isMounted: boolean;
   toggleFilter: (tag: string) => void;
+  clearFilters: () => void;
 }
 
 const PublicMenuFilterContext = createContext<PublicMenuFilterContextValue | null>(null);
+
+function normalizeFilterIdentity(tag: string): string {
+  return dishTagLabel(tag) || tag.trim();
+}
 
 function parseFilterTags(search: string): Set<string> {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
   const tags = params
     .getAll(FILTER_SEARCH_PARAM)
-    .filter((tag) => FILTERABLE_TAG_SET.has(tag));
+    .map((tag) => normalizeFilterIdentity(tag))
+    .filter(Boolean);
   return new Set(tags);
 }
 
@@ -68,14 +73,15 @@ function PublicMenuFilterProviderInstant({ children }: { children: ReactNode }) 
 
   const toggleFilter = useCallback(
     (tag: string) => {
-      if (!FILTERABLE_TAG_SET.has(tag)) return;
+      const identity = normalizeFilterIdentity(tag);
+      if (!identity) return;
 
       setActiveFilters((previous) => {
         const next = new Set(previous);
-        if (next.has(tag)) {
-          next.delete(tag);
+        if (next.has(identity)) {
+          next.delete(identity);
         } else {
-          next.add(tag);
+          next.add(identity);
         }
         if (isMounted) {
           syncFiltersToLocation(next);
@@ -86,8 +92,17 @@ function PublicMenuFilterProviderInstant({ children }: { children: ReactNode }) 
     [isMounted]
   );
 
+  const clearFilters = useCallback(() => {
+    setActiveFilters(new Set());
+    if (isMounted) {
+      syncFiltersToLocation(new Set());
+    }
+  }, [isMounted]);
+
   return (
-    <PublicMenuFilterContext.Provider value={{ activeFilters, isMounted, toggleFilter }}>
+    <PublicMenuFilterContext.Provider
+      value={{ activeFilters, isMounted, toggleFilter, clearFilters }}
+    >
       {children}
     </PublicMenuFilterContext.Provider>
   );
@@ -116,20 +131,27 @@ function PublicMenuFilterProviderLocal({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleFilter = useCallback((tag: string) => {
-    if (!FILTERABLE_TAG_SET.has(tag)) return;
+    const identity = normalizeFilterIdentity(tag);
+    if (!identity) return;
     setActiveFilters((prev) => {
       const next = new Set(prev);
-      if (next.has(tag)) {
-        next.delete(tag);
+      if (next.has(identity)) {
+        next.delete(identity);
       } else {
-        next.add(tag);
+        next.add(identity);
       }
       return next;
     });
   }, []);
 
+  const clearFilters = useCallback(() => {
+    setActiveFilters(new Set());
+  }, []);
+
   return (
-    <PublicMenuFilterContext.Provider value={{ activeFilters, isMounted, toggleFilter }}>
+    <PublicMenuFilterContext.Provider
+      value={{ activeFilters, isMounted, toggleFilter, clearFilters }}
+    >
       {children}
     </PublicMenuFilterContext.Provider>
   );

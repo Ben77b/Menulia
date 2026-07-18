@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { RestaurantFull, LanguageCode } from "@/lib/types";
 import type { RestaurantDesign } from "@/lib/restaurant-design";
-import { DIETARY_FILTERS, getAllergenTagMeta } from "@/lib/dietary-tags";
+import { DIETARY_FILTERS, dishTagLabel, getAllergenTagMeta, parseDishTag } from "@/lib/dietary-tags";
 import { cn } from "@/lib/utils";
 import { MenuCarousel } from "./menu-carousel";
 import { formatPrice } from "@/lib/utils";
@@ -59,7 +59,9 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
         .filter((item: any) => {
           if (!item.is_available) return false;
           if (activeFilters.size === 0) return true;
-          return [...activeFilters].every((f) => item.tags.includes(f));
+          return [...activeFilters].every((f) =>
+            item.tags.some((tag) => dishTagLabel(tag).toLowerCase() === f.toLowerCase())
+          );
         })
         .map((item: any) => ({
           id: item.id,
@@ -189,15 +191,16 @@ export function MenuView({ restaurant, language, design, fontClasses }: MenuView
                           {item.tags.length > 0 && (
                             <div className="flex gap-1">
                               {item.tags.map((tag: string) => {
-                                const filter = DIETARY_FILTERS.find((f) => f.tag === tag);
-                                if (!filter) return null;
+                                const meta = parseDishTag(tag);
+                                if (!meta.label) return null;
                                 return (
                                   <span
-                                    key={tag}
-                                    className={`flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium ${fontClasses?.body || ''}`}
+                                    key={meta.label}
+                                    className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${fontClasses?.body || ''}`}
+                                    style={{ backgroundColor: meta.color }}
                                   >
-                                    <span className="text-xs">{filter.icon}</span>
-                                    {filter.label}
+                                    <span className="text-xs">{meta.icon}</span>
+                                    {meta.label}
                                   </span>
                                 );
                               })}

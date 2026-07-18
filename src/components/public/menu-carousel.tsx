@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { DIETARY_FILTERS, getAllergenTagMeta } from "@/lib/dietary-tags";
+import { parseDishTag, getAllergenTagMeta } from "@/lib/dietary-tags";
 import type { RestaurantDesign } from "@/lib/restaurant-design";
 
 interface CarouselItem {
@@ -125,15 +125,16 @@ export function MenuCarousel({ items, design, allergenLocale = "en" }: MenuCarou
                   {isActive && item.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                       {item.tags.map((tag: string) => {
-                        const filter = DIETARY_FILTERS.find((f) => f.tag === tag);
-                        if (!filter) return null;
+                        const meta = parseDishTag(tag);
+                        if (!meta.label) return null;
                         return (
                           <span
-                            key={tag}
-                            className="flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium"
+                            key={meta.label}
+                            className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                            style={{ backgroundColor: meta.color }}
                           >
-                            <span className="text-xs">{filter.icon}</span>
-                            {filter.label}
+                            <span className="text-xs">{meta.icon}</span>
+                            {meta.label}
                           </span>
                         );
                       })}
