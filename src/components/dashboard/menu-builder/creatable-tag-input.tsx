@@ -5,7 +5,9 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   FILTERABLE_TAG_OPTIONS,
+  MAX_RESTAURANT_TAGS,
   encodeDishTag,
+  isFilterableTag,
   normalizeDishTagFields,
   normalizeTagLabel,
   parseDishTag,
@@ -30,6 +32,11 @@ interface CreatableTagInputProps {
   suggestions?: readonly TagSuggestion[];
   /** Unique tags already used elsewhere on this restaurant menu */
   menuSuggestions?: readonly TagSuggestion[];
+  /** Defaults + custom unique tags across the restaurant */
+  tagLibraryTotal?: number;
+  tagLibraryAtLimit?: boolean;
+  /** Permanently remove a custom tag from every dish in the restaurant */
+  onDeleteMenuTag?: (label: string) => void | Promise<void>;
 }
 
 function commitEncoded(current: string[], nextEncoded: string[]): string[] {
@@ -47,9 +54,13 @@ export function CreatableTagInput({
   placeholder = "Type a tag and press Enter",
   suggestions = FILTERABLE_TAG_OPTIONS,
   menuSuggestions = [],
+  tagLibraryTotal = 0,
+  tagLibraryAtLimit = false,
+  onDeleteMenuTag,
 }: CreatableTagInputProps) {
   const [input, setInput] = useState("");
   const [editingLabel, setEditingLabel] = useState<string | null>(null);
+  const [deletingLabel, setDeletingLabel] = useState<string | null>(null);
 
   const appearances = useMemo(
     () => value.map((raw) => parseDishTag(raw)).filter((tag) => tag.label),
@@ -61,12 +72,27 @@ export function CreatableTagInput({
     [appearances]
   );
 
+  const libraryKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const option of FILTERABLE_TAG_OPTIONS) {
+      keys.add(option.tag.toLowerCase());
+    }
+    for (const entry of menuSuggestions) {
+      const label = entry.label ?? parseDishTag(entry.tag).label;
+      if (label) keys.add(label.toLowerCase());
+    }
+    for (const tag of appearances) {
+      keys.add(tag.label.toLowerCase());
+    }
+    return keys;
+  }, [menuSuggestions, appearances]);
+
   const menuOnlySuggestions = useMemo(() => {
     const byKey = new Map<string, TagSuggestion>();
     for (const entry of menuSuggestions) {
       const parsed = parseDishTag(entry.tag);
       const label = entry.label ?? parsed.label;
-      if (!label) continue;
+      if (!label || isFilterableTag(label)) continue;
       const key = label.toLowerCase();
       if (selectedKeys.has(key)) continue;
       byKey.set(key, {
@@ -79,16 +105,22 @@ export function CreatableTagInput({
   }, [menuSuggestions, selectedKeys]);
 
   const defaultSuggestions = useMemo(() => {
-    const menuKeys = new Set(menuOnlySuggestions.map((entry) => suggestionKey(entry)));
-    return suggestions.filter((entry) => {
-      const key = suggestionKey(entry);
-      return !selectedKeys.has(key) && !menuKeys.has(key);
-    });
-  }, [suggestions, menuOnlySuggestions, selectedKeys]);
+    return suggestions.filter((entry) => !selectedKeys.has(suggestionKey(entry)));
+  }, [suggestions, selectedKeys]);
+
+  function canCreateLabel(label: string): boolean {
+    const key = label.toLowerCase();
+    if (libraryKeys.has(key) || isFilterableTag(label)) return true;
+    return !tagLibraryAtLimit;
+  }
 
   function addFromInput() {
     const cleaned = normalizeTagLabel(input);
     if (!cleaned) {
+      setInput("");
+      return;
+    }
+    if (!canCreateLabel(cleaned)) {
       setInput("");
       return;
     }
@@ -126,6 +158,17 @@ export function CreatableTagInput({
     setEditingLabel(parsed.label || entry.label || null);
   }
 
+  async function handleDeleteMenuTag(label: string) {
+    if (!onDeleteMenuTag || isFilterableTag(label)) return;
+    setDeletingLabel(label);
+    try {
+      removeTag(label);
+      await onDeleteMenuTag(label);
+    } finally {
+      setDeletingLabel(null);
+    }
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter" || event.key === ",") {
       event.preventDefault();
@@ -140,6 +183,7 @@ export function CreatableTagInput({
   const editing = appearances.find(
     (tag) => tag.label.toLowerCase() === (editingLabel ?? "").toLowerCase()
   );
+  const createDisabled = disabled || tagLibraryAtLimit;
 
   return (
     <div className="space-y-3">
@@ -181,17 +225,30 @@ export function CreatableTagInput({
         <input
           type="text"
           value={input}
-          disabled={disabled}
+          disabled={createDisabled}
           maxLength={40}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={() => {
             if (input.trim()) addFromInput();
           }}
-          placeholder={appearances.length === 0 ? placeholder : "Add another…"}
-          className="min-w-[8rem] flex-1 border-0 bg-transparent px-1.5 py-1 text-sm text-neutral-800 outline-none placeholder:text-neutral-400"
+          placeholder={
+            tagLibraryAtLimit
+              ? "Tag limit reached"
+              : appearances.length === 0
+                ? placeholder
+                : "Add another…"
+          }
+          className="min-w-[8rem] flex-1 border-0 bg-transparent px-1.5 py-1 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 disabled:cursor-not-allowed"
         />
       </div>
+
+      {tagLibraryAtLimit ? (
+        <p className="text-xs text-neutral-400">
+          Tag limit reached ({Math.min(tagLibraryTotal, MAX_RESTAURANT_TAGS)}/{MAX_RESTAURANT_TAGS}).
+          Delete an existing tag to create a new one.
+        </p>
+      ) : null}
 
       {editing ? (
         <div className="flex items-center gap-2 rounded-xl border border-neutral-200/70 bg-transparent px-3 py-2.5">
@@ -218,15 +275,31 @@ export function CreatableTagInput({
           </p>
           <div className="flex flex-wrap gap-2">
             {menuOnlySuggestions.map((entry) => (
-              <button
+              <div
                 key={entry.tag}
-                type="button"
-                disabled={disabled}
-                onClick={() => addSuggestion(entry)}
-                className="rounded-full border border-neutral-200/80 bg-transparent px-3 py-1 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-300 dark:border-white/20 dark:text-white dark:hover:border-white/40 disabled:opacity-50"
+                className="group inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-1 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-300 dark:border-white/20 dark:text-white"
               >
-                {entry.icon} {entry.label}
-              </button>
+                <button
+                  type="button"
+                  disabled={disabled || deletingLabel === entry.label}
+                  onClick={() => addSuggestion(entry)}
+                  className="inline-flex items-center gap-1 disabled:opacity-50"
+                >
+                  <span>{entry.icon}</span>
+                  <span>{entry.label}</span>
+                </button>
+                {onDeleteMenuTag ? (
+                  <button
+                    type="button"
+                    disabled={disabled || deletingLabel === entry.label}
+                    onClick={() => void handleDeleteMenuTag(entry.label!)}
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-neutral-400 opacity-0 transition-all hover:bg-neutral-100 hover:text-neutral-700 group-hover:opacity-100"
+                    aria-label={`Delete ${entry.label} from restaurant`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                ) : null}
+              </div>
             ))}
           </div>
         </div>

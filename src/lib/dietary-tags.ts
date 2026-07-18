@@ -3,9 +3,11 @@
 export const FILTERABLE_TAG_OPTIONS = [
   { tag: "Vegan", icon: "🌱", label: "Vegan" },
   { tag: "Vegetarian", icon: "🥬", label: "Vegetarian" },
-  { tag: "Spicy", icon: "🌶️", label: "Spicy" },
   { tag: "Gluten-Free", icon: "🌾", label: "Gluten-Free" },
 ] as const;
+
+/** Max unique tags per restaurant library (defaults + custom) */
+export const MAX_RESTAURANT_TAGS = 10;
 
 /** Stable allergen ids (EU Reg. 1169/2011) — stored in dishes.allergens */
 export const ALLERGEN_TAG_OPTIONS = [
@@ -256,6 +258,24 @@ export function collectPresentTagAppearances(
   }
 
   return Array.from(byLabel.values());
+}
+
+/** Count restaurant tag library size: defaults always reserved + unique custom tags. */
+export function countRestaurantTagLibrary(rawTags: Iterable<string>): {
+  total: number;
+  customCount: number;
+  max: number;
+  atLimit: boolean;
+} {
+  const present = collectPresentTagAppearances(rawTags);
+  const customCount = present.filter((tag) => !FILTERABLE_SET.has(tag.label)).length;
+  const total = FILTERABLE_TAGS.length + customCount;
+  return {
+    total,
+    customCount,
+    max: MAX_RESTAURANT_TAGS,
+    atLimit: total >= MAX_RESTAURANT_TAGS,
+  };
 }
 
 /** Build unique styled filter chips from dish tag payloads + default dietary options */

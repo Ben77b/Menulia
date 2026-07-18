@@ -59,6 +59,9 @@ interface DishDetailFormProps {
   setFilterableTags: (tags: string[]) => void;
   toggleAllergen: (tag: string) => void;
   menuTagSuggestions?: readonly { tag: string; label?: string; icon?: string }[];
+  tagLibraryTotal?: number;
+  tagLibraryAtLimit?: boolean;
+  onDeleteMenuTag?: (label: string) => void | Promise<void>;
 }
 
 export function DishDetailForm({
@@ -78,6 +81,9 @@ export function DishDetailForm({
   setFilterableTags,
   toggleAllergen,
   menuTagSuggestions = [],
+  tagLibraryTotal = 0,
+  tagLibraryAtLimit = false,
+  onDeleteMenuTag,
 }: DishDetailFormProps) {
   const { t } = useDashboardLocale();
   const toast = useToast();
@@ -329,6 +335,9 @@ export function DishDetailForm({
             disabled={Boolean(saving)}
             placeholder={t("dish.tagsPlaceholder")}
             menuSuggestions={menuTagSuggestions}
+            tagLibraryTotal={tagLibraryTotal}
+            tagLibraryAtLimit={tagLibraryAtLimit}
+            onDeleteMenuTag={onDeleteMenuTag}
           />
         </div>
 

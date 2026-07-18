@@ -510,6 +510,20 @@ export async function updateMenuDish(
   }
 }
 
+export async function updateMenuDishTags(
+  dishId: string,
+  tags: string[],
+  allergens: string[] = []
+): Promise<void> {
+  const tagsForDb = serializeDishTagsForDb(tags, allergens);
+  const { error } = await updateDishRow(dishId, { tags: tagsForDb });
+
+  if (error) {
+    logSupabaseFailure("menu.updateDishTags", error);
+    throw error;
+  }
+}
+
 export class DishAvailabilityUnsupportedError extends Error {
   constructor() {
     super(

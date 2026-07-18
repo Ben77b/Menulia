@@ -15,6 +15,7 @@ import {
   createMenuDish,
   updateMenuDish,
   updateMenuDishAvailability,
+  updateMenuDishTags,
   deleteMenuDish,
   duplicateMenuDish,
   duplicateMenuCategory,
@@ -22,7 +23,12 @@ import {
   reorderMenuDishes,
 } from "@/lib/menu-db";
 import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-tree";
-import { collectMenuTagAppearances } from "@/lib/dietary-tags";
+import {
+  collectPresentTagAppearances,
+  countRestaurantTagLibrary,
+  dishTagLabel,
+  isFilterableTag,
+} from "@/lib/dietary-tags";
 import {
   renameCategoryInTree,
   addSectionToTree,
@@ -238,7 +244,7 @@ export function MenuBuilder() {
     [activeSection, tree.sections]
   );
 
-  const menuTagSuggestions = useMemo(() => {
+  const { menuTagSuggestions, tagLibraryTotal, tagLibraryAtLimit } = useMemo(() => {
     const rawTags: string[] = [];
     for (const section of tree.sections ?? []) {
       for (const category of section.categories ?? []) {
@@ -252,12 +258,83 @@ export function MenuBuilder() {
         rawTags.push(...(dish.tags ?? []));
       }
     }
-    return collectMenuTagAppearances(rawTags).map((tag) => ({
-      tag: tag.encoded,
-      label: tag.label,
-      icon: tag.icon,
-    }));
+    const library = countRestaurantTagLibrary(rawTags);
+    return {
+      menuTagSuggestions: collectPresentTagAppearances(rawTags).map((tag) => ({
+        tag: tag.encoded,
+        label: tag.label,
+        icon: tag.icon,
+      })),
+      tagLibraryTotal: library.total,
+      tagLibraryAtLimit: library.atLimit,
+    };
   }, [tree]);
+
+  const handleDeleteMenuTag = useCallback(
+    async (label: string) => {
+      if (isFilterableTag(label)) return;
+
+      const labelKey = label.toLowerCase();
+      const previousTree = tree;
+      const updates: { dishId: string; tags: string[]; allergens: string[] }[] = [];
+
+      const stripFromDish = (dish: MenuBuilderDish): MenuBuilderDish => {
+        const currentTags = dish.tags ?? [];
+        const nextTags = currentTags.filter(
+          (tag) => dishTagLabel(tag).toLowerCase() !== labelKey
+        );
+        if (nextTags.length === currentTags.length) return dish;
+        updates.push({
+          dishId: dish.id,
+          tags: nextTags,
+          allergens: dish.allergens ?? [],
+        });
+        return { ...dish, tags: nextTags };
+      };
+
+      const nextTree = {
+        ...tree,
+        sections: (tree.sections ?? []).map((section) => ({
+          ...section,
+          categories: (section.categories ?? []).map((category) => ({
+            ...category,
+            dishes: (category.dishes ?? []).map(stripFromDish),
+          })),
+        })),
+        orphanCategories: (tree.orphanCategories ?? []).map((category) => ({
+          ...category,
+          dishes: (category.dishes ?? []).map(stripFromDish),
+        })),
+      };
+
+      if (updates.length === 0) return;
+
+      setTree(nextTree);
+      setSelectedDish((prev) => {
+        if (!prev) return prev;
+        const nextTags = (prev.dish.tags ?? []).filter(
+          (tag) => dishTagLabel(tag).toLowerCase() !== labelKey
+        );
+        if (nextTags.length === (prev.dish.tags ?? []).length) return prev;
+        return { ...prev, dish: { ...prev.dish, tags: nextTags } };
+      });
+
+      try {
+        await Promise.all(
+          updates.map((update) =>
+            updateMenuDishTags(update.dishId, update.tags, update.allergens)
+          )
+        );
+        toast.success(`Removed “${label}” from your menu`);
+      } catch (err) {
+        setTree(previousTree);
+        const message = formatSupabaseError(err);
+        setError(message);
+        toast.error(message);
+      }
+    },
+    [tree, toast]
+  );
 
   const setActiveSectionId = useCallback(
     (sectionId: string) => {
@@ -1338,6 +1415,9 @@ export function MenuBuilder() {
             onImageUpload={handleImageUpload}
             onAvailabilityChange={handleAvailabilityChange}
             menuTagSuggestions={menuTagSuggestions}
+            tagLibraryTotal={tagLibraryTotal}
+            tagLibraryAtLimit={tagLibraryAtLimit}
+            onDeleteMenuTag={handleDeleteMenuTag}
           />
         </div>
       )}
@@ -1366,6 +1446,9 @@ export function MenuBuilder() {
             onSave={handleCreateDishDetail}
             onImageUpload={handleImageUpload}
             menuTagSuggestions={menuTagSuggestions}
+            tagLibraryTotal={tagLibraryTotal}
+            tagLibraryAtLimit={tagLibraryAtLimit}
+            onDeleteMenuTag={handleDeleteMenuTag}
           />
         </div>
       )}
@@ -1389,6 +1472,9 @@ export function MenuBuilder() {
           onImageUpload={handleImageUpload}
           onAvailabilityChange={handleAvailabilityChange}
           menuTagSuggestions={menuTagSuggestions}
+          tagLibraryTotal={tagLibraryTotal}
+          tagLibraryAtLimit={tagLibraryAtLimit}
+          onDeleteMenuTag={handleDeleteMenuTag}
         />
         <DishDetailSheet
           open={Boolean(addDishCategoryId)}
@@ -1406,6 +1492,9 @@ export function MenuBuilder() {
           onSave={handleCreateDishDetail}
           onImageUpload={handleImageUpload}
           menuTagSuggestions={menuTagSuggestions}
+          tagLibraryTotal={tagLibraryTotal}
+          tagLibraryAtLimit={tagLibraryAtLimit}
+          onDeleteMenuTag={handleDeleteMenuTag}
         />
       </div>
 

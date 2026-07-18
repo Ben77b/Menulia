@@ -80,34 +80,32 @@ export function PublicMenuFilterBar({
           >
             {menuUiString(locale, "filterTitle")}
           </h3>
-          <div className="flex w-full flex-row items-center justify-center gap-3">
-            <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-center gap-2 overflow-x-auto sm:flex-nowrap">
-              {tags.map((filter) => {
-                const active = activeFilters.has(filter.label);
-                return (
-                  <button
-                    key={filter.label}
-                    type="button"
-                    title={filter.label}
-                    onClick={() => onToggleFilter(filter.label)}
-                    className={cn(
-                      FILTER_CHIP_CLASS,
-                      active &&
-                        "border-current/55 font-semibold opacity-100 ring-1 ring-current/25 hover:opacity-100 hover:scale-100"
-                    )}
-                    style={{
-                      fontFamily: bodyFont,
-                      fontWeight: bodyFontWeight ?? (active ? 600 : 400),
-                      fontStyle: bodyFontStyle ?? "normal",
-                      color: textColor,
-                    }}
-                  >
-                    <span>{filter.icon}</span>
-                    <span>{filter.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {tags.map((filter) => {
+              const active = activeFilters.has(filter.label);
+              return (
+                <button
+                  key={filter.label}
+                  type="button"
+                  title={filter.label}
+                  onClick={() => onToggleFilter(filter.label)}
+                  className={cn(
+                    FILTER_CHIP_CLASS,
+                    active &&
+                      "border-current/55 font-semibold opacity-100 ring-1 ring-current/25 hover:opacity-100 hover:scale-100"
+                  )}
+                  style={{
+                    fontFamily: bodyFont,
+                    fontWeight: bodyFontWeight ?? (active ? 600 : 400),
+                    fontStyle: bodyFontStyle ?? "normal",
+                    color: textColor,
+                  }}
+                >
+                  <span>{filter.icon}</span>
+                  <span>{filter.label}</span>
+                </button>
+              );
+            })}
             {onClearFilters ? (
               <button
                 type="button"
@@ -115,7 +113,7 @@ export function PublicMenuFilterBar({
                 aria-hidden={!hasActiveFilters}
                 tabIndex={hasActiveFilters ? 0 : -1}
                 className={cn(
-                  "shrink-0 bg-transparent p-0 text-xs font-medium transition-all duration-300 ease-in-out",
+                  "bg-transparent p-0 text-xs font-medium transition-all duration-300 ease-in-out",
                   hasActiveFilters
                     ? "pointer-events-auto opacity-100"
                     : "pointer-events-none opacity-0"

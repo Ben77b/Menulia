@@ -26,6 +26,9 @@ interface DishDetailInspectorProps {
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
   className?: string;
   menuTagSuggestions?: readonly { tag: string; label?: string; icon?: string }[];
+  tagLibraryTotal?: number;
+  tagLibraryAtLimit?: boolean;
+  onDeleteMenuTag?: (label: string) => void | Promise<void>;
 }
 
 export function DishDetailInspector({
@@ -43,6 +46,9 @@ export function DishDetailInspector({
   onAvailabilityChange,
   className,
   menuTagSuggestions = [],
+  tagLibraryTotal = 0,
+  tagLibraryAtLimit = false,
+  onDeleteMenuTag,
 }: DishDetailInspectorProps) {
   const { t } = useDashboardLocale();
   const isCreate = mode === "create";
@@ -103,6 +109,9 @@ export function DishDetailInspector({
           setFilterableTags={setFilterableTags}
           toggleAllergen={toggleAllergen}
           menuTagSuggestions={menuTagSuggestions}
+          tagLibraryTotal={tagLibraryTotal}
+          tagLibraryAtLimit={tagLibraryAtLimit}
+          onDeleteMenuTag={onDeleteMenuTag}
         />
       </div>
 

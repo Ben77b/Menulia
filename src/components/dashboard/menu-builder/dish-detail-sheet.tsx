@@ -27,6 +27,9 @@ interface DishDetailSheetProps {
   restaurantName?: string;
   categoryName?: string;
   menuTagSuggestions?: readonly { tag: string; label?: string; icon?: string }[];
+  tagLibraryTotal?: number;
+  tagLibraryAtLimit?: boolean;
+  onDeleteMenuTag?: (label: string) => void | Promise<void>;
 }
 
 export function DishDetailSheet({
@@ -44,6 +47,9 @@ export function DishDetailSheet({
   restaurantName = "",
   categoryName = "",
   menuTagSuggestions = [],
+  tagLibraryTotal = 0,
+  tagLibraryAtLimit = false,
+  onDeleteMenuTag,
 }: DishDetailSheetProps) {
   const { t } = useDashboardLocale();
   const isCreate = mode === "create";
@@ -121,6 +127,9 @@ export function DishDetailSheet({
         setFilterableTags={setFilterableTags}
         toggleAllergen={toggleAllergen}
         menuTagSuggestions={menuTagSuggestions}
+        tagLibraryTotal={tagLibraryTotal}
+        tagLibraryAtLimit={tagLibraryAtLimit}
+        onDeleteMenuTag={onDeleteMenuTag}
       />
     </MobileBottomSheet>
   );
