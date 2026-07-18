@@ -55,34 +55,27 @@ interface DishCardProps {
 function TagBadge({
   icon,
   label,
-  textColor,
   bodyFont,
   bodyFontWeight,
   bodyFontStyle,
-  backgroundColor,
   iconOnly = false,
 }: {
   icon: string;
   label: string;
-  textColor: string;
   bodyFont: string;
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
-  backgroundColor?: string;
   iconOnly?: boolean;
 }) {
   return (
     <span
-      className={`inline-flex items-center ${iconOnly ? "justify-center px-1.5 py-1 text-base" : "gap-1 rounded-full px-2.5 py-1 text-xs font-medium"}`}
+      className={`inline-flex items-center ${iconOnly ? "justify-center px-1.5 py-1 text-base" : "gap-1 rounded-full border border-neutral-200/60 bg-neutral-100/70 px-2.5 py-1 text-xs font-medium text-neutral-800"}`}
       title={iconOnly ? label : undefined}
       aria-label={iconOnly ? label : undefined}
       style={
         iconOnly
           ? undefined
           : {
-              color: backgroundColor ? "#262626" : textColor,
-              backgroundColor: backgroundColor ?? "transparent",
-              border: `1px solid ${backgroundColor ?? textColor}`,
               fontFamily: bodyFont,
               fontWeight: bodyFontWeight ?? 400,
               fontStyle: bodyFontStyle ?? "normal",
@@ -266,8 +259,6 @@ export function DishCard({
                 key={meta.label}
                 icon={meta.icon}
                 label={meta.label}
-                backgroundColor={meta.color}
-                textColor={resolvedTitle}
                 bodyFont={bodyFont}
                 bodyFontWeight={bodyFontWeight}
                 bodyFontStyle={bodyFontStyle}
@@ -292,7 +283,6 @@ export function DishCard({
                 key={allergen}
                 icon={meta.icon}
                 label={meta.label}
-                textColor={resolvedTitle}
                 bodyFont={bodyFont}
                 bodyFontWeight={bodyFontWeight}
                 bodyFontStyle={bodyFontStyle}

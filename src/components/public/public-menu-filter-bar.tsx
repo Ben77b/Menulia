@@ -13,6 +13,9 @@ import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { PublicMenuAllergenLegend } from "@/components/public/public-menu-allergen-legend";
 import { cn } from "@/lib/utils";
 
+const FILTER_CHIP_CLASS =
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-neutral-200/60 bg-neutral-100/70 px-3 py-2 text-xs font-medium text-neutral-800 transition-all";
+
 interface PublicMenuFilterBarProps {
   backgroundColor: string;
   textColor?: string;
@@ -33,7 +36,6 @@ interface PublicMenuFilterBarProps {
 export function PublicMenuFilterBar({
   backgroundColor,
   textColor: textColorProp,
-  borderColor: borderColorProp,
   titleFont,
   bodyFont,
   titleFontWeight,
@@ -53,12 +55,6 @@ export function PublicMenuFilterBar({
       : isPreview
         ? pv("filterText")
         : textColorProp ?? contrastingTextColor(backgroundColor);
-  const borderColor =
-    isPreview && borderColorProp
-      ? borderColorProp
-      : isPreview
-        ? pv("filterBorder")
-        : borderColorProp ?? textColor;
 
   const tags =
     filterTags && filterTags.length > 0
@@ -86,57 +82,43 @@ export function PublicMenuFilterBar({
           >
             {menuUiString(locale, "filterTitle")}
           </h3>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {tags.map((filter) => {
-              const active = activeFilters.has(filter.label);
-              return (
-                <button
-                  key={filter.label}
-                  type="button"
-                  title={filter.label}
-                  onClick={() => onToggleFilter(filter.label)}
-                  className={cn(
-                    "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium transition-all",
-                    active && "ring-2 ring-black/10"
-                  )}
-                  style={
-                    active
-                      ? {
-                          backgroundColor: filter.color,
-                          color: "#171717",
-                          border: `1px solid ${borderColor}`,
-                          fontFamily: bodyFont,
-                          fontWeight: bodyFontWeight ?? 500,
-                          fontStyle: bodyFontStyle ?? "normal",
-                        }
-                      : {
-                          backgroundColor: `${filter.color}CC`,
-                          color: "#262626",
-                          border: `1px solid ${filter.color}`,
-                          fontFamily: bodyFont,
-                          fontWeight: bodyFontWeight ?? 400,
-                          fontStyle: bodyFontStyle ?? "normal",
-                        }
-                  }
-                >
-                  <span>{filter.icon}</span>
-                  <span>{filter.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          {hasActiveFilters && onClearFilters ? (
-            <div className="flex justify-center pt-1">
+          <div className="flex w-full flex-row items-center justify-center gap-3">
+            <div className="flex min-w-0 flex-1 flex-row flex-wrap items-center justify-center gap-2 overflow-x-auto sm:flex-nowrap">
+              {tags.map((filter) => {
+                const active = activeFilters.has(filter.label);
+                return (
+                  <button
+                    key={filter.label}
+                    type="button"
+                    title={filter.label}
+                    onClick={() => onToggleFilter(filter.label)}
+                    className={cn(
+                      FILTER_CHIP_CLASS,
+                      active && "bg-neutral-200/80 ring-1 ring-neutral-300/80"
+                    )}
+                    style={{
+                      fontFamily: bodyFont,
+                      fontWeight: bodyFontWeight ?? (active ? 500 : 400),
+                      fontStyle: bodyFontStyle ?? "normal",
+                    }}
+                  >
+                    <span>{filter.icon}</span>
+                    <span>{filter.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {hasActiveFilters && onClearFilters ? (
               <button
                 type="button"
                 onClick={onClearFilters}
-                className="flex cursor-pointer items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-400 transition-all hover:bg-neutral-200/60 hover:text-neutral-600"
+                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-400 transition-all hover:bg-neutral-200/60 hover:text-neutral-600"
               >
                 <X className="h-3 w-3" aria-hidden />
                 {menuUiString(locale, "clearFilters")}
               </button>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
           <PublicMenuAllergenLegend
             textColor={textColor}
             titleFont={titleFont}

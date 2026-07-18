@@ -49,32 +49,11 @@ export type AllergenLocale = "en" | "es";
 export const FILTERABLE_TAGS: readonly FilterableTag[] = FILTERABLE_TAG_OPTIONS.map((o) => o.tag);
 export const ALLERGEN_TAGS: readonly AllergenTag[] = ALLERGEN_TAG_OPTIONS.map((o) => o.tag);
 
-/** Soft Apple-style pastel backgrounds for tag chips */
-export const TAG_PASTEL_COLORS = [
-  "#DCFCE7", // soft green
-  "#FEE2E2", // soft red
-  "#DBEAFE", // soft blue
-  "#FEF3C7", // soft amber
-  "#F3E8FF", // soft purple
-  "#F5F5F5", // soft neutral
-] as const;
-
-export type TagPastelColor = (typeof TAG_PASTEL_COLORS)[number];
-
-const DEFAULT_FILTERABLE_COLORS: Record<FilterableTag, TagPastelColor> = {
-  Vegan: "#DCFCE7",
-  Vegetarian: "#DCFCE7",
-  Spicy: "#FEE2E2",
-  "Gluten-Free": "#FEF3C7",
-};
-
 export interface DishTagAppearance {
   /** Canonical display / filter identity */
   label: string;
   icon: string;
-  /** Pastel background hex */
-  color: string;
-  /** Value stored in dishes.tags (plain label or emoji|label|#HEX) */
+  /** Value stored in dishes.tags (plain label or emoji|label) */
   encoded: string;
 }
 
@@ -109,7 +88,10 @@ const ALLERGEN_META = Object.fromEntries(
   ])
 );
 
-const ENCODED_TAG_RE = /^(.*)\|([^|]+)\|(#[0-9A-Fa-f]{6})$/u;
+/** Legacy color-aware format: emoji|label|#HEX — color segment is ignored */
+const ENCODED_TAG_WITH_COLOR_RE = /^(.*)\|([^|]+)\|(#[0-9A-Fa-f]{6})$/u;
+/** Current format: emoji|label */
+const ENCODED_TAG_RE = /^(.*)\|([^|]+)$/u;
 
 /** @deprecated Use FILTERABLE_TAGS */
 export const DIETARY_TAGS = FILTERABLE_TAGS;
@@ -122,13 +104,7 @@ export function normalizeTagLabel(value: string): string {
   return value.trim().replace(/\s+/g, " ").replace(/\|/g, "").slice(0, 40);
 }
 
-export function normalizeTagColor(value: string | null | undefined): TagPastelColor {
-  const upper = (value ?? "").trim().toUpperCase();
-  const match = TAG_PASTEL_COLORS.find((color) => color.toUpperCase() === upper);
-  return match ?? TAG_PASTEL_COLORS[5];
-}
-
-export function encodeDishTag(label: string, icon?: string | null, color?: string | null): string {
+export function encodeDishTag(label: string, icon?: string | null): string {
   const cleanLabel = normalizeTagLabel(label);
   if (!cleanLabel) return "";
 
@@ -139,32 +115,35 @@ export function encodeDishTag(label: string, icon?: string | null, color?: strin
   const defaultIcon = canonicalDefault
     ? FILTERABLE_META[canonicalDefault]?.icon ?? "🏷️"
     : "🏷️";
-  const defaultColor = canonicalDefault
-    ? DEFAULT_FILTERABLE_COLORS[canonicalDefault]
-    : TAG_PASTEL_COLORS[5];
 
   const cleanIcon = (icon ?? "").trim() || defaultIcon;
-  const cleanColor = color ? normalizeTagColor(color) : defaultColor;
 
-  const isDefaultPlain =
-    Boolean(canonicalDefault) &&
-    cleanIcon === defaultIcon &&
-    cleanColor.toUpperCase() === defaultColor.toUpperCase();
+  if (canonicalDefault && cleanIcon === defaultIcon) {
+    return resolvedLabel;
+  }
 
-  if (isDefaultPlain) return resolvedLabel;
-
-  return `${cleanIcon}|${resolvedLabel}|${cleanColor}`;
+  return `${cleanIcon}|${resolvedLabel}`;
 }
 
-/** Parse legacy plain tags or encoded `emoji|label|#HEX` values. */
+/** Parse plain tags, `emoji|label`, or legacy `emoji|label|#HEX` (color ignored). */
 export function parseDishTag(raw: string | null | undefined): DishTagAppearance {
   const trimmed = (raw ?? "").trim();
   if (!trimmed) {
     return {
       label: "",
       icon: "🏷️",
-      color: TAG_PASTEL_COLORS[5],
       encoded: "",
+    };
+  }
+
+  const withColorMatch = trimmed.match(ENCODED_TAG_WITH_COLOR_RE);
+  if (withColorMatch) {
+    const icon = withColorMatch[1]!.trim() || "🏷️";
+    const label = normalizeTagLabel(withColorMatch[2]!);
+    return {
+      label,
+      icon,
+      encoded: encodeDishTag(label, icon),
     };
   }
 
@@ -172,12 +151,10 @@ export function parseDishTag(raw: string | null | undefined): DishTagAppearance 
   if (encodedMatch) {
     const icon = encodedMatch[1]!.trim() || "🏷️";
     const label = normalizeTagLabel(encodedMatch[2]!);
-    const color = normalizeTagColor(encodedMatch[3]);
     return {
       label,
       icon,
-      color,
-      encoded: encodeDishTag(label, icon, color),
+      encoded: encodeDishTag(label, icon),
     };
   }
 
@@ -189,7 +166,6 @@ export function parseDishTag(raw: string | null | undefined): DishTagAppearance 
     return {
       label: canonicalDefault,
       icon: FILTERABLE_META[canonicalDefault]?.icon ?? "🏷️",
-      color: DEFAULT_FILTERABLE_COLORS[canonicalDefault],
       encoded: canonicalDefault,
     };
   }
@@ -197,7 +173,6 @@ export function parseDishTag(raw: string | null | undefined): DishTagAppearance 
   return {
     label,
     icon: "🏷️",
-    color: TAG_PASTEL_COLORS[5],
     encoded: label,
   };
 }
@@ -224,16 +199,15 @@ export function isAllergenTag(tag: string): tag is AllergenTag {
   return normalizeAllergenId(tag) !== null;
 }
 
-export function getFilterableTagMeta(tag: string): { icon: string; label: string; color: string } {
+export function getFilterableTagMeta(tag: string): { icon: string; label: string } {
   const parsed = parseDishTag(tag);
   if (FILTERABLE_META[parsed.label]) {
     return {
       icon: FILTERABLE_META[parsed.label].icon,
       label: FILTERABLE_META[parsed.label].label,
-      color: parsed.color,
     };
   }
-  return { icon: parsed.icon, label: parsed.label, color: parsed.color };
+  return { icon: parsed.icon, label: parsed.label };
 }
 
 export function getAllergenLabel(tag: string, locale: AllergenLocale = "en"): string {
@@ -260,13 +234,12 @@ export function getAllergenTagMeta(
 export function getTagMeta(
   tag: string,
   locale: AllergenLocale = "en"
-): { icon: string; label: string; color: string } {
+): { icon: string; label: string } {
   if (isAllergenTag(tag) && !parseDishTag(tag).encoded.includes("|")) {
-    const allergen = getAllergenTagMeta(tag, locale);
-    return { ...allergen, color: TAG_PASTEL_COLORS[5] };
+    return getAllergenTagMeta(tag, locale);
   }
   const parsed = parseDishTag(tag);
-  return { icon: parsed.icon, label: parsed.label, color: parsed.color };
+  return { icon: parsed.icon, label: parsed.label };
 }
 
 /** Build unique styled filter chips from dish tag payloads + default dietary options */
@@ -290,7 +263,7 @@ export function collectMenuTagAppearances(
 }
 
 /** Split legacy combined `tags` arrays and merge with stored allergens.
- * Preserves custom free-form tags and encoded emoji/color metadata. */
+ * Preserves custom free-form tags and encoded emoji metadata. */
 export function normalizeDishTagFields(
   rawTags: string[] | null | undefined,
   rawAllergens: string[] | null | undefined = []

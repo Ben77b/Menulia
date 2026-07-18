@@ -5,7 +5,6 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   FILTERABLE_TAG_OPTIONS,
-  TAG_PASTEL_COLORS,
   encodeDishTag,
   normalizeDishTagFields,
   normalizeTagLabel,
@@ -13,12 +12,15 @@ import {
   type DishTagAppearance,
 } from "@/lib/dietary-tags";
 
+const TAG_CHIP_CLASS =
+  "inline-flex items-center gap-1 rounded-full border border-neutral-200/60 bg-neutral-100/70 px-2.5 py-0.5 text-xs font-medium text-neutral-800";
+
 interface CreatableTagInputProps {
   value: string[];
   onChange: (tags: string[]) => void;
   disabled?: boolean;
   placeholder?: string;
-  suggestions?: readonly { tag: string; label?: string }[];
+  suggestions?: readonly { tag: string; label?: string; icon?: string }[];
 }
 
 function commitEncoded(current: string[], nextEncoded: string[]): string[] {
@@ -43,7 +45,7 @@ export function CreatableTagInput({
       setInput("");
       return;
     }
-    const encoded = encodeDishTag(cleaned, "🏷️", TAG_PASTEL_COLORS[5]);
+    const encoded = encodeDishTag(cleaned, "🏷️");
     onChange(commitEncoded(value, [encoded]));
     setInput("");
     setEditingLabel(cleaned);
@@ -58,12 +60,8 @@ export function CreatableTagInput({
     }
   }
 
-  function updateAppearance(current: DishTagAppearance, patch: Partial<Pick<DishTagAppearance, "icon" | "color">>) {
-    const nextEncoded = encodeDishTag(
-      current.label,
-      patch.icon ?? current.icon,
-      patch.color ?? current.color
-    );
+  function updateIcon(current: DishTagAppearance, icon: string) {
+    const nextEncoded = encodeDishTag(current.label, icon || "🏷️");
     onChange(
       value.map((entry) =>
         parseDishTag(entry).label.toLowerCase() === current.label.toLowerCase()
@@ -123,8 +121,7 @@ export function CreatableTagInput({
                 current?.toLowerCase() === tag.label.toLowerCase() ? null : tag.label
               )
             }
-            className="inline-flex items-center gap-1 rounded-full border border-neutral-200/60 px-2.5 py-0.5 text-xs font-medium text-neutral-800 transition-all"
-            style={{ backgroundColor: tag.color }}
+            className={TAG_CHIP_CLASS}
           >
             <span>{tag.icon}</span>
             <span>{tag.label}</span>
@@ -135,7 +132,7 @@ export function CreatableTagInput({
                 event.stopPropagation();
                 removeTag(tag.label);
               }}
-              className="inline-flex h-4 w-4 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-black/5 hover:text-neutral-700"
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-200/80 hover:text-neutral-700"
               aria-label={`Remove ${tag.label}`}
             >
               <X className="h-3 w-3" />
@@ -158,48 +155,20 @@ export function CreatableTagInput({
       </div>
 
       {editing ? (
-        <div className="flex flex-col gap-2.5 rounded-xl border border-neutral-200/70 bg-neutral-50/70 p-3 shadow-sm">
+        <div className="flex items-center gap-2 rounded-xl border border-neutral-200/70 bg-neutral-50/70 px-3 py-2.5 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">
-            Style “{editing.label}”
+            Emoji
           </p>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-neutral-500">Emoji</label>
-            <input
-              type="text"
-              value={editing.icon}
-              disabled={disabled}
-              maxLength={8}
-              onChange={(event) =>
-                updateAppearance(editing, {
-                  icon: event.target.value.trim() || "🏷️",
-                })
-              }
-              className="h-9 w-14 rounded-lg border border-neutral-200/80 bg-white text-center text-base shadow-sm outline-none focus:border-neutral-300 focus:ring-2 focus:ring-neutral-900/5"
-              aria-label={`Emoji for ${editing.label}`}
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-neutral-500">Color</span>
-            {TAG_PASTEL_COLORS.map((color) => {
-              const selected = editing.color.toUpperCase() === color.toUpperCase();
-              return (
-                <button
-                  key={color}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => updateAppearance(editing, { color })}
-                  className={cn(
-                    "h-7 w-7 rounded-full border transition-all",
-                    selected
-                      ? "border-neutral-800 ring-2 ring-neutral-900/10"
-                      : "border-neutral-200/80 hover:scale-105"
-                  )}
-                  style={{ backgroundColor: color }}
-                  aria-label={`Color ${color}`}
-                />
-              );
-            })}
-          </div>
+          <input
+            type="text"
+            value={editing.icon}
+            disabled={disabled}
+            maxLength={8}
+            onChange={(event) => updateIcon(editing, event.target.value.trim() || "🏷️")}
+            className="h-9 w-14 rounded-lg border border-neutral-200/80 bg-white text-center text-base shadow-sm outline-none focus:border-neutral-300 focus:ring-2 focus:ring-neutral-900/5"
+            aria-label={`Emoji for ${editing.label}`}
+          />
+          <span className="text-xs text-neutral-400">for “{editing.label}”</span>
         </div>
       ) : null}
 
