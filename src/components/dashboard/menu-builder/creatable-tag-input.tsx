@@ -13,7 +13,7 @@ import {
 } from "@/lib/dietary-tags";
 
 const TAG_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-full border border-neutral-200/60 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-800";
+  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-300 dark:border-white/20 dark:text-white dark:hover:border-white/40";
 
 interface TagSuggestion {
   tag: string;
@@ -223,7 +223,7 @@ export function CreatableTagInput({
                 type="button"
                 disabled={disabled}
                 onClick={() => addSuggestion(entry)}
-                className="rounded-full border border-neutral-200/60 bg-transparent px-3 py-1 text-xs font-medium text-neutral-600 transition-all hover:border-neutral-300 hover:text-neutral-900 disabled:opacity-50"
+                className="rounded-full border border-neutral-200/80 bg-transparent px-3 py-1 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-300 dark:border-white/20 dark:text-white dark:hover:border-white/40 disabled:opacity-50"
               >
                 {entry.icon} {entry.label}
               </button>
@@ -240,7 +240,7 @@ export function CreatableTagInput({
               type="button"
               disabled={disabled}
               onClick={() => addSuggestion({ tag, label, icon })}
-              className="rounded-full border border-neutral-200/60 bg-transparent px-3 py-1 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-300 hover:text-neutral-700 disabled:opacity-50"
+              className="rounded-full border border-neutral-200/80 bg-transparent px-3 py-1 text-xs font-medium text-neutral-500 transition-colors hover:border-neutral-300 hover:text-neutral-900 dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white disabled:opacity-50"
             >
               + {icon} {label ?? tag}
             </button>

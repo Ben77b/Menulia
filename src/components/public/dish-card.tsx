@@ -58,6 +58,7 @@ function TagBadge({
   bodyFont,
   bodyFontWeight,
   bodyFontStyle,
+  textColor,
   iconOnly = false,
 }: {
   icon: string;
@@ -65,11 +66,12 @@ function TagBadge({
   bodyFont: string;
   bodyFontWeight?: number;
   bodyFontStyle?: "normal" | "italic";
+  textColor?: string;
   iconOnly?: boolean;
 }) {
   return (
     <span
-      className={`inline-flex items-center ${iconOnly ? "justify-center px-1.5 py-1 text-base" : "gap-1 rounded-full border border-neutral-200/60 bg-transparent px-2.5 py-1 text-xs font-medium text-neutral-800"}`}
+      className={`inline-flex items-center ${iconOnly ? "justify-center px-1.5 py-1 text-base" : "gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-1 text-xs font-medium text-neutral-900 transition-colors dark:border-white/20 dark:text-white"}`}
       title={iconOnly ? label : undefined}
       aria-label={iconOnly ? label : undefined}
       style={
@@ -79,6 +81,12 @@ function TagBadge({
               fontFamily: bodyFont,
               fontWeight: bodyFontWeight ?? 400,
               fontStyle: bodyFontStyle ?? "normal",
+              ...(textColor
+                ? {
+                    color: textColor,
+                    borderColor: `${textColor}40`,
+                  }
+                : null),
             }
       }
     >
@@ -262,6 +270,7 @@ export function DishCard({
                 bodyFont={bodyFont}
                 bodyFontWeight={bodyFontWeight}
                 bodyFontStyle={bodyFontStyle}
+                textColor={resolvedTitle}
               />
             );
           })}

@@ -130,7 +130,7 @@ export function MenuCarousel({ items, design, allergenLocale = "en" }: MenuCarou
                         return (
                           <span
                             key={meta.label}
-                            className="flex items-center gap-1 rounded-full border border-neutral-200/60 bg-transparent px-2 py-0.5 text-[10px] font-medium text-neutral-800"
+                            className="flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2 py-0.5 text-[10px] font-medium text-neutral-900 transition-colors dark:border-white/20 dark:text-white"
                           >
                             <span className="text-xs">{meta.icon}</span>
                             {meta.label}

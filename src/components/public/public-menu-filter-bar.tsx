@@ -14,7 +14,7 @@ import { PublicMenuAllergenLegend } from "@/components/public/public-menu-allerg
 import { cn } from "@/lib/utils";
 
 const FILTER_CHIP_CLASS =
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-neutral-200/60 bg-transparent px-3 py-2 text-xs font-medium text-neutral-800 transition-all";
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-neutral-200/80 bg-transparent px-3 py-2 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-300 dark:border-white/20 dark:text-white dark:hover:border-white/40";
 
 interface PublicMenuFilterBarProps {
   backgroundColor: string;
@@ -94,12 +94,14 @@ export function PublicMenuFilterBar({
                     onClick={() => onToggleFilter(filter.label)}
                     className={cn(
                       FILTER_CHIP_CLASS,
-                      active && "border-neutral-400 ring-1 ring-neutral-300/70"
+                      "text-current border-current/25 hover:border-current/45",
+                      active && "border-current/50 ring-1 ring-current/30"
                     )}
                     style={{
                       fontFamily: bodyFont,
                       fontWeight: bodyFontWeight ?? (active ? 500 : 400),
                       fontStyle: bodyFontStyle ?? "normal",
+                      color: textColor,
                     }}
                   >
                     <span>{filter.icon}</span>
@@ -108,14 +110,23 @@ export function PublicMenuFilterBar({
                 );
               })}
             </div>
-            {hasActiveFilters && onClearFilters ? (
+            {onClearFilters ? (
               <button
                 type="button"
                 onClick={onClearFilters}
-                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-neutral-200/60 bg-transparent px-2 py-1 text-xs font-medium text-neutral-400 transition-all hover:border-neutral-300 hover:text-neutral-600"
+                aria-hidden={!hasActiveFilters}
+                tabIndex={hasActiveFilters ? 0 : -1}
+                className={cn(
+                  "shrink-0 bg-transparent p-0 text-xs font-medium transition-opacity",
+                  "opacity-55 hover:opacity-100",
+                  !hasActiveFilters && "invisible pointer-events-none"
+                )}
+                style={{ color: textColor }}
               >
-                <X className="h-3 w-3" aria-hidden />
-                {menuUiString(locale, "clearFilters")}
+                <span className="inline-flex items-center gap-1">
+                  <X className="h-3 w-3" aria-hidden />
+                  {menuUiString(locale, "clearFilters")}
+                </span>
               </button>
             ) : null}
           </div>
