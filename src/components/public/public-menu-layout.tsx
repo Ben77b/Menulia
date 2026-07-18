@@ -309,10 +309,10 @@ export function PublicMenuLayout({
     );
   }, [safeMenu, safeFlatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
 
-  /** Only tags present on dishes in the currently visible category/section */
+  /** Only tags present on dishes in the currently visible category/section (max 10) */
   const filterTags = useMemo(() => {
     const rawTags = (activeSubcategory?.dishes ?? []).flatMap((dish) => dish.tags ?? []);
-    return collectPresentTagAppearances(rawTags);
+    return collectPresentTagAppearances(rawTags).slice(0, 10);
   }, [activeSubcategory]);
 
   useEffect(() => {
@@ -481,7 +481,7 @@ export function PublicMenuLayout({
         )}
       </main>
 
-      {display.showDietary && (
+      {display.showDietary && filterTags.length > 0 ? (
         <PreviewHotspot
           id="filters"
           enabled={hotspotEnabled}
@@ -506,7 +506,7 @@ export function PublicMenuLayout({
             onClearFilters={clearFilters}
           />
         </PreviewHotspot>
-      )}
+      ) : null}
 
       <PreviewHotspot
         id="footer"
