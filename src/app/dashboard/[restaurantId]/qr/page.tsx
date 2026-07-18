@@ -38,7 +38,11 @@ export default function ShareMenuPage() {
   const [transparentBackground, setTransparentBackground] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
+  const [qrCaption, setQrCaption] = useState("Scan Me");
+  const [logoObjectUrl, setLogoObjectUrl] = useState<string | null>(null);
+  const [logoNaturalSize, setLogoNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const restaurantUrl = activeRestaurant
     ? getPublicMenuUrl(activeRestaurant.slug)
@@ -64,6 +68,24 @@ export default function ShareMenuPage() {
     }
   }
 
+  function handleLogoFile(file: File | null) {
+    if (logoObjectUrl) {
+      URL.revokeObjectURL(logoObjectUrl);
+    }
+    setLogoNaturalSize(null);
+    if (!file) {
+      setLogoObjectUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setLogoObjectUrl(url);
+    const probe = new Image();
+    probe.onload = () => {
+      setLogoNaturalSize({ w: probe.naturalWidth || 1, h: probe.naturalHeight || 1 });
+    };
+    probe.src = url;
+  }
+
   function downloadQrCode() {
     if (!qrRef.current) return;
 
@@ -79,6 +101,85 @@ export default function ShareMenuPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const caption = qrCaption.trim();
+    const textPad = caption ? Math.round(QR_EXPORT_SIZE * 0.12) : 0;
+    const qrDrawSize = QR_EXPORT_SIZE - textPad;
+
+    const finishDownload = () => {
+      const pngUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = `menu-qr-${activeRestaurant?.slug || "restaurant"}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    const drawOverlaysAndFinish = () => {
+      if (logoObjectUrl) {
+        const logoImg = new Image();
+        logoImg.onload = () => {
+          const logoBox = Math.round(qrDrawSize * 0.22);
+          const clearPad = Math.round(logoBox * 0.18);
+          const clearSize = logoBox + clearPad * 2;
+          const clearX = Math.round((qrDrawSize - clearSize) / 2);
+          const clearY = Math.round((qrDrawSize - clearSize) / 2);
+
+          // Clear a quiet central square so the logo does not sit on live modules
+          if (transparentBackground) {
+            ctx.clearRect(clearX, clearY, clearSize, clearSize);
+          } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(clearX, clearY, clearSize, clearSize);
+          }
+
+          const aspect =
+            (logoNaturalSize?.w ?? (logoImg.naturalWidth || 1)) /
+            (logoNaturalSize?.h ?? (logoImg.naturalHeight || 1));
+          let drawW = logoBox;
+          let drawH = logoBox;
+          if (aspect > 1) {
+            drawH = Math.round(logoBox / aspect);
+          } else {
+            drawW = Math.round(logoBox * aspect);
+          }
+          const logoX = Math.round((qrDrawSize - drawW) / 2);
+          const logoY = Math.round((qrDrawSize - drawH) / 2);
+          ctx.drawImage(logoImg, logoX, logoY, drawW, drawH);
+
+          if (caption) {
+            ctx.fillStyle = qrColor;
+            ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(caption, QR_EXPORT_SIZE / 2, qrDrawSize + textPad / 2, QR_EXPORT_SIZE * 0.9);
+          }
+          finishDownload();
+        };
+        logoImg.onerror = () => {
+          if (caption) {
+            ctx.fillStyle = qrColor;
+            ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(caption, QR_EXPORT_SIZE / 2, qrDrawSize + textPad / 2, QR_EXPORT_SIZE * 0.9);
+          }
+          finishDownload();
+        };
+        logoImg.src = logoObjectUrl;
+        return;
+      }
+
+      if (caption) {
+        ctx.fillStyle = qrColor;
+        ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(caption, QR_EXPORT_SIZE / 2, qrDrawSize + textPad / 2, QR_EXPORT_SIZE * 0.9);
+      }
+      finishDownload();
+    };
+
     const img = new Image();
     img.onload = () => {
       canvas.width = QR_EXPORT_SIZE;
@@ -89,15 +190,8 @@ export default function ShareMenuPage() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
-      ctx.drawImage(img, 0, 0, QR_EXPORT_SIZE, QR_EXPORT_SIZE);
-
-      const pngUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = pngUrl;
-      link.download = `menu-qr-${activeRestaurant?.slug || "restaurant"}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      ctx.drawImage(img, 0, 0, qrDrawSize, qrDrawSize);
+      drawOverlaysAndFinish();
     };
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   }
@@ -132,7 +226,7 @@ export default function ShareMenuPage() {
                   "bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb),linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb)] bg-[length:16px_16px] bg-[position:0_0,8px_8px]"
               )}
             >
-              <div ref={qrRef} className="w-full [&_svg]:!h-auto [&_svg]:!w-full">
+              <div ref={qrRef} className="relative w-full [&_svg]:!h-auto [&_svg]:!w-full">
                 <QRCode
                   value={restaurantUrl}
                   size={QR_PREVIEW_SIZE}
@@ -140,7 +234,21 @@ export default function ShareMenuPage() {
                   bgColor={qrBackground}
                   level="H"
                 />
+                {logoObjectUrl ? (
+                  <div className="pointer-events-none absolute inset-[39%] overflow-hidden rounded-md bg-white/95 p-1 shadow-sm">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={logoObjectUrl} alt="" className="h-full w-full object-contain" />
+                  </div>
+                ) : null}
               </div>
+              {qrCaption.trim() ? (
+                <p
+                  className="mt-3 text-center text-sm font-semibold tracking-wide"
+                  style={{ color: qrColor }}
+                >
+                  {qrCaption.trim()}
+                </p>
+              ) : null}
             </div>
 
             <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
@@ -191,6 +299,53 @@ export default function ShareMenuPage() {
                 checked={transparentBackground}
                 onChange={setTransparentBackground}
               />
+
+              <div>
+                <label className="air-label">{t("share.qrLogo")}</label>
+                <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="sr-only"
+                    onChange={(event) => handleLogoFile(event.target.files?.[0] ?? null)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                  >
+                    {logoObjectUrl ? t("share.qrLogoChange") : t("share.qrLogoUpload")}
+                  </button>
+                  {logoObjectUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleLogoFile(null);
+                        if (logoInputRef.current) logoInputRef.current.value = "";
+                      }}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+                    >
+                      {t("share.qrLogoRemove")}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div>
+                <label className="air-label" htmlFor="qr-caption">
+                  {t("share.qrCaption")}
+                </label>
+                <input
+                  id="qr-caption"
+                  type="text"
+                  value={qrCaption}
+                  maxLength={24}
+                  onChange={(event) => setQrCaption(event.target.value)}
+                  placeholder="Scan Me"
+                  className="mt-1.5 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-900/5"
+                />
+              </div>
 
               <Button onClick={downloadQrCode} className="min-h-11 w-full gap-2 sm:w-auto sm:self-start">
                 <Download className="h-4 w-4" />

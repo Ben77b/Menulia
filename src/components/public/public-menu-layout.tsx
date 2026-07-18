@@ -1,21 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { parseContactInfo } from "@/lib/contact-info";
 import type { ResolvedMenuTheme, ThemeHotspotId } from "@/lib/advanced-theme";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { RestaurantLink } from "@/lib/restaurant-links";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
-import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
+import { menuUiString, PUBLIC_MENU_LANGUAGES, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import {
-  collectAllDishes,
-  collectGuestMenuLocales,
   filterDishesByTags,
-  menuHasGuestTranslations,
   sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
 import { collectPresentTagAppearances } from "@/lib/dietary-tags";
+import { detectGuestMenuLanguage } from "@/lib/menu-content-languages";
+import {
+  applyPublicMenuTranslatePatches,
+  requestPublicMenuTranslation,
+} from "@/lib/public-menu-guest-translate";
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
@@ -39,6 +41,7 @@ export interface PreviewInteractiveConfig {
 
 interface PublicMenuLayoutProps {
   restaurantName: string;
+  restaurantSlug?: string;
   logo: string | null;
   location: string;
   hours: string;
@@ -223,6 +226,7 @@ function DishSection({
 
 export function PublicMenuLayout({
   restaurantName,
+  restaurantSlug,
   logo,
   location,
   hours,
@@ -246,22 +250,97 @@ export function PublicMenuLayout({
   display,
   previewInteractive,
 }: PublicMenuLayoutProps) {
-  const { menu: safeMenu, flatCategories: safeFlatCategories } = useMemo(
+  const { menu: propsMenu, flatCategories: propsFlatCategories } = useMemo(
     () => sanitizePublicMenuTree(menu ?? [], flatCategories ?? []),
     [menu, flatCategories]
   );
 
-  const showLanguageSelector = useMemo(
-    () => menuHasGuestTranslations(safeMenu, safeFlatCategories, hasNestedStructure),
-    [safeMenu, safeFlatCategories, hasNestedStructure]
-  );
+  const [safeMenu, setSafeMenu] = useState(propsMenu);
+  const [safeFlatCategories, setSafeFlatCategories] = useState(propsFlatCategories);
+  const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
+  const translatedLocalesRef = useRef<Set<string>>(new Set());
+  const autoDetectRanRef = useRef(false);
+  const menuRef = useRef(propsMenu);
+  const flatRef = useRef(propsFlatCategories);
+
+  useEffect(() => {
+    setSafeMenu(propsMenu);
+    setSafeFlatCategories(propsFlatCategories);
+    menuRef.current = propsMenu;
+    flatRef.current = propsFlatCategories;
+  }, [propsMenu, propsFlatCategories]);
+
+  useEffect(() => {
+    menuRef.current = safeMenu;
+    flatRef.current = safeFlatCategories;
+  }, [safeMenu, safeFlatCategories]);
 
   const availableLocales = useMemo(
-    () => collectGuestMenuLocales(safeMenu, safeFlatCategories, hasNestedStructure),
-    [safeMenu, safeFlatCategories, hasNestedStructure]
+    () => PUBLIC_MENU_LANGUAGES.map((language) => language.code),
+    []
   );
 
-  const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
+  const ensureLocaleTranslated = useCallback(async (nextLocale: PublicMenuLocale) => {
+    if (!restaurantSlug) return;
+    if (translatedLocalesRef.current.has(nextLocale)) return;
+
+    try {
+      const result = await requestPublicMenuTranslation(restaurantSlug, nextLocale);
+      if (!result) return;
+
+      if (result.already_complete) {
+        translatedLocalesRef.current.add(nextLocale);
+        return;
+      }
+
+      if (result.rate_limited) return;
+
+      if ((result.categories?.length ?? 0) > 0 || (result.dishes?.length ?? 0) > 0) {
+        const patched = applyPublicMenuTranslatePatches(
+          menuRef.current,
+          flatRef.current,
+          result.categories ?? [],
+          result.dishes ?? []
+        );
+        menuRef.current = patched.menu;
+        flatRef.current = patched.flatCategories;
+        setSafeMenu(patched.menu);
+        setSafeFlatCategories(patched.flatCategories);
+      }
+      translatedLocalesRef.current.add(nextLocale);
+    } catch (error) {
+      console.error("[PublicMenuLayout:translate]", error);
+    }
+  }, [restaurantSlug]);
+
+  const handleLangChange = useCallback(
+    (nextLocale: PublicMenuLocale) => {
+      setLocale(nextLocale);
+      void ensureLocaleTranslated(nextLocale);
+    },
+    [ensureLocaleTranslated]
+  );
+
+  useEffect(() => {
+    setLocale(defaultLocale);
+  }, [defaultLocale]);
+
+  useEffect(() => {
+    if (autoDetectRanRef.current || !restaurantSlug) return;
+    autoDetectRanRef.current = true;
+
+    const detected = detectGuestMenuLanguage(
+      typeof navigator !== "undefined" ? navigator.language : null
+    );
+    if (!detected || detected === defaultLocale) {
+      void ensureLocaleTranslated(defaultLocale);
+      return;
+    }
+
+    setLocale(detected);
+    void ensureLocaleTranslated(detected);
+  }, [defaultLocale, ensureLocaleTranslated, restaurantSlug]);
+
   const {
     activeFilters,
     toggleFilter,
@@ -273,10 +352,6 @@ export function PublicMenuLayout({
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
     safeMenu[0]?.subcategories?.[0]?.id ?? safeFlatCategories[0]?.id ?? ""
   );
-
-  useEffect(() => {
-    setLocale(defaultLocale);
-  }, [defaultLocale]);
 
   useEffect(() => {
     if (hasNestedStructure) {
@@ -322,11 +397,6 @@ export function PublicMenuLayout({
     if (hasStaleFilter) clearFilters();
   }, [filterTags, effectiveFilters, clearFilters]);
 
-  const allDishes = useMemo(
-    () => collectAllDishes(safeMenu, safeFlatCategories, hasNestedStructure),
-    [safeMenu, safeFlatCategories, hasNestedStructure]
-  );
-
   const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
   const hasMenu = hasNestedStructure ? safeMenu.length > 0 : safeFlatCategories.length > 0;
   const hotspotEnabled = previewInteractive?.enabled ?? false;
@@ -368,10 +438,10 @@ export function PublicMenuLayout({
           titleFontStyle={titleFontStyle}
           links={links ?? []}
           lang={locale}
-          onLangChange={setLocale}
+          onLangChange={handleLangChange}
           primaryLocale={defaultLocale}
           availableLocales={availableLocales}
-          showLanguageSelector={showLanguageSelector}
+          showLanguageSelector
         />
       </PreviewHotspot>
 

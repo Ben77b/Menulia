@@ -177,7 +177,7 @@ export function DishDetailForm({
             placeholder="Dish name"
             className={inputClass}
           />
-          <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-neutral-200/70 bg-neutral-50/60 px-3 py-2.5 shadow-sm transition-colors hover:bg-neutral-50">
+          <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-neutral-300 bg-white px-3 py-2.5 shadow-sm transition-colors hover:border-neutral-400 hover:bg-neutral-50">
             <input
               type="checkbox"
               checked={draft.lock_title_translation}
@@ -187,11 +187,16 @@ export function DishDetailForm({
                   lock_title_translation: e.target.checked,
                 }))
               }
-              className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-zinc-900 focus:ring-zinc-900/20"
+              className="mt-0.5 h-4 w-4 rounded border-neutral-400 text-zinc-900 focus:ring-zinc-900/20"
             />
-            <span className="text-sm text-neutral-700">
-              {t("dish.lockTitle")}
-              <span className="mt-0.5 block text-xs text-neutral-500">
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-neutral-800">{t("dish.lockTitle")}</span>
+                <span className="inline-flex max-w-full rounded-md border border-amber-200/80 bg-amber-50 px-2 py-0.5 text-[11px] font-medium leading-snug text-amber-900">
+                  {t("dish.lockTitleBadge")}
+                </span>
+              </span>
+              <span className="mt-1 block text-xs text-neutral-600">
                 {t("dish.lockTitleDescription")}
               </span>
             </span>

@@ -87,6 +87,7 @@ export default async function PublicMenuPage({ params }: PageProps) {
       <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
       <PublicMenuShell
         restaurantName={(restaurant.name as string) ?? ""}
+        restaurantSlug={slugParam}
         logo={(restaurant.logo as string | null) ?? null}
         location={(restaurant.location as string | null) ?? ""}
         hours={(restaurant.hours as string | null) ?? ""}

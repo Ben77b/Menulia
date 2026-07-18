@@ -228,6 +228,10 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     es: "Muestra el nombre y la descripción, pero omite el precio.",
   },
   "dish.lockTitle": { en: "Do not translate title", es: "No traducir el título" },
+  "dish.lockTitleBadge": {
+    en: "Use this for proper nouns or unique culinary terms like 'Tacos al Pastor' so AI doesn't translate them",
+    es: "Úsalo para nombres propios o términos culinarios únicos como 'Tacos al Pastor' para que la IA no los traduzca",
+  },
   "dish.lockTitleDescription": {
     en: "Protects unique dish names from changing. Description will still be translated.",
     es: "Protege nombres únicos de platos. La descripción seguirá traduciéndose.",
@@ -285,6 +289,11 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     es: "Exporta PNG con fondo transparente para pegatinas e impresión.",
   },
   "share.downloadQr": { en: "Download QR code", es: "Descargar código QR" },
+  "share.qrLogo": { en: "Center logo (optional)", es: "Logo central (opcional)" },
+  "share.qrLogoUpload": { en: "Upload logo", es: "Subir logo" },
+  "share.qrLogoChange": { en: "Change logo", es: "Cambiar logo" },
+  "share.qrLogoRemove": { en: "Remove", es: "Quitar" },
+  "share.qrCaption": { en: "Caption text", es: "Texto del pie" },
   "theme.advancedFineTune": {
     en: "Advanced fine-tune",
     es: "Ajuste avanzado",

@@ -8,7 +8,6 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { HoursScheduleBuilder } from "@/components/dashboard/hours-schedule-builder";
 import { SettingsSubNav } from "@/components/dashboard/settings-sub-nav";
-import { SettingsLanguagesPanel } from "@/components/dashboard/settings-languages-panel";
 import {
   SettingsMenuPreview,
 } from "@/components/dashboard/settings-menu-preview";
@@ -42,13 +41,12 @@ import {
 import { SettingsTransferPanel } from "@/components/dashboard/settings-transfer-panel";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 
-type SettingsTab = "general" | "hours-location" | "social-links" | "languages" | "danger";
+type SettingsTab = "general" | "hours-location" | "social-links" | "danger";
 
 const SETTINGS_TAB_IDS: SettingsTab[] = [
   "general",
   "hours-location",
   "social-links",
-  "languages",
   "danger",
 ];
 
@@ -63,7 +61,6 @@ function SettingsPageContent() {
       { id: "general", label: t("settings.tab.general") },
       { id: "hours-location", label: t("settings.tab.hours") },
       { id: "social-links", label: t("settings.tab.social") },
-      { id: "languages", label: t("settings.tab.languages") },
       { id: "danger", label: t("settings.tab.danger") },
     ],
     [t]
@@ -89,7 +86,7 @@ function SettingsPageContent() {
     restaurantSlug,
     originalSlug,
     footerSlogan,
-    primaryLanguage,
+    primaryLanguage: _primaryLanguage,
     scheduleBlocks,
     customLinks,
   } = formDraft;
@@ -260,7 +257,7 @@ function SettingsPageContent() {
             Manage profile, contact details, hours, and links for this restaurant
           </p>
         </div>
-        {activeTab !== "danger" && activeTab !== "languages" && (
+        {activeTab !== "danger" && (
           <Button
             size="lg"
             onClick={saveChanges}
@@ -472,19 +469,6 @@ function SettingsPageContent() {
             </DashboardSectionCard>
           )}
 
-          {activeTab === "languages" && (
-            <SettingsLanguagesPanel
-              restaurantId={activeRestaurant.id}
-              restaurantName={activeRestaurant.name}
-              primaryLanguage={primaryLanguage}
-              onPrimaryLanguageChange={(language) => patchDraft({ primaryLanguage: language })}
-              onPrimaryLanguageSaved={async () => {
-                await refreshRestaurants({ silent: true });
-                await loadDraftFromServer();
-              }}
-            />
-          )}
-
           {activeTab === "danger" && (
             <div className="space-y-6">
               <SettingsTransferPanel restaurantId={activeRestaurant.id} />
@@ -526,7 +510,7 @@ function SettingsPageContent() {
             </div>
           )}
 
-          {activeTab !== "danger" && activeTab !== "languages" && (
+          {activeTab !== "danger" && (
             <div className="flex justify-end border-t border-gray-100 pt-6 lg:hidden">
               <Button
                 size="lg"
