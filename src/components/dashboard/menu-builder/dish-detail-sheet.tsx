@@ -52,7 +52,7 @@ export function DishDetailSheet({
     updatePriceVariation,
     removePriceVariation,
     setUsePriceVariations,
-    toggleFilterableTag,
+    setFilterableTags,
     toggleAllergen,
   } = useDishDetailDraft(dish, primaryLanguage, open);
 
@@ -116,7 +116,7 @@ export function DishDetailSheet({
         updatePriceVariation={updatePriceVariation}
         removePriceVariation={removePriceVariation}
         setUsePriceVariations={setUsePriceVariations}
-        toggleFilterableTag={toggleFilterableTag}
+        setFilterableTags={setFilterableTags}
         toggleAllergen={toggleAllergen}
       />
     </MobileBottomSheet>

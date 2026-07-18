@@ -132,13 +132,15 @@ export function getTagMeta(tag: string, locale: AllergenLocale = "en"): { icon: 
   return { icon: "🏷️", label: tag };
 }
 
-/** Split legacy combined `tags` arrays and merge with stored allergens */
+/** Split legacy combined `tags` arrays and merge with stored allergens.
+ * Preserves custom free-form tags on `dishes.tags` (not only the four defaults). */
 export function normalizeDishTagFields(
   rawTags: string[] | null | undefined,
   rawAllergens: string[] | null | undefined = []
-): { tags: FilterableTag[]; allergens: AllergenTag[] } {
-  const tags = new Set<FilterableTag>();
+): { tags: string[]; allergens: AllergenTag[] } {
+  const tags: string[] = [];
   const allergens = new Set<AllergenTag>();
+  const seenTags = new Set<string>();
 
   for (const value of rawAllergens ?? []) {
     const id = normalizeAllergenId(value);
@@ -146,25 +148,41 @@ export function normalizeDishTagFields(
   }
 
   for (const value of rawTags ?? []) {
-    if (isFilterableTag(value)) {
-      tags.add(value);
+    const cleaned = normalizeTagLabel(value);
+    if (!cleaned) continue;
+
+    const allergenId = normalizeAllergenId(cleaned);
+    if (allergenId) {
+      allergens.add(allergenId);
       continue;
     }
-    const id = normalizeAllergenId(value);
-    if (id) allergens.add(id);
+
+    const canonicalDefault = FILTERABLE_TAGS.find(
+      (tag) => tag.toLowerCase() === cleaned.toLowerCase()
+    );
+    const label = canonicalDefault ?? cleaned;
+    const key = label.toLowerCase();
+    if (seenTags.has(key)) continue;
+    seenTags.add(key);
+    tags.push(label);
   }
 
   return {
-    tags: FILTERABLE_TAGS.filter((tag) => tags.has(tag)),
+    tags,
     allergens: ALLERGEN_TAGS.filter((tag) => allergens.has(tag)),
   };
 }
 
-/** Write path: filterable tags only (dishes.tags) */
+/** Trim / collapse whitespace and cap length for free-form tags */
+export function normalizeTagLabel(value: string): string {
+  return value.trim().replace(/\s+/g, " ").slice(0, 40);
+}
+
+/** Write path: filterable + custom tags (dishes.tags); allergens never stored here */
 export function serializeDishTagsForDb(
   tags: readonly string[],
   allergens: readonly string[] = []
-): FilterableTag[] {
+): string[] {
   return normalizeDishTagFields([...tags], [...allergens]).tags;
 }
 
@@ -176,11 +194,11 @@ export function serializeAllergensForDb(
   return normalizeDishTagFields([...tags], [...allergens]).allergens;
 }
 
-/** Read path: split filterable tags and allergens from DB row */
+/** Read path: split filterable/custom tags and allergens from DB row */
 export function parseDishTagsFromDb(row: {
   tags?: string[] | null;
   allergens?: string[] | null;
-}): { tags: FilterableTag[]; allergens: AllergenTag[] } {
+}): { tags: string[]; allergens: AllergenTag[] } {
   return normalizeDishTagFields(row.tags, row.allergens);
 }
 

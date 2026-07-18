@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { cn, formatPrice } from "@/lib/utils";
-import { getAllergenTagMeta, getFilterableTagMeta } from "@/lib/dietary-tags";
+import { getAllergenTagMeta, getTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
@@ -257,7 +257,7 @@ export function DishCard({
         >
           {(dish?.tags ?? []).filter(Boolean).map((tag) => {
             if (!tag) return null;
-            const meta = getFilterableTagMeta(tag);
+            const meta = getTagMeta(tag);
             return (
               <TagBadge
                 key={tag}

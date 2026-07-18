@@ -7,13 +7,13 @@ import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
-import { FILTERABLE_TAG_OPTIONS } from "@/lib/dietary-tags";
 import { parsePriceInput } from "@/lib/price-input";
 import {
   getMenuContentLanguageMeta,
   type MenuContentLanguage,
 } from "@/lib/menu-content-languages";
 import { AllergenPopoverField } from "./allergen-popover-field";
+import { CreatableTagInput } from "./creatable-tag-input";
 import { DishImageUploader } from "./dish-image-uploader";
 import { MAX_DISH_DESCRIPTION, MAX_DISH_NAME, clampMenuText } from "@/lib/menu-limits";
 import type { DishDetailDraft, PriceVariationDraft } from "./dish-detail-types";
@@ -56,7 +56,7 @@ interface DishDetailFormProps {
   updatePriceVariation: (index: number, patch: Partial<PriceVariationDraft>) => void;
   removePriceVariation: (index: number) => void;
   setUsePriceVariations: (enabled: boolean) => void;
-  toggleFilterableTag: (tag: string) => void;
+  setFilterableTags: (tags: string[]) => void;
   toggleAllergen: (tag: string) => void;
 }
 
@@ -74,7 +74,7 @@ export function DishDetailForm({
   updatePriceVariation,
   removePriceVariation,
   setUsePriceVariations,
-  toggleFilterableTag,
+  setFilterableTags,
   toggleAllergen,
 }: DishDetailFormProps) {
   const { t } = useDashboardLocale();
@@ -321,23 +321,12 @@ export function DishDetailForm({
         <div>
           <label className={labelClass}>{t("dish.filterableTags")}</label>
           <p className="mb-3 text-xs text-neutral-500">{t("dish.filterableTagsHelp")}</p>
-          <div className="flex flex-wrap gap-2">
-            {FILTERABLE_TAG_OPTIONS.map(({ tag }) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleFilterableTag(tag)}
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 ease-in-out",
-                  draft.filterableTags.includes(tag)
-                    ? "border-neutral-200/60 bg-neutral-100 text-neutral-800 shadow-sm"
-                    : "border-neutral-200/70 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700"
-                )}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+          <CreatableTagInput
+            value={draft.filterableTags}
+            onChange={setFilterableTags}
+            disabled={Boolean(saving)}
+            placeholder={t("dish.tagsPlaceholder")}
+          />
         </div>
 
         <AllergenPopoverField

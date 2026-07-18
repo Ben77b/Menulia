@@ -152,12 +152,19 @@ export function useDishDetailDraft(
     });
   }
 
+  function setFilterableTags(tags: string[]) {
+    setDraft((prev) => ({
+      ...prev,
+      filterableTags: normalizeDishTagFields(tags, []).tags,
+    }));
+  }
+
   function toggleFilterableTag(tag: string) {
     setDraft((prev) => ({
       ...prev,
       filterableTags: prev.filterableTags.includes(tag)
         ? prev.filterableTags.filter((t) => t !== tag)
-        : [...prev.filterableTags, tag],
+        : normalizeDishTagFields([...prev.filterableTags, tag], []).tags,
     }));
   }
 
@@ -177,6 +184,7 @@ export function useDishDetailDraft(
     updatePriceVariation,
     removePriceVariation,
     setUsePriceVariations,
+    setFilterableTags,
     toggleFilterableTag,
     toggleAllergen,
   };

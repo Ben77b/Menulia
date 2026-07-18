@@ -233,10 +233,14 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "dish.description": { en: "Description", es: "Descripción" },
   "dish.aiWrite": { en: "AI write", es: "Redactar con IA" },
   "dish.aiWriting": { en: "Writing…", es: "Redactando…" },
-  "dish.filterableTags": { en: "Filterable tags", es: "Etiquetas filtrables" },
+  "dish.filterableTags": { en: "Tags", es: "Etiquetas" },
   "dish.filterableTagsHelp": {
-    en: "Guests can filter the menu by these four options.",
-    es: "Los comensales pueden filtrar el menú con estas cuatro opciones.",
+    en: "Pick a suggestion or type any custom tag (e.g. Best Seller) and press Enter or comma.",
+    es: "Elige una sugerencia o escribe cualquier etiqueta (p. ej. Best Seller) y pulsa Enter o coma.",
+  },
+  "dish.tagsPlaceholder": {
+    en: "Type a tag and press Enter",
+    es: "Escribe una etiqueta y pulsa Enter",
   },
   "dish.cancel": { en: "Cancel", es: "Cancelar" },
   "dish.save": { en: "Save dish", es: "Guardar plato" },
