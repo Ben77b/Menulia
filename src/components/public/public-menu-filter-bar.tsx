@@ -56,10 +56,7 @@ export function PublicMenuFilterBar({
 
   const tags = filterTags.slice(0, MAX_VISIBLE_FILTER_TAGS);
   const hasActiveFilters = activeFilters.size > 0;
-
-  if (tags.length === 0) {
-    return null;
-  }
+  const hasFilterTags = tags.length > 0;
 
   return (
     <section
@@ -68,65 +65,61 @@ export function PublicMenuFilterBar({
     >
       <div className="mx-auto flex w-full max-w-2xl flex-col items-center text-center">
         <div className="w-full space-y-3">
-          <h3
-            className="text-xs font-bold uppercase tracking-[0.2em]"
-            style={{
-              fontFamily: titleFont,
-              fontWeight: titleFontWeight ?? 400,
-              fontStyle: titleFontStyle ?? "normal",
-              color: textColor,
-              textAlign: "center",
-            }}
-          >
-            {menuUiString(locale, "filterTitle")}
-          </h3>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {tags.map((filter) => {
-              const active = activeFilters.has(filter.label);
-              return (
-                <button
-                  key={filter.label}
-                  type="button"
-                  title={filter.label}
-                  onClick={() => onToggleFilter(filter.label)}
-                  className={cn(
-                    FILTER_CHIP_CLASS,
-                    active &&
-                      "border-current/55 font-semibold opacity-100 ring-1 ring-current/25 hover:opacity-100 hover:scale-100"
-                  )}
-                  style={{
-                    fontFamily: bodyFont,
-                    fontWeight: bodyFontWeight ?? (active ? 600 : 400),
-                    fontStyle: bodyFontStyle ?? "normal",
-                    color: textColor,
-                  }}
-                >
-                  <span>{filter.icon}</span>
-                  <span>{filter.label}</span>
-                </button>
-              );
-            })}
-            {onClearFilters ? (
-              <button
-                type="button"
-                onClick={onClearFilters}
-                aria-hidden={!hasActiveFilters}
-                tabIndex={hasActiveFilters ? 0 : -1}
-                className={cn(
-                  "bg-transparent p-0 text-xs font-medium transition-all duration-300 ease-in-out",
-                  hasActiveFilters
-                    ? "pointer-events-auto opacity-100"
-                    : "pointer-events-none opacity-0"
-                )}
-                style={{ color: textColor }}
+          {hasFilterTags ? (
+            <>
+              <h3
+                className="w-full text-center text-xs font-bold uppercase tracking-[0.2em]"
+                style={{
+                  fontFamily: titleFont,
+                  fontWeight: titleFontWeight ?? 400,
+                  fontStyle: titleFontStyle ?? "normal",
+                  color: textColor,
+                }}
               >
-                <span className="inline-flex items-center gap-1 opacity-60 transition-opacity duration-300 ease-out hover:opacity-100">
-                  <X className="h-3 w-3" aria-hidden />
-                  {menuUiString(locale, "clearFilters")}
-                </span>
-              </button>
-            ) : null}
-          </div>
+                {menuUiString(locale, "filterTitle")}
+              </h3>
+              <div className="flex w-full flex-wrap items-center justify-center gap-2.5">
+                {tags.map((filter) => {
+                  const active = activeFilters.has(filter.label);
+                  return (
+                    <button
+                      key={filter.label}
+                      type="button"
+                      title={filter.label}
+                      onClick={() => onToggleFilter(filter.label)}
+                      className={cn(
+                        FILTER_CHIP_CLASS,
+                        active &&
+                          "border-current/55 font-semibold opacity-100 ring-1 ring-current/25 hover:opacity-100 hover:scale-100"
+                      )}
+                      style={{
+                        fontFamily: bodyFont,
+                        fontWeight: bodyFontWeight ?? (active ? 600 : 400),
+                        fontStyle: bodyFontStyle ?? "normal",
+                        color: textColor,
+                      }}
+                    >
+                      <span>{filter.icon}</span>
+                      <span>{filter.label}</span>
+                    </button>
+                  );
+                })}
+                {hasActiveFilters && onClearFilters ? (
+                  <button
+                    type="button"
+                    onClick={onClearFilters}
+                    className="bg-transparent p-0 text-xs font-medium transition-opacity duration-300 ease-out"
+                    style={{ color: textColor }}
+                  >
+                    <span className="inline-flex items-center gap-1 opacity-60 transition-opacity duration-300 ease-out hover:opacity-100">
+                      <X className="h-3 w-3" aria-hidden />
+                      {menuUiString(locale, "clearFilters")}
+                    </span>
+                  </button>
+                ) : null}
+              </div>
+            </>
+          ) : null}
           <PublicMenuAllergenLegend
             textColor={textColor}
             titleFont={titleFont}
@@ -136,7 +129,7 @@ export function PublicMenuFilterBar({
             bodyFontWeight={bodyFontWeight}
             bodyFontStyle={bodyFontStyle}
             locale={locale}
-            className="mt-6"
+            className={hasFilterTags ? "mt-6" : undefined}
           />
         </div>
       </div>

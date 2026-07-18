@@ -15,7 +15,9 @@ import {
 } from "@/lib/dietary-tags";
 
 const TAG_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-900 transition-all duration-300 ease-out hover:scale-[1.02] hover:opacity-80 hover:border-neutral-300 dark:border-white/20 dark:text-white dark:hover:border-white/40";
+  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-900 transition-all duration-300 ease-out hover:scale-[1.02] hover:opacity-80 hover:border-neutral-300 dark:border-white/20 dark:text-neutral-100 dark:hover:border-white/40";
+
+const TAG_TEXT_CLASS = "text-neutral-900 dark:text-neutral-100";
 
 interface TagSuggestion {
   tag: string;
@@ -204,10 +206,10 @@ export function CreatableTagInput({
                 current?.toLowerCase() === tag.label.toLowerCase() ? null : tag.label
               )
             }
-            className={TAG_CHIP_CLASS}
+            className={cn(TAG_CHIP_CLASS, TAG_TEXT_CLASS)}
           >
-            <span>{tag.icon}</span>
-            <span>{tag.label}</span>
+            <span className={TAG_TEXT_CLASS}>{tag.icon}</span>
+            <span className={TAG_TEXT_CLASS}>{tag.label}</span>
             <span
               role="button"
               tabIndex={-1}
@@ -277,16 +279,19 @@ export function CreatableTagInput({
             {menuOnlySuggestions.map((entry) => (
               <div
                 key={entry.tag}
-                className="group inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-1 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-300 dark:border-white/20 dark:text-white"
+                className={cn(
+                  "group inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-1 text-xs font-medium transition-colors hover:border-neutral-300 dark:border-white/20",
+                  TAG_TEXT_CLASS
+                )}
               >
                 <button
                   type="button"
                   disabled={disabled || deletingLabel === entry.label}
                   onClick={() => addSuggestion(entry)}
-                  className="inline-flex items-center gap-1 disabled:opacity-50"
+                  className={cn("inline-flex items-center gap-1 disabled:opacity-50", TAG_TEXT_CLASS)}
                 >
-                  <span>{entry.icon}</span>
-                  <span>{entry.label}</span>
+                  <span className={TAG_TEXT_CLASS}>{entry.icon}</span>
+                  <span className={TAG_TEXT_CLASS}>{entry.label}</span>
                 </button>
                 {onDeleteMenuTag ? (
                   <button
@@ -313,9 +318,14 @@ export function CreatableTagInput({
               type="button"
               disabled={disabled}
               onClick={() => addSuggestion({ tag, label, icon })}
-              className="rounded-full border border-neutral-200/80 bg-transparent px-3 py-1 text-xs font-medium text-neutral-500 transition-colors hover:border-neutral-300 hover:text-neutral-900 dark:border-white/20 dark:text-white/70 dark:hover:border-white/40 dark:hover:text-white disabled:opacity-50"
+              className={cn(
+                "rounded-full border border-neutral-200/80 bg-transparent px-3 py-1 text-xs font-medium transition-colors hover:border-neutral-300 dark:border-white/20 dark:hover:border-white/40 disabled:opacity-50",
+                TAG_TEXT_CLASS
+              )}
             >
-              + {icon} {label ?? tag}
+              <span className={TAG_TEXT_CLASS}>
+                + {icon} {label ?? tag}
+              </span>
             </button>
           ))}
         </div>

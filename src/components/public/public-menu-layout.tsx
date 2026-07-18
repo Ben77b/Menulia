@@ -481,7 +481,7 @@ export function PublicMenuLayout({
         )}
       </main>
 
-      {display.showDietary && filterTags.length > 0 ? (
+      {display.showDietary ? (
         <PreviewHotspot
           id="filters"
           enabled={hotspotEnabled}
