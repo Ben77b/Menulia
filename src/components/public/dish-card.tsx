@@ -173,14 +173,14 @@ export function DishCard({
     ) : null;
 
   const titleClampClass = isStackedLayout
-    ? "whitespace-pre-wrap text-base sm:text-lg"
+    ? "text-base sm:text-lg"
     : cn(
         "line-clamp-2",
         isCarouselPeek ? "text-[11px] leading-snug sm:text-sm" : "text-sm sm:text-base"
       );
 
   const descriptionClampClass = isStackedLayout
-    ? "text-sm whitespace-pre-wrap leading-relaxed"
+    ? "text-sm leading-relaxed"
     : cn(
         "leading-relaxed",
         isCarouselPeek ? "hidden sm:line-clamp-2 sm:text-xs" : "line-clamp-3 text-xs sm:text-sm"

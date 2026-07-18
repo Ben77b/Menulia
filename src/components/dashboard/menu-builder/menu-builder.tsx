@@ -75,6 +75,7 @@ import { BuilderRowMoreButton } from "./builder-row-more-button";
 import type { BuilderContextTarget } from "./builder-context-target";
 import { computeNextDishDisplayOrder } from "@/lib/menu-dish-order";
 import {
+  keepPrimaryLocalizedText,
   mergeLocalizedText,
   resolveBuilderSourceText,
   type LocalizedTextValue,
@@ -607,6 +608,10 @@ export function MenuBuilder() {
       primaryLanguage
     );
 
+    if (draft.lock_title_translation) {
+      mergedName = keepPrimaryLocalizedText(mergedName, primaryLanguage);
+    }
+
     const storedVariations = draftToStoredPriceVariations(draft);
     const resolvedPrice = storedVariations?.length
       ? storedVariations[0].price
@@ -791,6 +796,10 @@ export function MenuBuilder() {
       primaryLanguage
     );
 
+    if (draft.lock_title_translation) {
+      mergedName = keepPrimaryLocalizedText(mergedName, primaryLanguage);
+    }
+
     const storedVariations = draftToStoredPriceVariations(draft);
     const resolvedPrice = storedVariations?.length
       ? storedVariations[0].price
@@ -935,19 +944,24 @@ export function MenuBuilder() {
     locked: boolean
   ) {
     const previousTree = tree;
-    setTree((prev) =>
-      patchCategoryInTree(prev, category.id, { lock_title_translation: locked })
-    );
+    const nextName = locked
+      ? keepPrimaryLocalizedText(category.name, primaryLanguage)
+      : category.name;
+    const categoryPatch = locked
+      ? { lock_title_translation: true, name: nextName }
+      : { lock_title_translation: false };
+
+    setTree((prev) => patchCategoryInTree(prev, category.id, categoryPatch));
     setContextTarget((current) =>
       current?.kind === "category" && current.categoryId === category.id
         ? {
             ...current,
-            category: { ...current.category, lock_title_translation: locked },
+            category: { ...current.category, ...categoryPatch },
           }
         : current
     );
     try {
-      await updateMenuCategory(category.id, { lock_title_translation: locked });
+      await updateMenuCategory(category.id, categoryPatch);
     } catch (err) {
       setTree(previousTree);
       setContextTarget((current) =>
@@ -957,6 +971,7 @@ export function MenuBuilder() {
               category: {
                 ...current.category,
                 lock_title_translation: category.lock_title_translation,
+                name: category.name,
               },
             }
           : current
@@ -1057,11 +1072,16 @@ export function MenuBuilder() {
     }
 
     const mergedName = mergeLocalizedText(currentName, primaryLanguage, trimmed, primaryLanguage);
+    const lockedCategory = findCategory(tree, id);
+    const nameToSave =
+      lockedCategory?.lock_title_translation
+        ? keepPrimaryLocalizedText(mergedName, primaryLanguage)
+        : mergedName;
     const previousTree = tree;
-    setTree((prev) => renameCategoryInTree(prev, id, mergedName));
+    setTree((prev) => renameCategoryInTree(prev, id, nameToSave));
 
     try {
-      await updateMenuCategory(id, { name: mergedName });
+      await updateMenuCategory(id, { name: nameToSave });
       return true;
     } catch (err) {
       setTree(previousTree);
@@ -1069,28 +1089,6 @@ export function MenuBuilder() {
       setError(message);
       toast.error(message);
       return false;
-    }
-  }
-
-  async function handleUpdateNameTranslation(
-    id: string,
-    currentName: LocalizedTextValue,
-    lang: MenuContentLanguage,
-    nextText: string
-  ) {
-    const trimmed = clampMenuText(nextText, MAX_SECTION_TITLE);
-    const mergedName = mergeLocalizedText(currentName, lang, trimmed, primaryLanguage);
-    const previousTree = tree;
-    setTree((prev) => renameCategoryInTree(prev, id, mergedName));
-
-    try {
-      await updateMenuCategory(id, { name: mergedName });
-    } catch (err) {
-      setTree(previousTree);
-      const message = formatSupabaseError(err);
-      setError(message);
-      toast.error(message);
-      throw err;
     }
   }
 
@@ -1383,9 +1381,6 @@ export function MenuBuilder() {
                     onRename={(nextName) =>
                       handleRenameCategory(category.id, category.name, nextName)
                     }
-                    onTranslationChange={(lang, nextText) =>
-                      handleUpdateNameTranslation(category.id, category.name, lang, nextText)
-                    }
                     onMoveCategory={(direction) =>
                       handleReorderCategory(activeSection.id, category.id, direction)
                     }
@@ -1616,7 +1611,6 @@ function DishesCanvas({
   onSelectDish,
   onDeleteDish,
   onRename,
-  onTranslationChange,
   onMoveCategory,
   onMoveDish,
   onOpenCategoryActions,
@@ -1640,7 +1634,6 @@ function DishesCanvas({
   onSelectDish: (dish: MenuBuilderDish) => void;
   onDeleteDish: (dish: MenuBuilderDish) => void;
   onRename: (nextName: string) => Promise<boolean>;
-  onTranslationChange: (lang: MenuContentLanguage, nextText: string) => Promise<void>;
   onMoveCategory: (direction: -1 | 1) => void;
   onMoveDish: (dishId: string, direction: -1 | 1) => void;
   onOpenCategoryActions: () => void;
@@ -1745,7 +1738,6 @@ function DishesCanvas({
               disabled={busy || duplicating}
               showEditHint
               onRename={onRename}
-              onTranslationChange={onTranslationChange}
             />
           </div>
           <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-neutral-500">

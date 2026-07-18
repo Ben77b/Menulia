@@ -81,6 +81,15 @@ export function resolveBuilderTranslationText(
   return normalizeText(value[lang]);
 }
 
+/** Keep only the primary-language string; drop all other locale keys. */
+export function keepPrimaryLocalizedText(
+  value: LocalizedTextValue,
+  primaryLang: string
+): LocalizedTextRecord {
+  const text = resolveBuilderSourceText(value, primaryLang);
+  return { [primaryLang]: text };
+}
+
 export function parseLocalizedFieldFromDb(value: unknown): LocalizedTextValue {
   if (typeof value === "string") {
     const trimmed = value.trim();
