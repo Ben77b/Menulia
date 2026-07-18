@@ -1082,24 +1082,20 @@ export function MenuBuilder() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <header className="mb-10">
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
-          {t("builder.pageTitle")}
-        </h1>
-        <p className="mt-2 text-base leading-relaxed text-neutral-500">
-          {t("builder.pageSubtitle")}
-        </p>
+    <div className="air-page">
+      <header>
+        <h1 className="air-page-title">{t("builder.pageTitle")}</h1>
+        <p className="air-page-subtitle">{t("builder.pageSubtitle")}</p>
       </header>
 
       {error && (
-        <div className="mb-6 rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {addingSection && (
-        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 sm:flex-row sm:items-center">
           <input
             autoFocus
             placeholder="Section name (e.g. Food, Drinks)"
@@ -1144,7 +1140,7 @@ export function MenuBuilder() {
         </div>
       ) : (
         <>
-          <div className="mb-6 space-y-4">
+          <div className="space-y-4">
             <CapsuleNav
               items={(tree.sections ?? [])
                 .filter((section): section is MenuBuilderSection => Boolean(section?.id))

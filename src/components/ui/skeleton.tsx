@@ -23,7 +23,7 @@ export function MenuBuilderSkeleton() {
         <Skeleton className="h-10 w-32 rounded-[var(--radius)]" />
       </div>
 
-      <Skeleton className="mt-8 h-12 w-full max-w-md rounded-[14px]" />
+      <Skeleton className="mt-8 h-12 w-full rounded-[14px]" />
 
       <div className="air-card air-card-pad mt-8 space-y-6">
         <div className="flex items-center justify-between">
