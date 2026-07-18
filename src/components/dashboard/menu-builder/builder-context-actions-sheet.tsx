@@ -5,6 +5,7 @@ import {
   Copy,
   Eye,
   EyeOff,
+  FileText,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -19,6 +20,7 @@ interface BuilderContextActionsSheetProps {
   onClose: () => void;
   onEditDish: (target: Extract<BuilderContextTarget, { kind: "dish" }>) => void;
   onEditCategoryName?: (target: Extract<BuilderContextTarget, { kind: "category" }>) => void;
+  onEditCategoryNote?: (target: Extract<BuilderContextTarget, { kind: "category" }>) => void;
   onToggleDishVisibility: (target: Extract<BuilderContextTarget, { kind: "dish" }>) => void;
   onDuplicate: (target: BuilderContextTarget) => void;
   onDelete: (target: BuilderContextTarget) => void;
@@ -68,6 +70,7 @@ export function BuilderContextActionsSheet({
   onClose,
   onEditDish,
   onEditCategoryName,
+  onEditCategoryNote,
   onToggleDishVisibility,
   onDuplicate,
   onDelete,
@@ -159,6 +162,14 @@ export function BuilderContextActionsSheet({
                   label={t("builder.actions.renameCategory")}
                   disabled={busy}
                   onClick={() => run(() => onEditCategoryName(target))}
+                />
+              ) : null}
+              {onEditCategoryNote ? (
+                <ActionRow
+                  icon={<FileText className="h-4 w-4" />}
+                  label={t("builder.actions.editCategoryNote")}
+                  disabled={busy}
+                  onClick={() => run(() => onEditCategoryNote(target))}
                 />
               ) : null}
               <CategoryLayoutSegment

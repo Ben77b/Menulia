@@ -15,10 +15,10 @@ import {
 } from "@/lib/dietary-tags";
 
 const TAG_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-600 transition-all duration-300 ease-out hover:scale-[1.02] hover:text-neutral-900 hover:opacity-80 hover:border-neutral-300 dark:border-white/20 dark:text-neutral-400 dark:hover:text-neutral-900 dark:hover:border-white/40";
+  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium !text-neutral-600 transition-all duration-300 ease-out hover:scale-[1.02] hover:!text-neutral-900 hover:opacity-80 hover:border-neutral-300 dark:border-white/20 dark:!text-neutral-400 dark:hover:!text-neutral-900 dark:hover:border-white/40";
 
 const TAG_TEXT_CLASS =
-  "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900";
+  "!text-neutral-600 dark:!text-neutral-400 hover:!text-neutral-900";
 
 interface TagSuggestion {
   tag: string;

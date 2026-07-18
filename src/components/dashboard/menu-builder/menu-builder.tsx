@@ -220,6 +220,7 @@ export function MenuBuilder() {
   const [openCategoryIds, setOpenCategoryIds] = useState<Set<string>>(() => new Set());
   const [contextTarget, setContextTarget] = useState<BuilderContextTarget | null>(null);
   const [categoryEditRequestId, setCategoryEditRequestId] = useState<string | null>(null);
+  const [categoryNoteEditRequestId, setCategoryNoteEditRequestId] = useState<string | null>(null);
   const [addDishCategoryId, setAddDishCategoryId] = useState<string | null>(null);
 
   const selectedCategory = useMemo(
@@ -394,6 +395,16 @@ export function MenuBuilder() {
       return next;
     });
   }, [categoryEditRequestId]);
+
+  useEffect(() => {
+    if (!categoryNoteEditRequestId) return;
+    setOpenCategoryIds((current) => {
+      if (current.has(categoryNoteEditRequestId)) return current;
+      const next = new Set(current);
+      next.add(categoryNoteEditRequestId);
+      return next;
+    });
+  }, [categoryNoteEditRequestId]);
 
   function toggleCategoryOpen(categoryId: string) {
     setOpenCategoryIds((current) => {
@@ -1349,6 +1360,11 @@ export function MenuBuilder() {
                     onOpenCategoryActions={() => openCategoryActions(category)}
                     editRequestId={categoryEditRequestId}
                     onEditRequestHandled={() => setCategoryEditRequestId(null)}
+                    noteEditRequestId={categoryNoteEditRequestId}
+                    onNoteEditRequestHandled={() => setCategoryNoteEditRequestId(null)}
+                    onNoteChange={(description) =>
+                      handleCategoryNoteChange(category.id, description)
+                    }
                   />
                 ) : null
               )}
@@ -1511,6 +1527,9 @@ export function MenuBuilder() {
         onEditCategoryName={(target) => {
           setCategoryEditRequestId(target.categoryId);
         }}
+        onEditCategoryNote={(target) => {
+          setCategoryNoteEditRequestId(target.categoryId);
+        }}
         onToggleDishVisibility={(target) => {
           void handleToggleDishVisibility(target.dish, target.categoryId);
         }}
@@ -1565,6 +1584,9 @@ function DishesCanvas({
   onOpenCategoryActions,
   editRequestId,
   onEditRequestHandled,
+  noteEditRequestId,
+  onNoteEditRequestHandled,
+  onNoteChange,
 }: {
   category: MenuBuilderCategory;
   categoryIndex: number;
@@ -1586,9 +1608,16 @@ function DishesCanvas({
   onOpenCategoryActions: () => void;
   editRequestId: string | null;
   onEditRequestHandled: () => void;
+  noteEditRequestId: string | null;
+  onNoteEditRequestHandled: () => void;
+  onNoteChange: (description: string) => void | Promise<void>;
 }) {
   const { t } = useDashboardLocale();
   const titleEditorRef = useRef<LocalizedTitleEditorHandle>(null);
+  const noteTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     if (editRequestId !== category.id) return;
@@ -1596,8 +1625,38 @@ function DishesCanvas({
     onEditRequestHandled();
   }, [category.id, editRequestId, onEditRequestHandled]);
 
+  useEffect(() => {
+    if (noteEditRequestId !== category.id) return;
+    setNoteDraft(resolveBuilderSourceText(category.description ?? "", primaryLanguage));
+    setEditingNote(true);
+    onNoteEditRequestHandled();
+  }, [
+    category.description,
+    category.id,
+    noteEditRequestId,
+    onNoteEditRequestHandled,
+    primaryLanguage,
+  ]);
+
+  useEffect(() => {
+    if (!editingNote) return;
+    noteTextareaRef.current?.focus();
+    noteTextareaRef.current?.select();
+  }, [editingNote]);
+
   const dishes = category.dishes ?? [];
   const panelId = `category-panel-${category.id}`;
+  const existingNote = resolveBuilderSourceText(category.description ?? "", primaryLanguage).trim();
+
+  async function saveNote() {
+    setSavingNote(true);
+    try {
+      await onNoteChange(noteDraft);
+      setEditingNote(false);
+    } finally {
+      setSavingNote(false);
+    }
+  }
 
   return (
     <section id={categoryCardId(category.id)} className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
@@ -1674,6 +1733,60 @@ function DishesCanvas({
           aria-hidden
         />
       </div>
+
+      {editingNote ? (
+        <div
+          className="border-t border-neutral-200/60 bg-neutral-50/40 px-4 py-3 sm:px-5"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-neutral-500">
+            {t("builder.categorySubtitle")}
+          </label>
+          <textarea
+            ref={noteTextareaRef}
+            value={noteDraft}
+            disabled={busy || duplicating || savingNote}
+            maxLength={280}
+            rows={3}
+            placeholder={t("builder.sectionNotePlaceholder")}
+            onChange={(event) => setNoteDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault();
+                setEditingNote(false);
+              }
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                void saveNote();
+              }
+            }}
+            className="w-full resize-none rounded-xl border border-neutral-200/80 bg-white px-3 py-2.5 text-sm text-neutral-700 shadow-sm outline-none placeholder:text-neutral-400 focus:border-neutral-300 focus:ring-2 focus:ring-neutral-900/5"
+          />
+          <div className="mt-2.5 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              disabled={savingNote}
+              onClick={() => setEditingNote(false)}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={busy || duplicating || savingNote}
+              onClick={() => void saveNote()}
+              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      ) : existingNote ? (
+        <p className="border-t border-neutral-100 px-4 pb-3 pt-0 text-sm italic leading-relaxed text-neutral-500 sm:px-5">
+          {existingNote}
+        </p>
+      ) : null}
 
       <div
         id={panelId}
