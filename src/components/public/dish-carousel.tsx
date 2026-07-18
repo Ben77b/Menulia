@@ -29,6 +29,7 @@ interface DishCarouselProps {
   descriptionColor?: string;
   priceColor?: string;
   emptyMessage?: string;
+  tagLabelMap?: Record<string, string>;
 }
 
 const MOBILE_CARD_WIDTH_VW = 70;
@@ -81,6 +82,7 @@ export function DishCarousel({
   descriptionColor,
   priceColor,
   emptyMessage = "No dishes in this category.",
+  tagLabelMap,
 }: DishCarouselProps) {
   const safeDishes = useMemo(
     () => (dishes ?? []).filter((dish): dish is PublicMenuDish => Boolean(dish?.id)),
@@ -171,6 +173,7 @@ export function DishCarousel({
     compact: !isActive,
     imageClassName: "w-full max-w-[70vw] sm:max-w-none",
     priority: isActive && activeIndex < 3,
+    tagLabelMap,
   });
 
   return (

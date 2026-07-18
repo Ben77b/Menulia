@@ -3,6 +3,10 @@ import { compileHoursSchedule, type HoursScheduleBlock } from "./hours-schedule"
 import { formatContactInfo } from "./contact-info";
 import { normalizePrimaryLanguage } from "./menu-content-languages";
 import {
+  parseLocalizedFieldFromDb,
+  resolveBuilderSourceText,
+} from "./localized-text";
+import {
   CUSTOM_LINKS_SQL_HINT,
   parseCustomLinks,
   serializeCustomLinks,
@@ -129,11 +133,20 @@ export async function loadRestaurantSettings(
   return {
     name: data.name ?? "",
     slug: typeof data.slug === "string" ? data.slug : "",
-    tagline: data.meta_description ?? "",
+    tagline: resolveBuilderSourceText(
+      parseLocalizedFieldFromDb(data.meta_description),
+      normalizePrimaryLanguage(data.primary_language)
+    ),
     location: data.location ?? "",
-    hours: data.hours ?? "",
+    hours: resolveBuilderSourceText(
+      parseLocalizedFieldFromDb(data.hours),
+      normalizePrimaryLanguage(data.primary_language)
+    ),
     contact_info: data.contact_info ?? "",
-    footer_slogan: data.footer_slogan ?? "",
+    footer_slogan: resolveBuilderSourceText(
+      parseLocalizedFieldFromDb(data.footer_slogan),
+      normalizePrimaryLanguage(data.primary_language)
+    ),
     custom_links: parseCustomLinks(data.custom_links),
     primary_language: normalizePrimaryLanguage(data.primary_language),
   };

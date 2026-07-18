@@ -90,6 +90,17 @@ export function keepPrimaryLocalizedText(
   return { [primaryLang]: text };
 }
 
+/** True when a localized field still stores non-primary locale strings. */
+export function localizedTextHasNonPrimaryKeys(
+  value: LocalizedTextValue,
+  primaryLang: string
+): boolean {
+  if (!isLocalizedTextRecord(value)) return false;
+  return Object.entries(value).some(
+    ([lang, text]) => lang !== primaryLang && Boolean(normalizeText(text).trim())
+  );
+}
+
 export function parseLocalizedFieldFromDb(value: unknown): LocalizedTextValue {
   if (typeof value === "string") {
     const trimmed = value.trim();

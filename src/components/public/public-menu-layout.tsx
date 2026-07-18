@@ -17,6 +17,8 @@ import { detectGuestMenuLanguage } from "@/lib/menu-content-languages";
 import {
   applyPublicMenuTranslatePatches,
   requestPublicMenuTranslation,
+  resolvePublicHoursDisplay,
+  resolvePublicRestaurantText,
 } from "@/lib/public-menu-guest-translate";
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
@@ -82,6 +84,7 @@ function DishSection({
   activeFilters,
   display,
   previewInteractive,
+  tagLabelMap,
 }: {
   subcategory: PublicMenuSubcategory;
   restaurantName: string;
@@ -98,6 +101,7 @@ function DishSection({
   activeFilters: Set<string>;
   display: PublicMenuDisplayOptions;
   previewInteractive?: PreviewInteractiveConfig;
+  tagLabelMap?: Record<string, string>;
 }) {
   const filteredDishes = useMemo(() => {
     const dishes = subcategory?.dishes ?? [];
@@ -161,6 +165,7 @@ function DishSection({
           descriptionColor={themedColor(isPreview, "itemDescription", theme.itemDescriptionText)}
           priceColor={themedColor(isPreview, "itemPrice", theme.priceTextColor)}
           emptyMessage={emptyMessage}
+          tagLabelMap={tagLabelMap}
         />
       </PreviewHotspot>
     );
@@ -210,6 +215,7 @@ function DishSection({
             layout={subcategory.layout_type}
             imageClassName="w-full"
             priority={index < 3}
+            tagLabelMap={tagLabelMap}
           />
           </div>
           );
@@ -258,6 +264,15 @@ export function PublicMenuLayout({
   const [safeMenu, setSafeMenu] = useState(propsMenu);
   const [safeFlatCategories, setSafeFlatCategories] = useState(propsFlatCategories);
   const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
+  const [displayHours, setDisplayHours] = useState(() =>
+    resolvePublicHoursDisplay(hours, defaultLocale, defaultLocale)
+  );
+  const [displayFooterSlogan, setDisplayFooterSlogan] = useState(() =>
+    resolvePublicRestaurantText(footerSlogan, defaultLocale, defaultLocale)
+  );
+  const [tagLabelMap, setTagLabelMap] = useState<Record<string, string>>({});
+  const [hoursSource, setHoursSource] = useState(hours);
+  const [footerSloganSource, setFooterSloganSource] = useState(footerSlogan);
   const translatedLocalesRef = useRef<Set<string>>(new Set());
   const autoDetectRanRef = useRef(false);
   const menuRef = useRef(propsMenu);
@@ -271,9 +286,21 @@ export function PublicMenuLayout({
   }, [propsMenu, propsFlatCategories]);
 
   useEffect(() => {
+    setHoursSource(hours);
+    setFooterSloganSource(footerSlogan);
+  }, [hours, footerSlogan]);
+
+  useEffect(() => {
     menuRef.current = safeMenu;
     flatRef.current = safeFlatCategories;
   }, [safeMenu, safeFlatCategories]);
+
+  useEffect(() => {
+    setDisplayHours(resolvePublicHoursDisplay(hoursSource, locale, defaultLocale));
+    setDisplayFooterSlogan(
+      resolvePublicRestaurantText(footerSloganSource, locale, defaultLocale)
+    );
+  }, [hoursSource, footerSloganSource, locale, defaultLocale]);
 
   const availableLocales = useMemo(
     () => PUBLIC_MENU_LANGUAGES.map((language) => language.code),
@@ -288,14 +315,11 @@ export function PublicMenuLayout({
       const result = await requestPublicMenuTranslation(restaurantSlug, nextLocale);
       if (!result) return;
 
-      if (result.already_complete) {
-        translatedLocalesRef.current.add(nextLocale);
-        return;
-      }
-
       if (result.rate_limited) return;
 
-      if ((result.categories?.length ?? 0) > 0 || (result.dishes?.length ?? 0) > 0) {
+      const hasMenuPatches =
+        (result.categories?.length ?? 0) > 0 || (result.dishes?.length ?? 0) > 0;
+      if (hasMenuPatches) {
         const patched = applyPublicMenuTranslatePatches(
           menuRef.current,
           flatRef.current,
@@ -307,11 +331,32 @@ export function PublicMenuLayout({
         setSafeMenu(patched.menu);
         setSafeFlatCategories(patched.flatCategories);
       }
-      translatedLocalesRef.current.add(nextLocale);
+
+      if (result.restaurant?.hours != null) {
+        setHoursSource(
+          typeof result.restaurant.hours === "string"
+            ? result.restaurant.hours
+            : JSON.stringify(result.restaurant.hours)
+        );
+      }
+      if (result.restaurant?.footer_slogan != null) {
+        setFooterSloganSource(
+          typeof result.restaurant.footer_slogan === "string"
+            ? result.restaurant.footer_slogan
+            : JSON.stringify(result.restaurant.footer_slogan)
+        );
+      }
+      if (result.tag_labels && Object.keys(result.tag_labels).length > 0) {
+        setTagLabelMap((prev) => ({ ...prev, ...result.tag_labels }));
+      }
+
+      if (!result.rate_limited) {
+        translatedLocalesRef.current.add(nextLocale);
+      }
     } catch (error) {
       console.error("[PublicMenuLayout:translate]", error);
     }
-  }, [restaurantSlug]);
+  }, [defaultLocale, restaurantSlug]);
 
   const handleLangChange = useCallback(
     (nextLocale: PublicMenuLocale) => {
@@ -550,6 +595,7 @@ export function PublicMenuLayout({
               activeFilters={effectiveFilters}
               display={display}
               previewInteractive={previewInteractive}
+              tagLabelMap={tagLabelMap}
             />
           </section>
         )}
@@ -576,6 +622,7 @@ export function PublicMenuLayout({
             locale={locale}
             activeFilters={effectiveFilters}
             filterTags={filterTags}
+            tagLabelMap={tagLabelMap}
             onToggleFilter={toggleFilter}
             onClearFilters={clearFilters}
           />
@@ -593,10 +640,10 @@ export function PublicMenuLayout({
           restaurantName={restaurantName}
           logo={logo}
           location={location}
-          hours={hours}
+          hours={displayHours}
           contactPhone={contactPhone}
           contactEmail={contactEmail}
-          footerSlogan={footerSlogan}
+          footerSlogan={displayFooterSlogan}
           footerBackgroundColor={themedColor(isPreview, "footerBg", theme.footerBackgroundColor)}
           footerTextColor={themedColor(isPreview, "footerText", theme.footerTextIcon)}
           titleFont={titleFont}

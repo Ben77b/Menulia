@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { contrastingTextColor } from "@/lib/contrast";
 import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
 import { pv } from "@/lib/preview-theme-vars";
-import { type DishTagAppearance } from "@/lib/dietary-tags";
+import { type DishTagAppearance, getFilterableTagMeta, isFilterableTag } from "@/lib/dietary-tags";
 import { menuUiString, type PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { PublicMenuAllergenLegend } from "@/components/public/public-menu-allergen-legend";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,7 @@ interface PublicMenuFilterBarProps {
   onToggleFilter: (tag: string) => void;
   onClearFilters?: () => void;
   filterTags?: DishTagAppearance[];
+  tagLabelMap?: Record<string, string>;
 }
 
 export function PublicMenuFilterBar({
@@ -45,6 +46,7 @@ export function PublicMenuFilterBar({
   onToggleFilter,
   onClearFilters,
   filterTags = [],
+  tagLabelMap = {},
 }: PublicMenuFilterBarProps) {
   const isPreview = usePreviewCanvas();
   const textColor =
@@ -81,11 +83,14 @@ export function PublicMenuFilterBar({
               <div className="flex w-full flex-wrap items-center justify-center gap-2.5">
                 {tags.map((filter) => {
                   const active = activeFilters.has(filter.label);
+                  const displayLabel = isFilterableTag(filter.label)
+                    ? getFilterableTagMeta(filter.label, locale).label
+                    : tagLabelMap[filter.label] || filter.label;
                   return (
                     <button
                       key={filter.label}
                       type="button"
-                      title={filter.label}
+                      title={displayLabel}
                       onClick={() => onToggleFilter(filter.label)}
                       className={cn(
                         FILTER_CHIP_CLASS,
@@ -100,7 +105,7 @@ export function PublicMenuFilterBar({
                       }}
                     >
                       <span>{filter.icon}</span>
-                      <span>{filter.label}</span>
+                      <span>{displayLabel}</span>
                     </button>
                   );
                 })}

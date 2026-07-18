@@ -1,9 +1,38 @@
 /** Two-tier tag engine — filterable dietary tags vs EU 14 informational allergens */
 
+import type { MenuContentLanguage } from "@/lib/menu-content-languages";
+
+type LocaleLabels = Record<MenuContentLanguage, string>;
+
 export const FILTERABLE_TAG_OPTIONS = [
-  { tag: "Vegan", icon: "🌱", label: "Vegan" },
-  { tag: "Vegetarian", icon: "🥬", label: "Vegetarian" },
-  { tag: "Gluten-Free", icon: "🌾", label: "Gluten-Free" },
+  {
+    tag: "Vegan",
+    icon: "🌱",
+    label: "Vegan",
+    labels: { en: "Vegan", es: "Vegano", fr: "Végan", de: "Vegan" } satisfies LocaleLabels,
+  },
+  {
+    tag: "Vegetarian",
+    icon: "🥬",
+    label: "Vegetarian",
+    labels: {
+      en: "Vegetarian",
+      es: "Vegetariano",
+      fr: "Végétarien",
+      de: "Vegetarisch",
+    } satisfies LocaleLabels,
+  },
+  {
+    tag: "Gluten-Free",
+    icon: "🌾",
+    label: "Gluten-Free",
+    labels: {
+      en: "Gluten-Free",
+      es: "Sin gluten",
+      fr: "Sans gluten",
+      de: "Glutenfrei",
+    } satisfies LocaleLabels,
+  },
 ] as const;
 
 /** Max unique tags per restaurant library (defaults + custom) */
@@ -14,39 +43,119 @@ export const ALLERGEN_TAG_OPTIONS = [
   {
     tag: "gluten",
     icon: "🌾",
-    labels: { en: "Gluten (cereals)", es: "Cereales que contienen gluten" },
+    labels: {
+      en: "Gluten (cereals)",
+      es: "Cereales que contienen gluten",
+      fr: "Gluten (céréales)",
+      de: "Gluten (Getreide)",
+    } satisfies LocaleLabels,
   },
-  { tag: "crustaceans", icon: "🦐", labels: { en: "Crustaceans", es: "Crustáceos" } },
-  { tag: "eggs", icon: "🥚", labels: { en: "Eggs", es: "Huevos" } },
-  { tag: "fish", icon: "🐟", labels: { en: "Fish", es: "Pescado" } },
-  { tag: "peanuts", icon: "🥜", labels: { en: "Peanuts", es: "Cacahuetes" } },
-  { tag: "soybeans", icon: "🫘", labels: { en: "Soybeans", es: "Soja" } },
+  {
+    tag: "crustaceans",
+    icon: "🦐",
+    labels: {
+      en: "Crustaceans",
+      es: "Crustáceos",
+      fr: "Crustacés",
+      de: "Krebstiere",
+    } satisfies LocaleLabels,
+  },
+  {
+    tag: "eggs",
+    icon: "🥚",
+    labels: { en: "Eggs", es: "Huevos", fr: "Œufs", de: "Eier" } satisfies LocaleLabels,
+  },
+  {
+    tag: "fish",
+    icon: "🐟",
+    labels: { en: "Fish", es: "Pescado", fr: "Poisson", de: "Fisch" } satisfies LocaleLabels,
+  },
+  {
+    tag: "peanuts",
+    icon: "🥜",
+    labels: {
+      en: "Peanuts",
+      es: "Cacahuetes",
+      fr: "Arachides",
+      de: "Erdnüsse",
+    } satisfies LocaleLabels,
+  },
+  {
+    tag: "soybeans",
+    icon: "🫘",
+    labels: { en: "Soybeans", es: "Soja", fr: "Soja", de: "Soja" } satisfies LocaleLabels,
+  },
   {
     tag: "milk",
     icon: "🥛",
-    labels: { en: "Milk and dairy", es: "Leche y derivados" },
+    labels: {
+      en: "Milk and dairy",
+      es: "Leche y derivados",
+      fr: "Lait et produits laitiers",
+      de: "Milch und Milchprodukte",
+    } satisfies LocaleLabels,
   },
   {
     tag: "tree_nuts",
     icon: "🌰",
-    labels: { en: "Tree nuts", es: "Frutos de cáscara" },
+    labels: {
+      en: "Tree nuts",
+      es: "Frutos de cáscara",
+      fr: "Fruits à coque",
+      de: "Schalenfrüchte",
+    } satisfies LocaleLabels,
   },
-  { tag: "celery", icon: "🥬", labels: { en: "Celery", es: "Apio" } },
-  { tag: "mustard", icon: "🟡", labels: { en: "Mustard", es: "Mostaza" } },
-  { tag: "sesame", icon: "⚪", labels: { en: "Sesame", es: "Granos de sésamo" } },
+  {
+    tag: "celery",
+    icon: "🥬",
+    labels: { en: "Celery", es: "Apio", fr: "Céleri", de: "Sellerie" } satisfies LocaleLabels,
+  },
+  {
+    tag: "mustard",
+    icon: "🟡",
+    labels: { en: "Mustard", es: "Mostaza", fr: "Moutarde", de: "Senf" } satisfies LocaleLabels,
+  },
+  {
+    tag: "sesame",
+    icon: "⚪",
+    labels: {
+      en: "Sesame",
+      es: "Granos de sésamo",
+      fr: "Sésame",
+      de: "Sesam",
+    } satisfies LocaleLabels,
+  },
   {
     tag: "sulphites",
     icon: "🍷",
-    labels: { en: "Sulphur dioxide and sulphites", es: "Dióxido de azufre y sulfitos" },
+    labels: {
+      en: "Sulphur dioxide and sulphites",
+      es: "Dióxido de azufre y sulfitos",
+      fr: "Anhydride sulfureux et sulfites",
+      de: "Schwefeldioxid und Sulfite",
+    } satisfies LocaleLabels,
   },
-  { tag: "lupin", icon: "🌼", labels: { en: "Lupin", es: "Altramuces" } },
-  { tag: "molluscs", icon: "🦑", labels: { en: "Molluscs", es: "Moluscos" } },
+  {
+    tag: "lupin",
+    icon: "🌼",
+    labels: { en: "Lupin", es: "Altramuces", fr: "Lupin", de: "Lupinen" } satisfies LocaleLabels,
+  },
+  {
+    tag: "molluscs",
+    icon: "🦑",
+    labels: {
+      en: "Molluscs",
+      es: "Moluscos",
+      fr: "Mollusques",
+      de: "Weichtiere",
+    } satisfies LocaleLabels,
+  },
 ] as const;
 
 export type FilterableTag = (typeof FILTERABLE_TAG_OPTIONS)[number]["tag"];
 export type AllergenTag = (typeof ALLERGEN_TAG_OPTIONS)[number]["tag"];
 
-export type AllergenLocale = "en" | "es";
+export type AllergenLocale = MenuContentLanguage;
 
 export const FILTERABLE_TAGS: readonly FilterableTag[] = FILTERABLE_TAG_OPTIONS.map((o) => o.tag);
 export const ALLERGEN_TAGS: readonly AllergenTag[] = ALLERGEN_TAG_OPTIONS.map((o) => o.tag);
@@ -80,7 +189,10 @@ const FILTERABLE_SET = new Set<string>(FILTERABLE_TAGS);
 const ALLERGEN_SET = new Set<string>(ALLERGEN_TAGS);
 
 const FILTERABLE_META = Object.fromEntries(
-  FILTERABLE_TAG_OPTIONS.map((entry) => [entry.tag, { icon: entry.icon, label: entry.label }])
+  FILTERABLE_TAG_OPTIONS.map((entry) => [
+    entry.tag,
+    { icon: entry.icon, label: entry.label, labels: entry.labels },
+  ])
 );
 
 const ALLERGEN_META = Object.fromEntries(
@@ -215,12 +327,16 @@ export function isAllergenTag(tag: string): tag is AllergenTag {
   return normalizeAllergenId(tag) !== null;
 }
 
-export function getFilterableTagMeta(tag: string): { icon: string; label: string } {
+export function getFilterableTagMeta(
+  tag: string,
+  locale: AllergenLocale = "en"
+): { icon: string; label: string } {
   const parsed = parseDishTag(tag);
   if (FILTERABLE_META[parsed.label]) {
+    const meta = FILTERABLE_META[parsed.label];
     return {
-      icon: FILTERABLE_META[parsed.label].icon,
-      label: FILTERABLE_META[parsed.label].label,
+      icon: meta.icon,
+      label: meta.labels[locale] ?? meta.label,
     };
   }
   return { icon: parsed.icon, label: parsed.label };
@@ -229,7 +345,7 @@ export function getFilterableTagMeta(tag: string): { icon: string; label: string
 export function getAllergenLabel(tag: string, locale: AllergenLocale = "en"): string {
   const id = normalizeAllergenId(tag);
   if (!id) return tag;
-  return ALLERGEN_META[id]?.labels[locale] ?? tag;
+  return ALLERGEN_META[id]?.labels[locale] ?? ALLERGEN_META[id]?.labels.en ?? tag;
 }
 
 /** Dashboard editor — Spanish-first labels for Spain launch */
@@ -244,18 +360,29 @@ export function getAllergenTagMeta(
   const id = normalizeAllergenId(tag);
   if (!id) return { icon: "⚠️", label: tag };
   const meta = ALLERGEN_META[id];
-  return { icon: meta.icon, label: meta.labels[locale] };
+  return {
+    icon: meta.icon,
+    label: meta.labels[locale] ?? meta.labels.en,
+  };
 }
 
 export function getTagMeta(
   tag: string,
-  locale: AllergenLocale = "en"
+  locale: AllergenLocale = "en",
+  customLabelMap?: Record<string, string>
 ): { icon: string; label: string } {
   if (isAllergenTag(tag) && !parseDishTag(tag).encoded.includes("|")) {
     return getAllergenTagMeta(tag, locale);
   }
   const parsed = parseDishTag(tag);
-  return { icon: parsed.icon, label: parsed.label };
+  if (FILTERABLE_META[parsed.label]) {
+    return getFilterableTagMeta(parsed.label, locale);
+  }
+  const translated = customLabelMap?.[parsed.label];
+  return {
+    icon: parsed.icon,
+    label: translated?.trim() || parsed.label,
+  };
 }
 
 /** Build unique styled filter chips from dish tag payloads only (no unused defaults). */

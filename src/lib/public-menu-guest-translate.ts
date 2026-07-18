@@ -1,12 +1,23 @@
-import type { LocalizedTextValue } from "@/lib/localized-text";
+import {
+  parseLocalizedFieldFromDb,
+  resolveLocalizedText,
+  type LocalizedTextValue,
+} from "@/lib/localized-text";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { PublicMenuDish } from "@/components/public/dish-card";
 import type { MenuContentLanguage } from "@/lib/menu-content-languages";
+import { localizeHoursDisplay } from "@/lib/public-menu-metadata-i18n";
 
 export type PublicMenuTranslatePatch = {
   id: string;
   name?: LocalizedTextValue;
   description?: LocalizedTextValue;
+};
+
+export type PublicMenuRestaurantTranslatePatch = {
+  footer_slogan?: LocalizedTextValue | null;
+  meta_description?: LocalizedTextValue | null;
+  hours?: LocalizedTextValue | null;
 };
 
 function patchDish(dish: PublicMenuDish, patch: PublicMenuTranslatePatch | undefined): PublicMenuDish {
@@ -58,6 +69,32 @@ export function applyPublicMenuTranslatePatches(
   };
 }
 
+function coerceLocalizedValue(
+  raw: string | LocalizedTextValue | null | undefined
+): LocalizedTextValue {
+  if (raw == null) return "";
+  if (typeof raw === "object") return raw;
+  return parseLocalizedFieldFromDb(raw);
+}
+
+/** Resolve restaurant free-text fields that may be plain strings or LocalizedText JSON. */
+export function resolvePublicRestaurantText(
+  raw: string | LocalizedTextValue | null | undefined,
+  locale: MenuContentLanguage,
+  fallbackLocale: MenuContentLanguage
+): string {
+  return resolveLocalizedText(coerceLocalizedValue(raw), locale, fallbackLocale).trim();
+}
+
+export function resolvePublicHoursDisplay(
+  raw: string | LocalizedTextValue | null | undefined,
+  locale: MenuContentLanguage,
+  fallbackLocale: MenuContentLanguage
+): string {
+  const resolved = resolvePublicRestaurantText(raw, locale, fallbackLocale);
+  return localizeHoursDisplay(resolved, locale);
+}
+
 export async function requestPublicMenuTranslation(
   slug: string,
   targetLang: MenuContentLanguage
@@ -66,6 +103,8 @@ export async function requestPublicMenuTranslation(
   rate_limited?: boolean;
   categories: PublicMenuTranslatePatch[];
   dishes: PublicMenuTranslatePatch[];
+  restaurant?: PublicMenuRestaurantTranslatePatch | null;
+  tag_labels?: Record<string, string>;
 } | null> {
   try {
     const response = await fetch("/api/public-menu-translate", {
@@ -79,6 +118,8 @@ export async function requestPublicMenuTranslation(
       rate_limited?: boolean;
       categories: PublicMenuTranslatePatch[];
       dishes: PublicMenuTranslatePatch[];
+      restaurant?: PublicMenuRestaurantTranslatePatch | null;
+      tag_labels?: Record<string, string>;
     };
   } catch (error) {
     console.error("[requestPublicMenuTranslation]", error);

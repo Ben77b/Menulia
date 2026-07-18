@@ -14,6 +14,10 @@ import {
   isStackedLeftCategoryLayout,
   isStackedTopCategoryLayout,
 } from "@/lib/category-layout";
+import {
+  isMenuContentLanguage,
+  type MenuContentLanguage,
+} from "@/lib/menu-content-languages";
 
 export interface PublicMenuDish {
   id: string;
@@ -50,6 +54,7 @@ interface DishCardProps {
   compact?: boolean;
   imageClassName?: string;
   priority?: boolean;
+  tagLabelMap?: Record<string, string>;
 }
 
 function TagBadge({
@@ -116,6 +121,7 @@ export function DishCard({
   compact = false,
   imageClassName = "w-full max-w-xs",
   priority = false,
+  tagLabelMap,
 }: DishCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = normalizeImageUrl(dish?.image);
@@ -128,7 +134,7 @@ export function DishCard({
   const localizedName = resolveLocalizedText(dish.name, lang, fallbackLang);
   const localizedDescription = resolveLocalizedText(dish.description, lang, fallbackLang);
   const imageAlt = `${localizedName} at ${restaurantName}`;
-  const allergenLocale = lang === "es" ? "es" : "en";
+  const contentLocale: MenuContentLanguage = isMenuContentLanguage(lang) ? lang : "en";
   const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
   const showPrice = display.showPrices && shouldDisplayDishPrice(dish.price, portionOptions);
@@ -261,7 +267,7 @@ export function DishCard({
         >
           {(dish?.tags ?? []).filter(Boolean).map((tag) => {
             if (!tag) return null;
-            const meta = getTagMeta(tag);
+            const meta = getTagMeta(tag, contentLocale, tagLabelMap);
             return (
               <TagBadge
                 key={meta.label}
@@ -286,7 +292,7 @@ export function DishCard({
         >
           {(dish?.allergens ?? []).filter(Boolean).map((allergen) => {
             if (!allergen) return null;
-            const meta = getAllergenTagMeta(allergen, allergenLocale);
+            const meta = getAllergenTagMeta(allergen, contentLocale);
             return (
               <TagBadge
                 key={allergen}

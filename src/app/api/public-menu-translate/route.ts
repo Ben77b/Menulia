@@ -10,11 +10,12 @@ import {
 } from "@/lib/menu-content-languages";
 import {
   collectTextForTranslation,
+  keepPrimaryLocalizedText,
+  localizedTextHasNonPrimaryKeys,
   mergeLocalizedText,
   parseLocalizedFieldFromDb,
   serializeLocalizedFieldForDb,
   stripTranslationBrandProtection,
-  wrapTextAsNonTranslatable,
   type LocalizedTextValue,
 } from "@/lib/localized-text";
 import {
@@ -24,6 +25,7 @@ import {
   translationCacheCompositeKey,
 } from "@/lib/translation-cache";
 import { DEEPL_CULINARY_CONTEXT } from "@/lib/deepl-culinary-context";
+import { isFilterableTag, parseDishTag } from "@/lib/dietary-tags";
 
 export const dynamic = "force-dynamic";
 
@@ -35,14 +37,29 @@ const requestSchema = z.object({
   target_lang: z.string().min(2).max(8),
 });
 
-type PendingItem = {
+type MenuPendingItem = {
+  kind: "menu";
   entityType: "category" | "dish";
   entityId: string;
   field: "name" | "description";
   text: string;
   current: LocalizedTextValue;
-  lockTitle?: boolean;
 };
+
+type RestaurantPendingItem = {
+  kind: "restaurant";
+  field: "footer_slogan" | "meta_description" | "hours";
+  text: string;
+  current: LocalizedTextValue;
+};
+
+type TagPendingItem = {
+  kind: "tag";
+  sourceLabel: string;
+  text: string;
+};
+
+type PendingItem = MenuPendingItem | RestaurantPendingItem | TagPendingItem;
 
 const recentRequests = new Map<string, number>();
 
@@ -70,7 +87,6 @@ async function translateBatch(
   body.set("preserve_formatting", "1");
   body.set("tag_handling", "html");
   body.set("context", DEEPL_CULINARY_CONTEXT);
-  // Omit source_lang → DeepL auto-detect (handles mixed/bilingual menus)
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -97,25 +113,41 @@ async function translateBatch(
   return translations.map((entry, index) => entry.text ?? texts[index] ?? "");
 }
 
-function pushField(
+function pushMenuField(
   items: PendingItem[],
   entityType: "category" | "dish",
   entityId: string,
   field: "name" | "description",
   value: LocalizedTextValue,
   targetLang: MenuContentLanguage,
-  primaryLang: MenuContentLanguage,
-  lockTitle?: boolean
+  primaryLang: MenuContentLanguage
 ) {
   const text = collectTextForTranslation(value, targetLang, primaryLang);
   if (!text) return;
   items.push({
+    kind: "menu",
     entityType,
     entityId,
     field,
     text,
     current: value,
-    lockTitle,
+  });
+}
+
+function pushRestaurantField(
+  items: PendingItem[],
+  field: RestaurantPendingItem["field"],
+  value: LocalizedTextValue,
+  targetLang: MenuContentLanguage,
+  primaryLang: MenuContentLanguage
+) {
+  const text = collectTextForTranslation(value, targetLang, primaryLang);
+  if (!text) return;
+  items.push({
+    kind: "restaurant",
+    field,
+    text,
+    current: value,
   });
 }
 
@@ -160,13 +192,15 @@ export async function POST(request: Request) {
         rate_limited: true,
         categories: [],
         dishes: [],
+        restaurant: null,
+        tag_labels: {},
       });
     }
     recentRequests.set(rateKey, now);
 
     const { data: restaurant, error: restaurantError } = await supabase
       .from("restaurants")
-      .select("id, name, primary_language")
+      .select("id, name, primary_language, footer_slogan, meta_description, hours")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -191,7 +225,7 @@ export async function POST(request: Request) {
     const { data: dishes, error: dishesError } = categoryIds.length
       ? await supabase
           .from("dishes")
-          .select("id, category_id, name, description, lock_title_translation")
+          .select("id, category_id, name, description, lock_title_translation, tags")
           .in("category_id", categoryIds)
       : { data: [], error: null };
 
@@ -199,6 +233,69 @@ export async function POST(request: Request) {
       console.error("[public-menu-translate] dishes", dishesError);
       return NextResponse.json({ error: "Could not load dishes." }, { status: 500 });
     }
+
+    // ── Absolute lock scrub: wipe stale translated titles before any DeepL work ──
+    const categoryPatches = new Map<
+      string,
+      { id: string; name?: LocalizedTextValue; description?: LocalizedTextValue }
+    >();
+    const dishPatches = new Map<
+      string,
+      { id: string; name?: LocalizedTextValue; description?: LocalizedTextValue }
+    >();
+    const lockScrubWrites: Array<Promise<void>> = [];
+
+    for (const category of categories ?? []) {
+      const lockTitle = Boolean(
+        (category as { lock_title_translation?: boolean }).lock_title_translation
+      );
+      if (!lockTitle) continue;
+      const name = parseLocalizedFieldFromDb(category.name);
+      if (!localizedTextHasNonPrimaryKeys(name, primaryLang)) continue;
+      const scrubbed = keepPrimaryLocalizedText(name, primaryLang);
+      const patch = categoryPatches.get(category.id as string) ?? {
+        id: category.id as string,
+      };
+      patch.name = scrubbed;
+      categoryPatches.set(category.id as string, patch);
+      (category as { name: unknown }).name = serializeLocalizedFieldForDb(scrubbed);
+      lockScrubWrites.push(
+        (async () => {
+          const { error } = await supabase
+            .from("categories")
+            .update({ name: serializeLocalizedFieldForDb(scrubbed) })
+            .eq("id", category.id as string);
+          if (error) {
+            console.error("[public-menu-translate] category lock scrub", category.id, error);
+          }
+        })()
+      );
+    }
+
+    for (const dish of dishes ?? []) {
+      const lockTitle = Boolean(dish.lock_title_translation);
+      if (!lockTitle) continue;
+      const name = parseLocalizedFieldFromDb(dish.name);
+      if (!localizedTextHasNonPrimaryKeys(name, primaryLang)) continue;
+      const scrubbed = keepPrimaryLocalizedText(name, primaryLang);
+      const patch = dishPatches.get(dish.id as string) ?? { id: dish.id as string };
+      patch.name = scrubbed;
+      dishPatches.set(dish.id as string, patch);
+      (dish as { name: unknown }).name = serializeLocalizedFieldForDb(scrubbed);
+      lockScrubWrites.push(
+        (async () => {
+          const { error } = await supabase
+            .from("dishes")
+            .update({ name: serializeLocalizedFieldForDb(scrubbed) })
+            .eq("id", dish.id as string);
+          if (error) {
+            console.error("[public-menu-translate] dish lock scrub", dish.id, error);
+          }
+        })()
+      );
+    }
+
+    await Promise.all(lockScrubWrites);
 
     const pending: PendingItem[] = [];
 
@@ -209,9 +306,17 @@ export async function POST(request: Request) {
         (category as { lock_title_translation?: boolean }).lock_title_translation
       );
       if (!lockTitle) {
-        pushField(pending, "category", category.id as string, "name", name, targetLang, primaryLang);
+        pushMenuField(
+          pending,
+          "category",
+          category.id as string,
+          "name",
+          name,
+          targetLang,
+          primaryLang
+        );
       }
-      pushField(
+      pushMenuField(
         pending,
         "category",
         category.id as string,
@@ -225,17 +330,11 @@ export async function POST(request: Request) {
     for (const dish of dishes ?? []) {
       const name = parseLocalizedFieldFromDb(dish.name);
       const description = parseLocalizedFieldFromDb(dish.description);
-      pushField(
-        pending,
-        "dish",
-        dish.id as string,
-        "name",
-        name,
-        targetLang,
-        primaryLang,
-        Boolean(dish.lock_title_translation)
-      );
-      pushField(
+      const lockTitle = Boolean(dish.lock_title_translation);
+      if (!lockTitle) {
+        pushMenuField(pending, "dish", dish.id as string, "name", name, targetLang, primaryLang);
+      }
+      pushMenuField(
         pending,
         "dish",
         dish.id as string,
@@ -246,21 +345,40 @@ export async function POST(request: Request) {
       );
     }
 
+    const footerSlogan = parseLocalizedFieldFromDb(restaurant.footer_slogan);
+    const metaDescription = parseLocalizedFieldFromDb(restaurant.meta_description);
+    const hours = parseLocalizedFieldFromDb(restaurant.hours);
+
+    pushRestaurantField(pending, "footer_slogan", footerSlogan, targetLang, primaryLang);
+    pushRestaurantField(pending, "meta_description", metaDescription, targetLang, primaryLang);
+    pushRestaurantField(pending, "hours", hours, targetLang, primaryLang);
+
+    const customTagLabels = new Set<string>();
+    for (const dish of dishes ?? []) {
+      const tags = Array.isArray(dish.tags) ? (dish.tags as string[]) : [];
+      for (const raw of tags) {
+        const label = parseDishTag(raw).label;
+        if (!label || isFilterableTag(label)) continue;
+        customTagLabels.add(label);
+      }
+    }
+
+    for (const label of customTagLabels) {
+      pending.push({ kind: "tag", sourceLabel: label, text: label });
+    }
+
     if (pending.length === 0) {
       return NextResponse.json({
         target_lang: targetLang,
-        already_complete: true,
-        categories: [],
-        dishes: [],
+        already_complete: categoryPatches.size === 0 && dishPatches.size === 0,
+        categories: Array.from(categoryPatches.values()),
+        dishes: Array.from(dishPatches.values()),
+        restaurant: null,
+        tag_labels: {},
       });
     }
 
-    const textsForDeepL = pending.map((item) =>
-      item.lockTitle && item.field === "name"
-        ? wrapTextAsNonTranslatable(item.text)
-        : item.text
-    );
-
+    const textsForDeepL = pending.map((item) => item.text);
     const cacheKeys = textsForDeepL.map((text) =>
       buildTranslationCacheKey(text, "auto-culinary", deeplTarget, "html")
     );
@@ -300,23 +418,34 @@ export async function POST(request: Request) {
 
     await saveTranslationCacheEntries(cacheWrites);
 
-    const categoryPatches = new Map<
-      string,
-      { id: string; name?: LocalizedTextValue; description?: LocalizedTextValue }
-    >();
-    const dishPatches = new Map<
-      string,
-      { id: string; name?: LocalizedTextValue; description?: LocalizedTextValue }
-    >();
+    let restaurantPatch: {
+      footer_slogan?: LocalizedTextValue;
+      meta_description?: LocalizedTextValue;
+      hours?: LocalizedTextValue;
+    } | null = null;
+    const tagLabels: Record<string, string> = {};
 
     pending.forEach((item, index) => {
       const translated = stripTranslationBrandProtection(translations[index]?.trim() ?? "");
+
+      if (item.kind === "tag") {
+        tagLabels[item.sourceLabel] = translated || item.text;
+        return;
+      }
+
       const merged = mergeLocalizedText(
         item.current,
         targetLang,
         translated || item.text,
         primaryLang
       );
+
+      if (item.kind === "restaurant") {
+        restaurantPatch = restaurantPatch ?? {};
+        restaurantPatch[item.field] = merged;
+        return;
+      }
+
       if (item.entityType === "category") {
         const patch = categoryPatches.get(item.entityId) ?? { id: item.entityId };
         patch[item.field] = merged;
@@ -328,7 +457,6 @@ export async function POST(request: Request) {
       }
     });
 
-    // Persist permanently via service role (guest cannot UPDATE under RLS)
     await Promise.all([
       ...Array.from(categoryPatches.values()).map(async (patch) => {
         const payload: Record<string, string> = {};
@@ -354,13 +482,44 @@ export async function POST(request: Request) {
         const { error } = await supabase.from("dishes").update(payload).eq("id", patch.id);
         if (error) console.error("[public-menu-translate] dish update", patch.id, error);
       }),
+      (async () => {
+        if (!restaurantPatch) return;
+        const payload: Record<string, string> = {};
+        if (restaurantPatch.footer_slogan !== undefined) {
+          payload.footer_slogan = serializeLocalizedFieldForDb(restaurantPatch.footer_slogan);
+        }
+        if (restaurantPatch.meta_description !== undefined) {
+          payload.meta_description = serializeLocalizedFieldForDb(
+            restaurantPatch.meta_description
+          );
+        }
+        if (restaurantPatch.hours !== undefined) {
+          payload.hours = serializeLocalizedFieldForDb(restaurantPatch.hours);
+        }
+        if (Object.keys(payload).length === 0) return;
+        const { error } = await supabase
+          .from("restaurants")
+          .update(payload)
+          .eq("id", restaurantId);
+        if (error) console.error("[public-menu-translate] restaurant update", error);
+      })(),
     ]);
+
+    const restaurantResponse = restaurantPatch
+      ? {
+          footer_slogan: restaurantPatch.footer_slogan ?? undefined,
+          meta_description: restaurantPatch.meta_description ?? undefined,
+          hours: restaurantPatch.hours ?? undefined,
+        }
+      : null;
 
     return NextResponse.json({
       target_lang: targetLang,
       already_complete: false,
       categories: Array.from(categoryPatches.values()),
       dishes: Array.from(dishPatches.values()),
+      restaurant: restaurantResponse,
+      tag_labels: tagLabels,
     });
   } catch (error) {
     console.error("[public-menu-translate]", error);
