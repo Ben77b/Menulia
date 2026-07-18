@@ -38,7 +38,7 @@ export default function ShareMenuPage() {
   const [transparentBackground, setTransparentBackground] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
-  const [qrCaption, setQrCaption] = useState("Scan Me");
+  const [qrCaption, setQrCaption] = useState("");
   const [logoObjectUrl, setLogoObjectUrl] = useState<string | null>(null);
   const [logoNaturalSize, setLogoNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -102,7 +102,9 @@ export default function ShareMenuPage() {
     if (!ctx) return;
 
     const caption = qrCaption.trim();
-    const textPad = caption ? Math.round(QR_EXPORT_SIZE * 0.12) : 0;
+    const hasCaption = caption.length > 0;
+    const hasLogo = Boolean(logoObjectUrl);
+    const textPad = hasCaption ? Math.round(QR_EXPORT_SIZE * 0.12) : 0;
     const qrDrawSize = QR_EXPORT_SIZE - textPad;
 
     const finishDownload = () => {
@@ -116,7 +118,7 @@ export default function ShareMenuPage() {
     };
 
     const drawOverlaysAndFinish = () => {
-      if (logoObjectUrl) {
+      if (hasLogo && logoObjectUrl) {
         const logoImg = new Image();
         logoImg.onload = () => {
           const logoBox = Math.round(qrDrawSize * 0.22);
@@ -147,7 +149,7 @@ export default function ShareMenuPage() {
           const logoY = Math.round((qrDrawSize - drawH) / 2);
           ctx.drawImage(logoImg, logoX, logoY, drawW, drawH);
 
-          if (caption) {
+          if (hasCaption) {
             ctx.fillStyle = qrColor;
             ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
             ctx.textAlign = "center";
@@ -157,7 +159,7 @@ export default function ShareMenuPage() {
           finishDownload();
         };
         logoImg.onerror = () => {
-          if (caption) {
+          if (hasCaption) {
             ctx.fillStyle = qrColor;
             ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
             ctx.textAlign = "center";
@@ -170,7 +172,7 @@ export default function ShareMenuPage() {
         return;
       }
 
-      if (caption) {
+      if (hasCaption) {
         ctx.fillStyle = qrColor;
         ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
         ctx.textAlign = "center";
@@ -190,7 +192,14 @@ export default function ShareMenuPage() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
+      // Raw QR fills the full canvas when no caption/logo padding is needed
       ctx.drawImage(img, 0, 0, qrDrawSize, qrDrawSize);
+
+      if (!hasLogo && !hasCaption) {
+        finishDownload();
+        return;
+      }
+
       drawOverlaysAndFinish();
     };
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));

@@ -23,6 +23,7 @@ import {
   saveTranslationCacheEntries,
   translationCacheCompositeKey,
 } from "@/lib/translation-cache";
+import { DEEPL_CULINARY_CONTEXT } from "@/lib/deepl-culinary-context";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ async function translateBatch(
   body.set("target_lang", targetLang.toUpperCase());
   body.set("preserve_formatting", "1");
   body.set("tag_handling", "html");
+  body.set("context", DEEPL_CULINARY_CONTEXT);
   // Omit source_lang → DeepL auto-detect (handles mixed/bilingual menus)
 
   const response = await fetch(endpoint, {
@@ -255,7 +257,7 @@ export async function POST(request: Request) {
     );
 
     const cacheKeys = textsForDeepL.map((text) =>
-      buildTranslationCacheKey(text, "auto", deeplTarget, "html")
+      buildTranslationCacheKey(text, "auto-culinary", deeplTarget, "html")
     );
     const cacheHits = await lookupTranslationCache(cacheKeys);
     const translations: string[] = new Array(textsForDeepL.length).fill("");

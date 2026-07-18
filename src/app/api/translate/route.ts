@@ -9,6 +9,7 @@ import {
   saveTranslationCacheEntries,
   translationCacheCompositeKey,
 } from "@/lib/translation-cache";
+import { DEEPL_CULINARY_CONTEXT } from "@/lib/deepl-culinary-context";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,8 @@ async function translateBatch(
   if (tagHandling) {
     body.set("tag_handling", tagHandling);
   }
+
+  body.set("context", DEEPL_CULINARY_CONTEXT);
 
   const response = await fetch(endpoint, {
     method: "POST",
