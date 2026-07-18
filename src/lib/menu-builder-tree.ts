@@ -28,6 +28,7 @@ export function flatRecordsToMenuTree(records: MenuCategoryRecord[]): MenuBuilde
       layout_type: normalizeCategoryLayoutType(row.layout_type),
       order_index: row.order_index ?? 0,
       parent_id: row.parent_id,
+      lock_title_translation: Boolean(row.lock_title_translation),
       dishes: [...(row.items ?? [])].sort(
         (a, b) => (a?.display_order ?? 0) - (b?.display_order ?? 0)
       ),

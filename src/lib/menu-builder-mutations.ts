@@ -230,6 +230,7 @@ export function recordsToCategory(category: {
   layout_type: string;
   order_index: number;
   parent_id: string | null;
+  lock_title_translation?: boolean;
   items: MenuBuilderDish[];
 }): MenuBuilderCategory {
   return {
@@ -239,6 +240,7 @@ export function recordsToCategory(category: {
     layout_type: normalizeCategoryLayoutType(category.layout_type),
     order_index: category.order_index,
     parent_id: category.parent_id ?? "",
+    lock_title_translation: Boolean(category.lock_title_translation),
     dishes: [...category.items].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
   };
 }

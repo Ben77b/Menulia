@@ -93,7 +93,10 @@ export function collectMenuTranslationItems(
     }
 
     for (const category of section.categories) {
-      pushTranslationItem(items, "category", category.id, "name", category.name, targetLang, itemOptions);
+      pushTranslationItem(items, "category", category.id, "name", category.name, targetLang, {
+        ...itemOptions,
+        lockTitleTranslation: category.lock_title_translation,
+      });
       if (category.description) {
         pushTranslationItem(
           items,
@@ -113,7 +116,10 @@ export function collectMenuTranslationItems(
   }
 
   for (const category of tree.orphanCategories) {
-    pushTranslationItem(items, "category", category.id, "name", category.name, targetLang, itemOptions);
+    pushTranslationItem(items, "category", category.id, "name", category.name, targetLang, {
+      ...itemOptions,
+      lockTitleTranslation: category.lock_title_translation,
+    });
     if (category.description) {
       pushTranslationItem(
         items,

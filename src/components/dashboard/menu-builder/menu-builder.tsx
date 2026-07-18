@@ -930,6 +930,41 @@ export function MenuBuilder() {
     }
   }
 
+  async function handleToggleCategoryLockTitle(
+    category: MenuBuilderCategory,
+    locked: boolean
+  ) {
+    const previousTree = tree;
+    setTree((prev) =>
+      patchCategoryInTree(prev, category.id, { lock_title_translation: locked })
+    );
+    setContextTarget((current) =>
+      current?.kind === "category" && current.categoryId === category.id
+        ? {
+            ...current,
+            category: { ...current.category, lock_title_translation: locked },
+          }
+        : current
+    );
+    try {
+      await updateMenuCategory(category.id, { lock_title_translation: locked });
+    } catch (err) {
+      setTree(previousTree);
+      setContextTarget((current) =>
+        current?.kind === "category" && current.categoryId === category.id
+          ? {
+              ...current,
+              category: {
+                ...current.category,
+                lock_title_translation: category.lock_title_translation,
+              },
+            }
+          : current
+      );
+      reportMenuBuilderError(err, setError);
+    }
+  }
+
   async function handleDuplicateCategory(sectionId: string, category: MenuBuilderCategory) {
     if (!currentRestaurant?.id) return;
     const section = tree.sections.find((entry) => entry.id === sectionId);
@@ -1529,6 +1564,9 @@ export function MenuBuilder() {
         }}
         onEditCategoryNote={(target) => {
           setCategoryNoteEditRequestId(target.categoryId);
+        }}
+        onToggleCategoryLockTitle={(target, locked) => {
+          void handleToggleCategoryLockTitle(target.category, locked);
         }}
         onToggleDishVisibility={(target) => {
           void handleToggleDishVisibility(target.dish, target.categoryId);

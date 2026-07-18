@@ -13,6 +13,8 @@ export interface MenuBuilderCategory {
   layout_type: CategoryLayoutType;
   order_index: number;
   parent_id: string;
+  /** If true, skip translating the category title during DeepL menu translation */
+  lock_title_translation: boolean;
   dishes: MenuBuilderDish[];
 }
 

@@ -211,6 +211,8 @@ export interface MenuCategoryRecord {
   layout_type: string;
   order_index: number;
   parent_id: string | null;
+  /** If true, skip translating the category title during DeepL menu translation */
+  lock_title_translation: boolean;
   items: MenuDishRecord[];
 }
 
@@ -337,6 +339,9 @@ export async function fetchMenuCategories(restaurantId: string): Promise<MenuCat
         layout_type: category.layout_type ?? "stacked",
         order_index: category.order_index ?? 0,
         parent_id: category.parent_id ?? null,
+        lock_title_translation: Boolean(
+          (category as { lock_title_translation?: boolean }).lock_title_translation
+        ),
         items,
       };
     })
@@ -387,6 +392,9 @@ export async function createMenuCategory(
     layout_type: data.layout_type ?? "stacked",
     order_index: data.order_index ?? 0,
     parent_id: data.parent_id ?? null,
+    lock_title_translation: Boolean(
+      (data as { lock_title_translation?: boolean }).lock_title_translation
+    ),
     items: [],
   };
 }
@@ -394,7 +402,15 @@ export async function createMenuCategory(
 export async function updateMenuCategory(
   categoryId: string,
   updates: Partial<
-    Pick<MenuCategoryRecord, "name" | "description" | "layout_type" | "order_index" | "parent_id">
+    Pick<
+      MenuCategoryRecord,
+      | "name"
+      | "description"
+      | "layout_type"
+      | "order_index"
+      | "parent_id"
+      | "lock_title_translation"
+    >
   >
 ): Promise<void> {
   const supabase = getSupabaseBrowserClient();
@@ -413,8 +429,16 @@ export async function updateMenuCategory(
   let { error } = await supabase.from("categories").update(payload).eq("id", categoryId);
 
   if (error && isMissingColumnError(error) && "description" in updates) {
-    const { description: _ignored, ...withoutDescription } = updates;
-    ({ error } = await supabase.from("categories").update(withoutDescription).eq("id", categoryId));
+    const { description: _ignored, ...withoutDescription } = payload;
+    ({ error } = await supabase
+      .from("categories")
+      .update(withoutDescription)
+      .eq("id", categoryId));
+  }
+
+  if (error && isMissingColumnError(error) && "lock_title_translation" in updates) {
+    const { lock_title_translation: _ignored, ...withoutLock } = payload;
+    ({ error } = await supabase.from("categories").update(withoutLock).eq("id", categoryId));
   }
 
   if (error) {
@@ -675,6 +699,15 @@ export async function duplicateMenuCategory(
       description: resolveLocalizedText(source.description as LocalizedTextValue, "en") || null,
     }
   );
+
+  if (Boolean((source as { lock_title_translation?: boolean }).lock_title_translation)) {
+    try {
+      await updateMenuCategory(created.id, { lock_title_translation: true });
+      created.lock_title_translation = true;
+    } catch (lockError) {
+      logSupabaseFailure("menu.duplicateCategory.lockTitle", lockError);
+    }
+  }
 
   try {
     const sourceDishes = await fetchDishesForCategory(categoryId);

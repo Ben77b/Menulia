@@ -21,6 +21,10 @@ interface BuilderContextActionsSheetProps {
   onEditDish: (target: Extract<BuilderContextTarget, { kind: "dish" }>) => void;
   onEditCategoryName?: (target: Extract<BuilderContextTarget, { kind: "category" }>) => void;
   onEditCategoryNote?: (target: Extract<BuilderContextTarget, { kind: "category" }>) => void;
+  onToggleCategoryLockTitle?: (
+    target: Extract<BuilderContextTarget, { kind: "category" }>,
+    locked: boolean
+  ) => void;
   onToggleDishVisibility: (target: Extract<BuilderContextTarget, { kind: "dish" }>) => void;
   onDuplicate: (target: BuilderContextTarget) => void;
   onDelete: (target: BuilderContextTarget) => void;
@@ -71,6 +75,7 @@ export function BuilderContextActionsSheet({
   onEditDish,
   onEditCategoryName,
   onEditCategoryNote,
+  onToggleCategoryLockTitle,
   onToggleDishVisibility,
   onDuplicate,
   onDelete,
@@ -171,6 +176,27 @@ export function BuilderContextActionsSheet({
                   disabled={busy}
                   onClick={() => run(() => onEditCategoryNote(target))}
                 />
+              ) : null}
+              {onToggleCategoryLockTitle ? (
+                <label
+                  className={cn(
+                    "flex min-h-12 w-full cursor-pointer items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors hover:bg-[#F5F5F7]",
+                    busy && "cursor-not-allowed opacity-50"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={Boolean(target.category.lock_title_translation)}
+                    disabled={busy}
+                    onChange={(e) =>
+                      onToggleCategoryLockTitle(target, e.target.checked)
+                    }
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-neutral-300 text-zinc-900 focus:ring-zinc-900/20"
+                  />
+                  <span className="text-sm font-medium text-slate-800">
+                    {t("builder.actions.lockCategoryTitle")}
+                  </span>
+                </label>
               ) : null}
               <CategoryLayoutSegment
                 value={target.category.layout_type}

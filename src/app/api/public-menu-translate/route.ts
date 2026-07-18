@@ -179,7 +179,7 @@ export async function POST(request: Request) {
 
     const { data: categories, error: categoriesError } = await supabase
       .from("categories")
-      .select("id, name, description")
+      .select("id, name, description, lock_title_translation")
       .eq("restaurant_id", restaurantId);
 
     if (categoriesError) {
@@ -205,7 +205,12 @@ export async function POST(request: Request) {
     for (const category of categories ?? []) {
       const name = parseLocalizedFieldFromDb(category.name);
       const description = parseLocalizedFieldFromDb(category.description);
-      pushField(pending, "category", category.id as string, "name", name, targetLang, primaryLang);
+      const lockTitle = Boolean(
+        (category as { lock_title_translation?: boolean }).lock_title_translation
+      );
+      if (!lockTitle) {
+        pushField(pending, "category", category.id as string, "name", name, targetLang, primaryLang);
+      }
       pushField(
         pending,
         "category",
