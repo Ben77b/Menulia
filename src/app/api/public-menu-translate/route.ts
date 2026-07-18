@@ -26,6 +26,12 @@ import {
 } from "@/lib/translation-cache";
 import { DEEPL_CULINARY_CONTEXT } from "@/lib/deepl-culinary-context";
 import { isFilterableTag, parseDishTag } from "@/lib/dietary-tags";
+import {
+  isIsolatedMenuTerm,
+  lookupGlossaryTranslation,
+  unwrapIsolatedMenuTerm,
+  wrapIsolatedMenuTerm,
+} from "@/lib/translation-glossary";
 
 export const dynamic = "force-dynamic";
 
@@ -149,6 +155,16 @@ function pushRestaurantField(
     text,
     current: value,
   });
+}
+
+function shouldWrapIsolatedTerm(item: PendingItem): boolean {
+  if (item.kind === "restaurant" && item.field === "hours") return false;
+  if (item.kind === "menu" && item.field === "description") return false;
+  if (item.kind === "restaurant" && item.field === "footer_slogan") return false;
+  if (item.kind === "restaurant" && item.field === "meta_description") {
+    return isIsolatedMenuTerm(item.text);
+  }
+  return isIsolatedMenuTerm(item.text);
 }
 
 export async function POST(request: Request) {
@@ -385,8 +401,15 @@ export async function POST(request: Request) {
     const cacheHits = await lookupTranslationCache(cacheKeys);
     const translations: string[] = new Array(textsForDeepL.length).fill("");
     const missIndexes: number[] = [];
+    const wrappedIndexes = new Set<number>();
 
-    textsForDeepL.forEach((_, index) => {
+    textsForDeepL.forEach((text, index) => {
+      const glossaryHit = lookupGlossaryTranslation(text, targetLang);
+      if (glossaryHit) {
+        translations[index] = glossaryHit;
+        return;
+      }
+
       const hit = cacheHits.get(translationCacheCompositeKey(cacheKeys[index]));
       if (hit) {
         translations[index] = hit.translatedText;
@@ -404,14 +427,25 @@ export async function POST(request: Request) {
 
     for (let offset = 0; offset < missIndexes.length; offset += DEEPL_BATCH_SIZE) {
       const batchIndexes = missIndexes.slice(offset, offset + DEEPL_BATCH_SIZE);
-      const batchTexts = batchIndexes.map((index) => textsForDeepL[index]);
+      const batchTexts = batchIndexes.map((index) => {
+        const item = pending[index];
+        if (shouldWrapIsolatedTerm(item)) {
+          wrappedIndexes.add(index);
+          return wrapIsolatedMenuTerm(item.text);
+        }
+        return item.text;
+      });
       const chunk = await translateBatch(apiKey, batchTexts, deeplTarget);
       chunk.forEach((text, batchOffset) => {
         const index = batchIndexes[batchOffset];
-        translations[index] = text;
+        const original = pending[index].text;
+        const unwrapped = wrappedIndexes.has(index)
+          ? unwrapIsolatedMenuTerm(text, original)
+          : text;
+        translations[index] = unwrapped;
         cacheWrites.push({
           ...cacheKeys[index],
-          translatedText: text,
+          translatedText: unwrapped,
         });
       });
     }

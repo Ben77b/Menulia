@@ -10,6 +10,13 @@ import {
   translationCacheCompositeKey,
 } from "@/lib/translation-cache";
 import { DEEPL_CULINARY_CONTEXT } from "@/lib/deepl-culinary-context";
+import { isMenuContentLanguage } from "@/lib/menu-content-languages";
+import {
+  isIsolatedMenuTerm,
+  lookupGlossaryTranslation,
+  unwrapIsolatedMenuTerm,
+  wrapIsolatedMenuTerm,
+} from "@/lib/translation-glossary";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +137,9 @@ export async function POST(request: Request) {
     }
 
     const { texts, source_lang, target_lang, tag_handling } = parsed.data;
+    const targetMenuLang = isMenuContentLanguage(target_lang.toLowerCase())
+      ? target_lang.toLowerCase()
+      : null;
     const cacheKeys = texts.map((text) =>
       buildTranslationCacheKey(text, source_lang, target_lang, tag_handling)
     );
@@ -138,8 +148,17 @@ export async function POST(request: Request) {
     const translations: string[] = new Array(texts.length).fill("");
     const detectedSourceLanguages: string[] = new Array(texts.length).fill("");
     const missIndexes: number[] = [];
+    const wrappedIndexes = new Set<number>();
 
-    texts.forEach((_, index) => {
+    texts.forEach((text, index) => {
+      if (targetMenuLang) {
+        const glossaryHit = lookupGlossaryTranslation(text, targetMenuLang);
+        if (glossaryHit) {
+          translations[index] = glossaryHit;
+          return;
+        }
+      }
+
       const composite = translationCacheCompositeKey(cacheKeys[index]);
       const hit = cacheHits.get(composite);
       if (hit) {
@@ -157,24 +176,37 @@ export async function POST(request: Request) {
       }
     > = [];
 
+    const useHtmlWrapping = tag_handling === "html" || tag_handling === undefined;
+
     for (let offset = 0; offset < missIndexes.length; offset += DEEPL_BATCH_SIZE) {
       const batchIndexes = missIndexes.slice(offset, offset + DEEPL_BATCH_SIZE);
-      const batchTexts = batchIndexes.map((index) => texts[index]);
+      const batchTexts = batchIndexes.map((index) => {
+        const text = texts[index];
+        if (useHtmlWrapping && isIsolatedMenuTerm(text)) {
+          wrappedIndexes.add(index);
+          return wrapIsolatedMenuTerm(text);
+        }
+        return text;
+      });
       const chunkTranslations = await translateBatch(
         apiKey,
         batchTexts,
         source_lang,
         target_lang,
-        tag_handling
+        wrappedIndexes.size > 0 ? tag_handling ?? "html" : tag_handling
       );
 
       chunkTranslations.forEach((entry, batchOffset) => {
         const index = batchIndexes[batchOffset];
-        translations[index] = entry.text;
+        const original = texts[index];
+        const resolved = wrappedIndexes.has(index)
+          ? unwrapIsolatedMenuTerm(entry.text, original)
+          : entry.text;
+        translations[index] = resolved;
         detectedSourceLanguages[index] = entry.detectedSourceLanguage ?? "";
         cacheWrites.push({
           ...cacheKeys[index],
-          translatedText: entry.text,
+          translatedText: resolved,
           detectedSourceLanguage: entry.detectedSourceLanguage,
         });
       });
