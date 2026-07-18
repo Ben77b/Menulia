@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, Layers, GripVertical, ArrowUpDown } from "lucide-react";
+import { Plus, Trash2, Layers, GripVertical, ArrowUpDown, ChevronDown } from "lucide-react";
 import { useRestaurant } from "@/contexts/restaurant-context";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
 import { useSessionPersistedState } from "@/hooks/use-session-persisted-state";
@@ -210,6 +210,7 @@ export function MenuBuilder() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [duplicatingCategoryId, setDuplicatingCategoryId] = useState<string | null>(null);
   const [reorderMode, setReorderMode] = useState(false);
+  const [openCategoryIds, setOpenCategoryIds] = useState<Set<string>>(() => new Set());
   const [contextTarget, setContextTarget] = useState<BuilderContextTarget | null>(null);
   const [categoryEditRequestId, setCategoryEditRequestId] = useState<string | null>(null);
   const [addDishCategoryId, setAddDishCategoryId] = useState<string | null>(null);
@@ -257,6 +258,49 @@ export function MenuBuilder() {
       setSectionParam(activeSection.id);
     }
   }, [loading, activeSection, sectionParam, setSectionParam]);
+
+  useEffect(() => {
+    setOpenCategoryIds(new Set());
+  }, [activeSection?.id]);
+
+  useEffect(() => {
+    if (!selectedDish?.categoryId) return;
+    setOpenCategoryIds((current) => {
+      if (current.has(selectedDish.categoryId)) return current;
+      const next = new Set(current);
+      next.add(selectedDish.categoryId);
+      return next;
+    });
+  }, [selectedDish?.categoryId, selectedDish?.dish.id]);
+
+  useEffect(() => {
+    if (!addDishCategoryId) return;
+    setOpenCategoryIds((current) => {
+      if (current.has(addDishCategoryId)) return current;
+      const next = new Set(current);
+      next.add(addDishCategoryId);
+      return next;
+    });
+  }, [addDishCategoryId]);
+
+  useEffect(() => {
+    if (!categoryEditRequestId) return;
+    setOpenCategoryIds((current) => {
+      if (current.has(categoryEditRequestId)) return current;
+      const next = new Set(current);
+      next.add(categoryEditRequestId);
+      return next;
+    });
+  }, [categoryEditRequestId]);
+
+  function toggleCategoryOpen(categoryId: string) {
+    setOpenCategoryIds((current) => {
+      const next = new Set(current);
+      if (next.has(categoryId)) next.delete(categoryId);
+      else next.add(categoryId);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (!addingCategoryForSection) return;
@@ -1187,6 +1231,8 @@ export function MenuBuilder() {
                     duplicating={duplicatingCategoryId === category.id}
                     selectedDishId={selectedDish?.dish.id ?? null}
                     reorderMode={reorderMode}
+                    isOpen={openCategoryIds.has(category.id)}
+                    onToggleOpen={() => toggleCategoryOpen(category.id)}
                     onStartAddDish={() => setAddDishCategoryId(category.id)}
                     onSelectDish={(dish) => handleSelectDish(dish, category.id)}
                     onDeleteDish={(dish) => handleDeleteDish(dish, category.id)}
@@ -1393,6 +1439,8 @@ function DishesCanvas({
   duplicating,
   selectedDishId,
   reorderMode,
+  isOpen,
+  onToggleOpen,
   onStartAddDish,
   onSelectDish,
   onDeleteDish,
@@ -1412,6 +1460,8 @@ function DishesCanvas({
   duplicating: boolean;
   selectedDishId: string | null;
   reorderMode: boolean;
+  isOpen: boolean;
+  onToggleOpen: () => void;
   onStartAddDish: () => void;
   onSelectDish: (dish: MenuBuilderDish) => void;
   onDeleteDish: (dish: MenuBuilderDish) => void;
@@ -1433,16 +1483,31 @@ function DishesCanvas({
   }, [category.id, editRequestId, onEditRequestHandled]);
 
   const dishes = category.dishes ?? [];
+  const panelId = `category-panel-${category.id}`;
 
   return (
-    <section
-      id={categoryCardId(category.id)}
-      className="space-y-4 rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm sm:p-5"
-    >
-      <div className="flex items-center justify-between gap-3">
+    <section id={categoryCardId(category.id)} className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm">
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        onClick={onToggleOpen}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onToggleOpen();
+          }
+        }}
+        className="flex cursor-pointer items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 sm:px-5"
+      >
         <div className="flex min-w-0 flex-1 items-center gap-2">
           {reorderMode ? (
-            <>
+            <div
+              className="flex shrink-0 items-center gap-1"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
               <GripVertical className="h-5 w-5 shrink-0 text-neutral-400" aria-hidden />
               <ReorderButtons
                 mobileEnabled
@@ -1453,69 +1518,107 @@ function DishesCanvas({
                 canMoveDown={categoryIndex < categoryCount - 1}
                 disabled={busy || duplicating}
               />
-            </>
+            </div>
           ) : null}
-          <LocalizedTitleEditor
-            ref={titleEditorRef}
-            name={category.name}
-            primaryLanguage={primaryLanguage}
-            titleClassName="text-base font-semibold text-neutral-900"
-            maxLength={MAX_CATEGORY_NAME}
-            disabled={busy || duplicating}
-            showEditHint
-            onRename={onRename}
-            onTranslationChange={onTranslationChange}
-          />
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs tabular-nums text-neutral-400">
-            {t("builder.dishesCount", { count: dishes.length })}
+          <div
+            className="min-w-0 flex-1"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <LocalizedTitleEditor
+              ref={titleEditorRef}
+              name={category.name}
+              primaryLanguage={primaryLanguage}
+              titleClassName="text-base font-semibold text-neutral-900"
+              maxLength={MAX_CATEGORY_NAME}
+              disabled={busy || duplicating}
+              showEditHint
+              onRename={onRename}
+              onTranslationChange={onTranslationChange}
+            />
+          </div>
+          <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-neutral-500">
+            ({dishes.length})
           </span>
+        </div>
+        <div
+          className="flex shrink-0 items-center gap-1.5"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
           <BuilderRowMoreButton
             label={t("builder.actions.more")}
             disabled={busy || duplicating}
             onClick={onOpenCategoryActions}
           />
         </div>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-neutral-400 transition-transform duration-300 ease-out",
+            isOpen && "rotate-180"
+          )}
+          aria-hidden
+        />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-neutral-50/30 divide-y divide-neutral-100">
-        {dishes.map((dish, dishIndex) =>
-          dish ? (
-            <DishRow
-              key={dish.id}
-              dish={dish}
-              primaryLanguage={primaryLanguage}
-              busy={busy}
-              selected={selectedDishId === dish.id}
-              dishIndex={dishIndex}
-              dishCount={dishes.length}
-              reorderMode={reorderMode}
-              onEdit={() => onSelectDish(dish)}
-              onDelete={() => onDeleteDish(dish)}
-              onMoveDish={(direction) => onMoveDish(dish.id, direction)}
-              editLabel={t("builder.actions.editDetails")}
-              deleteLabel={t("dish.delete")}
-              hiddenLabel={t("builder.hidden")}
-            />
-          ) : null
+      <div
+        id={panelId}
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300 ease-out",
+          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-t border-neutral-200/60 bg-neutral-50/30 divide-y divide-neutral-100">
+            {dishes.map((dish, dishIndex) =>
+              dish ? (
+                <DishRow
+                  key={dish.id}
+                  dish={dish}
+                  primaryLanguage={primaryLanguage}
+                  busy={busy}
+                  selected={selectedDishId === dish.id}
+                  dishIndex={dishIndex}
+                  dishCount={dishes.length}
+                  reorderMode={reorderMode}
+                  onEdit={() => onSelectDish(dish)}
+                  onDelete={() => onDeleteDish(dish)}
+                  onMoveDish={(direction) => onMoveDish(dish.id, direction)}
+                  editLabel={t("builder.actions.editDetails")}
+                  deleteLabel={t("dish.delete")}
+                  hiddenLabel={t("builder.hidden")}
+                />
+              ) : null
+            )}
 
-        {dishes.length === 0 && (
-          <p className="px-5 py-10 text-center text-sm text-neutral-400">
-            No dishes yet. Add one below.
-          </p>
-        )}
+            {dishes.length === 0 && (
+              <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
+                <p className="text-sm text-neutral-400">No dishes in this category yet.</p>
+                <button
+                  type="button"
+                  onClick={onStartAddDish}
+                  disabled={busy}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                  Add your first dish
+                </button>
+              </div>
+            )}
 
-        <button
-          type="button"
-          onClick={onStartAddDish}
-          disabled={busy}
-          className="flex min-h-[52px] w-full items-center justify-center gap-2 bg-white px-4 py-4 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4 shrink-0" aria-hidden />
-          {t("builder.addDish")}
-        </button>
+            {dishes.length > 0 ? (
+              <button
+                type="button"
+                onClick={onStartAddDish}
+                disabled={busy}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 bg-white px-4 py-4 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                {t("builder.addDish")}
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
     </section>
   );
