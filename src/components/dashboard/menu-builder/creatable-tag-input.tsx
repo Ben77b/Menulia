@@ -15,9 +15,10 @@ import {
 } from "@/lib/dietary-tags";
 
 const TAG_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-900 transition-all duration-300 ease-out hover:scale-[1.02] hover:opacity-80 hover:border-neutral-300 dark:border-white/20 dark:text-neutral-100 dark:hover:border-white/40";
+  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-600 transition-all duration-300 ease-out hover:scale-[1.02] hover:text-neutral-900 hover:opacity-80 hover:border-neutral-300 dark:border-white/20 dark:text-neutral-400 dark:hover:text-neutral-900 dark:hover:border-white/40";
 
-const TAG_TEXT_CLASS = "text-neutral-900 dark:text-neutral-100";
+const TAG_TEXT_CLASS =
+  "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900";
 
 interface TagSuggestion {
   tag: string;
@@ -96,7 +97,6 @@ export function CreatableTagInput({
       const label = entry.label ?? parsed.label;
       if (!label || isFilterableTag(label)) continue;
       const key = label.toLowerCase();
-      if (selectedKeys.has(key)) continue;
       byKey.set(key, {
         tag: parsed.encoded || entry.tag,
         label,
@@ -104,7 +104,7 @@ export function CreatableTagInput({
       });
     }
     return Array.from(byKey.values());
-  }, [menuSuggestions, selectedKeys]);
+  }, [menuSuggestions]);
 
   const defaultSuggestions = useMemo(() => {
     return suggestions.filter((entry) => !selectedKeys.has(suggestionKey(entry)));
@@ -164,8 +164,10 @@ export function CreatableTagInput({
     if (!onDeleteMenuTag || isFilterableTag(label)) return;
     setDeletingLabel(label);
     try {
-      removeTag(label);
       await onDeleteMenuTag(label);
+      removeTag(label);
+    } catch {
+      // Upstream rolls back menu state; keep this dish's draft unchanged.
     } finally {
       setDeletingLabel(null);
     }
@@ -276,7 +278,9 @@ export function CreatableTagInput({
             Suggested tags
           </p>
           <div className="flex flex-wrap gap-2">
-            {menuOnlySuggestions.map((entry) => (
+            {menuOnlySuggestions.map((entry) => {
+              const alreadySelected = selectedKeys.has((entry.label ?? "").toLowerCase());
+              return (
               <div
                 key={entry.tag}
                 className={cn(
@@ -286,9 +290,12 @@ export function CreatableTagInput({
               >
                 <button
                   type="button"
-                  disabled={disabled || deletingLabel === entry.label}
+                  disabled={disabled || deletingLabel === entry.label || alreadySelected}
                   onClick={() => addSuggestion(entry)}
-                  className={cn("inline-flex items-center gap-1 disabled:opacity-50", TAG_TEXT_CLASS)}
+                  className={cn(
+                    "inline-flex items-center gap-1 disabled:opacity-50",
+                    TAG_TEXT_CLASS
+                  )}
                 >
                   <span className={TAG_TEXT_CLASS}>{entry.icon}</span>
                   <span className={TAG_TEXT_CLASS}>{entry.label}</span>
@@ -305,7 +312,8 @@ export function CreatableTagInput({
                   </button>
                 ) : null}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ) : null}

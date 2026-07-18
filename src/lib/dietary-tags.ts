@@ -142,10 +142,17 @@ export function parseDishTag(raw: string | null | undefined): DishTagAppearance 
   if (withColorMatch) {
     const icon = withColorMatch[1]!.trim() || "🏷️";
     const label = normalizeTagLabel(withColorMatch[2]!);
+    const canonicalDefault = FILTERABLE_TAGS.find(
+      (tag) => tag.toLowerCase() === label.toLowerCase()
+    );
+    const resolvedLabel = canonicalDefault ?? label;
+    const resolvedIcon = canonicalDefault
+      ? FILTERABLE_META[canonicalDefault]?.icon ?? icon
+      : icon;
     return {
-      label,
-      icon,
-      encoded: encodeDishTag(label, icon),
+      label: resolvedLabel,
+      icon: resolvedIcon,
+      encoded: encodeDishTag(resolvedLabel, resolvedIcon),
     };
   }
 
@@ -153,10 +160,17 @@ export function parseDishTag(raw: string | null | undefined): DishTagAppearance 
   if (encodedMatch) {
     const icon = encodedMatch[1]!.trim() || "🏷️";
     const label = normalizeTagLabel(encodedMatch[2]!);
+    const canonicalDefault = FILTERABLE_TAGS.find(
+      (tag) => tag.toLowerCase() === label.toLowerCase()
+    );
+    const resolvedLabel = canonicalDefault ?? label;
+    const resolvedIcon = canonicalDefault
+      ? FILTERABLE_META[canonicalDefault]?.icon ?? icon
+      : icon;
     return {
-      label,
-      icon,
-      encoded: encodeDishTag(label, icon),
+      label: resolvedLabel,
+      icon: resolvedIcon,
+      encoded: encodeDishTag(resolvedLabel, resolvedIcon),
     };
   }
 
@@ -268,7 +282,7 @@ export function countRestaurantTagLibrary(rawTags: Iterable<string>): {
   atLimit: boolean;
 } {
   const present = collectPresentTagAppearances(rawTags);
-  const customCount = present.filter((tag) => !FILTERABLE_SET.has(tag.label)).length;
+  const customCount = present.filter((tag) => !isFilterableTag(tag.label)).length;
   const total = FILTERABLE_TAGS.length + customCount;
   return {
     total,

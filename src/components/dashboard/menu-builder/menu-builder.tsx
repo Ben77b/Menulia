@@ -276,6 +276,7 @@ export function MenuBuilder() {
 
       const labelKey = label.toLowerCase();
       const previousTree = tree;
+      const previousSelected = selectedDish;
       const updates: { dishId: string; tags: string[]; allergens: string[] }[] = [];
 
       const stripFromDish = (dish: MenuBuilderDish): MenuBuilderDish => {
@@ -328,12 +329,14 @@ export function MenuBuilder() {
         toast.success(`Removed “${label}” from your menu`);
       } catch (err) {
         setTree(previousTree);
+        setSelectedDish(previousSelected);
         const message = formatSupabaseError(err);
         setError(message);
         toast.error(message);
+        throw err;
       }
     },
-    [tree, toast]
+    [tree, toast, selectedDish]
   );
 
   const setActiveSectionId = useCallback(
