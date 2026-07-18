@@ -14,7 +14,7 @@ import { PublicMenuAllergenLegend } from "@/components/public/public-menu-allerg
 import { cn } from "@/lib/utils";
 
 const FILTER_CHIP_CLASS =
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-neutral-200/60 bg-neutral-100/70 px-3 py-2 text-xs font-medium text-neutral-800 transition-all";
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-neutral-200/60 bg-transparent px-3 py-2 text-xs font-medium text-neutral-800 transition-all";
 
 interface PublicMenuFilterBarProps {
   backgroundColor: string;
@@ -94,7 +94,7 @@ export function PublicMenuFilterBar({
                     onClick={() => onToggleFilter(filter.label)}
                     className={cn(
                       FILTER_CHIP_CLASS,
-                      active && "bg-neutral-200/80 ring-1 ring-neutral-300/80"
+                      active && "border-neutral-400 ring-1 ring-neutral-300/70"
                     )}
                     style={{
                       fontFamily: bodyFont,
@@ -112,7 +112,7 @@ export function PublicMenuFilterBar({
               <button
                 type="button"
                 onClick={onClearFilters}
-                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-400 transition-all hover:bg-neutral-200/60 hover:text-neutral-600"
+                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-neutral-200/60 bg-transparent px-2 py-1 text-xs font-medium text-neutral-400 transition-all hover:border-neutral-300 hover:text-neutral-600"
               >
                 <X className="h-3 w-3" aria-hidden />
                 {menuUiString(locale, "clearFilters")}

@@ -22,6 +22,7 @@ import {
   reorderMenuDishes,
 } from "@/lib/menu-db";
 import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-tree";
+import { collectMenuTagAppearances } from "@/lib/dietary-tags";
 import {
   renameCategoryInTree,
   addSectionToTree,
@@ -236,6 +237,27 @@ export function MenuBuilder() {
         : -1,
     [activeSection, tree.sections]
   );
+
+  const menuTagSuggestions = useMemo(() => {
+    const rawTags: string[] = [];
+    for (const section of tree.sections ?? []) {
+      for (const category of section.categories ?? []) {
+        for (const dish of category.dishes ?? []) {
+          rawTags.push(...(dish.tags ?? []));
+        }
+      }
+    }
+    for (const category of tree.orphanCategories ?? []) {
+      for (const dish of category.dishes ?? []) {
+        rawTags.push(...(dish.tags ?? []));
+      }
+    }
+    return collectMenuTagAppearances(rawTags).map((tag) => ({
+      tag: tag.encoded,
+      label: tag.label,
+      icon: tag.icon,
+    }));
+  }, [tree]);
 
   const setActiveSectionId = useCallback(
     (sectionId: string) => {
@@ -1315,6 +1337,7 @@ export function MenuBuilder() {
             onDelete={() => handleDeleteDish(selectedDish.dish, selectedDish.categoryId)}
             onImageUpload={handleImageUpload}
             onAvailabilityChange={handleAvailabilityChange}
+            menuTagSuggestions={menuTagSuggestions}
           />
         </div>
       )}
@@ -1342,6 +1365,7 @@ export function MenuBuilder() {
             onClose={() => setAddDishCategoryId(null)}
             onSave={handleCreateDishDetail}
             onImageUpload={handleImageUpload}
+            menuTagSuggestions={menuTagSuggestions}
           />
         </div>
       )}
@@ -1364,6 +1388,7 @@ export function MenuBuilder() {
           }
           onImageUpload={handleImageUpload}
           onAvailabilityChange={handleAvailabilityChange}
+          menuTagSuggestions={menuTagSuggestions}
         />
         <DishDetailSheet
           open={Boolean(addDishCategoryId)}
@@ -1380,6 +1405,7 @@ export function MenuBuilder() {
           onClose={() => setAddDishCategoryId(null)}
           onSave={handleCreateDishDetail}
           onImageUpload={handleImageUpload}
+          menuTagSuggestions={menuTagSuggestions}
         />
       </div>
 

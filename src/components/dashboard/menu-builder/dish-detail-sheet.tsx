@@ -26,6 +26,7 @@ interface DishDetailSheetProps {
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
   restaurantName?: string;
   categoryName?: string;
+  menuTagSuggestions?: readonly { tag: string; label?: string; icon?: string }[];
 }
 
 export function DishDetailSheet({
@@ -42,6 +43,7 @@ export function DishDetailSheet({
   onAvailabilityChange,
   restaurantName = "",
   categoryName = "",
+  menuTagSuggestions = [],
 }: DishDetailSheetProps) {
   const { t } = useDashboardLocale();
   const isCreate = mode === "create";
@@ -118,6 +120,7 @@ export function DishDetailSheet({
         setUsePriceVariations={setUsePriceVariations}
         setFilterableTags={setFilterableTags}
         toggleAllergen={toggleAllergen}
+        menuTagSuggestions={menuTagSuggestions}
       />
     </MobileBottomSheet>
   );

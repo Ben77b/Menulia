@@ -58,6 +58,7 @@ interface DishDetailFormProps {
   setUsePriceVariations: (enabled: boolean) => void;
   setFilterableTags: (tags: string[]) => void;
   toggleAllergen: (tag: string) => void;
+  menuTagSuggestions?: readonly { tag: string; label?: string; icon?: string }[];
 }
 
 export function DishDetailForm({
@@ -76,6 +77,7 @@ export function DishDetailForm({
   setUsePriceVariations,
   setFilterableTags,
   toggleAllergen,
+  menuTagSuggestions = [],
 }: DishDetailFormProps) {
   const { t } = useDashboardLocale();
   const toast = useToast();
@@ -326,6 +328,7 @@ export function DishDetailForm({
             onChange={setFilterableTags}
             disabled={Boolean(saving)}
             placeholder={t("dish.tagsPlaceholder")}
+            menuSuggestions={menuTagSuggestions}
           />
         </div>
 

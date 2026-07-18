@@ -25,6 +25,7 @@ interface DishDetailInspectorProps {
   onImageUpload: (file: File) => Promise<string | null>;
   onAvailabilityChange?: (isAvailable: boolean) => Promise<void>;
   className?: string;
+  menuTagSuggestions?: readonly { tag: string; label?: string; icon?: string }[];
 }
 
 export function DishDetailInspector({
@@ -41,6 +42,7 @@ export function DishDetailInspector({
   onImageUpload,
   onAvailabilityChange,
   className,
+  menuTagSuggestions = [],
 }: DishDetailInspectorProps) {
   const { t } = useDashboardLocale();
   const isCreate = mode === "create";
@@ -100,6 +102,7 @@ export function DishDetailInspector({
           setUsePriceVariations={setUsePriceVariations}
           setFilterableTags={setFilterableTags}
           toggleAllergen={toggleAllergen}
+          menuTagSuggestions={menuTagSuggestions}
         />
       </div>
 

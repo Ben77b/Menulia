@@ -69,7 +69,7 @@ function TagBadge({
 }) {
   return (
     <span
-      className={`inline-flex items-center ${iconOnly ? "justify-center px-1.5 py-1 text-base" : "gap-1 rounded-full border border-neutral-200/60 bg-neutral-100/70 px-2.5 py-1 text-xs font-medium text-neutral-800"}`}
+      className={`inline-flex items-center ${iconOnly ? "justify-center px-1.5 py-1 text-base" : "gap-1 rounded-full border border-neutral-200/60 bg-transparent px-2.5 py-1 text-xs font-medium text-neutral-800"}`}
       title={iconOnly ? label : undefined}
       aria-label={iconOnly ? label : undefined}
       style={
