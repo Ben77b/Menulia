@@ -242,6 +242,22 @@ export function getTagMeta(
   return { icon: parsed.icon, label: parsed.label };
 }
 
+/** Build unique styled filter chips from dish tag payloads only (no unused defaults). */
+export function collectPresentTagAppearances(
+  rawTags: Iterable<string>
+): DishTagAppearance[] {
+  const byLabel = new Map<string, DishTagAppearance>();
+
+  for (const raw of rawTags) {
+    const parsed = parseDishTag(raw);
+    if (!parsed.label) continue;
+    if (normalizeAllergenId(parsed.label)) continue;
+    byLabel.set(parsed.label.toLowerCase(), parsed);
+  }
+
+  return Array.from(byLabel.values());
+}
+
 /** Build unique styled filter chips from dish tag payloads + default dietary options */
 export function collectMenuTagAppearances(
   rawTags: Iterable<string>
@@ -252,11 +268,8 @@ export function collectMenuTagAppearances(
     byLabel.set(option.tag.toLowerCase(), parseDishTag(option.tag));
   }
 
-  for (const raw of rawTags) {
-    const parsed = parseDishTag(raw);
-    if (!parsed.label) continue;
-    if (normalizeAllergenId(parsed.label)) continue;
-    byLabel.set(parsed.label.toLowerCase(), parsed);
+  for (const appearance of collectPresentTagAppearances(rawTags)) {
+    byLabel.set(appearance.label.toLowerCase(), appearance);
   }
 
   return Array.from(byLabel.values());

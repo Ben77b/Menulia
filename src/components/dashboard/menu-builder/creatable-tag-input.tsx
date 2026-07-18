@@ -13,7 +13,7 @@ import {
 } from "@/lib/dietary-tags";
 
 const TAG_CHIP_CLASS =
-  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-900 transition-colors hover:border-neutral-300 dark:border-white/20 dark:text-white dark:hover:border-white/40";
+  "inline-flex items-center gap-1 rounded-full border border-neutral-200/80 bg-transparent px-2.5 py-0.5 text-xs font-medium text-neutral-900 transition-all duration-300 ease-out hover:scale-[1.02] hover:opacity-80 hover:border-neutral-300 dark:border-white/20 dark:text-white dark:hover:border-white/40";
 
 interface TagSuggestion {
   tag: string;

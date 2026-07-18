@@ -15,7 +15,7 @@ import {
   menuHasGuestTranslations,
   sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
-import { collectMenuTagAppearances } from "@/lib/dietary-tags";
+import { collectPresentTagAppearances } from "@/lib/dietary-tags";
 import { MenuHeader } from "./menu-header";
 import { NestedCategoryNav } from "./nested-category-nav";
 import { FlatCategoryNav } from "./flat-category-nav";
@@ -269,12 +269,6 @@ export function PublicMenuLayout({
     isMounted: filtersMounted,
   } = usePublicMenuFilters();
   const effectiveFilters = filtersMounted ? activeFilters : new Set<string>();
-  const filterTags = useMemo(() => {
-    const rawTags = collectAllDishes(safeMenu, safeFlatCategories, hasNestedStructure).flatMap(
-      (dish) => dish.tags ?? []
-    );
-    return collectMenuTagAppearances(rawTags);
-  }, [safeMenu, safeFlatCategories, hasNestedStructure]);
   const [activeParentId, setActiveParentId] = useState(safeMenu[0]?.id ?? "");
   const [activeSubcategoryId, setActiveSubcategoryId] = useState(
     safeMenu[0]?.subcategories?.[0]?.id ?? safeFlatCategories[0]?.id ?? ""
@@ -314,6 +308,19 @@ export function PublicMenuLayout({
       subcategories.find((sub) => sub.id === activeSubcategoryId) ?? subcategories[0] ?? null
     );
   }, [safeMenu, safeFlatCategories, hasNestedStructure, activeParentId, activeSubcategoryId]);
+
+  /** Only tags present on dishes in the currently visible category/section */
+  const filterTags = useMemo(() => {
+    const rawTags = (activeSubcategory?.dishes ?? []).flatMap((dish) => dish.tags ?? []);
+    return collectPresentTagAppearances(rawTags);
+  }, [activeSubcategory]);
+
+  useEffect(() => {
+    if (effectiveFilters.size === 0) return;
+    const available = new Set(filterTags.map((tag) => tag.label));
+    const hasStaleFilter = [...effectiveFilters].some((tag) => !available.has(tag));
+    if (hasStaleFilter) clearFilters();
+  }, [filterTags, effectiveFilters, clearFilters]);
 
   const allDishes = useMemo(
     () => collectAllDishes(safeMenu, safeFlatCategories, hasNestedStructure),
