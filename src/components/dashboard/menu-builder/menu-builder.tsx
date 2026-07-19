@@ -1806,14 +1806,14 @@ function DishesCanvas({
               type="button"
               disabled={busy || duplicating || savingNote}
               onClick={() => void saveNote()}
-              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:opacity-50"
+              className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save
             </button>
           </div>
         </div>
       ) : existingNote ? (
-        <p className="border-t border-neutral-100 px-4 pb-3 pt-0 text-sm italic leading-relaxed text-neutral-500 sm:px-5">
+        <p className="line-clamp-3 break-words border-t border-neutral-100 px-4 pb-3 pt-0 text-sm italic leading-relaxed text-neutral-500 sm:px-5">
           {existingNote}
         </p>
       ) : null}

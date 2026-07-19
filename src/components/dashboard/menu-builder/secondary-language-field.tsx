@@ -80,7 +80,7 @@ export function SecondaryLanguageField({
       </button>
 
       {popoverOpen && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-72 rounded-2xl border border-[#E5E5EA] bg-white p-4 shadow-lg">
+        <div className="absolute right-0 top-full z-30 mt-2 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-[#E5E5EA] bg-white p-4 shadow-lg">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {secondaryMeta.label} ({secondaryLanguage.toUpperCase()})
           </p>

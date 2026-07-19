@@ -224,7 +224,7 @@ export default function ShareMenuPage() {
               <QrCode className="h-5 w-5 shrink-0 text-slate-500" />
               <h2 className="text-base font-semibold text-slate-900">{t("share.qrTitle")}</h2>
             </div>
-            <p className="mt-1 text-xs text-slate-400">{t("share.qrDescription")}</p>
+            <p className="mt-1 text-xs text-neutral-500">{t("share.qrDescription")}</p>
           </div>
 
           <div className="flex w-full flex-col items-stretch gap-6 sm:items-start lg:flex-row lg:gap-8">
@@ -374,7 +374,7 @@ export default function ShareMenuPage() {
                   {t("share.directLinkTitle")}
                 </h2>
               </div>
-              <p className="mt-1 text-xs text-slate-400">{t("share.directLinkDescription")}</p>
+              <p className="mt-1 text-xs text-neutral-500">{t("share.directLinkDescription")}</p>
             </div>
 
             <div className="flex flex-col items-stretch gap-2 rounded-xl bg-slate-50 p-2 sm:flex-row sm:items-center">
@@ -417,7 +417,7 @@ export default function ShareMenuPage() {
                 <Code2 className="h-5 w-5 shrink-0 text-slate-500" />
                 <h2 className="text-base font-semibold text-slate-900">{t("share.embedTitle")}</h2>
               </div>
-              <p className="mt-1 text-xs text-slate-400">{t("share.embedDescription")}</p>
+              <p className="mt-1 text-xs text-neutral-500">{t("share.embedDescription")}</p>
             </div>
 
             <div className="flex flex-col items-stretch gap-2 rounded-xl bg-slate-50 p-2 sm:flex-row sm:items-center">

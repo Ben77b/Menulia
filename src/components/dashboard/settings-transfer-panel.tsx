@@ -204,7 +204,7 @@ export function SettingsTransferPanel({ restaurantId }: SettingsTransferPanelPro
           </p>
 
           {!claimUrl ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-950">
               Claim link is still loading. Refresh the page if this message persists.
             </p>
           ) : (

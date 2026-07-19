@@ -271,7 +271,7 @@
   }
 
   .air-capsule-nav-item {
-    @apply min-h-10 min-w-0 shrink-0 snap-start whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium text-neutral-500 transition-all duration-200 ease-out hover:text-neutral-800;
+    @apply min-h-10 max-w-[11rem] min-w-0 shrink-0 snap-start truncate rounded-xl px-3.5 py-2 text-sm font-medium text-neutral-500 transition-all duration-200 ease-out hover:text-neutral-800 sm:max-w-[16rem];
   }
 
   .air-capsule-nav-item-active {

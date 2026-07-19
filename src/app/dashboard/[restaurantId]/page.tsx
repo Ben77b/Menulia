@@ -121,8 +121,11 @@ export default function DashboardPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="air-page-title">{t("home.welcome")}</h1>
-          <p className="air-page-subtitle">
-            {t("home.managing")} <span className="font-medium text-slate-900">{displayName}</span>
+          <p className="air-page-subtitle min-w-0">
+            {t("home.managing")}{" "}
+            <span className="inline-block max-w-full truncate align-bottom font-medium text-slate-900">
+              {displayName}
+            </span>
           </p>
         </div>
         {showViewLiveSite && activeRestaurant && (

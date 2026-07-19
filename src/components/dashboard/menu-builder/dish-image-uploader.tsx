@@ -200,7 +200,7 @@ export function DishImageUploader({
                 onImageUrlChange(null);
               }}
               disabled={busy}
-              className="absolute -right-2 -top-2 inline-flex min-h-8 min-w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+              className="absolute -right-2 -top-2 inline-flex min-h-8 min-w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-sm transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Remove image"
             >
               <X className="h-3.5 w-3.5" />

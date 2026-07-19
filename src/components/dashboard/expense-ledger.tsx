@@ -95,7 +95,9 @@ export function ExpenseLedger({ initialExpenses, restaurantId }: ExpenseLedgerPr
             {expenses.map((e) => (
               <tr key={e.id} className="border-b border-border last:border-0">
                 <td className="py-3 text-text-secondary">{e.expense_date}</td>
-                <td className="py-3">{e.title}</td>
+                <td className="max-w-[10rem] truncate py-3" title={e.title}>
+                  {e.title}
+                </td>
                 <td className="py-3">
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{e.category}</span>
                 </td>

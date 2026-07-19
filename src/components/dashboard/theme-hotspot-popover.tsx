@@ -80,7 +80,7 @@ export function ThemeHotspotPopover({
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-50 w-80 rounded-2xl border border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)]",
+        "absolute z-50 w-[min(20rem,calc(100vw-1.5rem))] max-w-sm rounded-2xl border border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)]",
         "animate-in fade-in zoom-in-95 duration-150"
       )}
       style={{ top: position.top, left: position.left }}
@@ -90,17 +90,17 @@ export function ThemeHotspotPopover({
       onMouseDown={(event) => event.stopPropagation()}
     >
       <div className="flex items-start justify-between gap-2 border-b border-[#F5F5F7] px-4 py-3">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[#86868B]">Edit colours</p>
-          <p className="text-sm font-semibold text-slate-900">{group.title}</p>
-          <p className="mt-0.5 text-[11px] leading-snug text-[#86868B]">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Edit colours</p>
+          <p className="truncate text-sm font-semibold text-slate-900">{group.title}</p>
+          <p className="mt-0.5 text-[11px] leading-snug text-neutral-500">
             Changes apply instantly. Parent colour resets fine-tuned children.
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="shrink-0 rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10"
           aria-label="Close colour editor"
         >
           <X className="h-4 w-4" />

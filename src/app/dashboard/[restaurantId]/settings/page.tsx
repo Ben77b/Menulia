@@ -314,13 +314,15 @@ function SettingsPageContent() {
                   label="Public Menu URL"
                   hint="The slug guests use at menulia.net/menu/your-slug"
                 />
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400">menulia.net/menu/</span>
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+                  <span className="shrink-0 text-xs text-neutral-500 sm:text-sm">
+                    menulia.net/menu/
+                  </span>
                   <input
                     type="text"
                     value={restaurantSlug}
                     onChange={(e) => handleSlugChange(e.target.value)}
-                    className="air-input flex-1"
+                    className="air-input w-full min-w-0 flex-1"
                     placeholder="your-restaurant-slug"
                   />
                 </div>

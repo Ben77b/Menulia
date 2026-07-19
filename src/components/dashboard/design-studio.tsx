@@ -325,7 +325,7 @@ export function DesignStudio() {
       </div>
 
       {saveError && (
-        <div className="mb-4 shrink-0 rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-4 shrink-0 rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-900">
           {saveError}
         </div>
       )}
@@ -381,7 +381,7 @@ export function DesignStudio() {
           <div className="mx-auto h-full max-h-[calc(100vh-14rem)] max-w-2xl overflow-y-auto rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Colours</h2>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-neutral-500">
                 Each section has a parent colour that controls the whole region. Expand advanced
                 controls to override individual elements — changes sync instantly with the preview.
               </p>
@@ -407,7 +407,7 @@ export function DesignStudio() {
           <div className="mx-auto max-w-2xl rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Typography</h2>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-neutral-500">
                 Pick a curated font pairing or fine-tune title, category, and body fonts.
               </p>
             </div>
@@ -419,7 +419,7 @@ export function DesignStudio() {
           <div className="mx-auto max-w-2xl rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Display Options</h2>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-neutral-500">
                 Control what guests see on your public menu — prices, descriptions, images, and dietary info.
               </p>
             </div>
@@ -431,7 +431,7 @@ export function DesignStudio() {
           <div className="mx-auto max-w-2xl rounded-xl border border-neutral-200/50 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] md:p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold tracking-tight text-slate-900">Logo & SEO</h2>
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-neutral-500">
                 Upload your logo and set search preview title and description.
               </p>
             </div>

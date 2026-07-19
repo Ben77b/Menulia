@@ -32,13 +32,13 @@ export function CategorySlideOver({
         )}
         aria-hidden={!open}
       >
-        <header className="flex shrink-0 items-center justify-between border-b border-neutral-200/60 px-4 py-4">
-          <h2 className="text-base font-semibold text-neutral-800">{title}</h2>
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-neutral-200/60 px-4 py-4">
+          <h2 className="min-w-0 truncate text-base font-semibold text-neutral-800">{title}</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close categories panel"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-neutral-200/60 text-neutral-500 hover:bg-neutral-50"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200/60 text-neutral-500 transition-colors hover:bg-neutral-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10"
           >
             <X className="h-4 w-4" />
           </button>

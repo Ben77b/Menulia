@@ -190,8 +190,10 @@ export function DishDetailForm({
               className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-zinc-900 focus:ring-zinc-900/20"
             />
             <span className="min-w-0">
-              <span className="text-sm text-neutral-700">{t("dish.lockTitle")}</span>
-              <span className="mt-0.5 block text-xs text-amber-800/90">
+              <span className="text-sm text-neutral-700 dark:text-neutral-200">
+                {t("dish.lockTitle")}
+              </span>
+              <span className="mt-0.5 block rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
                 {t("dish.lockTitleBadge")}
               </span>
             </span>
@@ -207,7 +209,7 @@ export function DishDetailForm({
               type="button"
               onClick={() => void handleGenerateDescription()}
               disabled={generatingDescription || saving}
-              className="inline-flex min-h-10 w-fit items-center gap-1.5 rounded-lg border border-neutral-200/80 bg-white px-3 py-2 text-xs font-medium text-neutral-600 shadow-sm transition-all duration-200 ease-in-out hover:bg-neutral-50 hover:text-neutral-900 disabled:opacity-50"
+              className="inline-flex min-h-10 w-fit items-center gap-1.5 rounded-lg border border-neutral-200/80 bg-white px-3 py-2 text-xs font-medium text-neutral-600 shadow-sm transition-all duration-200 ease-in-out hover:bg-neutral-50 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Generate description with AI"
             >
               {generatingDescription ? (

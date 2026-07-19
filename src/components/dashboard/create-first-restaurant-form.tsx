@@ -122,21 +122,23 @@ export function CreateFirstRestaurantForm() {
         <label htmlFor="first-restaurant-slug" className="mb-1.5 block text-sm font-medium text-gray-700">
           URL Slug
         </label>
-        <div className="flex items-center rounded-[10px] border border-input bg-card focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-black/5">
-          <span className="pl-3 text-sm text-gray-400">menulia.net/menu/</span>
+        <div className="flex min-w-0 flex-col rounded-[10px] border border-input bg-card focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-black/5 sm:flex-row sm:items-center">
+          <span className="shrink-0 px-3 pt-2.5 text-xs text-neutral-500 sm:pt-0 sm:text-sm">
+            menulia.net/menu/
+          </span>
           <input
             id="first-restaurant-slug"
             type="text"
             value={slug}
             onChange={(event) => handleSlugChange(event.target.value)}
             placeholder="la-calle-tacos"
-            className="flex-1 rounded-r-lg px-2 py-2.5 text-sm outline-none"
+            className="min-w-0 w-full flex-1 rounded-b-[10px] px-3 py-2.5 text-sm outline-none sm:rounded-b-none sm:rounded-r-[10px] sm:px-2"
           />
         </div>
       </div>
 
       {notice && (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{notice}</p>
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950">{notice}</p>
       )}
 
       {error && (

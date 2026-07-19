@@ -243,7 +243,7 @@ export function CreatableTagInput({
                 ? placeholder
                 : "Add another…"
           }
-          className="min-w-[8rem] flex-1 border-0 bg-transparent px-1.5 py-1 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 disabled:cursor-not-allowed"
+          className="min-w-0 flex-1 border-0 bg-transparent px-1.5 py-1 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 disabled:cursor-not-allowed"
         />
       </div>
 
@@ -268,7 +268,9 @@ export function CreatableTagInput({
             className="h-9 w-14 rounded-lg border border-neutral-200/80 bg-white text-center text-base shadow-sm outline-none focus:border-neutral-300 focus:ring-2 focus:ring-neutral-900/5"
             aria-label={`Emoji for ${editing.label}`}
           />
-          <span className="text-xs text-neutral-400">for “{editing.label}”</span>
+          <span className="min-w-0 truncate text-xs text-neutral-400">
+            for “{editing.label}”
+          </span>
         </div>
       ) : null}
 

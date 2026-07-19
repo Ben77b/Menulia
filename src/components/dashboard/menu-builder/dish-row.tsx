@@ -106,7 +106,7 @@ export function DishRow({
             onClick={onEdit}
             disabled={busy}
             aria-label={editLabel}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 active:bg-neutral-200/70"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10 active:bg-neutral-200/70 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-neutral-800"
           >
             <Pencil className="h-4 w-4" />
           </button>
@@ -115,7 +115,7 @@ export function DishRow({
             onClick={onDelete}
             disabled={busy}
             aria-label={deleteLabel}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-neutral-300 transition-colors hover:bg-red-50 hover:text-red-600 active:bg-red-100/70"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-neutral-300 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/20 active:bg-red-100/70 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-red-950/40"
           >
             <Trash2 className="h-4 w-4" />
           </button>

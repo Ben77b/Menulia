@@ -57,7 +57,7 @@ export function HotspotColorPopover({
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-50 w-64 air-card p-4 shadow-xl",
+        "absolute z-50 w-[min(16rem,calc(100vw-1.5rem))] max-w-xs air-card p-4 shadow-xl",
         "animate-in fade-in zoom-in-95 duration-150"
       )}
       style={{
@@ -68,14 +68,14 @@ export function HotspotColorPopover({
       aria-label={`Edit ${title} colours`}
     >
       <div className="mb-3 flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Edit colours</p>
-          <p className="text-sm font-semibold text-gray-900">{title}</p>
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Edit colours</p>
+          <p className="truncate text-sm font-semibold text-neutral-900">{title}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          className="shrink-0 rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/10"
           aria-label="Close"
         >
           <X className="h-4 w-4" />

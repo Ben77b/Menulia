@@ -34,7 +34,7 @@ export type ButtonProps = CommonProps &
   Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, keyof CommonProps>;
 
 const INTERACTION =
-  "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100";
+  "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 
 const VARIANT_STYLES: Record<ResolvedVariant, string> = {
   dark: "bg-slate-900 text-white border border-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:bg-slate-800 hover:shadow-[0_4px_12px_rgba(0,0,0,0.14)]",

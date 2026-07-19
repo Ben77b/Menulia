@@ -97,7 +97,7 @@ export function AllergenPopoverField({
                   </span>
                   <span
                     className={cn(
-                      "min-w-0 flex-1 leading-tight",
+                      "min-w-0 flex-1 truncate leading-tight",
                       checked ? "font-medium text-indigo-900" : "text-slate-700"
                     )}
                   >
