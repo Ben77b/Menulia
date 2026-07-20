@@ -33,9 +33,16 @@ import {
   wrapIsolatedMenuTerm,
 } from "@/lib/translation-glossary";
 
-export const dynamic = "force-dynamic";
-
 const DEEPL_BATCH_SIZE = 50;
+const TRANSLATION_CACHE_CONTROL =
+  "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=60";
+
+function translationJsonResponse(body: unknown, init?: { status?: number }) {
+  return NextResponse.json(body, {
+    status: init?.status ?? 200,
+    headers: { "Cache-Control": TRANSLATION_CACHE_CONTROL },
+  });
+}
 const RATE_LIMIT_MS = 8_000;
 
 const requestSchema = z.object({
@@ -384,7 +391,7 @@ export async function POST(request: Request) {
     }
 
     if (pending.length === 0) {
-      return NextResponse.json({
+      return translationJsonResponse({
         target_lang: targetLang,
         already_complete: categoryPatches.size === 0 && dishPatches.size === 0,
         categories: Array.from(categoryPatches.values()),
@@ -547,7 +554,7 @@ export async function POST(request: Request) {
         }
       : null;
 
-    return NextResponse.json({
+    return translationJsonResponse({
       target_lang: targetLang,
       already_complete: false,
       categories: Array.from(categoryPatches.values()),
