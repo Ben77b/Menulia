@@ -16,6 +16,19 @@ import {
 } from "./price-variations";
 import type { CategoryLayoutType } from "./category-layout";
 import { normalizeCategoryLayoutType } from "./category-layout";
+import { bustPublicMenuCache } from "./bust-public-menu-cache";
+
+/** Bound by the menu builder so every successful mutation can purge the public ISR cache. */
+let boundPublicMenuSlug: string | null = null;
+
+export function bindMenuDbPublicSlug(slug: string | null | undefined): void {
+  const normalized = slug?.trim().toLowerCase() || null;
+  boundPublicMenuSlug = normalized;
+}
+
+function afterPublicMenuMutation(): void {
+  bustPublicMenuCache(boundPublicMenuSlug);
+}
 
 function readIsAvailable(dish: Record<string, unknown>): boolean {
   return dish.is_available !== false;
@@ -385,6 +398,8 @@ export async function createMenuCategory(
     throw error ?? new Error("Category insert failed.");
   }
 
+  afterPublicMenuMutation();
+
   return {
     id: data.id,
     name: parseLocalizedFieldFromDb(data.name),
@@ -445,6 +460,8 @@ export async function updateMenuCategory(
     logSupabaseFailure("menu.updateCategory", error);
     throw error;
   }
+
+  afterPublicMenuMutation();
 }
 
 export async function deleteMenuCategory(categoryId: string): Promise<void> {
@@ -455,6 +472,8 @@ export async function deleteMenuCategory(categoryId: string): Promise<void> {
     logSupabaseFailure("menu.deleteCategory", error);
     throw error;
   }
+
+  afterPublicMenuMutation();
 }
 
 export async function createMenuDish(
@@ -491,6 +510,7 @@ export async function createMenuDish(
     throw error ?? new Error("Dish insert failed.");
   }
 
+  afterPublicMenuMutation();
   return mapDishRecord(data);
 }
 
@@ -532,6 +552,8 @@ export async function updateMenuDish(
     logSupabaseFailure("menu.updateDish", error);
     throw error;
   }
+
+  afterPublicMenuMutation();
 }
 
 export async function updateMenuDishTags(
@@ -546,6 +568,8 @@ export async function updateMenuDishTags(
     logSupabaseFailure("menu.updateDishTags", error);
     throw error;
   }
+
+  afterPublicMenuMutation();
 }
 
 export class DishAvailabilityUnsupportedError extends Error {
@@ -576,6 +600,8 @@ export async function updateMenuDishAvailability(
   if (!availabilityPersisted) {
     throw new DishAvailabilityUnsupportedError();
   }
+
+  afterPublicMenuMutation();
 }
 
 export async function deleteMenuDish(dishId: string): Promise<void> {
@@ -586,6 +612,8 @@ export async function deleteMenuDish(dishId: string): Promise<void> {
     logSupabaseFailure("menu.deleteDish", error);
     throw error;
   }
+
+  afterPublicMenuMutation();
 }
 
 function duplicateName(name: LocalizedTextValue): LocalizedTextValue {
@@ -670,6 +698,7 @@ export async function duplicateMenuDish(dishId: string): Promise<MenuDishRecord>
     throw insertError ?? new Error("Dish duplicate failed.");
   }
 
+  afterPublicMenuMutation();
   return mapDishRecord(data);
 }
 
@@ -769,4 +798,8 @@ export async function reorderMenuDishes(
       }
     })
   );
+
+  if (updates.length > 0) {
+    afterPublicMenuMutation();
+  }
 }

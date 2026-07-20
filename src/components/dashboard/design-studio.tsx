@@ -17,6 +17,7 @@ import {
   THEME_COLOR_PANEL_GROUPS,
 } from "@/lib/theme-inheritance";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
+import { bustPublicMenuCache } from "@/lib/bust-public-menu-cache";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import { sanitizePublicMenuTree } from "@/lib/public-menu-utils";
@@ -241,6 +242,7 @@ export function DesignStudio() {
 
       if (error) throw error;
 
+      bustPublicMenuCache(currentRestaurant.slug);
       await refreshRestaurants({ silent: true });
 
       if (advancedColumnMissing) {

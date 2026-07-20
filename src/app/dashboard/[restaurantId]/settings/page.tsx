@@ -29,6 +29,7 @@ import {
   deleteRestaurant,
   saveFullRestaurantSettings,
 } from "@/lib/restaurant-settings";
+import { bustPublicMenuCache } from "@/lib/bust-public-menu-cache";
 import { MAX_CUSTOM_LINKS, MAX_LINK_LABEL_LENGTH } from "@/lib/menu-limits";
 import { ClientErrorBoundary } from "@/components/ui/client-error-boundary";
 import { useDashboardSearchParam } from "@/hooks/use-dashboard-search-param";
@@ -151,6 +152,13 @@ function SettingsPageContent() {
       }
 
       const result = await saveFullRestaurantSettings(supabase, restaurantId, saveForm);
+
+      const previousSlug = originalSlug.trim().toLowerCase();
+      const nextSlug = (result.normalizedSlug ?? previousSlug).trim().toLowerCase();
+      bustPublicMenuCache(previousSlug);
+      if (nextSlug && nextSlug !== previousSlug) {
+        bustPublicMenuCache(nextSlug);
+      }
 
       if (result.normalizedSlug) {
         markDraftSaved({

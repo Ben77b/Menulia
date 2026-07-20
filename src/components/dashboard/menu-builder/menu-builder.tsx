@@ -21,6 +21,7 @@ import {
   duplicateMenuCategory,
   reorderMenuCategories,
   reorderMenuDishes,
+  bindMenuDbPublicSlug,
 } from "@/lib/menu-db";
 import { flatRecordsToMenuTree, countSectionContents } from "@/lib/menu-builder-tree";
 import {
@@ -166,6 +167,12 @@ function categoryCardId(categoryId: string): string {
 export function MenuBuilder() {
   const { currentRestaurant } = useRestaurant();
   const { t } = useDashboardLocale();
+
+  useEffect(() => {
+    bindMenuDbPublicSlug(currentRestaurant?.slug);
+    return () => bindMenuDbPublicSlug(null);
+  }, [currentRestaurant?.slug]);
+
   const primaryLanguage = normalizePrimaryLanguage(currentRestaurant?.primary_language);
   const toast = useToast();
   const [tree, setTree] = useState(flatRecordsToMenuTree([]));

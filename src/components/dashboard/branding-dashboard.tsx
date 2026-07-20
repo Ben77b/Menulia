@@ -9,6 +9,7 @@ import { themeColorsFromDesign } from "@/lib/restaurant-design";
 import { normalizeHexColor, serializeMenuThemeColors } from "@/lib/theme-colors";
 import { serializeDisplayOptions } from "@/lib/display-options";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
+import { bustPublicMenuCache } from "@/lib/bust-public-menu-cache";
 import { Button } from "@/components/ui/button";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
 import { RestaurantLogo, LOGO_ACCEPT } from "@/components/restaurant-logo";
@@ -136,6 +137,7 @@ export function BrandingDashboard() {
 
       if (error) throw error;
 
+      bustPublicMenuCache(currentRestaurant.slug);
       await refreshRestaurants({ silent: true });
 
       if (displayColumnsMissing) {

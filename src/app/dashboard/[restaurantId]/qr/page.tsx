@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ToggleSwitch } from "@/components/dashboard/toggle-switch";
@@ -31,6 +31,110 @@ const QR_COLOR_PRESETS = [
   { label: "Forest Green", value: "#14532D" },
 ] as const;
 
+type QrComposeOptions = {
+  svgElement: SVGSVGElement;
+  canvas: HTMLCanvasElement;
+  size: number;
+  qrColor: string;
+  transparentBackground: boolean;
+  caption: string;
+  logoObjectUrl: string | null;
+  logoNaturalSize: { w: number; h: number } | null;
+};
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = src;
+  });
+}
+
+async function composeQrOntoCanvas(options: QrComposeOptions): Promise<void> {
+  const {
+    svgElement,
+    canvas,
+    size,
+    qrColor,
+    transparentBackground,
+    caption,
+    logoObjectUrl,
+    logoNaturalSize,
+  } = options;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const exportSvg = svgElement.cloneNode(true) as SVGSVGElement;
+  exportSvg.setAttribute("width", String(size));
+  exportSvg.setAttribute("height", String(size));
+
+  const svgData = new XMLSerializer().serializeToString(exportSvg);
+  const qrImg = await loadImage(
+    "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+  );
+
+  const trimmedCaption = caption.trim();
+  const hasCaption = trimmedCaption.length > 0;
+  const hasLogo = Boolean(logoObjectUrl);
+  const textPad = hasCaption ? Math.round(size * 0.12) : 0;
+  const qrDrawSize = size - textPad;
+
+  canvas.width = size;
+  canvas.height = size;
+  ctx.clearRect(0, 0, size, size);
+
+  if (!transparentBackground) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+  }
+
+  ctx.drawImage(qrImg, 0, 0, qrDrawSize, qrDrawSize);
+
+  if (hasLogo && logoObjectUrl) {
+    try {
+      const logoImg = await loadImage(logoObjectUrl);
+      const logoBox = Math.round(qrDrawSize * 0.22);
+      const clearPad = Math.round(logoBox * 0.18);
+      const clearSize = logoBox + clearPad * 2;
+      const clearX = Math.round((qrDrawSize - clearSize) / 2);
+      const clearY = Math.round((qrDrawSize - clearSize) / 2);
+
+      if (transparentBackground) {
+        ctx.clearRect(clearX, clearY, clearSize, clearSize);
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(clearX, clearY, clearSize, clearSize);
+      }
+
+      const aspect =
+        (logoNaturalSize?.w ?? (logoImg.naturalWidth || 1)) /
+        (logoNaturalSize?.h ?? (logoImg.naturalHeight || 1));
+      let drawW = logoBox;
+      let drawH = logoBox;
+      if (aspect > 1) {
+        drawH = Math.round(logoBox / aspect);
+      } else {
+        drawW = Math.round(logoBox * aspect);
+      }
+      const logoX = Math.round((qrDrawSize - drawW) / 2);
+      const logoY = Math.round((qrDrawSize - drawH) / 2);
+      ctx.drawImage(logoImg, logoX, logoY, drawW, drawH);
+    } catch {
+      // Preview without logo if the asset fails to load
+    }
+  }
+
+  if (hasCaption) {
+    ctx.fillStyle = qrColor;
+    ctx.font = `600 ${Math.round(size * 0.045)}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(trimmedCaption, size / 2, qrDrawSize + textPad / 2, size * 0.9);
+  }
+}
+
 export default function ShareMenuPage() {
   const { activeRestaurant, awaitingWorkspace } = useActiveRestaurant();
   const { t } = useDashboardLocale();
@@ -41,8 +145,10 @@ export default function ShareMenuPage() {
   const [qrCaption, setQrCaption] = useState("");
   const [logoObjectUrl, setLogoObjectUrl] = useState<string | null>(null);
   const [logoNaturalSize, setLogoNaturalSize] = useState<{ w: number; h: number } | null>(null);
-  const qrRef = useRef<HTMLDivElement>(null);
+  const qrSourceRef = useRef<HTMLDivElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const previewGenerationRef = useRef(0);
 
   const restaurantUrl = activeRestaurant
     ? getPublicMenuUrl(activeRestaurant.slug)
@@ -57,6 +163,41 @@ export default function ShareMenuPage() {
         : buildMenuEmbedSnippet("demo", "Restaurant"),
     [activeRestaurant]
   );
+
+  useEffect(() => {
+    const generation = ++previewGenerationRef.current;
+    const svgElement = qrSourceRef.current?.querySelector("svg");
+    const canvas = previewCanvasRef.current;
+    if (!svgElement || !canvas) return;
+
+    void composeQrOntoCanvas({
+      svgElement,
+      canvas,
+      size: QR_PREVIEW_SIZE,
+      qrColor,
+      transparentBackground,
+      caption: qrCaption,
+      logoObjectUrl,
+      logoNaturalSize,
+    }).catch((error) => {
+      if (generation === previewGenerationRef.current) {
+        console.error("[ShareMenu:Preview]", error);
+      }
+    });
+  }, [
+    restaurantUrl,
+    qrColor,
+    transparentBackground,
+    qrCaption,
+    logoObjectUrl,
+    logoNaturalSize,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (logoObjectUrl) URL.revokeObjectURL(logoObjectUrl);
+    };
+  }, [logoObjectUrl]);
 
   async function copyText(text: string, setCopied: (value: boolean) => void) {
     try {
@@ -86,28 +227,22 @@ export default function ShareMenuPage() {
     probe.src = url;
   }
 
-  function downloadQrCode() {
-    if (!qrRef.current) return;
-
-    const svgElement = qrRef.current.querySelector("svg");
+  async function downloadQrCode() {
+    const svgElement = qrSourceRef.current?.querySelector("svg");
     if (!svgElement) return;
 
-    const exportSvg = svgElement.cloneNode(true) as SVGSVGElement;
-    exportSvg.setAttribute("width", String(QR_EXPORT_SIZE));
-    exportSvg.setAttribute("height", String(QR_EXPORT_SIZE));
-
-    const svgData = new XMLSerializer().serializeToString(exportSvg);
     const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const caption = qrCaption.trim();
-    const hasCaption = caption.length > 0;
-    const hasLogo = Boolean(logoObjectUrl);
-    const textPad = hasCaption ? Math.round(QR_EXPORT_SIZE * 0.12) : 0;
-    const qrDrawSize = QR_EXPORT_SIZE - textPad;
-
-    const finishDownload = () => {
+    try {
+      await composeQrOntoCanvas({
+        svgElement,
+        canvas,
+        size: QR_EXPORT_SIZE,
+        qrColor,
+        transparentBackground,
+        caption: qrCaption,
+        logoObjectUrl,
+        logoNaturalSize,
+      });
       const pngUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = pngUrl;
@@ -115,94 +250,9 @@ export default function ShareMenuPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    };
-
-    const drawOverlaysAndFinish = () => {
-      if (hasLogo && logoObjectUrl) {
-        const logoImg = new Image();
-        logoImg.onload = () => {
-          const logoBox = Math.round(qrDrawSize * 0.22);
-          const clearPad = Math.round(logoBox * 0.18);
-          const clearSize = logoBox + clearPad * 2;
-          const clearX = Math.round((qrDrawSize - clearSize) / 2);
-          const clearY = Math.round((qrDrawSize - clearSize) / 2);
-
-          // Clear a quiet central square so the logo does not sit on live modules
-          if (transparentBackground) {
-            ctx.clearRect(clearX, clearY, clearSize, clearSize);
-          } else {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(clearX, clearY, clearSize, clearSize);
-          }
-
-          const aspect =
-            (logoNaturalSize?.w ?? (logoImg.naturalWidth || 1)) /
-            (logoNaturalSize?.h ?? (logoImg.naturalHeight || 1));
-          let drawW = logoBox;
-          let drawH = logoBox;
-          if (aspect > 1) {
-            drawH = Math.round(logoBox / aspect);
-          } else {
-            drawW = Math.round(logoBox * aspect);
-          }
-          const logoX = Math.round((qrDrawSize - drawW) / 2);
-          const logoY = Math.round((qrDrawSize - drawH) / 2);
-          ctx.drawImage(logoImg, logoX, logoY, drawW, drawH);
-
-          if (hasCaption) {
-            ctx.fillStyle = qrColor;
-            ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(caption, QR_EXPORT_SIZE / 2, qrDrawSize + textPad / 2, QR_EXPORT_SIZE * 0.9);
-          }
-          finishDownload();
-        };
-        logoImg.onerror = () => {
-          if (hasCaption) {
-            ctx.fillStyle = qrColor;
-            ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(caption, QR_EXPORT_SIZE / 2, qrDrawSize + textPad / 2, QR_EXPORT_SIZE * 0.9);
-          }
-          finishDownload();
-        };
-        logoImg.src = logoObjectUrl;
-        return;
-      }
-
-      if (hasCaption) {
-        ctx.fillStyle = qrColor;
-        ctx.font = `600 ${Math.round(QR_EXPORT_SIZE * 0.045)}px system-ui, sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(caption, QR_EXPORT_SIZE / 2, qrDrawSize + textPad / 2, QR_EXPORT_SIZE * 0.9);
-      }
-      finishDownload();
-    };
-
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = QR_EXPORT_SIZE;
-      canvas.height = QR_EXPORT_SIZE;
-
-      if (!transparentBackground) {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-
-      // Raw QR fills the full canvas when no caption/logo padding is needed
-      ctx.drawImage(img, 0, 0, qrDrawSize, qrDrawSize);
-
-      if (!hasLogo && !hasCaption) {
-        finishDownload();
-        return;
-      }
-
-      drawOverlaysAndFinish();
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+    } catch (error) {
+      console.error("[ShareMenu:Download]", error);
+    }
   }
 
   if (awaitingWorkspace) {
@@ -235,7 +285,12 @@ export default function ShareMenuPage() {
                   "bg-[linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb),linear-gradient(45deg,#e5e7eb_25%,transparent_25%,transparent_75%,#e5e7eb_75%,#e5e7eb)] bg-[length:16px_16px] bg-[position:0_0,8px_8px]"
               )}
             >
-              <div ref={qrRef} className="relative w-full [&_svg]:!h-auto [&_svg]:!w-full">
+              {/* Hidden SVG source for QR matrix generation */}
+              <div
+                ref={qrSourceRef}
+                className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"
+                aria-hidden
+              >
                 <QRCode
                   value={restaurantUrl}
                   size={QR_PREVIEW_SIZE}
@@ -243,21 +298,15 @@ export default function ShareMenuPage() {
                   bgColor={qrBackground}
                   level="H"
                 />
-                {logoObjectUrl ? (
-                  <div className="pointer-events-none absolute inset-[39%] overflow-hidden rounded-md bg-white/95 p-1 shadow-sm">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={logoObjectUrl} alt="" className="h-full w-full object-contain" />
-                  </div>
-                ) : null}
               </div>
-              {qrCaption.trim() ? (
-                <p
-                  className="mt-3 text-center text-sm font-semibold tracking-wide"
-                  style={{ color: qrColor }}
-                >
-                  {qrCaption.trim()}
-                </p>
-              ) : null}
+              <canvas
+                id="qr-preview-canvas"
+                ref={previewCanvasRef}
+                width={QR_PREVIEW_SIZE}
+                height={QR_PREVIEW_SIZE}
+                className="mx-auto h-auto w-full"
+                aria-label={t("share.qrTitle")}
+              />
             </div>
 
             <div className="flex w-full min-w-0 flex-1 flex-col gap-5">
@@ -356,7 +405,7 @@ export default function ShareMenuPage() {
                 />
               </div>
 
-              <Button onClick={downloadQrCode} className="min-h-11 w-full gap-2 sm:w-auto sm:self-start">
+              <Button onClick={() => void downloadQrCode()} className="min-h-11 w-full gap-2 sm:w-auto sm:self-start">
                 <Download className="h-4 w-4" />
                 {t("share.downloadQr")}
               </Button>
