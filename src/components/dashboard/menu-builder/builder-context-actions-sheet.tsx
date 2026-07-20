@@ -94,7 +94,7 @@ export function BuilderContextActionsSheet({
     <>
       <div
         className={cn(
-          "fixed inset-0 z-[60] bg-black/30 transition-opacity",
+          "fixed inset-0 z-40 w-screen h-screen min-h-screen bg-black/30 transition-opacity",
           open ? "opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={onClose}
@@ -106,7 +106,7 @@ export function BuilderContextActionsSheet({
         aria-modal="true"
         aria-labelledby="builder-actions-title"
         className={cn(
-          "fixed z-[70] flex max-h-[85vh] flex-col bg-white transition-all duration-300 ease-out",
+          "fixed z-50 flex max-h-[85vh] flex-col bg-white transition-all duration-300 ease-out",
           "inset-x-0 bottom-0 rounded-t-2xl border-t border-[#E5E5EA] shadow-[0_-12px_40px_rgba(0,0,0,0.12)]",
           "md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-md md:-translate-x-1/2 md:rounded-2xl md:border md:shadow-2xl",
           open

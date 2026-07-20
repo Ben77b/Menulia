@@ -155,9 +155,13 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative w-full max-w-md air-card air-card-pad shadow-xl">
+    <>
+      <div
+        className="fixed inset-0 z-40 w-screen h-screen min-h-screen bg-black/50"
+        onClick={handleClose}
+      />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-md air-card air-card-pad shadow-xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
@@ -264,7 +268,8 @@ export function AddRestaurantModal({ open, onClose, mode = "additional" }: AddRe
             </Button>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

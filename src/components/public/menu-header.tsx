@@ -133,13 +133,13 @@ export function MenuHeader({
       {hasLinks && (
         <>
           <div
-            className={`fixed inset-0 z-[60] bg-black/40 transition-opacity duration-300 ${
+            className={`fixed inset-0 z-40 w-screen h-screen min-h-screen bg-black/40 transition-opacity duration-300 ${
               sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
             onClick={() => setSidebarOpen(false)}
           />
           <aside
-            className={`fixed left-0 top-0 z-[70] flex h-full w-72 max-w-[85vw] flex-col shadow-2xl transition-transform duration-300 ${
+            className={`fixed left-0 top-0 z-50 flex h-full w-72 max-w-[85vw] flex-col shadow-2xl transition-transform duration-300 ${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
             style={{ backgroundColor: headerBackgroundColor, color: textColor }}

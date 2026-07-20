@@ -57,7 +57,7 @@ export function HotspotColorPopover({
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-50 w-[min(16rem,calc(100vw-1.5rem))] max-w-xs air-card p-4 shadow-xl",
+        "absolute z-30 w-[min(16rem,calc(100vw-1.5rem))] max-w-xs air-card p-4 shadow-xl",
         "animate-in fade-in zoom-in-95 duration-150"
       )}
       style={{

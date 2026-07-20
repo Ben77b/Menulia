@@ -20,7 +20,7 @@ export function CategorySlideOver({
         type="button"
         aria-label="Close categories"
         className={cn(
-          "fixed inset-0 z-40 bg-neutral-900/20 backdrop-blur-[1px] transition-opacity duration-300",
+          "fixed inset-0 z-40 w-screen h-screen min-h-screen bg-neutral-900/20 backdrop-blur-[1px] transition-opacity duration-300",
           open ? "opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={onClose}

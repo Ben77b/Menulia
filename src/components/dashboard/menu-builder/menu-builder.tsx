@@ -1443,15 +1443,15 @@ export function MenuBuilder() {
       )}
 
       {selectedDish && (
-        <div className="fixed inset-0 z-50 hidden md:block">
+        <div className="hidden md:block">
           <button
             type="button"
             aria-label="Close editor"
-            className="absolute inset-0 bg-neutral-900/20 backdrop-blur-[1px] transition-opacity"
+            className="fixed inset-0 z-40 w-screen h-screen min-h-screen bg-neutral-900/20 backdrop-blur-[1px] transition-opacity"
             onClick={handleCloseInspector}
           />
           <DishDetailInspector
-            className="absolute inset-y-0 right-0 flex w-[min(420px,100vw)] animate-in slide-in-from-right duration-300"
+            className="fixed inset-y-0 right-0 z-50 flex w-[min(420px,100vw)] animate-in slide-in-from-right duration-300"
             dish={selectedDish.dish}
             primaryLanguage={primaryLanguage}
             saving={busy}
@@ -1472,15 +1472,15 @@ export function MenuBuilder() {
       )}
 
       {addDishCategoryId && (
-        <div className="fixed inset-0 z-50 hidden md:block">
+        <div className="hidden md:block">
           <button
             type="button"
             aria-label="Close add dish"
-            className="absolute inset-0 bg-neutral-900/20 backdrop-blur-[1px] transition-opacity"
+            className="fixed inset-0 z-40 w-screen h-screen min-h-screen bg-neutral-900/20 backdrop-blur-[1px] transition-opacity"
             onClick={() => setAddDishCategoryId(null)}
           />
           <DishDetailInspector
-            className="absolute inset-y-0 right-0 flex w-[min(420px,100vw)] animate-in slide-in-from-right duration-300"
+            className="fixed inset-y-0 right-0 z-50 flex w-[min(420px,100vw)] animate-in slide-in-from-right duration-300"
             dish={null}
             mode="create"
             primaryLanguage={primaryLanguage}

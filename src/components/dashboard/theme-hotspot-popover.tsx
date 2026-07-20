@@ -80,7 +80,7 @@ export function ThemeHotspotPopover({
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-50 w-[min(20rem,calc(100vw-1.5rem))] max-w-sm rounded-2xl border border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)]",
+        "absolute z-30 w-[min(20rem,calc(100vw-1.5rem))] max-w-sm rounded-2xl border border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)]",
         "animate-in fade-in zoom-in-95 duration-150"
       )}
       style={{ top: position.top, left: position.left }}

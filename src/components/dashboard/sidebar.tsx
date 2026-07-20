@@ -21,7 +21,6 @@ import { AddRestaurantModal } from "@/components/dashboard/add-restaurant-modal"
 import { publicMenuAbsoluteUrl } from "@/lib/public-menu-url";
 import { cn } from "@/lib/utils";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
-import { DashboardLocaleToggle } from "@/components/dashboard/dashboard-locale-toggle";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -102,12 +101,15 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:hidden" onClick={onToggle} />
+        <div
+          className="fixed inset-0 z-40 w-screen h-screen min-h-screen bg-black/20 backdrop-blur-sm md:hidden"
+          onClick={onToggle}
+        />
       )}
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-full flex-col border-r border-neutral-200/50 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-transform duration-300 ease-out",
+          "fixed left-0 top-0 z-50 md:z-20 flex h-full flex-col border-r border-neutral-200/50 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-transform duration-300 ease-out",
           isOpen ? "translate-x-0 w-72" : "-translate-x-full w-72",
           "md:translate-x-0 md:w-64"
         )}
@@ -119,7 +121,6 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 <h1 className="text-xl font-bold tracking-tight text-slate-900">Menulia</h1>
                 <p className="mt-0.5 text-xs text-neutral-500">{t("nav.workspace")}</p>
               </div>
-              <DashboardLocaleToggle className="shrink-0" />
             </div>
           </div>
 

@@ -23,7 +23,7 @@ function DashboardTopHeader({ onOpenSidebar }: { onOpenSidebar: () => void }) {
     : null;
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-40 h-14 border-b border-neutral-200/60 bg-white/80 backdrop-blur-md md:left-64">
+    <header className="fixed left-0 right-0 top-0 z-20 h-14 border-b border-neutral-200/60 bg-white/80 backdrop-blur-md md:left-64">
       <div className="flex h-full w-full items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-2">
           <Button
