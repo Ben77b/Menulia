@@ -55,6 +55,93 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     en: "Get a printable QR code for your menu",
     es: "Obtén un código QR imprimible para tu menú",
   },
+  "home.questTitle": {
+    en: "Complete Your Restaurant Setup",
+    es: "Completa la configuración de tu restaurante",
+  },
+  "home.questSubtitle": {
+    en: "Finish these milestones to launch a polished guest experience.",
+    es: "Completa estos hitos para ofrecer una experiencia impecable a tus clientes.",
+  },
+  "home.questMenuTitle": {
+    en: "Create Your First Dishes & Categories",
+    es: "Crea tus primeros platos y categorías",
+  },
+  "home.questMenuDesc": {
+    en: "Open the Menu Builder and add the dishes guests will browse.",
+    es: "Abre el editor de menú y añade los platos que verán tus clientes.",
+  },
+  "home.questBrandTitle": {
+    en: "Tailor Your Branding & QR Design",
+    es: "Personaliza tu marca y el diseño del QR",
+  },
+  "home.questBrandDesc": {
+    en: "Upload your logo and refine colors in Design Studio.",
+    es: "Sube tu logo y ajusta los colores en el estudio de diseño.",
+  },
+  "home.questQrTitle": {
+    en: "Print QR Code & Share Menu",
+    es: "Imprime el código QR y comparte el menú",
+  },
+  "home.questQrDesc": {
+    en: "Download a printable QR and put your menu on every table.",
+    es: "Descarga un QR imprimible y pon tu menú en cada mesa.",
+  },
+  "home.analyticsTitle": {
+    en: "Menu Performance Analytics",
+    es: "Analítica del rendimiento del menú",
+  },
+  "home.analyticsSubtitle": {
+    en: "A snapshot of how guests discover and browse your digital menu.",
+    es: "Una vista de cómo los clientes descubren y exploran tu menú digital.",
+  },
+  "home.metricQrScans": { en: "Total QR Code Scans", es: "Escaneos totales de QR" },
+  "home.metricVisitors": { en: "Unique Menu Visitors", es: "Visitantes únicos del menú" },
+  "home.metricAvgTime": { en: "Average Viewing Time", es: "Tiempo medio de visualización" },
+  "home.trafficTitle": {
+    en: "Recent Menu Interaction Traffic",
+    es: "Tráfico reciente de interacciones",
+  },
+  "home.trafficColTime": { en: "Timestamp", es: "Fecha y hora" },
+  "home.trafficColLang": { en: "Language", es: "Idioma" },
+  "home.trafficColDevice": { en: "Device / Browser", es: "Dispositivo / navegador" },
+  "home.trafficColItems": { en: "Items viewed", es: "Ítems vistos" },
+  "home.analyticsMockNote": {
+    en: "Preview data — live analytics will replace this sample shortly.",
+    es: "Datos de vista previa: la analítica en vivo sustituirá esta muestra pronto.",
+  },
+  "home.growthTitle": { en: "Grow Your Digital Footprint", es: "Amplía tu presencia digital" },
+  "home.growthSubtitle": {
+    en: "Put your menu where diners already spend their time.",
+    es: "Pon tu menú donde tus clientes ya pasan el tiempo.",
+  },
+  "home.growthSocialTitle": {
+    en: "Add to Instagram & TikTok",
+    es: "Añadir a Instagram y TikTok",
+  },
+  "home.growthSocialDesc": {
+    en: "Copy your public link to turn followers into dining guests.",
+    es: "Copia tu enlace público para convertir seguidores en comensales.",
+  },
+  "home.growthMapsTitle": {
+    en: "Pin to Google My Business",
+    es: "Fijar en Google My Business",
+  },
+  "home.growthMapsDesc": {
+    en: "Embed your localized menu link straight into your business card profile.",
+    es: "Incrusta el enlace de tu menú localizado en el perfil de tu negocio.",
+  },
+  "home.growthEmbedTitle": {
+    en: "Add to Your Existing Website",
+    es: "Añadir a tu web actual",
+  },
+  "home.growthEmbedDesc": {
+    en: "Get a clean embed snippet to display your menu on your custom homepage.",
+    es: "Obtén un snippet limpio para mostrar tu menú en tu página web.",
+  },
+  "home.growthCopyLink": { en: "Copy public link", es: "Copiar enlace público" },
+  "home.growthMapsCta": { en: "Open Google Business", es: "Abrir Google Business" },
+  "home.growthCopyEmbed": { en: "Copy embed snippet", es: "Copiar código embed" },
   "share.pageTitle": { en: "Share the Menu", es: "Compartir menú" },
   "share.pageSubtitle": {
     en: "QR codes, direct links, and website embeds — everything you need to put your menu in guests' hands.",
