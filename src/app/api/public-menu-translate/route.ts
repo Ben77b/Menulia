@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { runtimeEnv } from "@/lib/runtime-env";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase-admin";
@@ -47,7 +47,7 @@ const RATE_LIMIT_MS = 8_000;
 
 const requestSchema = z.object({
   slug: z.string().min(1).max(120),
-  target_lang: z.string().min(2).max(8),
+  lang: z.string().min(2).max(8),
 });
 
 type MenuPendingItem = {
@@ -174,7 +174,7 @@ function shouldWrapIsolatedTerm(item: PendingItem): boolean {
   return isIsolatedMenuTerm(item.text);
 }
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const apiKey = runtimeEnv("DEEPL_API_KEY");
     if (!apiKey) {
@@ -192,13 +192,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const parsed = requestSchema.safeParse(await request.json());
+    const { searchParams } = new URL(request.url);
+    const parsed = requestSchema.safeParse({
+      slug: searchParams.get("slug") ?? "",
+      lang: searchParams.get("lang") ?? "",
+    });
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid request." }, { status: 400 });
     }
 
     const slug = parsed.data.slug.trim().toLowerCase();
-    const targetLangRaw = parsed.data.target_lang.trim().toLowerCase();
+    const targetLangRaw = parsed.data.lang.trim().toLowerCase();
     if (!isGuestAutoTranslateLanguage(targetLangRaw)) {
       return NextResponse.json({ error: "Unsupported target language." }, { status: 400 });
     }

@@ -107,11 +107,8 @@ export async function requestPublicMenuTranslation(
   tag_labels?: Record<string, string>;
 } | null> {
   try {
-    const response = await fetch("/api/public-menu-translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug, target_lang: targetLang }),
-    });
+    const params = new URLSearchParams({ slug, lang: targetLang });
+    const response = await fetch(`/api/public-menu-translate?${params.toString()}`);
     if (!response.ok) return null;
     return (await response.json()) as {
       already_complete?: boolean;
