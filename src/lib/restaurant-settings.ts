@@ -131,13 +131,19 @@ export async function loadRestaurantSettings(
   }
 
   return {
-    name: data.name ?? "",
+    name: resolveBuilderSourceText(
+      parseLocalizedFieldFromDb(data.name),
+      normalizePrimaryLanguage(data.primary_language)
+    ) || (data.name ?? ""),
     slug: typeof data.slug === "string" ? data.slug : "",
     tagline: resolveBuilderSourceText(
       parseLocalizedFieldFromDb(data.meta_description),
       normalizePrimaryLanguage(data.primary_language)
     ),
-    location: data.location ?? "",
+    location: resolveBuilderSourceText(
+      parseLocalizedFieldFromDb(data.location),
+      normalizePrimaryLanguage(data.primary_language)
+    ) || (data.location ?? ""),
     hours: resolveBuilderSourceText(
       parseLocalizedFieldFromDb(data.hours),
       normalizePrimaryLanguage(data.primary_language)

@@ -7,6 +7,7 @@ interface PublicMenuJsonLdProps {
   menu: PublicMenuParentCategory[];
   flatCategories: PublicMenuSubcategory[];
   hasNestedStructure: boolean;
+  lang?: string;
 }
 
 export function PublicMenuJsonLd({
@@ -14,12 +15,14 @@ export function PublicMenuJsonLd({
   menu,
   flatCategories,
   hasNestedStructure,
+  lang = "en",
 }: PublicMenuJsonLdProps) {
   const data = buildPublicMenuJsonLd({
     restaurant,
     menu,
     flatCategories,
     hasNestedStructure,
+    lang,
   });
 
   return <JsonLd data={data} />;

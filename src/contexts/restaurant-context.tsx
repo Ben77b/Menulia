@@ -16,6 +16,7 @@ import { buildUserProfile, syncUserProfileRecord, type UserProfile } from "@/lib
 import { logAuthDiagnostic } from "@/lib/auth/messages";
 import { parseCustomLinks, type RestaurantLink } from "@/lib/restaurant-links";
 import { normalizePrimaryLanguage, type MenuContentLanguage } from "@/lib/menu-content-languages";
+import { getLocalizedText } from "@/lib/utils/i18n-text";
 
 export interface RestaurantSummary {
   id: string;
@@ -49,19 +50,20 @@ interface RestaurantContextType {
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
 
 function toSummary(restaurant: Record<string, unknown>): RestaurantSummary {
+  const primary = normalizePrimaryLanguage(restaurant.primary_language);
   return {
     id: String(restaurant.id),
-    name: String(restaurant.name ?? ""),
+    name: getLocalizedText(restaurant.name, primary) || String(restaurant.slug ?? restaurant.id ?? ""),
     slug: typeof restaurant.slug === "string" ? restaurant.slug : String(restaurant.id ?? ""),
     logo: (restaurant.logo as string | null) ?? (restaurant.logo_url as string | null) ?? null,
     font_pack_id: restaurant.font_pack_id as string | undefined,
     user_id: restaurant.user_id as string | undefined,
-    location: typeof restaurant.location === "string" ? restaurant.location : "",
-    hours: typeof restaurant.hours === "string" ? restaurant.hours : "",
+    location: getLocalizedText(restaurant.location, primary),
+    hours: getLocalizedText(restaurant.hours, primary),
     contact_info: typeof restaurant.contact_info === "string" ? restaurant.contact_info : "",
-    footer_slogan: typeof restaurant.footer_slogan === "string" ? restaurant.footer_slogan : "",
+    footer_slogan: getLocalizedText(restaurant.footer_slogan, primary),
     custom_links: parseCustomLinks(restaurant.custom_links),
-    primary_language: normalizePrimaryLanguage(restaurant.primary_language),
+    primary_language: primary,
   };
 }
 

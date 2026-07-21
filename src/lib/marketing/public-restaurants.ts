@@ -1,5 +1,6 @@
 import { createAnonClient } from "@/lib/supabase";
 import { isMissingColumnError } from "@/lib/restaurant-settings";
+import { getLocalizedText } from "@/lib/utils/i18n-text";
 
 export type PublicRestaurantProfile = {
   name: string;
@@ -13,14 +14,14 @@ function normalizeRows(
 ): PublicRestaurantProfile[] {
   return (rows ?? [])
     .filter((row) => typeof row.slug === "string" && row.slug.length > 0)
-    .map((row) => ({
-      name: typeof row.name === "string" && row.name.trim() ? row.name : (row.slug as string),
-      slug: row.slug as string,
-      description:
-        typeof row[descriptionKey] === "string" && (row[descriptionKey] as string).trim()
-          ? (row[descriptionKey] as string)
-          : "",
-    }));
+    .map((row) => {
+      const slug = row.slug as string;
+      return {
+        name: getLocalizedText(row.name) || slug,
+        slug,
+        description: getLocalizedText(row[descriptionKey]),
+      };
+    });
 }
 
 export async function fetchPublicRestaurantProfiles(): Promise<PublicRestaurantProfile[]> {

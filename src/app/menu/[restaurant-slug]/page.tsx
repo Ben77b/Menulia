@@ -18,15 +18,18 @@ import {
 import {
   buildPublicMenuPageMetadata,
   fetchPublicRestaurantBySlug,
+  normalizePublicMenuLang,
 } from "@/lib/public-menu-seo";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { parseDisplayOptions } from "@/lib/display-options";
 import { normalizePrimaryLanguage } from "@/lib/menu-content-languages";
 import { parseTypography } from "@/lib/typography";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
+import { getLocalizedText } from "@/lib/utils/i18n-text";
 
 interface PageProps {
   params: Promise<{ "restaurant-slug": string }>;
+  searchParams?: Promise<{ lang?: string | string[] }>;
 }
 
 function resolveFonts(typography: Record<string, unknown> | null | undefined) {
@@ -36,25 +39,34 @@ function resolveFonts(typography: Record<string, unknown> | null | undefined) {
   });
 }
 
-export async function generateMetadata({ params }: PageProps) {
+function pickLangParam(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+export async function generateMetadata({ params, searchParams }: PageProps) {
   const resolvedParams = await params;
+  const resolvedSearch = searchParams ? await searchParams : {};
   const slugParam = resolvedParams["restaurant-slug"];
+  const lang = normalizePublicMenuLang(pickLangParam(resolvedSearch.lang));
   const restaurant = await fetchPublicRestaurantBySlug(slugParam);
 
   if (!restaurant) {
     return {
       title: { absolute: `Menu — ${slugParam}` },
-      description: "Restaurant menu on menulia.net",
+      description: "Restaurant menu on Menulia",
     };
   }
 
-  return buildPublicMenuPageMetadata(restaurant);
+  return buildPublicMenuPageMetadata(restaurant, lang);
 }
 
-export default async function PublicMenuPage({ params }: PageProps) {
+export default async function PublicMenuPage({ params, searchParams }: PageProps) {
   try {
     const resolvedParams = await params;
+    const resolvedSearch = searchParams ? await searchParams : {};
     const slugParam = resolvedParams["restaurant-slug"];
+    const lang = normalizePublicMenuLang(pickLangParam(resolvedSearch.lang));
 
     const restaurant = await getPublicRestaurantRow(slugParam);
     if (!restaurant) notFound();
@@ -77,6 +89,8 @@ export default async function PublicMenuPage({ params }: PageProps) {
         : undefined
     );
     const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
+    const restaurantName =
+      getLocalizedText(restaurant.name, defaultLocale) || profile.name;
 
     return (
       <div className="public-menu-enter">
@@ -86,14 +100,15 @@ export default async function PublicMenuPage({ params }: PageProps) {
           menu={menu ?? []}
           flatCategories={flatCategories ?? []}
           hasNestedStructure={hasNestedStructure}
+          lang={lang}
         />
         <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
         <PublicMenuShell
-          restaurantName={(restaurant.name as string) ?? ""}
+          restaurantName={restaurantName}
           restaurantSlug={slugParam}
           logo={(restaurant.logo as string | null) ?? null}
-          location={(restaurant.location as string | null) ?? ""}
-          hours={(restaurant.hours as string | null) ?? ""}
+          location={getLocalizedText(restaurant.location, defaultLocale)}
+          hours={typeof restaurant.hours === "string" ? restaurant.hours : ""}
           contactInfo={(restaurant.contact_info as string | null) ?? ""}
           footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
           defaultLocale={defaultLocale}

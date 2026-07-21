@@ -1,4 +1,5 @@
 import type { MenuContentLanguage } from "./menu-content-languages";
+import { getLocalizedText } from "@/lib/utils/i18n-text";
 
 export type LocalizedTextRecord = Record<string, string>;
 export type LocalizedTextValue = string | LocalizedTextRecord | null | undefined;
@@ -14,21 +15,18 @@ function normalizeText(input: unknown): string {
   return typeof input === "string" ? input : "";
 }
 
+/**
+ * Resolve a localized field to a clean display string (JSON unpack + HTML entity decode).
+ */
 export function resolveLocalizedText(
   value: LocalizedTextValue,
   lang: string = "en",
   fallbackLang: string = "en"
 ): string {
-  if (typeof value === "string") return value;
-  if (!isLocalizedTextRecord(value)) return "";
-
-  return (
-    normalizeText(value[lang]) ||
-    normalizeText(value[fallbackLang]) ||
-    normalizeText(Object.values(value)[0]) ||
-    ""
-  );
+  return getLocalizedText(value, lang, fallbackLang);
 }
+
+export { getLocalizedText, decodeHtmlEntities, truncateSeoText } from "@/lib/utils/i18n-text";
 
 export function mergeLocalizedText(
   current: LocalizedTextValue,
@@ -63,13 +61,7 @@ export function resolveBuilderSourceText(
   value: LocalizedTextValue,
   sourceLang: string = "en"
 ): string {
-  if (typeof value === "string") return value;
-  if (!isLocalizedTextRecord(value)) return "";
-  return (
-    normalizeText(value[sourceLang]) ||
-    normalizeText(Object.values(value).find((text) => text.trim()) ?? "") ||
-    ""
-  );
+  return getLocalizedText(value, sourceLang, sourceLang);
 }
 
 export function resolveBuilderTranslationText(
@@ -78,7 +70,7 @@ export function resolveBuilderTranslationText(
 ): string {
   if (typeof value === "string") return "";
   if (!isLocalizedTextRecord(value)) return "";
-  return normalizeText(value[lang]);
+  return getLocalizedText({ [lang]: value[lang] ?? "" }, lang, lang);
 }
 
 /** Keep only the primary-language string; drop all other locale keys. */

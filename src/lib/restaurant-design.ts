@@ -7,6 +7,7 @@ import {
   normalizeHexColor,
   type MenuThemeColors,
 } from "./theme-colors";
+import { getLocalizedText } from "@/lib/utils/i18n-text";
 
 export interface RestaurantDesign {
   accentColor: string;
@@ -174,13 +175,13 @@ export function designFromRestaurant(row: {
 
   return applyComputedContrast({
     ...DEFAULT_DESIGN,
-    restaurantName: typeof row.name === "string" ? row.name : "",
+    restaurantName: getLocalizedText(row.name),
     logo: typeof row.logo === "string" ? row.logo : "",
-    location: typeof row.location === "string" ? row.location : "",
-    hours: typeof row.hours === "string" ? row.hours : "",
+    location: getLocalizedText(row.location),
+    hours: getLocalizedText(row.hours),
     contactInfo: typeof row.contact_info === "string" ? row.contact_info : "",
-    metaTitle: typeof row.meta_title === "string" ? row.meta_title : "",
-    metaDescription: typeof row.meta_description === "string" ? row.meta_description : "",
+    metaTitle: getLocalizedText(row.meta_title),
+    metaDescription: getLocalizedText(row.meta_description),
     headerBackgroundColor: normalizeHexColor(
       theme.headerBackgroundColor,
       DEFAULT_MENU_THEME.headerBackgroundColor
