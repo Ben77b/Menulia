@@ -18,13 +18,9 @@ export default function MarketingLocaleError({
   useEffect(() => {
     if (attempted.current) return;
     attempted.current = true;
-    const id = window.setTimeout(() => reset(), 50);
+    const id = window.setTimeout(() => reset(), 0);
     return () => window.clearTimeout(id);
   }, [reset]);
 
-  return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900">
-      <main className="flex-1 px-4 py-10" />
-    </div>
-  );
+  return null;
 }
