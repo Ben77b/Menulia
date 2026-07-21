@@ -271,7 +271,19 @@ function SettingsPageContent() {
             onClick={saveChanges}
             disabled={saving || Boolean(slugError)}
           >
-            {saving ? t("common.saving") : saveSuccess ? t("branding.saved") : t("branding.saveChanges")}
+            {saving ? (
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  aria-hidden
+                />
+                {t("common.saving")}
+              </span>
+            ) : saveSuccess ? (
+              t("branding.saved")
+            ) : (
+              t("branding.saveChanges")
+            )}
           </Button>
         )}
       </div>
@@ -323,15 +335,18 @@ function SettingsPageContent() {
                   hint="The slug guests use at menulia.net/menu/your-slug"
                 />
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-                  <span className="shrink-0 text-xs text-neutral-500 sm:text-sm">
+                  <span className="shrink-0 truncate text-xs text-neutral-500 sm:text-sm">
                     menulia.net/menu/
                   </span>
                   <input
                     type="text"
                     value={restaurantSlug}
                     onChange={(e) => handleSlugChange(e.target.value)}
-                    className="air-input w-full min-w-0 flex-1"
+                    className="air-input w-full min-w-0 flex-1 focus-visible:outline-none"
                     placeholder="your-restaurant-slug"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                   />
                 </div>
                 {slugError && <p className="mt-1 text-xs text-red-600">{slugError}</p>}
@@ -527,7 +542,19 @@ function SettingsPageContent() {
                 onClick={saveChanges}
                 disabled={saving || Boolean(slugError)}
               >
-                {saving ? t("common.saving") : saveSuccess ? t("branding.saved") : t("branding.saveChanges")}
+                {saving ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                      aria-hidden
+                    />
+                    {t("common.saving")}
+                  </span>
+                ) : saveSuccess ? (
+                  t("branding.saved")
+                ) : (
+                  t("branding.saveChanges")
+                )}
               </Button>
             </div>
           )}

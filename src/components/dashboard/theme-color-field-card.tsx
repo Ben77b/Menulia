@@ -53,7 +53,7 @@ export function ThemeColorFieldCard({
         )}
       </div>
 
-      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3 transition-all hover:border-slate-300 hover:shadow-sm">
+      <label className="flex min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3 transition-all hover:border-slate-300 hover:shadow-sm focus-within:ring-2 focus-within:ring-slate-900/10">
         <span
           className={cn(
             "relative shrink-0 overflow-hidden rounded-xl border border-slate-200 shadow-inner",
@@ -80,12 +80,12 @@ export function ThemeColorFieldCard({
                 onChange(next.length === 7 ? next : safeColor);
               }
             }}
-            className="air-input h-9 flex-1 font-mono text-xs"
+            className="air-input h-9 min-w-0 flex-1 font-mono text-xs"
             spellCheck={false}
             aria-label={`${label} hex value`}
           />
         ) : (
-          <span className="font-mono text-xs text-slate-500">{safeColor}</span>
+          <span className="min-w-0 truncate font-mono text-xs text-slate-500">{safeColor}</span>
         )}
       </label>
     </div>

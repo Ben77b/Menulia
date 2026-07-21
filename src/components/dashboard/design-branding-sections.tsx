@@ -206,7 +206,7 @@ export function DesignLogoSeoSection({ showHeading = true }: { showHeading?: boo
 
       <div className="mb-5">
         <label className="mb-3 block text-sm font-medium text-gray-700">Restaurant Logo</label>
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex w-full max-w-sm flex-col items-center gap-3">
           {design.logo ? (
             <div className="relative">
               <RestaurantLogo
@@ -218,21 +218,26 @@ export function DesignLogoSeoSection({ showHeading = true }: { showHeading?: boo
               <button
                 type="button"
                 onClick={() => updateDesign({ logo: "" })}
-                className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
+                className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/30 active:scale-95"
               >
                 <X className="h-3 w-3" />
               </button>
             </div>
           ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50">
+            <button
+              type="button"
+              onClick={() => logoInputRef.current?.click()}
+              className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition-colors hover:border-gray-400 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/15 active:scale-[0.98]"
+              aria-label="Upload restaurant logo"
+            >
               <ImageIcon className="h-7 w-7 text-gray-400" />
-            </div>
+            </button>
           )}
           <Button
             size="sm"
             variant="outline"
             onClick={() => logoInputRef.current?.click()}
-            className="w-full gap-2"
+            className="w-full max-w-xs gap-2"
           >
             <Upload className="h-4 w-4" />
             Upload Logo

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { contrastingTextColor } from "@/lib/contrast";
@@ -32,16 +39,11 @@ interface DishCarouselProps {
   tagLabelMap?: Record<string, string>;
 }
 
+/** Mobile card width leaves ~15vw peek on each side. */
 const MOBILE_CARD_WIDTH_VW = 70;
-const MOBILE_TRACK_GAP_PX = 12; // gap-3
-const MOBILE_TRACK_ANCHOR_VW = 13;
 
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
-}
-
-function mobileTrackTranslate(activeIndex: number): string {
-  return `translateX(calc(${MOBILE_TRACK_ANCHOR_VW}vw - (${activeIndex} * (${MOBILE_CARD_WIDTH_VW}vw + ${MOBILE_TRACK_GAP_PX}px))))`;
 }
 
 function CarouselCardFrame({
@@ -54,8 +56,10 @@ function CarouselCardFrame({
   return (
     <div
       className={cn(
-        "origin-center transition-all duration-300 will-change-transform",
-        isActive ? "scale-100 opacity-100" : "scale-[0.82] opacity-40"
+        "origin-center transition-all duration-300 ease-out will-change-transform",
+        isActive
+          ? "z-[1] scale-100 opacity-100"
+          : "z-0 scale-95 opacity-60"
       )}
     >
       {children}
@@ -90,6 +94,9 @@ export function DishCarousel({
   );
   const [activeIndex, setActiveIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
+  const mobileScrollerRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const skipScrollSyncRef = useRef(false);
   const isPreview = usePreviewCanvas();
   const arrowColor = isPreview
     ? pv("carouselArrowIcon")
@@ -104,6 +111,51 @@ export function DishCarousel({
       setActiveIndex(Math.max(0, safeDishes.length - 1));
     }
   }, [activeIndex, safeDishes.length]);
+
+  const scrollMobileToIndex = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
+    const scroller = mobileScrollerRef.current;
+    const slide = slideRefs.current[index];
+    if (!scroller || !slide) return;
+    skipScrollSyncRef.current = true;
+    const target =
+      slide.offsetLeft - (scroller.clientWidth - slide.clientWidth) / 2;
+    scroller.scrollTo({ left: Math.max(0, target), behavior });
+    window.setTimeout(() => {
+      skipScrollSyncRef.current = false;
+    }, behavior === "smooth" ? 360 : 0);
+  }, []);
+
+  useEffect(() => {
+    // Keep mobile scroller aligned when active index changes via arrows / desktop
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches) {
+      scrollMobileToIndex(activeIndex);
+    }
+  }, [activeIndex, scrollMobileToIndex]);
+
+  useEffect(() => {
+    const scroller = mobileScrollerRef.current;
+    if (!scroller || safeDishes.length <= 1) return;
+
+    const onScroll = () => {
+      if (skipScrollSyncRef.current) return;
+      const center = scroller.scrollLeft + scroller.clientWidth / 2;
+      let nearest = 0;
+      let nearestDist = Number.POSITIVE_INFINITY;
+      slideRefs.current.forEach((slide, index) => {
+        if (!slide) return;
+        const slideCenter = slide.offsetLeft + slide.clientWidth / 2;
+        const dist = Math.abs(slideCenter - center);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = index;
+        }
+      });
+      setActiveIndex((current) => (current === nearest ? current : nearest));
+    };
+
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, [safeDishes.length]);
 
   const desktopSlots = useMemo(() => {
     if (safeDishes.length <= 1) return [];
@@ -144,6 +196,7 @@ export function DishCarousel({
     const delta = endX - touchStartX.current;
     touchStartX.current = null;
 
+    // Desktop three-slot still uses swipe deltas; mobile relies on native snap scroll.
     if (delta > 48) goPrevious();
     else if (delta < -48) goNext();
   }
@@ -176,6 +229,8 @@ export function DishCarousel({
     tagLabelMap,
   });
 
+  const sidePad = `calc((100vw - ${MOBILE_CARD_WIDTH_VW}vw) / 2)`;
+
   return (
     <div className="relative mx-auto max-w-4xl overflow-visible py-4 sm:px-14">
       {safeDishes.length > 1 && (
@@ -184,7 +239,7 @@ export function DishCarousel({
             type="button"
             aria-label="Previous dish"
             onClick={goPrevious}
-            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:h-11 sm:w-11"
+            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
@@ -193,7 +248,7 @@ export function DishCarousel({
             type="button"
             aria-label="Next dish"
             onClick={goNext}
-            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-in-out hover:scale-105 sm:h-11 sm:w-11"
+            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
@@ -209,44 +264,47 @@ export function DishCarousel({
         </div>
       ) : (
         <>
-          {/* Mobile: full track with index-based centering */}
+          {/* Mobile: snap-scroll track with side peeks */}
           <div
-            className="overflow-visible sm:hidden"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            ref={mobileScrollerRef}
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-visible overscroll-x-contain scrollbar-none sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{
+              paddingLeft: sidePad,
+              paddingRight: sidePad,
+              WebkitOverflowScrolling: "touch",
+            }}
           >
-            <div
-              className="flex items-center gap-3 transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
-              style={{ transform: mobileTrackTranslate(activeIndex) }}
-            >
-              {safeDishes.map((dish, index) => {
-                const isActive = index === activeIndex;
+            {safeDishes.map((dish, index) => {
+              const isActive = index === activeIndex;
 
-                return (
-                  <div
-                    key={dish.id}
-                    className={cn(
-                      "w-[70vw] max-w-[70vw] shrink-0",
-                      !isActive && "cursor-pointer"
-                    )}
-                    onClick={() => {
-                      if (!isActive) setActiveIndex(index);
-                    }}
-                    onKeyDown={(event) => {
-                      if (isActive || event.key !== "Enter") return;
-                      setActiveIndex(index);
-                    }}
-                    role={isActive ? undefined : "button"}
-                    tabIndex={isActive ? undefined : 0}
-                    aria-label={isActive ? undefined : `Show ${dish.id}`}
-                  >
-                    <CarouselCardFrame isActive={isActive}>
-                      <DishCard {...dishCardProps(dish, isActive)} />
-                    </CarouselCardFrame>
-                  </div>
-                );
-              })}
-            </div>
+              return (
+                <div
+                  key={dish.id}
+                  ref={(node) => {
+                    slideRefs.current[index] = node;
+                  }}
+                  className={cn(
+                    "w-[70vw] max-w-[70vw] shrink-0 snap-center",
+                    !isActive && "cursor-pointer"
+                  )}
+                  onClick={() => {
+                    if (!isActive) setActiveIndex(index);
+                  }}
+                  onKeyDown={(event) => {
+                    if (isActive || event.key !== "Enter") return;
+                    setActiveIndex(index);
+                  }}
+                  role={isActive ? undefined : "button"}
+                  tabIndex={isActive ? undefined : 0}
+                  aria-label={isActive ? undefined : `Show ${dish.id}`}
+                  aria-current={isActive ? "true" : undefined}
+                >
+                  <CarouselCardFrame isActive={isActive}>
+                    <DishCard {...dishCardProps(dish, isActive)} />
+                  </CarouselCardFrame>
+                </div>
+              );
+            })}
           </div>
 
           {/* Desktop: three-slot layout */}

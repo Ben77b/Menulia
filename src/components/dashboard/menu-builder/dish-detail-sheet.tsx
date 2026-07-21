@@ -96,15 +96,21 @@ export function DishDetailSheet({
             <Button
               disabled={saving || !draft.name.trim()}
               onClick={() => onSave(draft)}
-              className="min-h-11 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-zinc-800"
+              className="min-h-11 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-zinc-800 focus-visible:ring-offset-0"
             >
-              {saving
-                ? isCreate
-                  ? t("dish.creating")
-                  : t("dish.saving")
-                : isCreate
-                  ? t("dish.create")
-                  : t("dish.save")}
+              {saving ? (
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                    aria-hidden
+                  />
+                  {isCreate ? t("dish.creating") : t("dish.saving")}
+                </span>
+              ) : isCreate ? (
+                t("dish.create")
+              ) : (
+                t("dish.save")
+              )}
             </Button>
           </div>
         </StickyActionBar>

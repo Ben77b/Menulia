@@ -1260,7 +1260,17 @@ export function MenuBuilder() {
           />
           <div className="flex gap-2">
             <Button variant="dark" onClick={handleAddSection} disabled={!newSectionName.trim() || busy}>
-              Save
+              {busy ? (
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                    aria-hidden
+                  />
+                  Saving…
+                </span>
+              ) : (
+                "Save"
+              )}
             </Button>
             <Button variant="outline" onClick={() => setAddingSection(false)}>
               Cancel

@@ -53,7 +53,7 @@ export function DishRow({
     <div
       className={cn(
         "group flex min-h-[72px] items-center gap-4 px-4 py-4 transition-colors sm:px-5",
-        selected ? "bg-sky-50/50" : "bg-white hover:bg-neutral-50/60"
+        selected ? "bg-sky-50/50" : "bg-white hover:bg-neutral-50/80 active:bg-neutral-100/70"
       )}
     >
       {reorderMode ? (

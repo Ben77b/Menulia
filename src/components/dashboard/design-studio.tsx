@@ -321,7 +321,19 @@ export function DesignStudio() {
             onClick={handleSaveDesign}
             disabled={saving || !currentRestaurant?.id}
           >
-            {saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Design"}
+            {saving ? (
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  aria-hidden
+                />
+                Saving...
+              </span>
+            ) : saveSuccess ? (
+              "Saved!"
+            ) : (
+              "Save Design"
+            )}
           </Button>
         </div>
       </div>

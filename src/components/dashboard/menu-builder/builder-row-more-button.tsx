@@ -26,7 +26,7 @@ export function BuilderRowMoreButton({
         onClick();
       }}
       className={cn(
-        "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-[#F5F5F7] hover:text-slate-800 disabled:opacity-40",
+        "inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-[#F5F5F7] hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/15 active:bg-[#ECECEF] disabled:opacity-40",
         className
       )}
     >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronDown, X } from "lucide-react";
 import type { ThemeHotspotGroup } from "@/lib/theme-inheritance";
 import type { AdvancedTheme } from "@/lib/advanced-theme";
@@ -76,14 +76,42 @@ export function ThemeHotspotPopover({
     onClose();
   };
 
+  const [anchoredStyle, setAnchoredStyle] = useState<CSSProperties>({
+    top: position.top,
+    left: position.left,
+  });
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const el = popoverRef.current;
+      const width = el?.offsetWidth ?? 320;
+      const height = el?.offsetHeight ?? 280;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const isMobile = vw < 640;
+
+      if (isMobile) {
+        setAnchoredStyle({});
+        return;
+      }
+
+      setAnchoredStyle({
+        top: Math.min(Math.max(8, position.top), Math.max(8, vh - height - 8)),
+        left: Math.min(Math.max(8, position.left), Math.max(8, vw - width - 8)),
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [position]);
+
   return (
     <div
       ref={popoverRef}
       className={cn(
-        "absolute z-30 w-[min(20rem,calc(100vw-1.5rem))] max-w-sm rounded-2xl border border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)]",
-        "animate-in fade-in zoom-in-95 duration-150"
+        "z-30 w-[min(20rem,calc(100vw-1.5rem))] max-w-sm rounded-2xl border border-[#E5E5EA] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.08)]",
+        "animate-in fade-in zoom-in-95 duration-150",
+        "fixed bottom-4 left-1/2 -translate-x-1/2 sm:absolute sm:bottom-auto sm:left-auto sm:translate-x-0"
       )}
-      style={{ top: position.top, left: position.left }}
+      style={anchoredStyle}
       role="dialog"
       aria-modal="true"
       aria-label={`Edit ${group.title} colours`}
