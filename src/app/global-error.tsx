@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Root error boundary — silent recovery only. Renders nothing.
- * Never show refresh banners or hardcoded error copy to anyone.
+ * Catches errors in the root layout itself.
+ * Must render <html> and <body>; keep them empty — no error copy, no refresh UI.
  */
-export default function RootError({
+export default function GlobalError({
   error,
   reset,
 }: {
@@ -16,7 +16,7 @@ export default function RootError({
   const attempted = useRef(false);
 
   useEffect(() => {
-    console.error("[error-boundary:root]", error);
+    console.error("[error-boundary:global]", error);
   }, [error]);
 
   useEffect(() => {
@@ -26,5 +26,9 @@ export default function RootError({
     return () => window.clearTimeout(id);
   }, [reset]);
 
-  return null;
+  return (
+    <html lang="en">
+      <body />
+    </html>
+  );
 }

@@ -2,11 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
-/**
- * Root error boundary — silent recovery only. Renders nothing.
- * Never show refresh banners or hardcoded error copy to anyone.
- */
-export default function RootError({
+/** Parent `/menu` segment — silent, no visible error UI for guests. */
+export default function MenuSegmentError({
   error,
   reset,
 }: {
@@ -16,7 +13,7 @@ export default function RootError({
   const attempted = useRef(false);
 
   useEffect(() => {
-    console.error("[error-boundary:root]", error);
+    console.error("[error-boundary:menu]", error);
   }, [error]);
 
   useEffect(() => {

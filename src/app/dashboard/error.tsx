@@ -1,10 +1,8 @@
 "use client";
 
-/**
- * Dashboard error boundary — silent auto-reset (no floating refresh banner).
- */
-import { FriendlyErrorView } from "@/components/friendly-error-view";
+import { useEffect, useRef } from "react";
 
+/** Dashboard error boundary — silent reset, no visible error UI. */
 export default function DashboardError({
   error,
   reset,
@@ -12,5 +10,18 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <FriendlyErrorView error={error} reset={reset} scope="dashboard" />;
+  const attempted = useRef(false);
+
+  useEffect(() => {
+    console.error("[error-boundary:dashboard]", error);
+  }, [error]);
+
+  useEffect(() => {
+    if (attempted.current) return;
+    attempted.current = true;
+    const id = window.setTimeout(() => reset(), 0);
+    return () => window.clearTimeout(id);
+  }, [reset]);
+
+  return null;
 }

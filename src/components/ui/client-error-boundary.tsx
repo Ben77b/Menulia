@@ -13,6 +13,7 @@ interface ClientErrorBoundaryState {
   error: Error | null;
 }
 
+/** Dashboard-only section boundary — never used on public menu routes. */
 export class ClientErrorBoundary extends Component<
   ClientErrorBoundaryProps,
   ClientErrorBoundaryState
@@ -36,9 +37,9 @@ export class ClientErrorBoundary extends Component<
     if (this.state.error) {
       return (
         <div className="air-card air-card-pad mx-auto max-w-lg text-center">
-          <h2 className="air-section-title">{this.props.title ?? "Something went wrong"}</h2>
+          <h2 className="air-section-title">{this.props.title ?? "Section unavailable"}</h2>
           <p className="air-page-subtitle mt-2">
-            This section failed to load. You can try again or refresh the page.
+            This section failed to load. You can try again.
           </p>
           <Button className="mt-4" variant="dark" onClick={this.handleReset}>
             Try again

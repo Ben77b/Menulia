@@ -1,12 +1,12 @@
 "use client";
 
-/**
- * Public menu error boundary — guests must never see refresh banners or error chrome.
- * Silently attempts recovery via reset(); renders nothing.
- */
 import { useEffect, useRef } from "react";
 
-export default function PublicMenuError({
+/**
+ * Public menu segment error boundary.
+ * Guests must never see refresh banners or error copy.
+ */
+export default function PublicMenuSlugError({
   error,
   reset,
 }: {
