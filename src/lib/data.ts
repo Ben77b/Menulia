@@ -1,5 +1,5 @@
-import { createAnonClient, getSupabaseBrowserClient } from "./supabase";
-import type { MenuItemWithTranslations, Restaurant, RestaurantFull } from "./types";
+import { getSupabaseBrowserClient } from "./supabase";
+import type { Restaurant } from "./types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { RestaurantCreationError, formatSupabaseError, logSupabaseFailure } from "./auth/errors";
 import { ensureUserProfileReady } from "./auth/session";
@@ -21,160 +21,11 @@ function normalizeRestaurantSlug(rawSlug: string): string {
   return normalized;
 }
 
-import { parseDishTagsFromDb } from "./dietary-tags";
-
-function mapDish(dish: Record<string, unknown>): MenuItemWithTranslations {
-  const price = dish.price;
-  const normalized = parseDishTagsFromDb({
-    tags: dish.tags as string[] | undefined,
-    allergens: dish.allergens as string[] | undefined,
-  });
-  return {
-    id: dish.id as string,
-    category_id: dish.category_id as string,
-    name: dish.name as string,
-    description: (dish.description as string) || "",
-    price: typeof price === "number" ? price : parseFloat(String(price)) || 0,
-    image_url: (dish.image as string) ?? null,
-    allergens: normalized.allergens,
-    is_available: (dish.is_available as boolean | undefined) !== false,
-    tags: normalized.tags,
-    translations: [],
-  };
-}
-
 function normalizeRestaurantRow(row: Record<string, unknown>): Restaurant {
   return {
     ...(row as unknown as Restaurant),
     logo: (row.logo as string | null) ?? (row.logo_url as string | null) ?? null,
   };
-}
-
-export async function attachMenuCategories(
-  restaurant: Record<string, unknown>
-): Promise<RestaurantFull> {
-  const normalized = normalizeRestaurantRow(restaurant);
-  const categories = await fetchCategoriesWithDishes(normalized.id);
-  return {
-    ...normalized,
-    categories,
-  } as RestaurantFull;
-}
-
-async function fetchCategoriesWithDishes(restaurantId: string) {
-  const supabase = createAnonClient();
-
-  const { data: categories, error: categoriesError } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("restaurant_id", restaurantId)
-    .order("order_index", { ascending: true });
-
-  if (categoriesError) {
-    logSupabaseFailure("fetchCategoriesWithDishes.categories", categoriesError);
-    return [];
-  }
-
-  if (!categories?.length) {
-    return [];
-  }
-
-  return Promise.all(
-    categories.map(async (category) => {
-      const { data: dishes, error: dishesError } = await supabase
-        .from("dishes")
-        .select("*")
-        .eq("category_id", category.id)
-        .order("created_at", { ascending: true });
-
-      if (dishesError) {
-        logSupabaseFailure("fetchCategoriesWithDishes.dishes", dishesError);
-      }
-
-      return {
-        id: category.id,
-        restaurant_id: category.restaurant_id,
-        name: category.name,
-        sort_order: category.order_index ?? 0,
-        layout_type: category.layout_type ?? "stacked",
-        items: dishesError ? [] : (dishes ?? []).map(mapDish),
-      };
-    })
-  );
-}
-
-export async function fetchRestaurantBySlug(slug: string): Promise<RestaurantFull | null> {
-  const supabase = createAnonClient();
-
-  const { data: restaurant, error } = await supabase
-    .from("restaurants")
-    .select("*")
-    .eq("slug", slug)
-    .single();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    logSupabaseFailure("fetchRestaurantBySlug", error);
-    return null;
-  }
-
-  if (!restaurant) return null;
-
-  const categories = await fetchCategoriesWithDishes(restaurant.id);
-
-  return {
-    ...normalizeRestaurantRow(restaurant),
-    categories,
-  } as RestaurantFull;
-}
-
-export async function fetchAllRestaurantSlugs(): Promise<string[]> {
-  try {
-    const supabase = createAnonClient();
-    const { data, error } = await supabase.from("restaurants").select("slug");
-
-    if (error) {
-      logSupabaseFailure("fetchAllRestaurantSlugs", error);
-      return [];
-    }
-
-    return (data || [])
-      .map((row) => row.slug)
-      .filter((slug): slug is string => typeof slug === "string" && slug.length > 0);
-  } catch (error) {
-    console.error("Error fetching restaurant slugs:", error);
-    return [];
-  }
-}
-
-export async function fetchAllRestaurants(userId: string): Promise<Restaurant[]> {
-  const supabase = getSupabaseBrowserClient();
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    logSupabaseFailure("fetchAllRestaurants", error);
-    throw error;
-  }
-
-  return (data || []).map((row) => normalizeRestaurantRow(row));
-}
-
-export async function fetchRestaurantsForAuthenticatedUser(): Promise<Restaurant[]> {
-  const supabase = getSupabaseBrowserClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    throw new Error("You must be signed in to load restaurants.");
-  }
-
-  return fetchAllRestaurants(user.id);
 }
 
 export interface CreateRestaurantInput {

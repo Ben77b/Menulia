@@ -32,29 +32,6 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "home.viewLiveSite": { en: "View Live Site", es: "Ver sitio en vivo" },
   "home.loading": { en: "Loading...", es: "Cargando..." },
   "home.noRestaurant": { en: "No restaurant selected", es: "Ningún restaurante seleccionado" },
-  "home.statCategories": { en: "Total Menu Categories", es: "Categorías del menú" },
-  "home.statDishes": { en: "Total Active Dishes", es: "Platos activos" },
-  "home.statLinks": { en: "Dynamic Link Count", es: "Enlaces dinámicos" },
-  "home.getStarted": { en: "Get Started", es: "Primeros pasos" },
-  "home.getStartedSubtitle": {
-    en: "Complete these steps to launch your digital menu.",
-    es: "Completa estos pasos para publicar tu menú digital.",
-  },
-  "home.stepCategoriesTitle": { en: "Build your categories", es: "Crea tus categorías" },
-  "home.stepCategoriesDesc": {
-    en: "Create menu categories to organize your dishes",
-    es: "Organiza tus platos en categorías del menú",
-  },
-  "home.stepThemeTitle": { en: "Design your theme", es: "Diseña tu tema" },
-  "home.stepThemeDesc": {
-    en: "Customize colors, fonts, and branding",
-    es: "Personaliza colores, fuentes y marca",
-  },
-  "home.stepQrTitle": { en: "Download your QR code", es: "Descarga tu código QR" },
-  "home.stepQrDesc": {
-    en: "Get a printable QR code for your menu",
-    es: "Obtén un código QR imprimible para tu menú",
-  },
   "home.questTitle": {
     en: "Complete Your Restaurant Setup",
     es: "Completa la configuración de tu restaurante",
@@ -96,8 +73,6 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
     es: "Una vista de cómo los clientes descubren y exploran tu menú digital.",
   },
   "home.metricQrScans": { en: "Total Menu Scans", es: "Escaneos totales del menú" },
-  "home.metricVisitors": { en: "Unique Menu Visitors", es: "Visitantes únicos del menú" },
-  "home.metricAvgTime": { en: "Average Viewing Time", es: "Tiempo medio de visualización" },
   "home.metricMobileShare": { en: "Mobile / tablet share", es: "Cuota móvil / tablet" },
   "home.metricLanguages": { en: "Languages requested", es: "Idiomas solicitados" },
   "home.analyticsRange7d": { en: "7 Days", es: "7 días" },
@@ -120,11 +95,6 @@ const UI_STRINGS: Record<string, Record<DashboardLocale, string>> = {
   "home.trafficColTime": { en: "Timestamp", es: "Fecha y hora" },
   "home.trafficColLang": { en: "Language", es: "Idioma" },
   "home.trafficColDevice": { en: "Device / Browser", es: "Dispositivo / navegador" },
-  "home.trafficColItems": { en: "Items viewed", es: "Ítems vistos" },
-  "home.analyticsMockNote": {
-    en: "Preview data — live analytics will replace this sample shortly.",
-    es: "Datos de vista previa: la analítica en vivo sustituirá esta muestra pronto.",
-  },
   "home.growthTitle": { en: "Grow Your Digital Footprint", es: "Amplía tu presencia digital" },
   "home.growthSubtitle": {
     en: "Put your menu where diners already spend their time.",

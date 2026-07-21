@@ -129,30 +129,6 @@ function buildSeries(
   });
 }
 
-export async function recordMenuView(input: {
-  restaurantId: string;
-  language?: string | null;
-  deviceType?: MenuViewDeviceType;
-}): Promise<boolean> {
-  return withSupabaseFallback(
-    "menu-views.record",
-    async () => {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.from("menu_views").insert({
-        restaurant_id: input.restaurantId,
-        language: normalizeViewLanguage(input.language),
-        device_type: input.deviceType ?? "unknown",
-      });
-      if (error) {
-        logSupabaseAuditError("menu-views.record", error);
-        return false;
-      }
-      return true;
-    },
-    false
-  );
-}
-
 export async function fetchMenuViewsSummary(
   restaurantId: string,
   timeframe: MenuViewsTimeframe
@@ -212,7 +188,6 @@ export async function fetchMenuViewsSummary(
   );
 }
 
-/** Server-safe insert used by API routes when a beacon posts. */
 export async function recordMenuViewAnon(input: {
   restaurantId: string;
   language?: string | null;
