@@ -7,15 +7,11 @@ import {
   Check,
   CheckCircle2,
   Circle,
-  Clock3,
   Code2,
   Copy,
-  Globe2,
   Instagram,
   MapPin,
   QrCode,
-  ScanLine,
-  Users,
 } from "lucide-react";
 import { useActiveRestaurant } from "@/hooks/use-active-restaurant";
 import { supabase } from "@/lib/supabase";
@@ -24,69 +20,13 @@ import { getPublicMenuUrl } from "@/lib/site-url";
 import { buildMenuEmbedSnippet } from "@/lib/menu-embed-snippet";
 import { useDashboardLocale } from "@/contexts/dashboard-locale-context";
 import { cn } from "@/lib/utils";
+import { HomeMenuViewsChart } from "@/components/dashboard/home-menu-views-chart";
+import { logSupabaseAuditError } from "@/lib/supabase-safe";
 
 type HomeStats = {
   totalCategories: number;
   totalDishes: number;
 };
-
-type MockTrafficRow = {
-  id: string;
-  timestamp: string;
-  language: string;
-  languageLabel: string;
-  browser: string;
-  itemsViewed: number;
-};
-
-const MOCK_ANALYTICS = {
-  qrScans: 1284,
-  uniqueVisitors: 892,
-  avgViewingTime: "2m 14s",
-};
-
-const MOCK_TRAFFIC: MockTrafficRow[] = [
-  {
-    id: "1",
-    timestamp: "Jul 20, 18:42",
-    language: "ES",
-    languageLabel: "Spanish",
-    browser: "Safari · iPhone",
-    itemsViewed: 12,
-  },
-  {
-    id: "2",
-    timestamp: "Jul 20, 17:18",
-    language: "EN",
-    languageLabel: "English",
-    browser: "Chrome · Android",
-    itemsViewed: 8,
-  },
-  {
-    id: "3",
-    timestamp: "Jul 20, 15:03",
-    language: "DE",
-    languageLabel: "German",
-    browser: "Chrome · Desktop",
-    itemsViewed: 15,
-  },
-  {
-    id: "4",
-    timestamp: "Jul 20, 13:51",
-    language: "FR",
-    languageLabel: "French",
-    browser: "Safari · iPad",
-    itemsViewed: 6,
-  },
-  {
-    id: "5",
-    timestamp: "Jul 19, 21:27",
-    language: "EN",
-    languageLabel: "English",
-    browser: "Firefox · Desktop",
-    itemsViewed: 11,
-  },
-];
 
 function qrQuestStorageKey(restaurantId: string) {
   return `menulia:home-quest-qr:${restaurantId}`;
@@ -148,7 +88,7 @@ export default function DashboardPage() {
           });
         }
       } catch (error) {
-        console.error("[DashboardHome:stats]", error);
+        logSupabaseAuditError("dashboard-home.stats", error);
         if (!cancelled) {
           setStats({ totalCategories: 0, totalDishes: 0 });
         }
@@ -258,7 +198,6 @@ export default function DashboardPage() {
         ) : null}
       </div>
 
-      {/* 1. Gamified setup quest */}
       <section className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-6">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -267,9 +206,7 @@ export default function DashboardPage() {
             </h2>
             <p className="mt-1 text-xs text-neutral-500">{t("home.questSubtitle")}</p>
           </div>
-          <p className="text-sm font-semibold tabular-nums text-amber-700">
-            {progressPercent}%
-          </p>
+          <p className="text-sm font-semibold tabular-nums text-amber-700">{progressPercent}%</p>
         </div>
 
         <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
@@ -333,90 +270,11 @@ export default function DashboardPage() {
         </ul>
       </section>
 
-      {/* 2. Analytics */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-base font-semibold tracking-tight text-slate-900">
-            {t("home.analyticsTitle")}
-          </h2>
-          <p className="mt-1 text-xs text-neutral-500">{t("home.analyticsSubtitle")}</p>
-        </div>
+      <HomeMenuViewsChart
+        restaurantId={activeRestaurant?.id}
+        qrHref={activeRestaurant ? `${restaurantBase}/qr` : "/dashboard"}
+      />
 
-        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-          <div className="rounded-xl border border-neutral-200/60 bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-5">
-            <div className="flex items-center gap-2 text-neutral-500">
-              <ScanLine className="h-4 w-4" aria-hidden />
-              <p className="text-xs font-medium">{t("home.metricQrScans")}</p>
-            </div>
-            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
-              {MOCK_ANALYTICS.qrScans.toLocaleString()}
-            </p>
-          </div>
-          <div className="rounded-xl border border-neutral-200/60 bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-5">
-            <div className="flex items-center gap-2 text-neutral-500">
-              <Users className="h-4 w-4" aria-hidden />
-              <p className="text-xs font-medium">{t("home.metricVisitors")}</p>
-            </div>
-            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
-              {MOCK_ANALYTICS.uniqueVisitors.toLocaleString()}
-            </p>
-          </div>
-          <div className="rounded-xl border border-neutral-200/60 bg-white p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:p-5">
-            <div className="flex items-center gap-2 text-neutral-500">
-              <Clock3 className="h-4 w-4" aria-hidden />
-              <p className="text-xs font-medium">{t("home.metricAvgTime")}</p>
-            </div>
-            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
-              {MOCK_ANALYTICS.avgViewingTime}
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-xl border border-neutral-200/60 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="border-b border-neutral-100 px-4 py-3 sm:px-5">
-            <h3 className="text-sm font-semibold text-slate-900">{t("home.trafficTitle")}</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-neutral-50/80 text-xs font-medium uppercase tracking-wide text-neutral-500">
-                <tr>
-                  <th className="px-4 py-3 sm:px-5">{t("home.trafficColTime")}</th>
-                  <th className="px-4 py-3 sm:px-5">{t("home.trafficColLang")}</th>
-                  <th className="px-4 py-3 sm:px-5">{t("home.trafficColDevice")}</th>
-                  <th className="px-4 py-3 text-right sm:px-5">{t("home.trafficColItems")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {MOCK_TRAFFIC.map((row) => (
-                  <tr key={row.id} className="transition-colors hover:bg-neutral-50/60">
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-700 sm:px-5">
-                      {row.timestamp}
-                    </td>
-                    <td className="px-4 py-3 sm:px-5">
-                      <span className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                        <Globe2 className="h-3 w-3 text-neutral-400" aria-hidden />
-                        {row.language}
-                      </span>
-                      <span className="sr-only">{row.languageLabel}</span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-neutral-600 sm:px-5">
-                      {row.browser}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-slate-900 sm:px-5">
-                      {row.itemsViewed}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="border-t border-neutral-100 px-4 py-2.5 text-[11px] text-neutral-400 sm:px-5">
-            {t("home.analyticsMockNote")}
-          </p>
-        </div>
-      </section>
-
-      {/* 3. Marketing growth CTAs */}
       <section className="space-y-4">
         <div>
           <h2 className="text-base font-semibold tracking-tight text-slate-900">

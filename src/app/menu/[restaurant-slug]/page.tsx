@@ -9,6 +9,7 @@ import {
 import { PublicMenuShell } from "@/components/public/public-menu-shell";
 import { PublicMenuDocumentBackground } from "@/components/public/public-menu-document-background";
 import { PublicMenuJsonLd } from "@/components/public/public-menu-json-ld";
+import { PublicMenuViewBeacon } from "@/components/public/public-menu-view-beacon";
 import {
   getPublicMenuPayload,
   getPublicRestaurantRow,
@@ -51,65 +52,71 @@ export async function generateMetadata({ params }: PageProps) {
 }
 
 export default async function PublicMenuPage({ params }: PageProps) {
-  const resolvedParams = await params;
-  const slugParam = resolvedParams["restaurant-slug"];
+  try {
+    const resolvedParams = await params;
+    const slugParam = resolvedParams["restaurant-slug"];
 
-  const restaurant = await getPublicRestaurantRow(slugParam);
-  if (!restaurant) notFound();
+    const restaurant = await getPublicRestaurantRow(slugParam);
+    if (!restaurant) notFound();
 
-  const profile = restaurantRowToProfile(restaurant, slugParam);
-  const restaurantId = profile.id;
+    const profile = restaurantRowToProfile(restaurant, slugParam);
+    const restaurantId = profile.id;
 
-  const [{ menu, flatCategories, hasNestedStructure }] = await Promise.all([
-    getPublicMenuPayload(restaurantId),
-  ]);
+    const [{ menu, flatCategories, hasNestedStructure }] = await Promise.all([
+      getPublicMenuPayload(restaurantId),
+    ]);
 
-  const links = parseCustomLinks(restaurant.custom_links);
-  const display = parseDisplayOptions(restaurant);
-  const basicTheme = parseMenuThemeColors(restaurant.theme_colors);
-  const { theme: advancedTheme, overrides } = splitAdvancedThemeStorage(restaurant.advanced_theme);
-  const theme = resolveUnifiedMenuTheme(basicTheme, advancedTheme, overrides);
-  const fonts = resolveFonts(
-    restaurant.typography && typeof restaurant.typography === "object"
-      ? (restaurant.typography as Record<string, unknown>)
-      : undefined
-  );
-  const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
+    const links = parseCustomLinks(restaurant.custom_links);
+    const display = parseDisplayOptions(restaurant);
+    const basicTheme = parseMenuThemeColors(restaurant.theme_colors);
+    const { theme: advancedTheme, overrides } = splitAdvancedThemeStorage(restaurant.advanced_theme);
+    const theme = resolveUnifiedMenuTheme(basicTheme, advancedTheme, overrides);
+    const fonts = resolveFonts(
+      restaurant.typography && typeof restaurant.typography === "object"
+        ? (restaurant.typography as Record<string, unknown>)
+        : undefined
+    );
+    const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
 
-  return (
-    <div className="public-menu-enter">
-      <PublicMenuJsonLd
-        restaurant={profile}
-        menu={menu}
-        flatCategories={flatCategories}
-        hasNestedStructure={hasNestedStructure}
-      />
-      <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
-      <PublicMenuShell
-        restaurantName={(restaurant.name as string) ?? ""}
-        restaurantSlug={slugParam}
-        logo={(restaurant.logo as string | null) ?? null}
-        location={(restaurant.location as string | null) ?? ""}
-        hours={(restaurant.hours as string | null) ?? ""}
-        contactInfo={(restaurant.contact_info as string | null) ?? ""}
-        footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
-        defaultLocale={defaultLocale}
-        theme={theme}
-        titleFont={fonts.titleFont}
-        bodyFont={fonts.textFont}
-        titleFontWeight={fonts.titleFontWeight}
-        titleFontStyle={fonts.titleFontStyle}
-        categoryFont={fonts.categoryFont}
-        categoryFontWeight={fonts.categoryFontWeight}
-        categoryFontStyle={fonts.categoryFontStyle}
-        bodyFontWeight={fonts.textFontWeight}
-        bodyFontStyle={fonts.textFontStyle}
-        menu={menu ?? []}
-        flatCategories={flatCategories ?? []}
-        hasNestedStructure={Boolean(hasNestedStructure)}
-        links={links ?? []}
-        display={display}
-      />
-    </div>
-  );
+    return (
+      <div className="public-menu-enter">
+        <PublicMenuViewBeacon restaurantId={restaurantId} />
+        <PublicMenuJsonLd
+          restaurant={profile}
+          menu={menu}
+          flatCategories={flatCategories}
+          hasNestedStructure={hasNestedStructure}
+        />
+        <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />
+        <PublicMenuShell
+          restaurantName={(restaurant.name as string) ?? ""}
+          restaurantSlug={slugParam}
+          logo={(restaurant.logo as string | null) ?? null}
+          location={(restaurant.location as string | null) ?? ""}
+          hours={(restaurant.hours as string | null) ?? ""}
+          contactInfo={(restaurant.contact_info as string | null) ?? ""}
+          footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
+          defaultLocale={defaultLocale}
+          theme={theme}
+          titleFont={fonts.titleFont}
+          bodyFont={fonts.textFont}
+          titleFontWeight={fonts.titleFontWeight}
+          titleFontStyle={fonts.titleFontStyle}
+          categoryFont={fonts.categoryFont}
+          categoryFontWeight={fonts.categoryFontWeight}
+          categoryFontStyle={fonts.categoryFontStyle}
+          bodyFontWeight={fonts.textFontWeight}
+          bodyFontStyle={fonts.textFontStyle}
+          menu={menu ?? []}
+          flatCategories={flatCategories ?? []}
+          hasNestedStructure={Boolean(hasNestedStructure)}
+          links={links ?? []}
+          display={display}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error("[Supabase Audit Error]:", "public-menu.page", error);
+    notFound();
+  }
 }

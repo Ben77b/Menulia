@@ -6,6 +6,7 @@ import {
 } from "@/lib/theme-inheritance";
 import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import type { PublicRestaurantProfile } from "@/lib/public-menu-seo";
+import { logSupabaseAuditError, withSupabaseFallback } from "@/lib/supabase-safe";
 
 export interface PublicMenuSplashTheme {
   restaurantName: string;
@@ -24,10 +25,23 @@ export const DEFAULT_PUBLIC_MENU_SPLASH: PublicMenuSplashTheme = {
 type RestaurantRow = Record<string, unknown>;
 
 async function queryRestaurantBySlug(slug: string): Promise<RestaurantRow | null> {
-  const supabase = createAnonClient();
-  const { data, error } = await supabase.from("restaurants").select("*").eq("slug", slug).single();
-  if (error || !data) return null;
-  return data as RestaurantRow;
+  return withSupabaseFallback(
+    "public-menu.queryRestaurantBySlug",
+    async () => {
+      const supabase = createAnonClient();
+      const { data, error } = await supabase
+        .from("restaurants")
+        .select("*")
+        .eq("slug", slug)
+        .single();
+      if (error) {
+        logSupabaseAuditError("public-menu.queryRestaurantBySlug", error);
+        return null;
+      }
+      return (data as RestaurantRow) ?? null;
+    },
+    null
+  );
 }
 
 export function restaurantRowToProfile(row: RestaurantRow, slugFallback: string): PublicRestaurantProfile {
@@ -47,16 +61,21 @@ export function restaurantRowToProfile(row: RestaurantRow, slugFallback: string)
 export function restaurantRowToSplashTheme(row: RestaurantRow | null): PublicMenuSplashTheme {
   if (!row) return DEFAULT_PUBLIC_MENU_SPLASH;
 
-  const basicTheme = parseMenuThemeColors(row.theme_colors);
-  const { theme: advancedTheme, overrides } = splitAdvancedThemeStorage(row.advanced_theme);
-  const theme = resolveUnifiedMenuTheme(basicTheme, advancedTheme, overrides);
+  try {
+    const basicTheme = parseMenuThemeColors(row.theme_colors);
+    const { theme: advancedTheme, overrides } = splitAdvancedThemeStorage(row.advanced_theme);
+    const theme = resolveUnifiedMenuTheme(basicTheme, advancedTheme, overrides);
 
-  return {
-    restaurantName: (row.name as string) ?? "",
-    logo: (row.logo as string | null) ?? null,
-    backgroundColor: theme.headerBackgroundColor,
-    accentColor: theme.categoryAccentColor,
-  };
+    return {
+      restaurantName: (row.name as string) ?? "",
+      logo: (row.logo as string | null) ?? null,
+      backgroundColor: theme.headerBackgroundColor,
+      accentColor: theme.categoryAccentColor,
+    };
+  } catch (error) {
+    logSupabaseAuditError("public-menu.restaurantRowToSplashTheme", error);
+    return DEFAULT_PUBLIC_MENU_SPLASH;
+  }
 }
 
 export async function getPublicRestaurantRow(slug: string): Promise<RestaurantRow | null> {
@@ -64,7 +83,11 @@ export async function getPublicRestaurantRow(slug: string): Promise<RestaurantRo
 }
 
 export async function getPublicMenuPayload(restaurantId: string) {
-  return fetchPublicMenuData(restaurantId);
+  return withSupabaseFallback(
+    "public-menu.getPublicMenuPayload",
+    () => fetchPublicMenuData(restaurantId),
+    { menu: [], flatCategories: [], hasNestedStructure: false }
+  );
 }
 
 export async function getPublicMenuSplashBySlug(slug: string): Promise<PublicMenuSplashTheme> {

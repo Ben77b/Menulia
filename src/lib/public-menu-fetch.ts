@@ -172,68 +172,84 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
   flatCategories: PublicMenuSubcategory[];
   hasNestedStructure: boolean;
 }> {
-  const supabase = createAnonClient();
+  try {
+    const supabase = createAnonClient();
 
-  const { data: categories, error: categoriesError } = await supabase
-    .from("categories")
-    .select("id, name, description, layout_type, order_index, parent_id")
-    .eq("restaurant_id", restaurantId)
-    .order("order_index", { ascending: true });
-
-  let categorySource: Array<{
-    id: string;
-    name: string;
-    description?: string | null;
-    layout_type: string | null;
-    order_index: number | null;
-    parent_id: string | null;
-  }> | null = categories;
-
-  if (categoriesError && isMissingColumnError(categoriesError)) {
-    const fallback = await supabase
+    const { data: categories, error: categoriesError } = await supabase
       .from("categories")
-      .select("id, name, layout_type, order_index, parent_id")
+      .select("id, name, description, layout_type, order_index, parent_id")
       .eq("restaurant_id", restaurantId)
       .order("order_index", { ascending: true });
-    categorySource = fallback.data;
-    if (fallback.error || !categorySource?.length) {
+
+    let categorySource: Array<{
+      id: string;
+      name: string;
+      description?: string | null;
+      layout_type: string | null;
+      order_index: number | null;
+      parent_id: string | null;
+    }> | null = categories;
+
+    if (categoriesError && isMissingColumnError(categoriesError)) {
+      const fallback = await supabase
+        .from("categories")
+        .select("id, name, layout_type, order_index, parent_id")
+        .eq("restaurant_id", restaurantId)
+        .order("order_index", { ascending: true });
+      categorySource = fallback.data;
+      if (fallback.error) {
+        console.error("[Supabase Audit Error]:", "public-menu-fetch.categories.fallback", fallback.error);
+      }
+      if (fallback.error || !categorySource?.length) {
+        return { menu: [], flatCategories: [], hasNestedStructure: false };
+      }
+    } else if (categoriesError || !categorySource?.length) {
+      if (categoriesError) {
+        console.error("[Supabase Audit Error]:", "public-menu-fetch.categories", categoriesError);
+      }
       return { menu: [], flatCategories: [], hasNestedStructure: false };
     }
-  } else if (categoriesError || !categorySource?.length) {
+
+    const categoryRows: CategoryRow[] = categorySource.map((category) => ({
+      id: category.id,
+      name: parseLocalizedFieldFromDb(category.name),
+      description: parseLocalizedFieldFromDb(
+        (category as { description?: string | null }).description ?? null
+      ) || null,
+      layout_type: category.layout_type ?? "stacked",
+      order_index: category.order_index ?? 0,
+      parent_id: category.parent_id ?? null,
+    }));
+
+    const leafCategoryIds = categoryRows
+      .filter((row) => {
+        const hasChildren = categoryRows.some((child) => child.parent_id === row.id);
+        return !hasChildren;
+      })
+      .map((row) => row.id);
+
+    const dishesByCategoryId: Record<string, ReturnType<typeof mapDishRow>[]> = {};
+
+    await Promise.all(
+      leafCategoryIds.map(async (categoryId) => {
+        try {
+          dishesByCategoryId[categoryId] = await fetchActiveDishesForCategory(supabase, categoryId);
+        } catch (error) {
+          console.error("[Supabase Audit Error]:", "public-menu-fetch.dishes", categoryId, error);
+          dishesByCategoryId[categoryId] = [];
+        }
+      })
+    );
+
+    const nested = hasNestedMenuStructure(categoryRows);
+
+    return {
+      menu: buildMenuHierarchy(categoryRows, dishesByCategoryId),
+      flatCategories: buildFlatCategories(categoryRows, dishesByCategoryId),
+      hasNestedStructure: nested,
+    };
+  } catch (error) {
+    console.error("[Supabase Audit Error]:", "public-menu-fetch.fetchPublicMenuData", error);
     return { menu: [], flatCategories: [], hasNestedStructure: false };
   }
-
-  const categoryRows: CategoryRow[] = categorySource.map((category) => ({
-    id: category.id,
-    name: parseLocalizedFieldFromDb(category.name),
-    description: parseLocalizedFieldFromDb(
-      (category as { description?: string | null }).description ?? null
-    ) || null,
-    layout_type: category.layout_type ?? "stacked",
-    order_index: category.order_index ?? 0,
-    parent_id: category.parent_id ?? null,
-  }));
-
-  const leafCategoryIds = categoryRows
-    .filter((row) => {
-      const hasChildren = categoryRows.some((child) => child.parent_id === row.id);
-      return !hasChildren;
-    })
-    .map((row) => row.id);
-
-  const dishesByCategoryId: Record<string, ReturnType<typeof mapDishRow>[]> = {};
-
-  await Promise.all(
-    leafCategoryIds.map(async (categoryId) => {
-      dishesByCategoryId[categoryId] = await fetchActiveDishesForCategory(supabase, categoryId);
-    })
-  );
-
-  const nested = hasNestedMenuStructure(categoryRows);
-
-  return {
-    menu: buildMenuHierarchy(categoryRows, dishesByCategoryId),
-    flatCategories: buildFlatCategories(categoryRows, dishesByCategoryId),
-    hasNestedStructure: nested,
-  };
 }

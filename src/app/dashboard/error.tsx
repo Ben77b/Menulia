@@ -1,6 +1,6 @@
 "use client";
 
-import { DiagnosticErrorView } from "@/components/diagnostic-error-view";
+import { FriendlyErrorView } from "@/components/friendly-error-view";
 
 export default function DashboardError({
   error,
@@ -9,5 +9,5 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <DiagnosticErrorView error={error} reset={reset} scope="dashboard" />;
+  return <FriendlyErrorView error={error} reset={reset} scope="dashboard" />;
 }
