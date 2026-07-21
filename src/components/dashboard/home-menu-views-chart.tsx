@@ -36,6 +36,26 @@ const EMPTY: MenuViewsSummary = {
   recent: [],
 };
 
+function normalizeSummary(value: Partial<MenuViewsSummary> | null | undefined): MenuViewsSummary {
+  return {
+    totalViews: Number(value?.totalViews) || 0,
+    mobileViews: Number(value?.mobileViews) || 0,
+    desktopViews: Number(value?.desktopViews) || 0,
+    languages: value?.languages && typeof value.languages === "object" ? value.languages : {},
+    series: Array.isArray(value?.series) ? value.series : [],
+    recent: Array.isArray(value?.recent) ? value.recent : [],
+  };
+}
+
+function formatRecentTime(createdAt: string | null | undefined): string {
+  if (!createdAt) return "—";
+  try {
+    return format(parseISO(createdAt), "MMM d, HH:mm");
+  } catch {
+    return "—";
+  }
+}
+
 type HomeMenuViewsChartProps = {
   restaurantId: string | null | undefined;
   qrHref: string;
@@ -58,7 +78,10 @@ export function HomeMenuViewsChart({ restaurantId, qrHref }: HomeMenuViewsChartP
 
     void fetchMenuViewsSummary(restaurantId, timeframe)
       .then((next) => {
-        if (!cancelled) setSummary(next);
+        if (!cancelled) setSummary(normalizeSummary(next));
+      })
+      .catch(() => {
+        if (!cancelled) setSummary(EMPTY);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -70,7 +93,7 @@ export function HomeMenuViewsChart({ restaurantId, qrHref }: HomeMenuViewsChartP
   }, [restaurantId, timeframe]);
 
   const languageCount = useMemo(
-    () => Object.keys(summary.languages).length,
+    () => Object.keys(summary.languages ?? {}).length,
     [summary.languages]
   );
 
@@ -160,7 +183,7 @@ export function HomeMenuViewsChart({ restaurantId, qrHref }: HomeMenuViewsChartP
           <div className="px-2 pb-2 pt-4 sm:px-4">
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={summary.series} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <AreaChart data={summary.series ?? []} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="menuViewsFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.35} />
@@ -204,7 +227,7 @@ export function HomeMenuViewsChart({ restaurantId, qrHref }: HomeMenuViewsChartP
           </div>
         )}
 
-        {summary.recent.length > 0 ? (
+        {(summary.recent ?? []).length > 0 ? (
           <div className="border-t border-neutral-100">
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
@@ -216,18 +239,18 @@ export function HomeMenuViewsChart({ restaurantId, qrHref }: HomeMenuViewsChartP
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {summary.recent.map((row) => (
-                    <tr key={row.id} className="transition-colors hover:bg-neutral-50/60">
+                  {(summary.recent ?? []).map((row) => (
+                    <tr key={row?.id ?? row?.created_at} className="transition-colors hover:bg-neutral-50/60">
                       <td className="whitespace-nowrap px-4 py-3 text-slate-700 sm:px-5">
-                        {format(parseISO(row.created_at), "MMM d, HH:mm")}
+                        {formatRecentTime(row?.created_at)}
                       </td>
                       <td className="px-4 py-3 sm:px-5">
                         <span className="inline-flex items-center gap-1.5 rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-semibold uppercase text-slate-700">
-                          {row.language}
+                          {row?.language || "—"}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 capitalize text-neutral-600 sm:px-5">
-                        {row.device_type}
+                        {row?.device_type || "—"}
                       </td>
                     </tr>
                   ))}

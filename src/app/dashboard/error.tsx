@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Dashboard error boundary — silent auto-reset on mount, floating refresh banner
+ * if recovery fails (never a blocking full-screen error page).
+ */
 import { FriendlyErrorView } from "@/components/friendly-error-view";
 
 export default function DashboardError({

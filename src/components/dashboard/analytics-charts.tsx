@@ -102,20 +102,36 @@ export function AnalyticsCharts({ pageViews, reservations, expenses }: Analytics
   );
 }
 
-function buildMonthlyTraffic(views: PageView[], reservations: Reservation[]) {
+function safeMonthKey(iso: string | null | undefined, withYear: boolean): string | null {
+  if (!iso) return null;
+  try {
+    return withYear
+      ? format(startOfMonth(parseISO(iso)), "MMM yyyy")
+      : format(parseISO(iso), "MMM");
+  } catch {
+    return null;
+  }
+}
+
+function buildMonthlyTraffic(
+  views: PageView[] | null | undefined,
+  reservations: Reservation[] | null | undefined
+) {
   const months = new Map<string, { views: number; conversions: number }>();
 
-  views.forEach((v) => {
-    const m = format(startOfMonth(parseISO(v.viewed_at)), "MMM yyyy");
+  (views ?? []).forEach((v) => {
+    const m = safeMonthKey(v?.viewed_at, true);
+    if (!m) return;
     const cur = months.get(m) ?? { views: 0, conversions: 0 };
     cur.views++;
     months.set(m, cur);
   });
 
-  reservations
-    .filter((r) => r.status === "completed")
+  (reservations ?? [])
+    .filter((r) => r?.status === "completed")
     .forEach((r) => {
-      const m = format(startOfMonth(parseISO(r.reserved_at)), "MMM yyyy");
+      const m = safeMonthKey(r?.reserved_at, true);
+      if (!m) return;
       const cur = months.get(m) ?? { views: 0, conversions: 0 };
       cur.conversions++;
       months.set(m, cur);
@@ -126,14 +142,16 @@ function buildMonthlyTraffic(views: PageView[], reservations: Reservation[]) {
     .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 }
 
-function buildSeasonality(views: PageView[]) {
+function buildSeasonality(views: PageView[] | null | undefined) {
   const months = new Map<string, number>();
-  views.forEach((v) => {
-    const m = format(parseISO(v.viewed_at), "MMM");
+  (views ?? []).forEach((v) => {
+    const m = safeMonthKey(v?.viewed_at, false);
+    if (!m) return;
     months.set(m, (months.get(m) ?? 0) + 1);
   });
 
   const data = Array.from(months.entries()).map(([month, views]) => ({ month, views }));
+  if (data.length === 0) return [];
   const max = Math.max(...data.map((d) => d.views));
   const min = Math.min(...data.map((d) => d.views));
 
@@ -144,8 +162,11 @@ function buildSeasonality(views: PageView[]) {
   }));
 }
 
-function buildExpenseBreakdown(expenses: BusinessExpense[]) {
+function buildExpenseBreakdown(expenses: BusinessExpense[] | null | undefined) {
   const map = new Map<string, number>();
-  expenses.forEach((e) => map.set(e.category, (map.get(e.category) ?? 0) + e.amount));
+  (expenses ?? []).forEach((e) => {
+    if (!e?.category) return;
+    map.set(e.category, (map.get(e.category) ?? 0) + (Number(e.amount) || 0));
+  });
   return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
 }

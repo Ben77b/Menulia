@@ -435,7 +435,7 @@ export function PublicMenuLayout({
 
   /** Only tags present on dishes in the currently visible category/section (max 10) */
   const filterTags = useMemo(() => {
-    const rawTags = (activeSubcategory?.dishes ?? []).flatMap((dish) => dish.tags ?? []);
+    const rawTags = (activeSubcategory?.dishes ?? []).flatMap((dish) => dish?.tags ?? []);
     return collectPresentTagAppearances(rawTags).slice(0, 10);
   }, [activeSubcategory]);
 

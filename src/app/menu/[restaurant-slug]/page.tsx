@@ -83,8 +83,8 @@ export default async function PublicMenuPage({ params }: PageProps) {
         <PublicMenuViewBeacon restaurantId={restaurantId} />
         <PublicMenuJsonLd
           restaurant={profile}
-          menu={menu}
-          flatCategories={flatCategories}
+          menu={menu ?? []}
+          flatCategories={flatCategories ?? []}
           hasNestedStructure={hasNestedStructure}
         />
         <PublicMenuDocumentBackground color={theme.headerBackgroundColor} />

@@ -122,21 +122,21 @@ function menuSectionsJsonLd(
   hasNestedStructure: boolean
 ): Record<string, unknown>[] {
   if (hasNestedStructure) {
-    return menu.flatMap((parent) =>
-      parent.subcategories.map((subcategory) => ({
+    return (menu ?? []).flatMap((parent) =>
+      (parent?.subcategories ?? []).map((subcategory) => ({
         "@type": "MenuSection",
-        name: resolveLocalizedText(subcategory.name, "en"),
-        description: resolveLocalizedText(subcategory.description, "en").trim() || undefined,
-        hasMenuItem: subcategory.dishes.map(menuItemJsonLd),
+        name: resolveLocalizedText(subcategory?.name ?? "", "en"),
+        description: resolveLocalizedText(subcategory?.description ?? "", "en").trim() || undefined,
+        hasMenuItem: (subcategory?.dishes ?? []).filter(Boolean).map(menuItemJsonLd),
       }))
     );
   }
 
-  return flatCategories.map((category) => ({
+  return (flatCategories ?? []).map((category) => ({
     "@type": "MenuSection",
-    name: resolveLocalizedText(category.name, "en"),
-    description: resolveLocalizedText(category.description, "en").trim() || undefined,
-    hasMenuItem: category.dishes.map(menuItemJsonLd),
+    name: resolveLocalizedText(category?.name ?? "", "en"),
+    description: resolveLocalizedText(category?.description ?? "", "en").trim() || undefined,
+    hasMenuItem: (category?.dishes ?? []).filter(Boolean).map(menuItemJsonLd),
   }));
 }
 
