@@ -550,7 +550,7 @@ export function PublicMenuLayout({
       </PreviewHotspot>
 
       <main
-        className="flex-1 px-4 py-8 sm:px-6"
+        className="flex-1 overflow-x-visible px-4 py-8 sm:px-6"
         style={{ borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}` }}
       >
         {!hasMenu || !activeSubcategory ? (

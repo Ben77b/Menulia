@@ -39,9 +39,6 @@ interface DishCarouselProps {
   tagLabelMap?: Record<string, string>;
 }
 
-/** Mobile card width leaves ~15vw peek on each side. */
-const MOBILE_CARD_WIDTH_VW = 70;
-
 function mod(n: number, m: number) {
   return ((n % m) + m) % m;
 }
@@ -224,22 +221,20 @@ export function DishCarousel({
     priceColor,
     layout: "carousel" as const,
     compact: !isActive,
-    imageClassName: "w-full max-w-[70vw] sm:max-w-none",
+    imageClassName: "w-full max-w-[82vw] sm:max-w-none",
     priority: isActive && activeIndex < 3,
     tagLabelMap,
   });
 
-  const sidePad = `calc((100vw - ${MOBILE_CARD_WIDTH_VW}vw) / 2)`;
-
   return (
-    <div className="relative mx-auto max-w-4xl overflow-visible py-4 sm:px-14">
+    <div className="relative mx-auto max-w-4xl overflow-visible py-4 max-sm:-mx-4 sm:px-14">
       {safeDishes.length > 1 && (
         <>
           <button
             type="button"
             aria-label="Previous dish"
             onClick={goPrevious}
-            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 sm:h-11 sm:w-11"
+            className="absolute left-0 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 sm:flex sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
@@ -248,7 +243,7 @@ export function DishCarousel({
             type="button"
             aria-label="Next dish"
             onClick={goNext}
-            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 sm:h-11 sm:w-11"
+            className="absolute right-0 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full shadow-md transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 sm:flex sm:h-11 sm:w-11"
             style={{ backgroundColor: accentColor, color: arrowColor }}
           >
             <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
@@ -257,22 +252,18 @@ export function DishCarousel({
       )}
 
       {safeDishes.length === 1 ? (
-        <div className="mx-auto w-full max-w-[70vw] sm:max-w-[320px]">
+        <div className="mx-auto w-full max-w-[82vw] sm:max-w-[320px]">
           <CarouselCardFrame isActive>
             <DishCard {...dishCardProps(safeDishes[0], true)} priority />
           </CarouselCardFrame>
         </div>
       ) : (
         <>
-          {/* Mobile: snap-scroll track with side peeks */}
+          {/* Mobile: full-bleed snap track — side peeks live in px-10 gutters */}
           <div
             ref={mobileScrollerRef}
-            className="flex snap-x snap-mandatory gap-3 overflow-x-auto overflow-y-visible overscroll-x-contain scrollbar-none sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{
-              paddingLeft: sidePad,
-              paddingRight: sidePad,
-              WebkitOverflowScrolling: "touch",
-            }}
+            className="flex snap-x snap-mandatory overflow-x-auto overflow-y-visible overscroll-x-contain px-10 scrollbar-none sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
             {safeDishes.map((dish, index) => {
               const isActive = index === activeIndex;
@@ -284,7 +275,7 @@ export function DishCarousel({
                     slideRefs.current[index] = node;
                   }}
                   className={cn(
-                    "w-[70vw] max-w-[70vw] shrink-0 snap-center",
+                    "mx-2 w-[82vw] max-w-[82vw] flex-shrink-0 snap-center",
                     !isActive && "cursor-pointer"
                   )}
                   onClick={() => {
