@@ -6,8 +6,15 @@ export type LocalizedTextValue = string | LocalizedTextRecord | null | undefined
 
 function isLocalizedTextRecord(value: unknown): value is LocalizedTextRecord {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  return Object.values(value as Record<string, unknown>).every(
-    (entry) => typeof entry === "string"
+  const entries = Object.values(value as Record<string, unknown>);
+  if (entries.length === 0) return false;
+  // Allow nullish / numeric locale values from jsonb — do not reject the whole map.
+  return entries.every(
+    (entry) =>
+      entry == null ||
+      typeof entry === "string" ||
+      typeof entry === "number" ||
+      typeof entry === "boolean"
   );
 }
 
@@ -94,21 +101,46 @@ export function localizedTextHasNonPrimaryKeys(
 }
 
 export function parseLocalizedFieldFromDb(value: unknown): LocalizedTextValue {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed.startsWith("{")) {
-      try {
-        const parsed = JSON.parse(trimmed) as unknown;
-        if (isLocalizedTextRecord(parsed)) return parsed;
-      } catch {
-        return value;
+  try {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(trimmed) as unknown;
+          if (isLocalizedTextRecord(parsed)) {
+            const record: LocalizedTextRecord = {};
+            for (const [key, entry] of Object.entries(parsed)) {
+              if (entry == null) continue;
+              if (typeof entry === "string") record[key] = entry;
+              else if (typeof entry === "number" || typeof entry === "boolean") {
+                record[key] = String(entry);
+              }
+            }
+            return Object.keys(record).length > 0 ? record : value;
+          }
+        } catch {
+          return value;
+        }
       }
+      return value;
     }
-    return value;
-  }
 
-  if (isLocalizedTextRecord(value)) return value;
-  return "";
+    if (isLocalizedTextRecord(value)) {
+      const record: LocalizedTextRecord = {};
+      for (const [key, entry] of Object.entries(value)) {
+        if (entry == null) continue;
+        if (typeof entry === "string") record[key] = entry;
+        else if (typeof entry === "number" || typeof entry === "boolean") {
+          record[key] = String(entry);
+        }
+      }
+      return Object.keys(record).length > 0 ? record : "";
+    }
+
+    return "";
+  } catch {
+    return typeof value === "string" ? value : "";
+  }
 }
 
 export function serializeLocalizedFieldForDb(value: LocalizedTextValue): string {

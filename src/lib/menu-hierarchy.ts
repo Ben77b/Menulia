@@ -43,19 +43,37 @@ export function mapDishRow(dish: {
   tags?: string[] | null;
   allergens?: string[] | null;
 }): PublicMenuDish {
-  const normalized = parseDishTagsFromDb(dish);
-  const priceVariations = parsePriceVariationsFromDb(dish.price_variations);
-  return {
-    id: dish.id,
-    name: parseLocalizedFieldFromDb(dish.name),
-    description: parseLocalizedFieldFromDb(dish.description ?? ""),
-    price: typeof dish.price === "number" ? dish.price : parseFloat(String(dish.price)) || 0,
-    price_variations: priceVariations,
-    hide_price: typeof dish.hide_price === "boolean" ? dish.hide_price : false,
-    image: dish.image ?? null,
-    tags: normalized.tags,
-    allergens: normalized.allergens,
-  };
+  try {
+    const normalized = parseDishTagsFromDb(dish ?? {});
+    const priceVariations = parsePriceVariationsFromDb(dish?.price_variations);
+    return {
+      id: String(dish?.id ?? ""),
+      name: parseLocalizedFieldFromDb(dish?.name),
+      description: parseLocalizedFieldFromDb(dish?.description ?? ""),
+      price:
+        typeof dish?.price === "number"
+          ? dish.price
+          : parseFloat(String(dish?.price ?? "")) || 0,
+      price_variations: priceVariations,
+      hide_price: typeof dish?.hide_price === "boolean" ? dish.hide_price : false,
+      image: typeof dish?.image === "string" ? dish.image : null,
+      tags: normalized.tags,
+      allergens: normalized.allergens,
+    };
+  } catch (error) {
+    console.error("[mapDishRow]", error);
+    return {
+      id: String(dish?.id ?? ""),
+      name: typeof dish?.name === "string" ? dish.name : "",
+      description: "",
+      price: 0,
+      price_variations: [],
+      hide_price: false,
+      image: null,
+      tags: [],
+      allergens: [],
+    };
+  }
 }
 
 export function buildMenuHierarchy(

@@ -1,6 +1,6 @@
 /**
  * Localized text unpacker + HTML entity sanitizer.
- * Ensures stringified JSON locale maps and escaped entities never reach the DOM/SEO.
+ * Must never throw — public menu rendering depends on this.
  */
 
 export type LocalizedTextInput = unknown;
@@ -21,78 +21,58 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function isStringRecord(value: unknown): value is Record<string, string> {
-  if (!isPlainObject(value)) return false;
-  const entries = Object.values(value);
-  if (entries.length === 0) return false;
-  // Allow null/undefined values; require at least one string entry.
-  return entries.every(
-    (entry) => entry == null || typeof entry === "string" || typeof entry === "number"
-  );
+function toStringValue(entry: unknown): string {
+  if (typeof entry === "string") return entry;
+  if (typeof entry === "number" && Number.isFinite(entry)) return String(entry);
+  if (typeof entry === "boolean") return entry ? "true" : "false";
+  return "";
 }
 
 function coerceRecordStrings(value: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, entry] of Object.entries(value)) {
-    if (typeof entry === "string") out[key] = entry;
-    else if (typeof entry === "number" && Number.isFinite(entry)) out[key] = String(entry);
+    if (entry == null) continue;
+    const asString = toStringValue(entry);
+    if (asString) out[key] = asString;
   }
   return out;
 }
 
 /** Decode common HTML entities (named + numeric) into plain text. */
 export function decodeHtmlEntities(input: string): string {
-  if (!input || !input.includes("&")) return input;
-
-  let decoded = input.replace(
-    /&(amp|lt|gt|quot|apos|nbsp);|&#(?:x27|x2F|39);/gi,
-    (match) => HTML_ENTITY_MAP[match.toLowerCase()] ?? HTML_ENTITY_MAP[match] ?? match
-  );
-
-  decoded = decoded.replace(/&#(\d+);/g, (full, code: string) => {
-    const n = Number(code);
-    if (!Number.isFinite(n) || n < 0 || n > 0x10ffff) return full;
-    try {
-      return String.fromCodePoint(n);
-    } catch {
-      return full;
+  try {
+    if (!input || typeof input !== "string" || !input.includes("&")) {
+      return typeof input === "string" ? input : "";
     }
-  });
-  decoded = decoded.replace(/&#x([0-9a-f]+);/gi, (full, hex: string) => {
-    const n = Number.parseInt(hex, 16);
-    if (!Number.isFinite(n) || n < 0 || n > 0x10ffff) return full;
-    try {
-      return String.fromCodePoint(n);
-    } catch {
-      return full;
-    }
-  });
 
-  return decoded;
-}
+    let decoded = input.replace(
+      /&(amp|lt|gt|quot|apos|nbsp);|&#(?:x27|x2F|39);/gi,
+      (match) => HTML_ENTITY_MAP[match.toLowerCase()] ?? HTML_ENTITY_MAP[match] ?? match
+    );
 
-function coerceToRecordOrString(input: LocalizedTextInput): string | Record<string, string> | null {
-  if (input == null) return null;
-
-  if (typeof input === "string") {
-    const trimmed = input.trim();
-    if (trimmed.startsWith("{")) {
+    decoded = decoded.replace(/&#(\d+);/g, (full, code: string) => {
+      const n = Number(code);
+      if (!Number.isFinite(n) || n < 0 || n > 0x10ffff) return full;
       try {
-        const parsed = JSON.parse(trimmed) as unknown;
-        if (isPlainObject(parsed) && isStringRecord(parsed)) {
-          return coerceRecordStrings(parsed);
-        }
+        return String.fromCodePoint(n);
       } catch {
-        return input;
+        return full;
       }
-    }
-    return input;
-  }
+    });
+    decoded = decoded.replace(/&#x([0-9a-f]+);/gi, (full, hex: string) => {
+      const n = Number.parseInt(hex, 16);
+      if (!Number.isFinite(n) || n < 0 || n > 0x10ffff) return full;
+      try {
+        return String.fromCodePoint(n);
+      } catch {
+        return full;
+      }
+    });
 
-  if (isPlainObject(input) && isStringRecord(input)) {
-    return coerceRecordStrings(input);
+    return decoded;
+  } catch {
+    return typeof input === "string" ? input : "";
   }
-  return null;
 }
 
 function firstNonEmptyValue(record: Record<string, string>): string {
@@ -104,36 +84,75 @@ function firstNonEmptyValue(record: Record<string, string>): string {
 
 /**
  * Unpack localized JSON / objects into a clean human-readable string.
- * Fallback order: targetLang → en → first available value.
+ * Fallback order: targetLang → fallbackLang → en → first available value.
+ * NEVER throws.
  */
 export function getLocalizedText(
   input: LocalizedTextInput,
   targetLang: string = "en",
   fallbackLang: string = "en"
 ): string {
-  const coerced = coerceToRecordOrString(input);
-  if (coerced == null) return "";
+  try {
+    if (input == null) return "";
+    if (typeof input === "number" || typeof input === "boolean") {
+      return String(input);
+    }
+    if (typeof input !== "string" && !isPlainObject(input)) {
+      return "";
+    }
 
-  let raw = "";
-  if (typeof coerced === "string") {
-    raw = coerced;
-  } else {
-    raw =
-      (coerced[targetLang] || "").trim() ||
-      (coerced[fallbackLang] || "").trim() ||
-      (coerced.en || "").trim() ||
-      firstNonEmptyValue(coerced);
+    let record: Record<string, string> | null = null;
+    let raw = "";
+
+    if (typeof input === "string") {
+      const trimmed = input.trim();
+      if (trimmed.startsWith("{")) {
+        try {
+          const parsed = JSON.parse(trimmed) as unknown;
+          if (isPlainObject(parsed)) {
+            record = coerceRecordStrings(parsed);
+          } else {
+            raw = input;
+          }
+        } catch {
+          raw = input;
+        }
+      } else {
+        raw = input;
+      }
+    } else if (isPlainObject(input)) {
+      record = coerceRecordStrings(input);
+    }
+
+    if (record) {
+      raw =
+        (record[targetLang] || "").trim() ||
+        (record[fallbackLang] || "").trim() ||
+        (record.en || "").trim() ||
+        firstNonEmptyValue(record);
+    }
+
+    return decodeHtmlEntities(raw || "").trim();
+  } catch {
+    try {
+      if (typeof input === "string") return input;
+      return "";
+    } catch {
+      return "";
+    }
   }
-
-  return decodeHtmlEntities(raw).trim();
 }
 
 /** Truncate SEO copy without cutting mid-word when possible. */
 export function truncateSeoText(input: string, maxLength = 160): string {
-  const cleaned = decodeHtmlEntities(input).replace(/\s+/g, " ").trim();
-  if (cleaned.length <= maxLength) return cleaned;
-  const slice = cleaned.slice(0, maxLength - 1);
-  const lastSpace = slice.lastIndexOf(" ");
-  const base = lastSpace > maxLength * 0.6 ? slice.slice(0, lastSpace) : slice;
-  return `${base.trimEnd()}…`;
+  try {
+    const cleaned = getLocalizedText(input).replace(/\s+/g, " ").trim();
+    if (cleaned.length <= maxLength) return cleaned;
+    const slice = cleaned.slice(0, Math.max(0, maxLength - 1));
+    const lastSpace = slice.lastIndexOf(" ");
+    const base = lastSpace > maxLength * 0.6 ? slice.slice(0, lastSpace) : slice;
+    return `${base.trimEnd()}…`;
+  } catch {
+    return "";
+  }
 }

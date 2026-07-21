@@ -11,7 +11,8 @@ type PublicMenuErrorShellProps = {
 
 /**
  * Visible fallback for public menu error boundaries.
- * Keeps a real page frame (never null / empty body) and retries once silently.
+ * White page frame only — no infinite skeleton / refresh chrome.
+ * Retries once, then stays on a clean empty shell.
  */
 export function PublicMenuErrorShell({
   error,
@@ -39,11 +40,7 @@ export function PublicMenuErrorShell({
           <p className="text-lg font-semibold tracking-tight">{title}</p>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-10">
-        <div className="h-40 w-full max-w-sm animate-pulse rounded-2xl bg-neutral-100" />
-        <div className="mt-6 h-4 w-2/3 max-w-md animate-pulse rounded bg-neutral-100" />
-        <div className="mt-3 h-4 w-1/2 max-w-sm animate-pulse rounded bg-neutral-100" />
-      </main>
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10" />
     </div>
   );
 }

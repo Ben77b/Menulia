@@ -494,7 +494,17 @@ export function parseDishTagsFromDb(row: {
   tags?: string[] | null;
   allergens?: string[] | null;
 }): { tags: string[]; allergens: AllergenTag[] } {
-  return normalizeDishTagFields(row.tags, row.allergens);
+  const tags = Array.isArray(row?.tags)
+    ? row.tags.filter((tag): tag is string => typeof tag === "string")
+    : typeof row?.tags === "string" && row.tags
+      ? [row.tags]
+      : [];
+  const allergens = Array.isArray(row?.allergens)
+    ? row.allergens.filter((tag): tag is string => typeof tag === "string")
+    : typeof row?.allergens === "string" && row.allergens
+      ? [row.allergens]
+      : [];
+  return normalizeDishTagFields(tags, allergens);
 }
 
 /** Icon map for legacy components — includes EU ids and legacy chip values */

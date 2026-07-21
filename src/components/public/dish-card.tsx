@@ -124,20 +124,35 @@ export function DishCard({
   tagLabelMap,
 }: DishCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
-  const imageSrc = normalizeImageUrl(dish?.image);
-  const showImage = Boolean(display?.showImages && imageSrc && !imageFailed);
+
+  if (!dish?.id) return null;
+
+  const safeDisplay = display ?? {
+    showPrices: true,
+    showDescriptions: true,
+    showImages: true,
+    showDietary: true,
+  };
+  const imageSrc = normalizeImageUrl(dish.image);
+  const showImage = Boolean(safeDisplay.showImages && imageSrc && !imageFailed);
 
   const resolvedTitle = titleColor ?? textColor;
   const resolvedDescription = descriptionColor ?? textColor;
   const resolvedPrice = priceColor ?? textColor;
 
-  const localizedName = resolveLocalizedText(dish.name, lang, fallbackLang);
-  const localizedDescription = resolveLocalizedText(dish.description, lang, fallbackLang);
-  const imageAlt = `${localizedName} at ${restaurantName}`;
+  const localizedName =
+    resolveLocalizedText(dish.name, lang, fallbackLang) || "Dish";
+  const localizedDescription = resolveLocalizedText(
+    dish.description,
+    lang,
+    fallbackLang
+  );
+  const imageAlt = `${localizedName} at ${restaurantName || "restaurant"}`;
   const contentLocale: MenuContentLanguage = isMenuContentLanguage(lang) ? lang : "en";
   const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
-  const showPrice = display.showPrices && shouldDisplayDishPrice(dish.price, portionOptions);
+  const showPrice =
+    safeDisplay.showPrices && shouldDisplayDishPrice(dish.price, portionOptions);
 
   const isStackedTop = isStackedTopCategoryLayout(layout);
   const isStackedLeft = isStackedLeftCategoryLayout(layout);
@@ -214,7 +229,7 @@ export function DishCard({
       >
         {localizedName}
       </h3>
-      {display.showDescriptions && localizedDescription && (
+      {safeDisplay.showDescriptions && localizedDescription && (
         <p
           className={cn("w-full max-w-none", descriptionClampClass)}
           style={{
@@ -257,7 +272,7 @@ export function DishCard({
           ))}
         </div>
       )}
-      {display.showDietary && (dish?.tags ?? []).length > 0 && (
+      {safeDisplay.showDietary && (dish?.tags ?? []).length > 0 && (
         <div
           className={cn(
             "flex flex-wrap gap-2",
@@ -282,7 +297,7 @@ export function DishCard({
           })}
         </div>
       )}
-      {display.showDietary && (dish?.allergens ?? []).length > 0 && (
+      {safeDisplay.showDietary && (dish?.allergens ?? []).length > 0 && (
         <div
           className={cn(
             "flex flex-wrap gap-1.5",
@@ -337,7 +352,7 @@ export function DishCard({
   if (isStackedLeft) {
     return (
       <article className="flex w-full items-center gap-6">
-        {display.showImages ? (
+        {safeDisplay.showImages ? (
           imageBlock ? (
             <div
               className="h-44 w-44 shrink-0"

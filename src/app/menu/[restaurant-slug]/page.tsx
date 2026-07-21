@@ -97,59 +97,53 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
   const slugParam = resolvedParams["restaurant-slug"] ?? "";
   const lang = normalizePublicMenuLang(pickLangParam(resolvedSearch.lang));
 
-  let restaurant: Record<string, unknown> | null = null;
-  try {
-    restaurant = await getPublicRestaurantRow(slugParam);
-  } catch (error) {
-    console.error("[Supabase Audit Error]:", "public-menu.restaurant", error);
-  }
-
+  // 1) Restaurant profile — independent of menu/dishes
+  const restaurant = await getPublicRestaurantRow(slugParam);
   if (!restaurant) {
     notFound();
   }
 
   const profile = restaurantRowToProfile(restaurant, slugParam);
   const restaurantId = typeof profile.id === "string" ? profile.id : "";
+  const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
+  const restaurantName =
+    getLocalizedText(restaurant.name, defaultLocale) ||
+    getLocalizedText(profile.name, defaultLocale) ||
+    slugParam;
 
+  // 2) Categories + dishes — independent; failure must not blank the restaurant shell
   let menu: PublicMenuParentCategory[] = [];
   let flatCategories: PublicMenuSubcategory[] = [];
   let hasNestedStructure = false;
 
-  try {
-    const payload = restaurantId
-      ? await getPublicMenuPayload(restaurantId)
-      : { menu: [], flatCategories: [], hasNestedStructure: false };
+  if (restaurantId) {
+    const payload = await getPublicMenuPayload(restaurantId);
     menu = Array.isArray(payload?.menu) ? payload.menu : [];
     flatCategories = Array.isArray(payload?.flatCategories) ? payload.flatCategories : [];
     hasNestedStructure = Boolean(payload?.hasNestedStructure);
-  } catch (error) {
-    console.error("[Supabase Audit Error]:", "public-menu.payload", error);
   }
 
+  // 3) Theme / fonts / links — each independently safe
   const theme = safeTheme(restaurant);
   const fonts = resolveFonts(
     restaurant.typography && typeof restaurant.typography === "object"
       ? (restaurant.typography as Record<string, unknown>)
       : undefined
   );
-
-  let links = [] as ReturnType<typeof parseCustomLinks>;
-  try {
-    links = parseCustomLinks(restaurant.custom_links) ?? [];
-  } catch {
-    links = [];
-  }
-
-  let display = DEFAULT_DISPLAY_OPTIONS;
-  try {
-    display = parseDisplayOptions(restaurant);
-  } catch {
-    display = DEFAULT_DISPLAY_OPTIONS;
-  }
-
-  const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
-  const restaurantName =
-    getLocalizedText(restaurant.name, defaultLocale) || profile.name || slugParam;
+  const links = (() => {
+    try {
+      return parseCustomLinks(restaurant.custom_links) ?? [];
+    } catch {
+      return [];
+    }
+  })();
+  const display = (() => {
+    try {
+      return parseDisplayOptions(restaurant);
+    } catch {
+      return DEFAULT_DISPLAY_OPTIONS;
+    }
+  })();
 
   return (
     <div className="public-menu-enter">
@@ -169,9 +163,17 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
         restaurantSlug={slugParam}
         logo={(restaurant.logo as string | null) ?? null}
         location={getLocalizedText(restaurant.location, defaultLocale) || ""}
-        hours={typeof restaurant.hours === "string" ? restaurant.hours : ""}
+        hours={
+          typeof restaurant.hours === "string" || restaurant.hours
+            ? String(restaurant.hours ?? "")
+            : ""
+        }
         contactInfo={(restaurant.contact_info as string | null) ?? ""}
-        footerSlogan={(restaurant.footer_slogan as string | null) ?? ""}
+        footerSlogan={
+          typeof restaurant.footer_slogan === "string" || restaurant.footer_slogan
+            ? (restaurant.footer_slogan as string)
+            : ""
+        }
         defaultLocale={defaultLocale}
         theme={theme}
         titleFont={fonts.titleFont}

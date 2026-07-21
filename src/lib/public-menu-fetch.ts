@@ -161,7 +161,15 @@ async function fetchActiveDishesForCategory(
     const rows = attempt.sortByDisplayOrder
       ? sortDishRowsByDisplayOrder(data ?? [])
       : data ?? [];
-    return rows.map(mapDishRow);
+    return (rows as Array<Parameters<typeof mapDishRow>[0]>).flatMap((row) => {
+      try {
+        const mapped = mapDishRow(row);
+        return mapped?.id ? [mapped] : [];
+      } catch (error) {
+        console.error("[Supabase Audit Error]:", "public-menu-fetch.mapDishRow", error);
+        return [];
+      }
+    });
   }
 
   return [];
@@ -210,16 +218,31 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
       return { menu: [], flatCategories: [], hasNestedStructure: false };
     }
 
-    const categoryRows: CategoryRow[] = categorySource.map((category) => ({
-      id: category.id,
-      name: parseLocalizedFieldFromDb(category.name),
-      description: parseLocalizedFieldFromDb(
-        (category as { description?: string | null }).description ?? null
-      ) || null,
-      layout_type: category.layout_type ?? "stacked",
-      order_index: category.order_index ?? 0,
-      parent_id: category.parent_id ?? null,
-    }));
+    const categoryRows: CategoryRow[] = (categorySource ?? []).flatMap((category) => {
+      try {
+        if (!category?.id) return [];
+        return [
+          {
+            id: category.id,
+            name: parseLocalizedFieldFromDb(category.name),
+            description:
+              parseLocalizedFieldFromDb(
+                (category as { description?: string | null }).description ?? null
+              ) || null,
+            layout_type: category.layout_type ?? "stacked",
+            order_index: category.order_index ?? 0,
+            parent_id: category.parent_id ?? null,
+          } satisfies CategoryRow,
+        ];
+      } catch (error) {
+        console.error("[Supabase Audit Error]:", "public-menu-fetch.categoryRow", error);
+        return [];
+      }
+    });
+
+    if (categoryRows.length === 0) {
+      return { menu: [], flatCategories: [], hasNestedStructure: false };
+    }
 
     const leafCategoryIds = categoryRows
       .filter((row) => {
