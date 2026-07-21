@@ -17,13 +17,17 @@ export function PublicMenuJsonLd({
   hasNestedStructure,
   lang = "en",
 }: PublicMenuJsonLdProps) {
-  const data = buildPublicMenuJsonLd({
-    restaurant,
-    menu,
-    flatCategories,
-    hasNestedStructure,
-    lang,
-  });
-
-  return <JsonLd data={data} />;
+  try {
+    const data = buildPublicMenuJsonLd({
+      restaurant,
+      menu: menu ?? [],
+      flatCategories: flatCategories ?? [],
+      hasNestedStructure: Boolean(hasNestedStructure),
+      lang,
+    });
+    return <JsonLd data={data} />;
+  } catch (error) {
+    console.error("[PublicMenuJsonLd]", error);
+    return null;
+  }
 }

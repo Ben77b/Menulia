@@ -3,8 +3,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Root error boundary — silent recovery only. Renders nothing.
- * Never show refresh banners or hardcoded error copy to anyone.
+ * Root error boundary — visible light shell so guests never see a black screen.
  */
 export default function RootError({
   error,
@@ -22,9 +21,16 @@ export default function RootError({
   useEffect(() => {
     if (attempted.current) return;
     attempted.current = true;
-    const id = window.setTimeout(() => reset(), 0);
+    const id = window.setTimeout(() => reset(), 50);
     return () => window.clearTimeout(id);
   }, [reset]);
 
-  return null;
+  return (
+    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+      <header className="border-b border-neutral-100 px-4 py-5">
+        <p className="text-lg font-semibold tracking-tight">Menulia</p>
+      </header>
+      <main className="flex-1 px-4 py-10" />
+    </div>
+  );
 }

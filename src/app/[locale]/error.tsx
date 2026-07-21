@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-/** Marketing locale error boundary — silent reset, no visible error UI. */
 export default function MarketingLocaleError({
   error,
   reset,
@@ -19,9 +18,13 @@ export default function MarketingLocaleError({
   useEffect(() => {
     if (attempted.current) return;
     attempted.current = true;
-    const id = window.setTimeout(() => reset(), 0);
+    const id = window.setTimeout(() => reset(), 50);
     return () => window.clearTimeout(id);
   }, [reset]);
 
-  return null;
+  return (
+    <div className="flex min-h-screen flex-col bg-white text-slate-900">
+      <main className="flex-1 px-4 py-10" />
+    </div>
+  );
 }

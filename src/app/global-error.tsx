@@ -3,8 +3,7 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Catches errors in the root layout itself.
- * Must render <html> and <body>; keep them empty — no error copy, no refresh UI.
+ * Root layout errors — keep a visible white frame (never an empty/black document).
  */
 export default function GlobalError({
   error,
@@ -22,13 +21,20 @@ export default function GlobalError({
   useEffect(() => {
     if (attempted.current) return;
     attempted.current = true;
-    const id = window.setTimeout(() => reset(), 0);
+    const id = window.setTimeout(() => reset(), 50);
     return () => window.clearTimeout(id);
   }, [reset]);
 
   return (
     <html lang="en">
-      <body />
+      <body style={{ margin: 0, background: "#ffffff", color: "#0f172a" }}>
+        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+          <header style={{ padding: "20px 16px", borderBottom: "1px solid #f5f5f5" }}>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Menulia</p>
+          </header>
+          <main style={{ flex: 1, padding: 24 }} />
+        </div>
+      </body>
     </html>
   );
 }
