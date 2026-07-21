@@ -257,7 +257,7 @@ export function DishCard({
           ))}
         </div>
       )}
-      {display.showDietary && (dish.tags ?? []).length > 0 && (
+      {display.showDietary && (dish?.tags ?? []).length > 0 && (
         <div
           className={cn(
             "flex flex-wrap gap-2",
@@ -282,7 +282,7 @@ export function DishCard({
           })}
         </div>
       )}
-      {display.showDietary && (dish.allergens ?? []).length > 0 && (
+      {display.showDietary && (dish?.allergens ?? []).length > 0 && (
         <div
           className={cn(
             "flex flex-wrap gap-1.5",

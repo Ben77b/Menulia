@@ -157,13 +157,21 @@ export function DishCarousel({
   const desktopSlots = useMemo(() => {
     if (safeDishes.length <= 1) return [];
 
-    const prevIndex = mod(activeIndex - 1, safeDishes.length);
-    const nextIndex = mod(activeIndex + 1, safeDishes.length);
+    const clampedIndex = Math.min(
+      Math.max(0, activeIndex),
+      safeDishes.length - 1
+    );
+    const prevIndex = mod(clampedIndex - 1, safeDishes.length);
+    const nextIndex = mod(clampedIndex + 1, safeDishes.length);
+    const center = safeDishes[clampedIndex];
+    const prev = safeDishes[prevIndex];
+    const next = safeDishes[nextIndex];
+    if (!center?.id || !prev?.id || !next?.id) return [];
 
     return [
-      { dish: safeDishes[prevIndex], position: "left" as const, key: `${safeDishes[prevIndex].id}-left` },
-      { dish: safeDishes[activeIndex], position: "center" as const, key: `${safeDishes[activeIndex].id}-center` },
-      { dish: safeDishes[nextIndex], position: "right" as const, key: `${safeDishes[nextIndex].id}-right` },
+      { dish: prev, position: "left" as const, key: `${prev.id}-left` },
+      { dish: center, position: "center" as const, key: `${center.id}-center` },
+      { dish: next, position: "right" as const, key: `${next.id}-right` },
     ];
   }, [activeIndex, safeDishes]);
 
