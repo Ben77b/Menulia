@@ -8,11 +8,10 @@ import { DEFAULT_PUBLIC_MENU_SPLASH } from "@/lib/public-menu-cache";
 import { resolvePublicMenuLogoSrc } from "@/lib/public-menu-utils";
 import { cn } from "@/lib/utils";
 
-const INTRO_HOLD_MS = 1100;
-const INTRO_FADE_MS = 500;
+const HOLD_MS = 1200;
+const FADE_MS = 500;
 
-interface PublicMenuIntroOverlayProps {
-  /** Fallback when splash context has not hydrated yet */
+export interface PublicMenuLoadingOverlayProps {
   restaurantName?: string;
   restaurantSlug?: string;
   logo?: string | null;
@@ -21,18 +20,19 @@ interface PublicMenuIntroOverlayProps {
 }
 
 /**
- * Guaranteed branded intro on every public-menu visit.
- * Survives edge-cached responses that skip `loading.tsx` streaming.
+ * Unconditional client-side loading overlay for public menus.
+ * Mounts on every page paint — does not depend on loading.tsx / streaming.
  */
-export function PublicMenuIntroOverlay({
+export default function PublicMenuLoadingOverlay({
   restaurantName: nameProp,
   restaurantSlug,
   logo: logoProp,
   backgroundColor: bgProp,
   accentColor: accentProp,
-}: PublicMenuIntroOverlayProps) {
+}: PublicMenuLoadingOverlayProps) {
   const splash = usePublicMenuSplash();
-  const [phase, setPhase] = useState<"visible" | "fading" | "gone">("visible");
+  const [visible, setVisible] = useState(true);
+  const [fading, setFading] = useState(false);
 
   const backgroundColor =
     bgProp ||
@@ -49,35 +49,26 @@ export function PublicMenuIntroOverlay({
     null;
 
   useEffect(() => {
-    const fadeTimer = window.setTimeout(() => setPhase("fading"), INTRO_HOLD_MS);
-    const goneTimer = window.setTimeout(
-      () => setPhase("gone"),
-      INTRO_HOLD_MS + INTRO_FADE_MS
-    );
+    const fadeTimer = window.setTimeout(() => setFading(true), HOLD_MS);
+    const hideTimer = window.setTimeout(() => setVisible(false), HOLD_MS + FADE_MS);
     return () => {
       window.clearTimeout(fadeTimer);
-      window.clearTimeout(goneTimer);
+      window.clearTimeout(hideTimer);
     };
   }, []);
 
-  if (phase === "gone") return null;
+  if (!visible) return null;
 
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex min-h-screen w-full flex-col items-center justify-center px-6 transition-opacity duration-500 ease-out",
-        phase === "fading" && "pointer-events-none opacity-0"
+        "pointer-events-auto fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6 transition-opacity duration-500 ease-out",
+        fading && "pointer-events-none opacity-0"
       )}
-      style={{
-        backgroundColor,
-        ["--public-menu-bg" as string]: backgroundColor,
-        ["--public-menu-accent" as string]: accentColor,
-      }}
-      aria-hidden={phase !== "visible"}
-      aria-busy={phase === "visible"}
-      aria-label={
-        restaurantName ? `Loading ${restaurantName} menu` : "Loading menu"
-      }
+      style={{ backgroundColor }}
+      aria-busy={!fading}
+      aria-live="polite"
+      aria-label={restaurantName ? `Loading ${restaurantName} menu` : "Loading menu"}
     >
       <div className="public-menu-intro-mark flex w-full max-w-sm flex-col items-center gap-8">
         {logo ? (
@@ -108,10 +99,10 @@ export function PublicMenuIntroOverlay({
           {[0, 1, 2].map((index) => (
             <span
               key={index}
-              className={cn("public-menu-splash-dot h-2.5 w-2.5 rounded-full")}
+              className="h-2.5 w-2.5 animate-bounce rounded-full"
               style={{
                 backgroundColor: accentColor,
-                animationDelay: `${index * 0.16}s`,
+                animationDelay: `${index * 0.15}s`,
               }}
             />
           ))}
@@ -120,6 +111,3 @@ export function PublicMenuIntroOverlay({
     </div>
   );
 }
-
-/** Sprint alias — same guaranteed intro overlay. */
-export { PublicMenuIntroOverlay as PublicMenuIntroOverlayComponent };
