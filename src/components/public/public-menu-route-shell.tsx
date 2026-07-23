@@ -18,12 +18,21 @@ interface PublicMenuRouteShellProps {
 }
 
 export function PublicMenuRouteShell({ splash, children }: PublicMenuRouteShellProps) {
+  const theme = splash ?? DEFAULT_PUBLIC_MENU_SPLASH;
   const backgroundColor =
-    splash?.backgroundColor || DEFAULT_PUBLIC_MENU_SPLASH.backgroundColor || "#ffffff";
+    theme.backgroundColor || DEFAULT_PUBLIC_MENU_SPLASH.backgroundColor || "#fafafa";
+  const accentColor = theme.accentColor || DEFAULT_PUBLIC_MENU_SPLASH.accentColor;
 
   return (
-    <PublicMenuSplashContext.Provider value={splash ?? DEFAULT_PUBLIC_MENU_SPLASH}>
-      <div className="min-h-screen bg-white" style={{ backgroundColor }}>
+    <PublicMenuSplashContext.Provider value={theme}>
+      <div
+        className="public-menu-route-shell min-h-screen w-full"
+        style={{
+          backgroundColor,
+          ["--public-menu-bg" as string]: backgroundColor,
+          ["--public-menu-accent" as string]: accentColor,
+        }}
+      >
         {children}
       </div>
     </PublicMenuSplashContext.Provider>
