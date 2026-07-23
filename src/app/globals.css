@@ -382,3 +382,18 @@
   animation: public-menu-splash-bounce 1.05s ease-in-out infinite;
   will-change: transform, opacity;
 }
+
+@keyframes public-menu-intro-mark {
+  from {
+    opacity: 0.72;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.public-menu-intro-mark {
+  animation: public-menu-intro-mark 0.45s ease-out both;
+}
