@@ -18,9 +18,12 @@ interface PublicMenuRouteShellProps {
 }
 
 export function PublicMenuRouteShell({ splash, children }: PublicMenuRouteShellProps) {
+  const backgroundColor =
+    splash?.backgroundColor || DEFAULT_PUBLIC_MENU_SPLASH.backgroundColor || "#ffffff";
+
   return (
-    <PublicMenuSplashContext.Provider value={splash}>
-      <div className="min-h-screen" style={{ backgroundColor: splash.backgroundColor }}>
+    <PublicMenuSplashContext.Provider value={splash ?? DEFAULT_PUBLIC_MENU_SPLASH}>
+      <div className="min-h-screen bg-white" style={{ backgroundColor }}>
         {children}
       </div>
     </PublicMenuSplashContext.Provider>

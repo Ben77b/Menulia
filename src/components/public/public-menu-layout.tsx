@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { parseContactInfo } from "@/lib/contact-info";
 import type { ResolvedMenuTheme, ThemeHotspotId } from "@/lib/advanced-theme";
@@ -265,17 +264,9 @@ export function PublicMenuLayout({
     [menu, flatCategories]
   );
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const langFromUrl = searchParams.get("lang");
-  const initialLocale: PublicMenuLocale = isGuestAutoTranslateLanguage(langFromUrl)
-    ? langFromUrl
-    : defaultLocale;
-
   const [safeMenu, setSafeMenu] = useState(propsMenu);
   const [safeFlatCategories, setSafeFlatCategories] = useState(propsFlatCategories);
-  const [locale, setLocale] = useState<PublicMenuLocale>(initialLocale);
+  const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
   const [displayHours, setDisplayHours] = useState(() =>
     resolvePublicHoursDisplay(hours, defaultLocale, defaultLocale)
   );
@@ -322,13 +313,11 @@ export function PublicMenuLayout({
   const ensureLocaleTranslated = useCallback(async (nextLocale: PublicMenuLocale) => {
     if (!restaurantSlug) return;
     if (translatedLocalesRef.current.has(nextLocale)) return;
-    // Mark in-flight so overlapping effects cannot stack requests.
     translatedLocalesRef.current.add(nextLocale);
 
     try {
       const result = await requestPublicMenuTranslation(restaurantSlug, nextLocale);
       if (!result || result.rate_limited) {
-        // Allow a later retry if we got nothing useful.
         translatedLocalesRef.current.delete(nextLocale);
         return;
       }
@@ -349,7 +338,6 @@ export function PublicMenuLayout({
           setSafeFlatCategories(patched.flatCategories);
         } catch (patchError) {
           console.error("[PublicMenuLayout:translate-patch]", patchError);
-          // Keep base menu visible; locale stays marked to avoid retry storms.
         }
       }
 
@@ -387,48 +375,42 @@ export function PublicMenuLayout({
   const handleLangChange = useCallback(
     (nextLocale: PublicMenuLocale) => {
       setLocale(nextLocale);
-      try {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("lang", nextLocale);
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-      } catch (urlError) {
-        console.error("[PublicMenuLayout:lang-url]", urlError);
-      }
       void ensureLocaleTranslated(nextLocale);
     },
-    [ensureLocaleTranslated, pathname, router, searchParams]
+    [ensureLocaleTranslated]
   );
 
-  // One-time: honor ?lang= or browser language, then translate if needed.
+  useEffect(() => {
+    setLocale(defaultLocale);
+  }, [defaultLocale]);
+
   useEffect(() => {
     if (autoDetectRanRef.current || !restaurantSlug) return;
     autoDetectRanRef.current = true;
 
-    if (isGuestAutoTranslateLanguage(langFromUrl)) {
-      if (langFromUrl !== locale) setLocale(langFromUrl);
-      if (langFromUrl !== defaultLocale) {
-        void ensureLocaleTranslated(langFromUrl);
+    let preferred: PublicMenuLocale | null = null;
+    try {
+      const langParam = new URLSearchParams(window.location.search).get("lang");
+      if (isGuestAutoTranslateLanguage(langParam)) {
+        preferred = langParam;
       }
-      return;
+    } catch {
+      preferred = null;
     }
 
-    const detected = detectGuestMenuLanguage(
-      typeof navigator !== "undefined" ? navigator.language : null
-    );
-
-    if (!detected) return;
-
-    setLocale(detected);
-    if (detected !== defaultLocale) {
-      void ensureLocaleTranslated(detected);
+    if (!preferred) {
+      preferred = detectGuestMenuLanguage(
+        typeof navigator !== "undefined" ? navigator.language : null
+      );
     }
-  }, [
-    defaultLocale,
-    ensureLocaleTranslated,
-    langFromUrl,
-    locale,
-    restaurantSlug,
-  ]);
+
+    if (!preferred) return;
+
+    setLocale(preferred);
+    if (preferred !== defaultLocale) {
+      void ensureLocaleTranslated(preferred);
+    }
+  }, [defaultLocale, ensureLocaleTranslated, restaurantSlug]);
 
   const {
     activeFilters,

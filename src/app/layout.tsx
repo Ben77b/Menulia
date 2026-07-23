@@ -66,7 +66,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale}>
-      <body className={`${inter.variable} ${instrumentSerif.variable} ${montserrat.variable} ${playfairDisplay.variable} ${poppins.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${merriweather.variable} ${oswald.variable} ${raleway.variable} ${sourceSans.variable} ${ubuntu.variable} ${cormorantGaramond.variable}`}>
+      <body
+        className={`${inter.variable} ${instrumentSerif.variable} ${montserrat.variable} ${playfairDisplay.variable} ${poppins.variable} ${roboto.variable} ${openSans.variable} ${lato.variable} ${merriweather.variable} ${oswald.variable} ${raleway.variable} ${sourceSans.variable} ${ubuntu.variable} ${cormorantGaramond.variable}`}
+        style={{ backgroundColor: "#ffffff" }}
+      >
         <GlobalErrorListeners />
         <RestaurantProvider>{children}</RestaurantProvider>
       </body>
