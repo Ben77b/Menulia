@@ -66,27 +66,41 @@ export function applyPublicMenuTranslatePatches(
   categoryList: PublicMenuTranslatePatch[],
   dishList: PublicMenuTranslatePatch[]
 ): { menu: PublicMenuParentCategory[]; flatCategories: PublicMenuSubcategory[] } {
-  const categoryPatches = new Map(categoryList.map((patch) => [patch.id, patch]));
-  const dishPatches = new Map(dishList.map((patch) => [patch.id, patch]));
+  try {
+    const categoryPatches = new Map(
+      (categoryList ?? [])
+        .filter((patch) => patch && typeof patch.id === "string")
+        .map((patch) => [patch.id, patch])
+    );
+    const dishPatches = new Map(
+      (dishList ?? [])
+        .filter((patch) => patch && typeof patch.id === "string")
+        .map((patch) => [patch.id, patch])
+    );
 
-  return {
-    menu: menu.map((parent) => {
-      const parentPatch = categoryPatches.get(parent.id);
-      return {
-        ...parent,
-        name:
-          parentPatch?.name != null
-            ? coerceLocalizedValue(parentPatch.name)
-            : parent.name,
-        subcategories: (parent.subcategories ?? []).map((sub) =>
-          patchSubcategory(sub, categoryPatches, dishPatches)
-        ),
-      };
-    }),
-    flatCategories: flatCategories.map((category) =>
-      patchSubcategory(category, categoryPatches, dishPatches)
-    ),
-  };
+    return {
+      menu: (menu ?? []).map((parent) => {
+        if (!parent) return parent;
+        const parentPatch = categoryPatches.get(parent.id);
+        return {
+          ...parent,
+          name:
+            parentPatch?.name != null
+              ? coerceLocalizedValue(parentPatch.name)
+              : parent.name,
+          subcategories: (parent.subcategories ?? []).map((sub) =>
+            patchSubcategory(sub, categoryPatches, dishPatches)
+          ),
+        };
+      }),
+      flatCategories: (flatCategories ?? []).map((category) =>
+        patchSubcategory(category, categoryPatches, dishPatches)
+      ),
+    };
+  } catch (error) {
+    console.error("[applyPublicMenuTranslatePatches]", error);
+    return { menu: menu ?? [], flatCategories: flatCategories ?? [] };
+  }
 }
 
 /** Resolve restaurant free-text fields that may be plain strings or LocalizedText JSON. */

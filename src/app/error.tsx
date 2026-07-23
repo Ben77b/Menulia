@@ -1,27 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-/** Silent recovery — no placeholder chrome. */
+/** Root error boundary — log only, no auto-reset/reload loops. */
 export default function RootError({
   error,
-  reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const attempted = useRef(false);
-
   useEffect(() => {
     console.error("[error-boundary:root]", error);
   }, [error]);
-
-  useEffect(() => {
-    if (attempted.current) return;
-    attempted.current = true;
-    const id = window.setTimeout(() => reset(), 0);
-    return () => window.clearTimeout(id);
-  }, [reset]);
 
   return null;
 }

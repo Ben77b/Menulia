@@ -322,105 +322,113 @@ export function PublicMenuLayout({
   const ensureLocaleTranslated = useCallback(async (nextLocale: PublicMenuLocale) => {
     if (!restaurantSlug) return;
     if (translatedLocalesRef.current.has(nextLocale)) return;
+    // Mark in-flight so overlapping effects cannot stack requests.
+    translatedLocalesRef.current.add(nextLocale);
 
     try {
       const result = await requestPublicMenuTranslation(restaurantSlug, nextLocale);
-      if (!result) return;
-
-      if (result.rate_limited) return;
+      if (!result || result.rate_limited) {
+        // Allow a later retry if we got nothing useful.
+        translatedLocalesRef.current.delete(nextLocale);
+        return;
+      }
 
       const hasMenuPatches =
         (result.categories?.length ?? 0) > 0 || (result.dishes?.length ?? 0) > 0;
       if (hasMenuPatches) {
-        const patched = applyPublicMenuTranslatePatches(
-          menuRef.current,
-          flatRef.current,
-          result.categories ?? [],
-          result.dishes ?? []
-        );
-        menuRef.current = patched.menu;
-        flatRef.current = patched.flatCategories;
-        setSafeMenu(patched.menu);
-        setSafeFlatCategories(patched.flatCategories);
+        try {
+          const patched = applyPublicMenuTranslatePatches(
+            menuRef.current,
+            flatRef.current,
+            result.categories ?? [],
+            result.dishes ?? []
+          );
+          menuRef.current = patched.menu;
+          flatRef.current = patched.flatCategories;
+          setSafeMenu(patched.menu);
+          setSafeFlatCategories(patched.flatCategories);
+        } catch (patchError) {
+          console.error("[PublicMenuLayout:translate-patch]", patchError);
+          // Keep base menu visible; locale stays marked to avoid retry storms.
+        }
       }
 
-      if (result.restaurant?.hours != null) {
-        setHoursSource(
-          typeof result.restaurant.hours === "string"
-            ? result.restaurant.hours
-            : JSON.stringify(result.restaurant.hours)
-        );
-      }
-      if (result.restaurant?.footer_slogan != null) {
-        setFooterSloganSource(
-          typeof result.restaurant.footer_slogan === "string"
-            ? result.restaurant.footer_slogan
-            : JSON.stringify(result.restaurant.footer_slogan)
-        );
-      }
-      if (result.tag_labels && Object.keys(result.tag_labels).length > 0) {
-        setTagLabelMap((prev) => ({ ...prev, ...result.tag_labels }));
+      try {
+        if (result.restaurant?.hours != null) {
+          setHoursSource(
+            typeof result.restaurant.hours === "string"
+              ? result.restaurant.hours
+              : JSON.stringify(result.restaurant.hours)
+          );
+        }
+        if (result.restaurant?.footer_slogan != null) {
+          setFooterSloganSource(
+            typeof result.restaurant.footer_slogan === "string"
+              ? result.restaurant.footer_slogan
+              : JSON.stringify(result.restaurant.footer_slogan)
+          );
+        }
+        if (result.tag_labels && Object.keys(result.tag_labels).length > 0) {
+          setTagLabelMap((prev) => ({ ...prev, ...result.tag_labels }));
+        }
+      } catch (metaError) {
+        console.error("[PublicMenuLayout:translate-meta]", metaError);
       }
 
-      // Only mark complete when we applied data or the API confirmed already_complete.
-      // Empty CDN responses must not permanently block retries.
-      if (result.already_complete || hasMenuPatches) {
-        translatedLocalesRef.current.add(nextLocale);
+      if (!result.already_complete && !hasMenuPatches) {
+        translatedLocalesRef.current.delete(nextLocale);
       }
     } catch (error) {
       console.error("[PublicMenuLayout:translate]", error);
+      translatedLocalesRef.current.delete(nextLocale);
     }
   }, [restaurantSlug]);
 
   const handleLangChange = useCallback(
     (nextLocale: PublicMenuLocale) => {
       setLocale(nextLocale);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("lang", nextLocale);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      try {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("lang", nextLocale);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      } catch (urlError) {
+        console.error("[PublicMenuLayout:lang-url]", urlError);
+      }
       void ensureLocaleTranslated(nextLocale);
     },
     [ensureLocaleTranslated, pathname, router, searchParams]
   );
 
-  useEffect(() => {
-    if (isGuestAutoTranslateLanguage(langFromUrl) && langFromUrl !== locale) {
-      setLocale(langFromUrl);
-      void ensureLocaleTranslated(langFromUrl);
-    }
-  }, [langFromUrl, locale, ensureLocaleTranslated]);
-
-  useEffect(() => {
-    if (langFromUrl) return;
-    setLocale(defaultLocale);
-  }, [defaultLocale, langFromUrl]);
-
+  // One-time: honor ?lang= or browser language, then translate if needed.
   useEffect(() => {
     if (autoDetectRanRef.current || !restaurantSlug) return;
-    if (langFromUrl) {
-      autoDetectRanRef.current = true;
-      if (isGuestAutoTranslateLanguage(langFromUrl) && langFromUrl !== defaultLocale) {
+    autoDetectRanRef.current = true;
+
+    if (isGuestAutoTranslateLanguage(langFromUrl)) {
+      if (langFromUrl !== locale) setLocale(langFromUrl);
+      if (langFromUrl !== defaultLocale) {
         void ensureLocaleTranslated(langFromUrl);
       }
       return;
     }
-    autoDetectRanRef.current = true;
 
     const detected = detectGuestMenuLanguage(
       typeof navigator !== "undefined" ? navigator.language : null
     );
 
-    // Outside EN/ES/FR/DE → stay on restaurant primary, no background translate API
-    if (!detected) {
-      setLocale(defaultLocale);
-      return;
-    }
+    if (!detected) return;
 
     setLocale(detected);
     if (detected !== defaultLocale) {
       void ensureLocaleTranslated(detected);
     }
-  }, [defaultLocale, ensureLocaleTranslated, langFromUrl, restaurantSlug]);
+  }, [
+    defaultLocale,
+    ensureLocaleTranslated,
+    langFromUrl,
+    locale,
+    restaurantSlug,
+  ]);
 
   const {
     activeFilters,
