@@ -242,7 +242,7 @@ export function PublicMenuLayout({
   contactInfo,
   footerSlogan = "",
   defaultLocale = "en",
-  theme,
+  theme: themeProp,
   titleFont,
   bodyFont,
   titleFontWeight,
@@ -259,6 +259,7 @@ export function PublicMenuLayout({
   display,
   previewInteractive,
 }: PublicMenuLayoutProps) {
+  const theme = themeProp ?? ({} as ResolvedMenuTheme);
   const { menu: propsMenu, flatCategories: propsFlatCategories } = useMemo(
     () => sanitizePublicMenuTree(menu ?? [], flatCategories ?? []),
     [menu, flatCategories]
@@ -424,6 +425,15 @@ export function PublicMenuLayout({
     safeMenu[0]?.subcategories?.[0]?.id ?? safeFlatCategories[0]?.id ?? ""
   );
 
+  console.error(
+    "[PublicMenuLayout] render",
+    restaurantSlug,
+    "parents",
+    safeMenu?.length,
+    "flat",
+    safeFlatCategories?.length
+  );
+
   useEffect(() => {
     if (hasNestedStructure) {
       if (safeMenu.length === 0) return;
@@ -469,7 +479,7 @@ export function PublicMenuLayout({
   }, [filterTags, effectiveFilters, clearFilters]);
 
   const { phone: contactPhone, email: contactEmail } = parseContactInfo(contactInfo);
-  const hasMenu = hasNestedStructure ? safeMenu.length > 0 : safeFlatCategories.length > 0;
+  const hasMenu = hasNestedStructure ? (safeMenu?.length ?? 0) > 0 : (safeFlatCategories?.length ?? 0) > 0;
   const hotspotEnabled = previewInteractive?.enabled ?? false;
   const isPreview = usePreviewCanvas();
 

@@ -117,9 +117,13 @@ export function buildPublicMenuPageMetadata(
     lang
   );
   const canonicalUrl = menuAbsoluteUrl(restaurant.slug, lang);
-  const ogImages = restaurant.logo
-    ? [{ url: restaurant.logo, alt: `${name} logo` }]
-    : undefined;
+  // Only absolute http(s) logos — data: URLs break Next metadata image resolution.
+  const httpLogo =
+    typeof restaurant.logo === "string" &&
+    (restaurant.logo.startsWith("https://") || restaurant.logo.startsWith("http://"))
+      ? restaurant.logo
+      : null;
+  const ogImages = httpLogo ? [{ url: httpLogo, alt: `${name} logo` }] : undefined;
 
   return {
     title: { absolute: title },
@@ -138,14 +142,13 @@ export function buildPublicMenuPageMetadata(
         (item) => OG_LOCALES[item.code]
       ),
       images: ogImages,
-      // Open Graph restaurant menu type for rich social previews
-      type: "restaurant.menu" as "website",
+      type: "website",
     },
     twitter: {
-      card: restaurant.logo ? "summary_large_image" : "summary",
+      card: httpLogo ? "summary_large_image" : "summary",
       title,
       description,
-      images: restaurant.logo ? [restaurant.logo] : undefined,
+      images: httpLogo ? [httpLogo] : undefined,
     },
   };
 }
@@ -288,7 +291,13 @@ export function buildPublicMenuJsonLd({
 
   if (phone) restaurantNode.telephone = phone;
   if (email) restaurantNode.email = email;
-  if (restaurant.logo) restaurantNode.image = restaurant.logo;
+  // Skip oversized / data: logos — they inflate JSON-LD and have broken public menu SSR.
+  if (
+    typeof restaurant.logo === "string" &&
+    (restaurant.logo.startsWith("https://") || restaurant.logo.startsWith("http://"))
+  ) {
+    restaurantNode.image = restaurant.logo;
+  }
   if (description) restaurantNode.description = description;
 
   const menuNode: Record<string, unknown> = {

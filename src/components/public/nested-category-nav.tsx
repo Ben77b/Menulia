@@ -106,9 +106,10 @@ export function NestedCategoryNav({
           }}
         >
           {(safeMenu ?? []).map((parent, parentIndex) => {
-            if (!parent) return null;
-            const isActive = parent.id === activeParentId;
-            return (
+            if (!parent?.id) return null;
+            try {
+              const isActive = parent.id === activeParentId;
+              return (
               <button
                 key={parent.id || `parent-${parentIndex}`}
                 type="button"
@@ -133,10 +134,18 @@ export function NestedCategoryNav({
                 }
               >
                 <span className="break-words">
-                  {resolveLocalizedText(parent.name, lang, fallbackLang)}
+                  {resolveLocalizedText(parent?.name, lang, fallbackLang) || "Category"}
                 </span>
               </button>
-            );
+              );
+            } catch (error) {
+              console.error("[NestedCategoryNav.parent]", error);
+              return (
+                <span key={`parent-fallback-${parentIndex}`} className="px-3 text-xs">
+                  Category
+                </span>
+              );
+            }
           })}
         </nav>
       )}

@@ -26,6 +26,7 @@ import { normalizePrimaryLanguage } from "@/lib/menu-content-languages";
 import { parseTypography } from "@/lib/typography";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 import { getLocalizedText } from "@/lib/utils/i18n-text";
+import { normalizeImageUrl } from "@/lib/public-menu-utils";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { ResolvedMenuTheme } from "@/lib/advanced-theme";
 
@@ -92,105 +93,143 @@ export async function generateMetadata({ params, searchParams }: PageProps) {
 }
 
 export default async function PublicMenuPage({ params, searchParams }: PageProps) {
-  const resolvedParams = await params;
-  const resolvedSearch = searchParams ? await searchParams : {};
-  const slugParam = resolvedParams["restaurant-slug"] ?? "";
-  const lang = normalizePublicMenuLang(pickLangParam(resolvedSearch.lang));
+  console.error("[public-menu.page] render start");
 
-  // 1) Restaurant profile — independent of menu/dishes
-  const restaurant = await getPublicRestaurantRow(slugParam);
-  if (!restaurant) {
-    notFound();
-  }
+  try {
+    const resolvedParams = await params;
+    const resolvedSearch = searchParams ? await searchParams : {};
+    const slugParam = resolvedParams?.["restaurant-slug"] ?? "";
+    const lang = normalizePublicMenuLang(pickLangParam(resolvedSearch?.lang));
 
-  const profile = restaurantRowToProfile(restaurant, slugParam);
-  const restaurantId = typeof profile.id === "string" ? profile.id : "";
-  const defaultLocale = normalizePrimaryLanguage(restaurant.primary_language);
-  const restaurantName =
-    getLocalizedText(restaurant.name, defaultLocale) ||
-    getLocalizedText(profile.name, defaultLocale) ||
-    slugParam;
+    console.error("[public-menu.page] slug", slugParam, "lang", lang);
 
-  // 2) Categories + dishes — independent; failure must not blank the restaurant shell
-  let menu: PublicMenuParentCategory[] = [];
-  let flatCategories: PublicMenuSubcategory[] = [];
-  let hasNestedStructure = false;
-
-  if (restaurantId) {
-    const payload = await getPublicMenuPayload(restaurantId);
-    menu = Array.isArray(payload?.menu) ? payload.menu : [];
-    flatCategories = Array.isArray(payload?.flatCategories) ? payload.flatCategories : [];
-    hasNestedStructure = Boolean(payload?.hasNestedStructure);
-  }
-
-  // 3) Theme / fonts / links — each independently safe
-  const theme = safeTheme(restaurant);
-  const fonts = resolveFonts(
-    restaurant.typography && typeof restaurant.typography === "object"
-      ? (restaurant.typography as Record<string, unknown>)
-      : undefined
-  );
-  const links = (() => {
-    try {
-      return parseCustomLinks(restaurant.custom_links) ?? [];
-    } catch {
-      return [];
+    const restaurant = await getPublicRestaurantRow(slugParam);
+    if (!restaurant) {
+      notFound();
     }
-  })();
-  const display = (() => {
-    try {
-      return parseDisplayOptions(restaurant);
-    } catch {
-      return DEFAULT_DISPLAY_OPTIONS;
-    }
-  })();
 
-  return (
-    <div className="public-menu-enter">
-      {restaurantId ? <PublicMenuViewBeacon restaurantId={restaurantId} /> : null}
-      <PublicMenuJsonLd
-        restaurant={profile}
-        menu={menu}
-        flatCategories={flatCategories}
-        hasNestedStructure={hasNestedStructure}
-        lang={lang}
-      />
-      <PublicMenuDocumentBackground
-        color={theme?.headerBackgroundColor || DEFAULT_MENU_THEME.headerBackgroundColor}
-      />
-      <PublicMenuShell
-        restaurantName={restaurantName}
-        restaurantSlug={slugParam}
-        logo={(restaurant.logo as string | null) ?? null}
-        location={getLocalizedText(restaurant.location, defaultLocale) || ""}
-        hours={
-          typeof restaurant.hours === "string" || restaurant.hours
-            ? String(restaurant.hours ?? "")
-            : ""
-        }
-        contactInfo={(restaurant.contact_info as string | null) ?? ""}
-        footerSlogan={
-          typeof restaurant.footer_slogan === "string" || restaurant.footer_slogan
-            ? (restaurant.footer_slogan as string)
-            : ""
-        }
-        defaultLocale={defaultLocale}
-        theme={theme}
-        titleFont={fonts.titleFont}
-        bodyFont={fonts.textFont}
-        titleFontWeight={fonts.titleFontWeight}
-        titleFontStyle={fonts.titleFontStyle}
-        categoryFont={fonts.categoryFont}
-        categoryFontWeight={fonts.categoryFontWeight}
-        categoryFontStyle={fonts.categoryFontStyle}
-        bodyFontWeight={fonts.textFontWeight}
-        bodyFontStyle={fonts.textFontStyle}
-        menu={menu}
-        flatCategories={flatCategories}
-        hasNestedStructure={hasNestedStructure}
-        links={links}
-        display={display}
-      />
-    </div>
-  );
+    const profile = restaurantRowToProfile(restaurant, slugParam);
+    const restaurantId = typeof profile?.id === "string" ? profile.id : "";
+    const defaultLocale = normalizePrimaryLanguage(restaurant?.primary_language);
+    const restaurantName =
+      getLocalizedText(restaurant?.name, defaultLocale) ||
+      getLocalizedText(profile?.name, defaultLocale) ||
+      slugParam;
+
+    let menu: PublicMenuParentCategory[] = [];
+    let flatCategories: PublicMenuSubcategory[] = [];
+    let hasNestedStructure = false;
+
+    if (restaurantId) {
+      try {
+        const payload = await getPublicMenuPayload(restaurantId);
+        menu = Array.isArray(payload?.menu) ? payload.menu : [];
+        flatCategories = Array.isArray(payload?.flatCategories)
+          ? payload.flatCategories
+          : [];
+        hasNestedStructure = Boolean(payload?.hasNestedStructure);
+      } catch (menuError) {
+        console.error("[public-menu.page] menu payload", menuError);
+      }
+    }
+
+    console.error(
+      "[public-menu.page] data",
+      "categories",
+      hasNestedStructure ? menu?.length : flatCategories?.length,
+      "nested",
+      hasNestedStructure
+    );
+
+    const theme = safeTheme(restaurant);
+    const fonts = resolveFonts(
+      restaurant?.typography && typeof restaurant.typography === "object"
+        ? (restaurant.typography as Record<string, unknown>)
+        : undefined
+    );
+    const links = (() => {
+      try {
+        return parseCustomLinks(restaurant?.custom_links) ?? [];
+      } catch {
+        return [];
+      }
+    })();
+    const display = (() => {
+      try {
+        return parseDisplayOptions(restaurant ?? {});
+      } catch {
+        return DEFAULT_DISPLAY_OPTIONS;
+      }
+    })();
+
+    // Drop oversized data: logos so RSC streaming does not abort the menu tree.
+    const logo = normalizeImageUrl(
+      typeof restaurant?.logo === "string" ? restaurant.logo : null
+    );
+
+    const location = getLocalizedText(restaurant?.location, defaultLocale) || "";
+    const hours = getLocalizedText(restaurant?.hours, defaultLocale) || "";
+    const footerSlogan =
+      getLocalizedText(restaurant?.footer_slogan, defaultLocale) || "";
+    const contactInfo =
+      typeof restaurant?.contact_info === "string" ? restaurant.contact_info : "";
+
+    return (
+      <div className="public-menu-enter">
+        {restaurantId ? <PublicMenuViewBeacon restaurantId={restaurantId} /> : null}
+        <PublicMenuJsonLd
+          restaurant={{ ...profile, logo }}
+          menu={menu}
+          flatCategories={flatCategories}
+          hasNestedStructure={hasNestedStructure}
+          lang={lang}
+        />
+        <PublicMenuDocumentBackground
+          color={
+            theme?.menuBackground ||
+            theme?.headerBackgroundColor ||
+            DEFAULT_MENU_THEME.mainContentBackgroundColor
+          }
+        />
+        <PublicMenuShell
+          restaurantName={restaurantName}
+          restaurantSlug={slugParam}
+          logo={logo}
+          location={location}
+          hours={hours}
+          contactInfo={contactInfo}
+          footerSlogan={footerSlogan}
+          defaultLocale={defaultLocale}
+          theme={theme}
+          titleFont={fonts?.titleFont || DEFAULT_DESIGN.titleFont}
+          bodyFont={fonts?.textFont || DEFAULT_DESIGN.textFont}
+          titleFontWeight={fonts?.titleFontWeight}
+          titleFontStyle={fonts?.titleFontStyle}
+          categoryFont={fonts?.categoryFont || fonts?.titleFont || DEFAULT_DESIGN.titleFont}
+          categoryFontWeight={fonts?.categoryFontWeight}
+          categoryFontStyle={fonts?.categoryFontStyle}
+          bodyFontWeight={fonts?.textFontWeight}
+          bodyFontStyle={fonts?.textFontStyle}
+          menu={menu ?? []}
+          flatCategories={flatCategories ?? []}
+          hasNestedStructure={hasNestedStructure}
+          links={links ?? []}
+          display={display ?? DEFAULT_DISPLAY_OPTIONS}
+        />
+      </div>
+    );
+  } catch (error) {
+    console.error("[public-menu.page] FATAL", error);
+    // Last-resort visible shell — never an empty/black document.
+    return (
+      <div className="flex min-h-screen flex-col bg-white px-4 py-10 text-slate-900">
+        <p className="mx-auto w-full max-w-4xl text-lg font-semibold tracking-tight">
+          Menu
+        </p>
+        <p className="mx-auto mt-2 w-full max-w-4xl text-sm text-slate-500">
+          This menu could not be loaded right now. Please refresh.
+        </p>
+      </div>
+    );
+  }
 }

@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import React, { useState, type ReactElement } from "react";
 import { cn, formatPrice } from "@/lib/utils";
 import { getAllergenTagMeta, getTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
 import { normalizeImageUrl } from "@/lib/public-menu-utils";
-import { hasPriceVariations, parsePriceVariationsFromDb, shouldDisplayDishPrice, type PriceVariation } from "@/lib/price-variations";
+import {
+  hasPriceVariations,
+  parsePriceVariationsFromDb,
+  shouldDisplayDishPrice,
+  type PriceVariation,
+} from "@/lib/price-variations";
 import type { CategoryLayoutType } from "@/lib/category-layout";
 import {
   isStackedCategoryLayout,
@@ -95,13 +99,13 @@ function TagBadge({
             }
       }
     >
-      {icon && <span>{icon}</span>}
+      {icon ? <span>{icon}</span> : null}
       {!iconOnly && label}
     </span>
   );
 }
 
-export function DishCard({
+function DishCardInner({
   dish,
   lang = "en",
   fallbackLang = "en",
@@ -133,7 +137,7 @@ export function DishCard({
     showImages: true,
     showDietary: true,
   };
-  const imageSrc = normalizeImageUrl(dish.image);
+  const imageSrc = normalizeImageUrl(dish?.image);
   const showImage = Boolean(safeDisplay.showImages && imageSrc && !imageFailed);
 
   const resolvedTitle = titleColor ?? textColor;
@@ -141,18 +145,18 @@ export function DishCard({
   const resolvedPrice = priceColor ?? textColor;
 
   const localizedName =
-    resolveLocalizedText(dish.name, lang, fallbackLang) || "Dish";
+    resolveLocalizedText(dish?.name, lang, fallbackLang) || "Dish";
   const localizedDescription = resolveLocalizedText(
-    dish.description,
+    dish?.description,
     lang,
     fallbackLang
   );
   const imageAlt = `${localizedName} at ${restaurantName || "restaurant"}`;
   const contentLocale: MenuContentLanguage = isMenuContentLanguage(lang) ? lang : "en";
-  const parsedVariations = parsePriceVariationsFromDb(dish.price_variations);
+  const parsedVariations = parsePriceVariationsFromDb(dish?.price_variations);
   const portionOptions = hasPriceVariations(parsedVariations) ? parsedVariations : null;
   const showPrice =
-    safeDisplay.showPrices && shouldDisplayDishPrice(dish.price, portionOptions);
+    safeDisplay.showPrices && shouldDisplayDishPrice(dish?.price, portionOptions);
 
   const isStackedTop = isStackedTopCategoryLayout(layout);
   const isStackedLeft = isStackedLeftCategoryLayout(layout);
@@ -173,21 +177,15 @@ export function DishCard({
             : undefined
         }
       >
-        <Image
+        {/* Native img — avoids next/image host/config throws on public menus */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={imageSrc}
           alt={imageAlt}
-          fill
-          className="object-contain"
-          quality={75}
-          sizes={
-            isStackedLeft
-              ? "176px"
-              : layout === "carousel"
-                ? "(max-width: 640px) 70vw, (max-width: 768px) 30vw, (max-width: 1200px) 25vw, 20vw"
-                : "(max-width: 768px) 90vw, (max-width: 1200px) 50vw, 33vw"
-          }
-          priority={priority}
-          loading={priority ? undefined : "lazy"}
+          className="absolute inset-0 h-full w-full object-contain"
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={priority ? "high" : "auto"}
           onError={() => setImageFailed(true)}
         />
       </div>
@@ -229,7 +227,7 @@ export function DishCard({
       >
         {localizedName}
       </h3>
-      {safeDisplay.showDescriptions && localizedDescription && (
+      {safeDisplay.showDescriptions && localizedDescription ? (
         <p
           className={cn("w-full max-w-none", descriptionClampClass)}
           style={{
@@ -241,17 +239,14 @@ export function DishCard({
         >
           {localizedDescription}
         </p>
-      )}
-      {showPrice && portionOptions && (
+      ) : null}
+      {showPrice && portionOptions ? (
         <div
-          className={cn(
-            "mt-2 flex flex-col gap-y-1",
-            isStackedTop && "items-center"
-          )}
+          className={cn("mt-2 flex flex-col gap-y-1", isStackedTop && "items-center")}
         >
-          {portionOptions.map((option) => (
+          {(portionOptions ?? []).map((option, optionIndex) => (
             <p
-              key={`${option.label}-${option.price}`}
+              key={`${option?.label ?? "opt"}-${option?.price ?? optionIndex}`}
               className={cn(
                 "font-medium tabular-nums",
                 isCarouselPeek ? "text-xs sm:text-sm" : "text-sm sm:text-base"
@@ -263,16 +258,16 @@ export function DishCard({
                 fontStyle: bodyFontStyle ?? "normal",
               }}
             >
-              {option.label}
+              {option?.label ?? ""}
               <span className="mx-1.5 opacity-50" aria-hidden>
                 ·
               </span>
-              {formatPrice(option.price)}
+              {formatPrice(Number(option?.price) || 0)}
             </p>
           ))}
         </div>
-      )}
-      {safeDisplay.showDietary && (dish?.tags ?? []).length > 0 && (
+      ) : null}
+      {safeDisplay.showDietary && (dish?.tags ?? []).length > 0 ? (
         <div
           className={cn(
             "flex flex-wrap gap-2",
@@ -280,24 +275,33 @@ export function DishCard({
             isCarouselPeek && "hidden sm:flex"
           )}
         >
-          {(dish?.tags ?? []).filter(Boolean).map((tag) => {
+          {(dish?.tags ?? []).filter(Boolean).map((tag, tagIndex) => {
             if (!tag) return null;
-            const meta = getTagMeta(tag, contentLocale, tagLabelMap);
-            return (
-              <TagBadge
-                key={meta.label}
-                icon={meta.icon}
-                label={meta.label}
-                bodyFont={bodyFont}
-                bodyFontWeight={bodyFontWeight}
-                bodyFontStyle={bodyFontStyle}
-                textColor={resolvedTitle}
-              />
-            );
+            try {
+              const meta = getTagMeta(tag, contentLocale, tagLabelMap);
+              return (
+                <TagBadge
+                  key={`${meta?.label ?? tag}-${tagIndex}`}
+                  icon={meta?.icon ?? ""}
+                  label={meta?.label || String(tag)}
+                  bodyFont={bodyFont}
+                  bodyFontWeight={bodyFontWeight}
+                  bodyFontStyle={bodyFontStyle}
+                  textColor={resolvedTitle}
+                />
+              );
+            } catch (tagError) {
+              console.error("[DishCard.tag]", tagError);
+              return (
+                <span key={`tag-fallback-${tagIndex}`} className="text-xs">
+                  {String(tag)}
+                </span>
+              );
+            }
           })}
         </div>
-      )}
-      {safeDisplay.showDietary && (dish?.allergens ?? []).length > 0 && (
+      ) : null}
+      {safeDisplay.showDietary && (dish?.allergens ?? []).length > 0 ? (
         <div
           className={cn(
             "flex flex-wrap gap-1.5",
@@ -305,24 +309,29 @@ export function DishCard({
             isCarouselPeek && "hidden sm:flex"
           )}
         >
-          {(dish?.allergens ?? []).filter(Boolean).map((allergen) => {
+          {(dish?.allergens ?? []).filter(Boolean).map((allergen, allergenIndex) => {
             if (!allergen) return null;
-            const meta = getAllergenTagMeta(allergen, contentLocale);
-            return (
-              <TagBadge
-                key={allergen}
-                icon={meta.icon}
-                label={meta.label}
-                bodyFont={bodyFont}
-                bodyFontWeight={bodyFontWeight}
-                bodyFontStyle={bodyFontStyle}
-                iconOnly
-              />
-            );
+            try {
+              const meta = getAllergenTagMeta(allergen, contentLocale);
+              return (
+                <TagBadge
+                  key={`${allergen}-${allergenIndex}`}
+                  icon={meta?.icon ?? "⚠️"}
+                  label={meta?.label || String(allergen)}
+                  bodyFont={bodyFont}
+                  bodyFontWeight={bodyFontWeight}
+                  bodyFontStyle={bodyFontStyle}
+                  iconOnly
+                />
+              );
+            } catch (allergenError) {
+              console.error("[DishCard.allergen]", allergenError);
+              return null;
+            }
           })}
         </div>
-      )}
-      {showPrice && !portionOptions && (
+      ) : null}
+      {showPrice && !portionOptions ? (
         <p
           className={cn("font-bold", isCarouselPeek ? "text-xs sm:text-sm" : "text-base")}
           style={{
@@ -332,18 +341,18 @@ export function DishCard({
             fontStyle: bodyFontStyle ?? "normal",
           }}
         >
-          {formatPrice(dish.price)}
+          {formatPrice(Number(dish?.price) || 0)}
         </p>
-      )}
+      ) : null}
     </div>
   );
 
   if (isStackedTop) {
     return (
       <article className="flex w-full flex-col items-center justify-center gap-4">
-        {imageBlock && (
+        {imageBlock ? (
           <div className="mx-auto w-full max-w-[240px] sm:max-w-[260px]">{imageBlock}</div>
-        )}
+        ) : null}
         <div className="flex w-full flex-col items-center text-center">{textBlock}</div>
       </article>
     );
@@ -386,4 +395,45 @@ export function DishCard({
       </div>
     </article>
   );
+}
+
+/** Public dish card — never lets a single dish crash the whole menu tree. */
+export function DishCard(props: DishCardProps): ReactElement | null {
+  return (
+    <DishCardErrorBoundary
+      fallbackName={resolveLocalizedText(props?.dish?.name, props?.lang, props?.fallbackLang) || "Dish"}
+      textColor={props?.textColor}
+    >
+      <DishCardInner {...props} />
+    </DishCardErrorBoundary>
+  );
+}
+
+class DishCardErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallbackName: string; textColor?: string },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("[DishCard] boundary", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <article
+          className="w-full py-4 text-center text-sm"
+          style={{ color: this.props.textColor }}
+        >
+          {this.props.fallbackName}
+        </article>
+      );
+    }
+    return this.props.children;
+  }
 }

@@ -8,6 +8,7 @@ import { fetchPublicMenuData } from "@/lib/public-menu-fetch";
 import type { PublicRestaurantProfile } from "@/lib/public-menu-seo";
 import { logSupabaseAuditError, withSupabaseFallback } from "@/lib/supabase-safe";
 import { getLocalizedText } from "@/lib/utils/i18n-text";
+import { normalizeImageUrl } from "@/lib/public-menu-utils";
 
 export interface PublicMenuSplashTheme {
   restaurantName: string;
@@ -54,7 +55,7 @@ export function restaurantRowToProfile(row: RestaurantRow, slugFallback: string)
     contact_info: typeof row.contact_info === "string" ? row.contact_info : "",
     meta_title: getLocalizedText(row.meta_title),
     meta_description: getLocalizedText(row.meta_description),
-    logo: (row.logo as string | null) ?? null,
+    logo: normalizeImageUrl((row.logo as string | null) ?? null),
     footer_slogan: getLocalizedText(row.footer_slogan),
   };
 }
@@ -69,7 +70,7 @@ export function restaurantRowToSplashTheme(row: RestaurantRow | null): PublicMen
 
     return {
       restaurantName: getLocalizedText(row.name),
-      logo: (row.logo as string | null) ?? null,
+      logo: normalizeImageUrl((row.logo as string | null) ?? null),
       backgroundColor: theme.headerBackgroundColor,
       accentColor: theme.categoryAccentColor,
     };

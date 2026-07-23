@@ -5,11 +5,31 @@ import { dishTagLabel } from "@/lib/dietary-tags";
 import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 import { parsePriceVariationsFromDb } from "@/lib/price-variations";
 
-/** Returns a trimmed image URL when non-empty; does not block on protocol. */
+/** Max inline data-URL size allowed through RSC → client props (avoids flight blowups). */
+const MAX_INLINE_DATA_URL_CHARS = 4096;
+
+/**
+ * Returns a trimmed, renderable image URL — or null.
+ * Oversized `data:` URLs are dropped: they bloat RSC payloads and have crashed public menus.
+ */
 export function normalizeImageUrl(url: string | null | undefined): string | null {
   if (!url || typeof url !== "string") return null;
   const trimmed = url.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("data:")) {
+    return trimmed.length <= MAX_INLINE_DATA_URL_CHARS ? trimmed : null;
+  }
+
+  if (
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("/")
+  ) {
+    return trimmed;
+  }
+
+  return null;
 }
 
 /** @deprecated Use normalizeImageUrl — kept for existing imports. */

@@ -63,38 +63,47 @@ export function FlatCategoryNav({
       }}
     >
       {(safeCategories ?? []).map((category, index) => {
-        if (!category) return null;
-        const isActive = category.id === activeCategoryId;
+        if (!category?.id) return null;
+        try {
+          const isActive = category.id === activeCategoryId;
 
-        return (
-          <button
-            key={category.id || `category-${index}`}
-            type="button"
-            onClick={() => onCategoryChange(category.id)}
-            className="rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:text-sm"
-            style={
-              isActive
-                ? {
-                    ...categoryTypeStyle,
-                    backgroundColor: tier2ActiveBg,
-                    color: tier2ActiveText,
-                    border: `1px solid ${tier2ActiveBorder}`,
-                    textAlign: "center",
-                  }
-                : {
-                    ...categoryTypeStyle,
-                    backgroundColor: tier2InactiveBg,
-                    color: tier2InactiveText,
-                    border: `1px solid ${tier2InactiveBorder}`,
-                    textAlign: "center",
-                  }
-            }
-          >
-            <span className="break-words">
-              {resolveLocalizedText(category.name, lang, fallbackLang)}
+          return (
+            <button
+              key={category.id || `category-${index}`}
+              type="button"
+              onClick={() => onCategoryChange(category.id)}
+              className="rounded-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] transition-colors duration-200 sm:text-sm"
+              style={
+                isActive
+                  ? {
+                      ...categoryTypeStyle,
+                      backgroundColor: tier2ActiveBg,
+                      color: tier2ActiveText,
+                      border: `1px solid ${tier2ActiveBorder}`,
+                      textAlign: "center",
+                    }
+                  : {
+                      ...categoryTypeStyle,
+                      backgroundColor: tier2InactiveBg,
+                      color: tier2InactiveText,
+                      border: `1px solid ${tier2InactiveBorder}`,
+                      textAlign: "center",
+                    }
+              }
+            >
+              <span className="break-words">
+                {resolveLocalizedText(category?.name, lang, fallbackLang) || "Category"}
+              </span>
+            </button>
+          );
+        } catch (error) {
+          console.error("[FlatCategoryNav.category]", error);
+          return (
+            <span key={`category-fallback-${index}`} className="px-3 text-xs">
+              Category
             </span>
-          </button>
-        );
+          );
+        }
       })}
     </nav>
   );
