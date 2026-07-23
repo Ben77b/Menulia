@@ -1,10 +1,12 @@
 import { parseDishTagsFromDb, serializeAllergensForDb, serializeDishTagsForDb } from "./dietary-tags";
 import {
+  invalidateStaleGuestLocales,
   parseLocalizedFieldFromDb,
   resolveLocalizedText,
   serializeLocalizedFieldForDb,
   type LocalizedTextValue,
 } from "./localized-text";
+import { normalizePrimaryLanguage } from "./menu-content-languages";
 import { getSupabaseBrowserClient } from "./supabase";
 import { logSupabaseFailure } from "./auth/errors";
 import { isMissingColumnError } from "./restaurant-settings";
@@ -431,6 +433,38 @@ export async function updateMenuCategory(
   const supabase = getSupabaseBrowserClient();
   const payload: Record<string, unknown> = { ...updates };
 
+  if ("name" in updates || "description" in updates) {
+    const { data: current } = await supabase
+      .from("categories")
+      .select("name, description, restaurant_id")
+      .eq("id", categoryId)
+      .maybeSingle();
+
+    if (current) {
+      const { data: restaurant } = await supabase
+        .from("restaurants")
+        .select("primary_language")
+        .eq("id", current.restaurant_id as string)
+        .maybeSingle();
+      const primaryLang = normalizePrimaryLanguage(restaurant?.primary_language);
+
+      if ("name" in updates && updates.name !== undefined) {
+        payload.name = invalidateStaleGuestLocales(
+          parseLocalizedFieldFromDb(current.name),
+          updates.name,
+          primaryLang
+        );
+      }
+      if ("description" in updates && updates.description != null) {
+        payload.description = invalidateStaleGuestLocales(
+          parseLocalizedFieldFromDb(current.description),
+          updates.description,
+          primaryLang
+        );
+      }
+    }
+  }
+
   if ("name" in payload && payload.name !== undefined) {
     payload.name = serializeLocalizedFieldForDb(payload.name as LocalizedTextValue);
   }
@@ -525,14 +559,55 @@ export async function updateMenuDish(
   isAvailable = true,
   hidePrice: boolean = false,
   lockTitleTranslation: boolean = false,
-  priceVariations?: PriceVariation[] | null
+  priceVariations?: PriceVariation[] | null,
+  primaryLanguage?: string
 ): Promise<void> {
   const tagsForDb = serializeDishTagsForDb(tags, allergens);
   const allergensForDb = serializeAllergensForDb(allergens, tags);
 
+  const supabase = getSupabaseBrowserClient();
+  let nextName = name;
+  let nextDescription = description;
+
+  const { data: current } = await supabase
+    .from("dishes")
+    .select("name, description, category_id")
+    .eq("id", dishId)
+    .maybeSingle();
+
+  if (current) {
+    let primaryLang = normalizePrimaryLanguage(primaryLanguage);
+    if (primaryLanguage == null) {
+      const { data: category } = await supabase
+        .from("categories")
+        .select("restaurant_id")
+        .eq("id", current.category_id as string)
+        .maybeSingle();
+      if (category?.restaurant_id) {
+        const { data: restaurant } = await supabase
+          .from("restaurants")
+          .select("primary_language")
+          .eq("id", category.restaurant_id as string)
+          .maybeSingle();
+        primaryLang = normalizePrimaryLanguage(restaurant?.primary_language);
+      }
+    }
+
+    nextName = invalidateStaleGuestLocales(
+      parseLocalizedFieldFromDb(current.name),
+      name,
+      primaryLang
+    );
+    nextDescription = invalidateStaleGuestLocales(
+      parseLocalizedFieldFromDb(current.description),
+      description,
+      primaryLang
+    );
+  }
+
   const payload: Record<string, unknown> = {
-    name: serializeLocalizedFieldForDb(name),
-    description: serializeLocalizedFieldForDb(description),
+    name: serializeLocalizedFieldForDb(nextName),
+    description: serializeLocalizedFieldForDb(nextDescription),
     price: String(price),
     image,
     tags: tagsForDb,

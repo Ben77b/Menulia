@@ -89,6 +89,58 @@ export function keepPrimaryLocalizedText(
   return { [primaryLang]: text };
 }
 
+function toLocalizedRecord(
+  value: LocalizedTextValue,
+  primaryLang: string
+): LocalizedTextRecord {
+  if (isLocalizedTextRecord(value)) {
+    const record: LocalizedTextRecord = {};
+    for (const [lang, text] of Object.entries(value)) {
+      const normalized = normalizeText(text);
+      if (normalized) record[lang] = normalized;
+    }
+    if (!record[primaryLang]) {
+      const primary = resolveBuilderSourceText(value, primaryLang);
+      if (primary) record[primaryLang] = primary;
+    }
+    return record;
+  }
+  const text = typeof value === "string" ? value : "";
+  return text ? { [primaryLang]: text } : { [primaryLang]: "" };
+}
+
+/**
+ * When the primary-language string changes, drop stale guest/DeepL locale keys
+ * that still match the previous snapshot. Keys the owner edited in this save
+ * (text differs from previous) are preserved.
+ */
+export function invalidateStaleGuestLocales(
+  previous: LocalizedTextValue,
+  next: LocalizedTextValue,
+  primaryLang: string
+): LocalizedTextRecord {
+  const prevPrimary = resolveBuilderSourceText(previous, primaryLang).trim();
+  const nextPrimary = resolveBuilderSourceText(next, primaryLang).trim();
+  if (prevPrimary === nextPrimary) {
+    return toLocalizedRecord(next, primaryLang);
+  }
+
+  const prevRecord = toLocalizedRecord(previous, primaryLang);
+  const nextRecord = toLocalizedRecord(next, primaryLang);
+  const scrubbed: LocalizedTextRecord = { [primaryLang]: nextPrimary };
+
+  for (const [lang, text] of Object.entries(nextRecord)) {
+    if (lang === primaryLang) continue;
+    const trimmed = text.trim();
+    if (!trimmed) continue;
+    if (trimmed !== (prevRecord[lang] ?? "").trim()) {
+      scrubbed[lang] = trimmed;
+    }
+  }
+
+  return scrubbed;
+}
+
 /** True when a localized field still stores non-primary locale strings. */
 export function localizedTextHasNonPrimaryKeys(
   value: LocalizedTextValue,

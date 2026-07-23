@@ -76,6 +76,7 @@ import { BuilderRowMoreButton } from "./builder-row-more-button";
 import type { BuilderContextTarget } from "./builder-context-target";
 import { computeNextDishDisplayOrder } from "@/lib/menu-dish-order";
 import {
+  invalidateStaleGuestLocales,
   keepPrimaryLocalizedText,
   mergeLocalizedText,
   resolveBuilderSourceText,
@@ -688,7 +689,8 @@ export function MenuBuilder() {
           draft.is_available,
           false,
           draft.lock_title_translation,
-          storedVariations
+          storedVariations,
+          primaryLanguage
         );
       }
 
@@ -716,7 +718,11 @@ export function MenuBuilder() {
     const currentName = resolveBuilderSourceText(dish.name, primaryLanguage).trim();
     if (trimmed === currentName) return true;
 
-    const mergedName = mergeLocalizedText(dish.name, primaryLanguage, trimmed, primaryLanguage);
+    const mergedName = invalidateStaleGuestLocales(
+      dish.name,
+      mergeLocalizedText(dish.name, primaryLanguage, trimmed, primaryLanguage),
+      primaryLanguage
+    );
     const previousTree = tree;
     setTree((prev) => updateDishInCategory(prev, categoryId, dish.id, { name: mergedName }));
 
@@ -732,7 +738,8 @@ export function MenuBuilder() {
         dish.is_available,
         dish.hide_price,
         dish.lock_title_translation,
-        dish.price_variations
+        dish.price_variations,
+        primaryLanguage
       );
       return true;
     } catch (err) {
@@ -767,7 +774,8 @@ export function MenuBuilder() {
         dish.is_available,
         dish.hide_price,
         dish.lock_title_translation,
-        dish.price_variations
+        dish.price_variations,
+        primaryLanguage
       );
       return true;
     } catch (err) {
@@ -790,6 +798,7 @@ export function MenuBuilder() {
 
     let mergedName = mergeLocalizedText(dish.name, primaryLanguage, primaryName, primaryLanguage);
     mergedName = mergeLocalizedText(mergedName, secondaryLanguage, secondaryName, primaryLanguage);
+    mergedName = invalidateStaleGuestLocales(dish.name, mergedName, primaryLanguage);
     let mergedDescription = mergeLocalizedText(
       dish.description,
       primaryLanguage,
@@ -800,6 +809,11 @@ export function MenuBuilder() {
       mergedDescription,
       secondaryLanguage,
       secondaryDescription,
+      primaryLanguage
+    );
+    mergedDescription = invalidateStaleGuestLocales(
+      dish.description,
+      mergedDescription,
       primaryLanguage
     );
 
@@ -841,7 +855,8 @@ export function MenuBuilder() {
         draft.is_available,
         false,
         draft.lock_title_translation,
-        storedVariations
+        storedVariations,
+        primaryLanguage
       );
       toast.success("✨ Dish updated successfully");
     } catch (err) {
@@ -1040,10 +1055,14 @@ export function MenuBuilder() {
     const section = tree.sections.find((entry) => entry.id === categoryId);
     const category = section ?? findCategory(tree, categoryId);
     const currentDescription = section?.description ?? category?.description ?? "";
-    const mergedDescription = mergeLocalizedText(
+    const mergedDescription = invalidateStaleGuestLocales(
       currentDescription,
-      primaryLanguage,
-      trimmed,
+      mergeLocalizedText(
+        currentDescription,
+        primaryLanguage,
+        trimmed,
+        primaryLanguage
+      ),
       primaryLanguage
     );
 
@@ -1078,7 +1097,11 @@ export function MenuBuilder() {
       return true;
     }
 
-    const mergedName = mergeLocalizedText(currentName, primaryLanguage, trimmed, primaryLanguage);
+    const mergedName = invalidateStaleGuestLocales(
+      currentName,
+      mergeLocalizedText(currentName, primaryLanguage, trimmed, primaryLanguage),
+      primaryLanguage
+    );
     const lockedCategory = findCategory(tree, id);
     const nameToSave =
       lockedCategory?.lock_title_translation
