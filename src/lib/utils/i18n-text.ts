@@ -106,11 +106,13 @@ export function getLocalizedText(
 
     if (typeof input === "string") {
       const trimmed = input.trim();
-      if (trimmed.startsWith("{")) {
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
         try {
           const parsed = JSON.parse(trimmed) as unknown;
           if (isPlainObject(parsed)) {
-            record = coerceRecordStrings(parsed);
+            const coerced = coerceRecordStrings(parsed);
+            record = Object.keys(coerced).length > 0 ? coerced : null;
+            if (!record) raw = input;
           } else {
             raw = input;
           }
@@ -121,15 +123,18 @@ export function getLocalizedText(
         raw = input;
       }
     } else if (isPlainObject(input)) {
-      record = coerceRecordStrings(input);
+      const coerced = coerceRecordStrings(input);
+      record = Object.keys(coerced).length > 0 ? coerced : null;
     }
 
     if (record) {
-      raw =
-        (record[targetLang] || "").trim() ||
-        (record[fallbackLang] || "").trim() ||
-        (record.en || "").trim() ||
-        firstNonEmptyValue(record);
+      const target = (record[targetLang] || "").trim();
+      if (target) return decodeHtmlEntities(target);
+      const fallback = (record[fallbackLang] || "").trim();
+      if (fallback) return decodeHtmlEntities(fallback);
+      const english = (record.en || "").trim();
+      if (english) return decodeHtmlEntities(english);
+      raw = firstNonEmptyValue(record);
     }
 
     return decodeHtmlEntities(raw || "").trim();

@@ -20,12 +20,23 @@ export type PublicMenuRestaurantTranslatePatch = {
   hours?: LocalizedTextValue | null;
 };
 
+function coerceLocalizedValue(
+  raw: string | LocalizedTextValue | null | undefined
+): LocalizedTextValue {
+  if (raw == null) return "";
+  if (typeof raw === "object") return raw;
+  return parseLocalizedFieldFromDb(raw);
+}
+
 function patchDish(dish: PublicMenuDish, patch: PublicMenuTranslatePatch | undefined): PublicMenuDish {
   if (!patch) return dish;
   return {
     ...dish,
-    name: patch.name ?? dish.name,
-    description: patch.description ?? dish.description,
+    name: patch.name != null ? coerceLocalizedValue(patch.name) : dish.name,
+    description:
+      patch.description != null
+        ? coerceLocalizedValue(patch.description)
+        : dish.description,
   };
 }
 
@@ -37,8 +48,14 @@ function patchSubcategory(
   const categoryPatch = categoryPatches.get(subcategory.id);
   return {
     ...subcategory,
-    name: categoryPatch?.name ?? subcategory.name,
-    description: categoryPatch?.description ?? subcategory.description,
+    name:
+      categoryPatch?.name != null
+        ? coerceLocalizedValue(categoryPatch.name)
+        : subcategory.name,
+    description:
+      categoryPatch?.description != null
+        ? coerceLocalizedValue(categoryPatch.description)
+        : subcategory.description,
     dishes: (subcategory.dishes ?? []).map((dish) => patchDish(dish, dishPatches.get(dish.id))),
   };
 }
@@ -57,7 +74,10 @@ export function applyPublicMenuTranslatePatches(
       const parentPatch = categoryPatches.get(parent.id);
       return {
         ...parent,
-        name: parentPatch?.name ?? parent.name,
+        name:
+          parentPatch?.name != null
+            ? coerceLocalizedValue(parentPatch.name)
+            : parent.name,
         subcategories: (parent.subcategories ?? []).map((sub) =>
           patchSubcategory(sub, categoryPatches, dishPatches)
         ),
@@ -67,14 +87,6 @@ export function applyPublicMenuTranslatePatches(
       patchSubcategory(category, categoryPatches, dishPatches)
     ),
   };
-}
-
-function coerceLocalizedValue(
-  raw: string | LocalizedTextValue | null | undefined
-): LocalizedTextValue {
-  if (raw == null) return "";
-  if (typeof raw === "object") return raw;
-  return parseLocalizedFieldFromDb(raw);
 }
 
 /** Resolve restaurant free-text fields that may be plain strings or LocalizedText JSON. */
@@ -108,7 +120,9 @@ export async function requestPublicMenuTranslation(
 } | null> {
   try {
     const params = new URLSearchParams({ slug, lang: targetLang });
-    const response = await fetch(`/api/public-menu-translate?${params.toString()}`);
+    const response = await fetch(`/api/public-menu-translate?${params.toString()}`, {
+      cache: "no-store",
+    });
     if (!response.ok) return null;
     return (await response.json()) as {
       already_complete?: boolean;

@@ -34,13 +34,17 @@ import {
 } from "@/lib/translation-glossary";
 
 const DEEPL_BATCH_SIZE = 50;
+/** Short CDN TTL — empty/stale already_complete payloads must not stick for a year. */
 const TRANSLATION_CACHE_CONTROL =
-  "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=60";
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=60";
 
 function translationJsonResponse(body: unknown, init?: { status?: number }) {
   return NextResponse.json(body, {
     status: init?.status ?? 200,
-    headers: { "Cache-Control": TRANSLATION_CACHE_CONTROL },
+    headers: {
+      "Cache-Control": TRANSLATION_CACHE_CONTROL,
+      Vary: "Accept-Encoding",
+    },
   });
 }
 const RATE_LIMIT_MS = 8_000;
@@ -172,6 +176,37 @@ function shouldWrapIsolatedTerm(item: PendingItem): boolean {
     return isIsolatedMenuTerm(item.text);
   }
   return isIsolatedMenuTerm(item.text);
+}
+
+/** Snapshot current localized fields so guests can resolve targetLang without re-DeepL. */
+function buildLocalizedSnapshots(
+  categories: Array<Record<string, unknown>> | null | undefined,
+  dishes: Array<Record<string, unknown>> | null | undefined
+) {
+  return {
+    categories: (categories ?? []).flatMap((category) => {
+      const id = typeof category.id === "string" ? category.id : "";
+      if (!id) return [];
+      return [
+        {
+          id,
+          name: parseLocalizedFieldFromDb(category.name),
+          description: parseLocalizedFieldFromDb(category.description),
+        },
+      ];
+    }),
+    dishes: (dishes ?? []).flatMap((dish) => {
+      const id = typeof dish.id === "string" ? dish.id : "";
+      if (!id) return [];
+      return [
+        {
+          id,
+          name: parseLocalizedFieldFromDb(dish.name),
+          description: parseLocalizedFieldFromDb(dish.description),
+        },
+      ];
+    }),
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -395,12 +430,27 @@ export async function GET(request: NextRequest) {
     }
 
     if (pending.length === 0) {
+      // Still return current localized name/description maps so the client can
+      // switch languages even when DeepL has nothing left to do (or titles are locked).
+      const snapshots = buildLocalizedSnapshots(
+        (categories ?? []) as Array<Record<string, unknown>>,
+        (dishes ?? []) as Array<Record<string, unknown>>
+      );
+      const restaurantSnapshot = {
+        footer_slogan: footerSlogan,
+        meta_description: metaDescription,
+        hours,
+      };
       return translationJsonResponse({
         target_lang: targetLang,
         already_complete: categoryPatches.size === 0 && dishPatches.size === 0,
-        categories: Array.from(categoryPatches.values()),
-        dishes: Array.from(dishPatches.values()),
-        restaurant: null,
+        categories:
+          categoryPatches.size > 0
+            ? Array.from(categoryPatches.values())
+            : snapshots.categories,
+        dishes:
+          dishPatches.size > 0 ? Array.from(dishPatches.values()) : snapshots.dishes,
+        restaurant: restaurantSnapshot,
         tag_labels: {},
       });
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { parseContactInfo } from "@/lib/contact-info";
 import type { ResolvedMenuTheme, ThemeHotspotId } from "@/lib/advanced-theme";
@@ -13,7 +14,10 @@ import {
   sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
 import { collectPresentTagAppearances } from "@/lib/dietary-tags";
-import { detectGuestMenuLanguage } from "@/lib/menu-content-languages";
+import {
+  detectGuestMenuLanguage,
+  isGuestAutoTranslateLanguage,
+} from "@/lib/menu-content-languages";
 import {
   applyPublicMenuTranslatePatches,
   requestPublicMenuTranslation,
@@ -261,9 +265,17 @@ export function PublicMenuLayout({
     [menu, flatCategories]
   );
 
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const langFromUrl = searchParams.get("lang");
+  const initialLocale: PublicMenuLocale = isGuestAutoTranslateLanguage(langFromUrl)
+    ? langFromUrl
+    : defaultLocale;
+
   const [safeMenu, setSafeMenu] = useState(propsMenu);
   const [safeFlatCategories, setSafeFlatCategories] = useState(propsFlatCategories);
-  const [locale, setLocale] = useState<PublicMenuLocale>(defaultLocale);
+  const [locale, setLocale] = useState<PublicMenuLocale>(initialLocale);
   const [displayHours, setDisplayHours] = useState(() =>
     resolvePublicHoursDisplay(hours, defaultLocale, defaultLocale)
   );
@@ -350,28 +362,48 @@ export function PublicMenuLayout({
         setTagLabelMap((prev) => ({ ...prev, ...result.tag_labels }));
       }
 
-      if (!result.rate_limited) {
+      // Only mark complete when we applied data or the API confirmed already_complete.
+      // Empty CDN responses must not permanently block retries.
+      if (result.already_complete || hasMenuPatches) {
         translatedLocalesRef.current.add(nextLocale);
       }
     } catch (error) {
       console.error("[PublicMenuLayout:translate]", error);
     }
-  }, [defaultLocale, restaurantSlug]);
+  }, [restaurantSlug]);
 
   const handleLangChange = useCallback(
     (nextLocale: PublicMenuLocale) => {
       setLocale(nextLocale);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("lang", nextLocale);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       void ensureLocaleTranslated(nextLocale);
     },
-    [ensureLocaleTranslated]
+    [ensureLocaleTranslated, pathname, router, searchParams]
   );
 
   useEffect(() => {
+    if (isGuestAutoTranslateLanguage(langFromUrl) && langFromUrl !== locale) {
+      setLocale(langFromUrl);
+      void ensureLocaleTranslated(langFromUrl);
+    }
+  }, [langFromUrl, locale, ensureLocaleTranslated]);
+
+  useEffect(() => {
+    if (langFromUrl) return;
     setLocale(defaultLocale);
-  }, [defaultLocale]);
+  }, [defaultLocale, langFromUrl]);
 
   useEffect(() => {
     if (autoDetectRanRef.current || !restaurantSlug) return;
+    if (langFromUrl) {
+      autoDetectRanRef.current = true;
+      if (isGuestAutoTranslateLanguage(langFromUrl) && langFromUrl !== defaultLocale) {
+        void ensureLocaleTranslated(langFromUrl);
+      }
+      return;
+    }
     autoDetectRanRef.current = true;
 
     const detected = detectGuestMenuLanguage(
@@ -388,7 +420,7 @@ export function PublicMenuLayout({
     if (detected !== defaultLocale) {
       void ensureLocaleTranslated(detected);
     }
-  }, [defaultLocale, ensureLocaleTranslated, restaurantSlug]);
+  }, [defaultLocale, ensureLocaleTranslated, langFromUrl, restaurantSlug]);
 
   const {
     activeFilters,
