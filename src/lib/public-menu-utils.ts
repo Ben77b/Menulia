@@ -32,6 +32,44 @@ export function normalizeImageUrl(url: string | null | undefined): string | null
   return null;
 }
 
+/**
+ * Public-menu logo src that never embeds large Base64 into the RSC stream.
+ * - http(s) / relative / small data: → returned as-is
+ * - large data: → proxied via `/api/public-menu-logo?slug=…` (bytes stay off the HTML)
+ */
+export function resolvePublicMenuLogoSrc(
+  logo: string | null | undefined,
+  restaurantSlug: string | null | undefined
+): string | null {
+  if (!logo || typeof logo !== "string") return null;
+  const trimmed = logo.trim();
+  if (!trimmed) return null;
+
+  if (
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("/")
+  ) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith("data:")) {
+    if (trimmed.length <= MAX_INLINE_DATA_URL_CHARS) return trimmed;
+    const slug = typeof restaurantSlug === "string" ? restaurantSlug.trim() : "";
+    if (!slug) return null;
+    return `/api/public-menu-logo?slug=${encodeURIComponent(slug)}`;
+  }
+
+  return null;
+}
+
+/** True when the stored logo must be served through the public logo proxy. */
+export function logoRequiresPublicProxy(logo: string | null | undefined): boolean {
+  if (!logo || typeof logo !== "string") return false;
+  const trimmed = logo.trim();
+  return trimmed.startsWith("data:") && trimmed.length > MAX_INLINE_DATA_URL_CHARS;
+}
+
 /** @deprecated Use normalizeImageUrl — kept for existing imports. */
 export function isRenderableImageUrl(url: string | null | undefined): url is string {
   return normalizeImageUrl(url) !== null;

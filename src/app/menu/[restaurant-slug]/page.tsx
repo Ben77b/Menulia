@@ -26,7 +26,7 @@ import { normalizePrimaryLanguage } from "@/lib/menu-content-languages";
 import { parseTypography } from "@/lib/typography";
 import { DEFAULT_DESIGN } from "@/lib/restaurant-design";
 import { getLocalizedText } from "@/lib/utils/i18n-text";
-import { normalizeImageUrl } from "@/lib/public-menu-utils";
+import { resolvePublicMenuLogoSrc } from "@/lib/public-menu-utils";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { ResolvedMenuTheme } from "@/lib/advanced-theme";
 
@@ -162,9 +162,10 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
       }
     })();
 
-    // Drop oversized data: logos so RSC streaming does not abort the menu tree.
-    const logo = normalizeImageUrl(
-      typeof restaurant?.logo === "string" ? restaurant.logo : null
+    // http(s) logos pass through; large data: logos become `/api/public-menu-logo?slug=…`
+    const logo = resolvePublicMenuLogoSrc(
+      typeof restaurant?.logo === "string" ? restaurant.logo : null,
+      slugParam
     );
 
     const location = getLocalizedText(restaurant?.location, defaultLocale) || "";

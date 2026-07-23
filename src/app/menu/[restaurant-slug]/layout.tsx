@@ -4,8 +4,6 @@ import {
   getPublicMenuSplashBySlug,
 } from "@/lib/public-menu-cache";
 import { PublicMenuRouteShell } from "@/components/public/public-menu-route-shell";
-import { normalizeImageUrl } from "@/lib/public-menu-utils";
-import { DEFAULT_MENU_THEME } from "@/lib/theme-colors";
 
 export const revalidate = 86400;
 
@@ -26,19 +24,14 @@ export default async function PublicMenuLayout({
     console.error("[public-menu.layout.splash]", error);
   }
 
-  // Prefer a light loading frame — pure black splash looks like a crash.
-  const rawBg = splash?.backgroundColor || DEFAULT_PUBLIC_MENU_SPLASH.backgroundColor;
-  const backgroundColor =
-    typeof rawBg === "string" && rawBg.trim().toLowerCase() === "#000000"
-      ? DEFAULT_MENU_THEME.mainContentBackgroundColor
-      : rawBg || DEFAULT_MENU_THEME.mainContentBackgroundColor;
-
   return (
     <PublicMenuRouteShell
       splash={{
         restaurantName: splash?.restaurantName || "",
-        logo: normalizeImageUrl(splash?.logo ?? null),
-        backgroundColor,
+        // Already resolved to http(s) or `/api/public-menu-logo?slug=…` — never raw Base64.
+        logo: splash?.logo ?? null,
+        backgroundColor:
+          splash?.backgroundColor || DEFAULT_PUBLIC_MENU_SPLASH.backgroundColor,
         accentColor: splash?.accentColor || DEFAULT_PUBLIC_MENU_SPLASH.accentColor,
       }}
     >
