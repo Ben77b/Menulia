@@ -20,7 +20,7 @@ export interface PublicMenuSplashTheme {
 export const DEFAULT_PUBLIC_MENU_SPLASH: PublicMenuSplashTheme = {
   restaurantName: "",
   logo: null,
-  backgroundColor: DEFAULT_MENU_THEME.mainContentBackgroundColor,
+  backgroundColor: DEFAULT_MENU_THEME.headerBackgroundColor,
   accentColor: DEFAULT_MENU_THEME.categoryAccentColor,
 };
 
@@ -73,14 +73,14 @@ export function restaurantRowToSplashTheme(row: RestaurantRow | null): PublicMen
     return {
       restaurantName: getLocalizedText(row.name),
       logo: resolvePublicMenuLogoSrc((row.logo as string | null) ?? null, slug),
-      // Match Design Studio menu canvas so the loading screen feels on-brand.
+      // Match Design Studio header / logo-area so loading overlays align with the header.
       backgroundColor:
-        theme.menuBackground ||
-        theme.mainContentBackgroundColor ||
-        DEFAULT_MENU_THEME.mainContentBackgroundColor,
+        theme.logoAreaBg ||
+        theme.headerBackgroundColor ||
+        DEFAULT_MENU_THEME.headerBackgroundColor,
       accentColor:
-        theme.categoryAccentColor ||
         theme.logoAreaText ||
+        theme.categoryAccentColor ||
         DEFAULT_MENU_THEME.categoryAccentColor,
     };
   } catch (error) {
