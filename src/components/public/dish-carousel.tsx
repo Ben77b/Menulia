@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Public menu dish carousel — fixed card sizes, snap peeks, native scrollBy.
- * Mobile 260px / Desktop 400px. Active scale-100; peeks scale-[0.85] opacity-40.
+ * Public menu dish carousel — responsive vw card sizes, snap peeks, native scrollBy.
+ * Mobile 60vw / Desktop 40vw. Active scale-100; peeks scale-[0.85] opacity-40.
  */
 import {
   useCallback,
@@ -250,12 +250,12 @@ export function DishCarousel({
   return (
     <div className="relative mx-auto w-full overflow-visible py-4">
       {/*
-        Arrows sit on the outer edges of the active center image box
-        (260px mobile / 400px desktop), vertically at image mid-height.
+        Arrows sit on the outer edges of the active center image box,
+        vertically at image mid-height (half of 60vw / 40vw square).
       */}
       {showArrows ? (
         <div
-          className="pointer-events-none absolute left-1/2 top-[130px] z-20 flex w-[260px] -translate-x-1/2 -translate-y-1/2 items-center justify-between md:top-[200px] md:w-[400px]"
+          className="pointer-events-none absolute left-1/2 top-[30vw] z-20 flex w-[60vw] -translate-x-1/2 -translate-y-1/2 items-center justify-between md:top-[20vw] md:w-[40vw]"
           aria-hidden={false}
         >
           <NavArrowButton direction="prev" onClick={goPrevious} />
@@ -264,12 +264,11 @@ export function DishCarousel({
       ) : null}
 
       {/*
-        Padding = half viewport minus half card so first/last snap to true center.
-        Mobile: 50vw - 130px | Desktop: 50vw - 200px
+        Padding centers the active card: 20vw + 60vw + 20vw (mobile), 30vw + 40vw + 30vw (desktop).
       */}
       <div
         ref={containerRef}
-        className="flex w-full snap-x snap-mandatory items-start gap-4 overflow-x-auto scroll-smooth px-[calc(50vw-130px)] md:gap-6 md:px-[calc(50vw-200px)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full snap-x snap-mandatory items-start gap-4 overflow-x-auto scroll-smooth px-[20vw] md:gap-6 md:px-[30vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {safeDishes.map((dish, index) => {
@@ -284,7 +283,7 @@ export function DishCarousel({
                 slideRefs.current[index] = node;
               }}
               className={cn(
-                "w-[260px] shrink-0 snap-center rounded-none origin-center will-change-transform md:w-[400px]",
+                "w-[60vw] shrink-0 snap-center rounded-none origin-center will-change-transform md:w-[40vw]",
                 isActive
                   ? "z-[1] scale-100 opacity-100 transition-all duration-500 ease-out"
                   : "z-0 scale-[0.85] opacity-40 transition-all duration-500 ease-out cursor-pointer"
