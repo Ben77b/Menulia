@@ -43,15 +43,18 @@ function extensionFromMime(mime: string): string {
   return "jpg";
 }
 
-/** Force clipboard cutouts/stickers into a valid PNG File the upload path accepts. */
+/** Normalize clipboard blobs into a File the Supabase upload path accepts. */
 function coercePastedImageFile(blob: Blob): File {
-  return new File([blob], "pasted-image.png", {
-    type: "image/png",
+  const mime =
+    blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
+  const extension = extensionFromMime(mime);
+  return new File([blob], `pasted-sticker.${extension}`, {
+    type: mime,
     lastModified: Date.now(),
   });
 }
 
-function clipboardHasImage(clipboardData: DataTransfer | null): boolean {
+function clipboardEventHasImage(clipboardData: DataTransfer | null): boolean {
   if (!clipboardData) return false;
 
   if (Array.from(clipboardData.files ?? []).some((file) => file.type.includes("image"))) {
@@ -59,11 +62,13 @@ function clipboardHasImage(clipboardData: DataTransfer | null): boolean {
   }
 
   return Array.from(clipboardData.items ?? []).some(
-    (item) => item.kind === "file" && item.type.includes("image")
+    (item) => item.type.includes("image")
   );
 }
 
-function extractClipboardImageBlob(clipboardData: DataTransfer | null): Blob | null {
+function extractImageBlobFromClipboardEvent(
+  clipboardData: DataTransfer | null
+): Blob | null {
   if (!clipboardData) return null;
 
   const fromFiles = Array.from(clipboardData.files ?? []).find((file) =>
@@ -72,13 +77,55 @@ function extractClipboardImageBlob(clipboardData: DataTransfer | null): Blob | n
   if (fromFiles) return fromFiles;
 
   for (const item of Array.from(clipboardData.items ?? [])) {
-    if (item.kind === "file" && item.type.includes("image")) {
+    if (item.type.includes("image")) {
       const file = item.getAsFile();
       if (file) return file;
     }
   }
 
   return null;
+}
+
+function pickClipboardImageType(types: readonly string[]): string | null {
+  const normalized = types.map((type) => type.toLowerCase());
+  const preferred = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
+  for (const type of preferred) {
+    if (normalized.includes(type)) return types[normalized.indexOf(type)] ?? type;
+  }
+  return types.find((type) => type.toLowerCase().startsWith("image/")) ?? null;
+}
+
+/** Mobile Safari often omits clipboardData.files — read the system clipboard instead. */
+async function readImageBlobFromClipboardApi(): Promise<Blob | null> {
+  if (typeof navigator === "undefined" || !navigator.clipboard?.read) {
+    return null;
+  }
+
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const imageType = pickClipboardImageType(item.types);
+      if (!imageType) continue;
+      try {
+        const blob = await item.getType(imageType);
+        if (blob && blob.size > 0) return blob;
+      } catch {
+        // Try next clipboard item/type.
+      }
+    }
+  } catch {
+    // Permission denied or API unsupported in this context.
+  }
+
+  return null;
+}
+
+async function resolvePastedImageBlob(
+  clipboardData: DataTransfer | null
+): Promise<Blob | null> {
+  const fromEvent = extractImageBlobFromClipboardEvent(clipboardData);
+  if (fromEvent && fromEvent.size > 0) return fromEvent;
+  return readImageBlobFromClipboardApi();
 }
 
 export function DishImageUploader({
@@ -134,16 +181,14 @@ export function DishImageUploader({
 
   const handleClipboardImagePaste = useCallback(
     async (event: ClipboardEvent, options?: { fromUrlField?: boolean }) => {
-      // Image cutouts/stickers — never treat as URL text.
-      if (clipboardHasImage(event.clipboardData)) {
+      const clipboardData = event.clipboardData;
+      const pastedText = clipboardData?.getData("text/plain")?.trim() ?? "";
+      const hasEventImage = clipboardEventHasImage(clipboardData);
+
+      // Sync image in the paste event — never treat as a URL string.
+      if (hasEventImage) {
         event.preventDefault();
         event.stopPropagation();
-
-        const blob = extractClipboardImageBlob(event.clipboardData);
-        if (!blob) {
-          toast.error(PASTE_ERROR);
-          return;
-        }
 
         if (options?.fromUrlField) {
           setPasteUploading(true);
@@ -151,8 +196,12 @@ export function DishImageUploader({
         }
 
         try {
-          const pastedFile = coercePastedImageFile(blob);
-          await handleFile(pastedFile, { skipTypeCheck: true });
+          const blob = await resolvePastedImageBlob(clipboardData);
+          if (!blob) {
+            toast.error(PASTE_ERROR);
+            return;
+          }
+          await handleFile(coercePastedImageFile(blob), { skipTypeCheck: true });
         } catch {
           toast.error(PASTE_ERROR);
         } finally {
@@ -163,9 +212,37 @@ export function DishImageUploader({
         return;
       }
 
-      // Plain text URL paste — allow default input behavior.
+      // Plain URL / text paste — keep default input behavior.
+      if (pastedText) {
+        if (options?.fromUrlField) {
+          event.stopPropagation();
+        }
+        return;
+      }
+
+      // Mobile sticker/cutout case: event has no files and no text.
+      // preventDefault sync, then read the system clipboard via async API.
+      event.preventDefault();
+      event.stopPropagation();
+
       if (options?.fromUrlField) {
-        event.stopPropagation();
+        setPasteUploading(true);
+        setUrlInput("");
+      } else {
+        setPasteUploading(true);
+      }
+
+      try {
+        const blob = await resolvePastedImageBlob(clipboardData);
+        if (!blob) {
+          toast.error(PASTE_ERROR);
+          return;
+        }
+        await handleFile(coercePastedImageFile(blob), { skipTypeCheck: true });
+      } catch {
+        toast.error(PASTE_ERROR);
+      } finally {
+        setPasteUploading(false);
       }
     },
     [handleFile, toast]

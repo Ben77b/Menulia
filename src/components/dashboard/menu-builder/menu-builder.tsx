@@ -487,8 +487,8 @@ export function MenuBuilder() {
         "image/gif": "gif",
       };
       const ext =
-        file.name === "pasted-image.png"
-          ? "png"
+        file.name.startsWith("pasted-sticker.") || file.name === "pasted-image.png"
+          ? file.name.split(".").pop()?.toLowerCase() ?? "png"
           : file.name.includes(".")
             ? file.name.split(".").pop()?.toLowerCase() ?? "png"
             : extensionFromType[normalizedType] ?? "png";
