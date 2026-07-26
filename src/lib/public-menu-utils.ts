@@ -4,6 +4,7 @@ import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/locali
 import { dishTagLabel } from "@/lib/dietary-tags";
 import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 import { parsePriceVariationsFromDb } from "@/lib/price-variations";
+import { sortRecordsByDisplayOrder } from "@/lib/menu-dish-order";
 
 /** Max inline data-URL size allowed through RSC → client props (avoids flight blowups). */
 const MAX_INLINE_DATA_URL_CHARS = 4096;
@@ -143,6 +144,7 @@ export function sanitizePublicMenuDish(
     image: safeImage,
     tags: Array.isArray(dish.tags) ? dish.tags.filter(Boolean) : [],
     allergens: Array.isArray(dish.allergens) ? dish.allergens.filter(Boolean) : [],
+    display_order: Number(dish.display_order ?? 0),
   };
 }
 
@@ -157,9 +159,11 @@ export function sanitizePublicMenuSubcategory(
     name: subcategory.name ?? "",
     description: subcategory.description ?? null,
     layout_type: normalizeCategoryLayoutType(subcategory.layout_type),
-    dishes: (subcategory.dishes ?? [])
-      .map(sanitizePublicMenuDish)
-      .filter((dish): dish is PublicMenuDish => dish !== null),
+    dishes: sortRecordsByDisplayOrder(
+      (subcategory.dishes ?? [])
+        .map(sanitizePublicMenuDish)
+        .filter((dish): dish is PublicMenuDish => dish !== null)
+    ),
   };
 }
 

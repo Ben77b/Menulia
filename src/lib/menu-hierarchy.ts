@@ -42,6 +42,7 @@ export function mapDishRow(dish: {
   image?: string | null;
   tags?: string[] | null;
   allergens?: string[] | null;
+  display_order?: number | null;
 }): PublicMenuDish {
   try {
     const normalized = parseDishTagsFromDb(dish ?? {});
@@ -59,6 +60,7 @@ export function mapDishRow(dish: {
       image: typeof dish?.image === "string" ? dish.image : null,
       tags: normalized.tags,
       allergens: normalized.allergens,
+      display_order: Number(dish?.display_order ?? 0),
     };
   } catch (error) {
     console.error("[mapDishRow]", error);
@@ -72,15 +74,22 @@ export function mapDishRow(dish: {
       image: null,
       tags: [],
       allergens: [],
+      display_order: Number(dish?.display_order ?? 0),
     };
   }
+}
+
+function compareCategoryOrder(a: CategoryRow, b: CategoryRow): number {
+  const orderDiff = (a.order_index ?? 0) - (b.order_index ?? 0);
+  if (orderDiff !== 0) return orderDiff;
+  return a.id.localeCompare(b.id);
 }
 
 export function buildMenuHierarchy(
   categoryRows: CategoryRow[],
   dishesByCategoryId: Record<string, PublicMenuDish[]>
 ): PublicMenuParentCategory[] {
-  const sorted = [...categoryRows].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  const sorted = [...categoryRows].sort(compareCategoryOrder);
 
   const toSubcategory = (row: CategoryRow): PublicMenuSubcategory => ({
     id: row.id,
@@ -100,6 +109,11 @@ export function buildMenuHierarchy(
       list.push(row);
       childrenByParent.set(row.parent_id!, list);
     });
+
+  // Keep sibling categories in dashboard order within each parent.
+  for (const [parentId, children] of childrenByParent) {
+    childrenByParent.set(parentId, [...children].sort(compareCategoryOrder));
+  }
 
   if (parents.length === 0 && sorted.length > 0) {
     return sorted.map((row) => ({

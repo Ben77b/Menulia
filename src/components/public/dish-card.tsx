@@ -39,6 +39,8 @@ export interface PublicMenuDish {
   tags: string[];
   /** Informational allergen indicators — display only */
   allergens: string[];
+  /** Dashboard sort position within the category */
+  display_order?: number;
 }
 
 interface DishCardProps {

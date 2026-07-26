@@ -96,7 +96,7 @@ function cachedMenuPayload(restaurantId: string, slug: string) {
   const normalizedSlug = slug.trim().toLowerCase();
   return unstable_cache(
     () => fetchPublicMenuData(restaurantId),
-    ["public-menu-payload", restaurantId],
+    ["public-menu-payload-v2", restaurantId],
     {
       revalidate: PUBLIC_MENU_REVALIDATE_SECONDS,
       tags: ["public-menu", `public-menu:${normalizedSlug}`],

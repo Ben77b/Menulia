@@ -32,9 +32,22 @@ export function buildFlatCategories(
   categoryRows: CategoryRow[],
   dishesByCategoryId: Record<string, ReturnType<typeof mapDishRow>[]>
 ): PublicMenuSubcategory[] {
-  const leafRows = categoryRows.filter(
-    (row) => !categoryRows.some((child) => child.parent_id === row.id)
-  );
+  const byId = new Map(categoryRows.map((row) => [row.id, row]));
+
+  const leafRows = categoryRows
+    .filter((row) => !categoryRows.some((child) => child.parent_id === row.id))
+    .sort((a, b) => {
+      // Nested leaves: parent section order first, then sibling order_index.
+      const parentA = a.parent_id ? byId.get(a.parent_id) : null;
+      const parentB = b.parent_id ? byId.get(b.parent_id) : null;
+      const parentOrderA = parentA?.order_index ?? a.order_index ?? 0;
+      const parentOrderB = parentB?.order_index ?? b.order_index ?? 0;
+      if (parentOrderA !== parentOrderB) return parentOrderA - parentOrderB;
+      if ((a.order_index ?? 0) !== (b.order_index ?? 0)) {
+        return (a.order_index ?? 0) - (b.order_index ?? 0);
+      }
+      return a.id.localeCompare(b.id);
+    });
 
   return leafRows.map((row) => rowToSubcategory(row, dishesByCategoryId));
 }
@@ -64,12 +77,18 @@ async function selectDishesForCategories(
   supabase: ReturnType<typeof createAnonClient>,
   categoryIds: string[],
   columns: string,
-  options?: { requireAvailable?: boolean }
+  options?: { requireAvailable?: boolean; orderByDisplayOrder?: boolean }
 ) {
   let query = supabase.from("dishes").select(columns).in("category_id", categoryIds);
 
   if (options?.requireAvailable) {
     query = query.eq("is_available", true);
+  }
+
+  if (options?.orderByDisplayOrder) {
+    query = query.order("display_order", { ascending: true }).order("id", { ascending: true });
+  } else {
+    query = query.order("id", { ascending: true });
   }
 
   return query;
@@ -79,7 +98,7 @@ async function selectDishesWithPriceVariationsFallback(
   supabase: ReturnType<typeof createAnonClient>,
   categoryIds: string[],
   columns: string,
-  options?: { requireAvailable?: boolean }
+  options?: { requireAvailable?: boolean; orderByDisplayOrder?: boolean }
 ) {
   let result = await selectDishesForCategories(supabase, categoryIds, columns, options);
 
@@ -94,6 +113,14 @@ async function selectDishesWithPriceVariationsFallback(
       stripPriceVariationsColumn(columns),
       options
     );
+  }
+
+  // Older schemas may lack display_order — retry without that order clause.
+  if (result.error && isMissingColumnError(result.error) && options?.orderByDisplayOrder) {
+    result = await selectDishesForCategories(supabase, categoryIds, columns, {
+      requireAvailable: options.requireAvailable,
+      orderByDisplayOrder: false,
+    });
   }
 
   return result;
@@ -116,7 +143,7 @@ function groupDishesByCategory(
   for (const [categoryId, categoryRows] of Object.entries(byCategory)) {
     const ordered = sortByDisplayOrder
       ? sortRecordsByDisplayOrder(categoryRows)
-      : categoryRows;
+      : [...categoryRows].sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? "")));
     mapped[categoryId] = ordered.flatMap((row) => {
       try {
         const dish = mapDishRow(row);
@@ -182,7 +209,10 @@ async function fetchActiveDishesByCategoryIds(
       supabase,
       categoryIds,
       attempt.columns,
-      { requireAvailable: attempt.requireAvailable }
+      {
+        requireAvailable: attempt.requireAvailable,
+        orderByDisplayOrder: attempt.sortByDisplayOrder,
+      }
     );
 
     if (error) {
@@ -215,7 +245,8 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
       .from("categories")
       .select("id, name, description, layout_type, order_index, parent_id")
       .eq("restaurant_id", restaurantId)
-      .order("order_index", { ascending: true });
+      .order("order_index", { ascending: true })
+      .order("id", { ascending: true });
 
     let categorySource: Array<{
       id: string;
@@ -231,7 +262,8 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
         .from("categories")
         .select("id, name, layout_type, order_index, parent_id")
         .eq("restaurant_id", restaurantId)
-        .order("order_index", { ascending: true });
+        .order("order_index", { ascending: true })
+        .order("id", { ascending: true });
       categorySource = fallback.data;
       if (fallback.error) {
         console.error(
