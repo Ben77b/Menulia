@@ -53,10 +53,8 @@ function CarouselCardFrame({
   return (
     <div
       className={cn(
-        "origin-center transition-[transform,opacity] duration-300 ease-out will-change-transform",
-        isActive
-          ? "z-[1] scale-100 opacity-100"
-          : "z-0 scale-90 opacity-50"
+        "origin-center transition-all duration-300 ease-out will-change-transform",
+        isActive ? "z-[1] scale-100 opacity-100" : "z-0 scale-90 opacity-40"
       )}
     >
       {children}
@@ -84,7 +82,7 @@ function NavArrowButton({
       aria-label={direction === "prev" ? "Previous dish" : "Next dish"}
       onClick={onClick}
       className={cn(
-        "z-10 flex h-11 w-11 items-center justify-center rounded-full shadow-md ring-1 ring-black/10 transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95",
+        "z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-md ring-1 ring-black/15 transition-transform duration-200 ease-out hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95",
         className
       )}
       style={{ backgroundColor: accentColor, color: arrowColor }}
@@ -123,7 +121,8 @@ export function DishCarousel({
   const touchStartX = useRef<number | null>(null);
   const mobileScrollerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const skipScrollSyncRef = useRef(false);
+  /** Only scroll the track when arrows/clicks change index — never fight native swipe snap. */
+  const programmaticNavRef = useRef(false);
   const isPreview = usePreviewCanvas();
   const arrowColor = isPreview
     ? pv("carouselArrowIcon")
@@ -133,25 +132,16 @@ export function DishCarousel({
     const scroller = mobileScrollerRef.current;
     const slide = slideRefs.current[index];
     if (!scroller || !slide) return;
-    skipScrollSyncRef.current = true;
     const target =
       slide.offsetLeft - (scroller.clientWidth - slide.clientWidth) / 2;
     scroller.scrollTo({ left: Math.max(0, target), behavior });
-    window.setTimeout(() => {
-      skipScrollSyncRef.current = false;
-    }, behavior === "smooth" ? 400 : 0);
   }, []);
 
   useEffect(() => {
     setActiveIndex(0);
+    programmaticNavRef.current = false;
     const scroller = mobileScrollerRef.current;
-    if (scroller) {
-      skipScrollSyncRef.current = true;
-      scroller.scrollTo({ left: 0, behavior: "auto" });
-      window.setTimeout(() => {
-        skipScrollSyncRef.current = false;
-      }, 0);
-    }
+    if (scroller) scroller.scrollTo({ left: 0, behavior: "auto" });
   }, [safeDishes]);
 
   useEffect(() => {
@@ -160,23 +150,49 @@ export function DishCarousel({
     }
   }, [activeIndex, safeDishes.length]);
 
-  // Keep mobile scroller aligned when active index changes via arrows
+  // Programmatic nav only (arrows / peek tap) — do not re-scroll on swipe-driven index updates
   useEffect(() => {
+    if (!programmaticNavRef.current) return;
+    programmaticNavRef.current = false;
     if (typeof window === "undefined") return;
-    if (!window.matchMedia("(max-width: 639px)").matches) return;
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
     scrollMobileToIndex(activeIndex);
   }, [activeIndex, scrollMobileToIndex]);
 
-  // Detect centered slide via IntersectionObserver (mobile snap track)
+  // Track centered card from scroll position (reliable with snap + peek)
+  useEffect(() => {
+    const scroller = mobileScrollerRef.current;
+    if (!scroller || safeDishes.length <= 1) return;
+
+    const syncActiveFromScroll = () => {
+      const center = scroller.scrollLeft + scroller.clientWidth / 2;
+      let nearest = 0;
+      let nearestDist = Number.POSITIVE_INFINITY;
+      slideRefs.current.forEach((slide, index) => {
+        if (!slide) return;
+        const slideCenter = slide.offsetLeft + slide.clientWidth / 2;
+        const dist = Math.abs(slideCenter - center);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = index;
+        }
+      });
+      setActiveIndex((current) => (current === nearest ? current : nearest));
+    };
+
+    scroller.addEventListener("scroll", syncActiveFromScroll, { passive: true });
+    syncActiveFromScroll();
+    return () => scroller.removeEventListener("scroll", syncActiveFromScroll);
+  }, [safeDishes.length]);
+
+  // IntersectionObserver backup for active index
   useEffect(() => {
     const scroller = mobileScrollerRef.current;
     if (!scroller || safeDishes.length <= 1) return;
 
     const ratios = new Map<number, number>();
-
     const observer = new IntersectionObserver(
       (entries) => {
-        if (skipScrollSyncRef.current) return;
         for (const entry of entries) {
           const index = Number((entry.target as HTMLElement).dataset.index);
           if (Number.isNaN(index)) continue;
@@ -190,20 +206,16 @@ export function DishCarousel({
             bestIndex = index;
           }
         });
-        if (bestRatio > 0.45) {
+        if (bestRatio >= 0.55) {
           setActiveIndex((current) => (current === bestIndex ? current : bestIndex));
         }
       },
-      {
-        root: scroller,
-        threshold: [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
-      }
+      { root: scroller, threshold: [0.45, 0.55, 0.65, 0.75, 0.85, 1] }
     );
 
     slideRefs.current.forEach((slide) => {
       if (slide) observer.observe(slide);
     });
-
     return () => observer.disconnect();
   }, [safeDishes.length]);
 
@@ -237,11 +249,18 @@ export function DishCarousel({
   }
 
   function goPrevious() {
+    programmaticNavRef.current = true;
     setActiveIndex((current) => mod(current - 1, safeDishes.length));
   }
 
   function goNext() {
+    programmaticNavRef.current = true;
     setActiveIndex((current) => mod(current + 1, safeDishes.length));
+  }
+
+  function goToIndex(index: number) {
+    programmaticNavRef.current = true;
+    setActiveIndex(index);
   }
 
   function handleTouchStart(event: React.TouchEvent) {
@@ -254,7 +273,6 @@ export function DishCarousel({
     const delta = endX - touchStartX.current;
     touchStartX.current = null;
 
-    // Desktop three-slot still uses swipe deltas; mobile relies on native snap scroll.
     if (delta > 48) goPrevious();
     else if (delta < -48) goNext();
   }
@@ -282,7 +300,7 @@ export function DishCarousel({
     priceColor,
     layout: "carousel" as const,
     compact: !isActive,
-    imageClassName: "w-full max-w-[80vw] sm:max-w-none",
+    imageClassName: "w-full",
     priority: false,
     tagLabelMap,
   });
@@ -290,39 +308,22 @@ export function DishCarousel({
   const showArrows = safeDishes.length > 1;
 
   return (
-    <div className="relative mx-auto max-w-4xl overflow-visible py-4 max-sm:-mx-4 sm:px-14">
-      {/* Desktop side arrows */}
-      {showArrows && (
-        <>
-          <NavArrowButton
-            direction="prev"
-            accentColor={accentColor}
-            arrowColor={arrowColor}
-            onClick={goPrevious}
-            className="absolute left-0 top-1/2 hidden -translate-y-1/2 sm:flex"
-          />
-          <NavArrowButton
-            direction="next"
-            accentColor={accentColor}
-            arrowColor={arrowColor}
-            onClick={goNext}
-            className="absolute right-0 top-1/2 hidden -translate-y-1/2 sm:flex"
-          />
-        </>
-      )}
-
+    <div className="relative mx-auto flex w-full max-w-4xl flex-col overflow-visible py-4 md:px-14">
       {safeDishes.length === 1 ? (
-        <div className="mx-auto w-full max-w-[80vw] sm:max-w-[320px]">
+        <div className="mx-auto w-full max-w-[80vw] md:max-w-[320px]">
           <CarouselCardFrame isActive>
             <DishCard {...dishCardProps(safeDishes[0], true)} />
           </CarouselCardFrame>
         </div>
       ) : (
         <>
-          {/* Mobile: peek carousel via CSS scroll-snap */}
+          {/*
+            Mobile peek track — full viewport bleed so 80vw + 10vw padding is exact:
+            centered card leaves ~10vw of the previous/next cards visible on each side.
+          */}
           <div
             ref={mobileScrollerRef}
-            className="flex snap-x snap-mandatory overflow-x-auto overflow-y-visible overscroll-x-contain touch-pan-x scroll-px-[10vw] px-[10vw] sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="relative left-1/2 flex w-screen max-w-[100vw] -translate-x-1/2 snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-[10vw] touch-pan-x md:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             {safeDishes.map((dish, index) => {
@@ -336,15 +337,15 @@ export function DishCarousel({
                     slideRefs.current[index] = node;
                   }}
                   className={cn(
-                    "w-[80vw] max-w-[80vw] flex-shrink-0 snap-center px-1.5",
+                    "w-[80vw] shrink-0 snap-center",
                     !isActive && "cursor-pointer"
                   )}
                   onClick={() => {
-                    if (!isActive) setActiveIndex(index);
+                    if (!isActive) goToIndex(index);
                   }}
                   onKeyDown={(event) => {
                     if (isActive || event.key !== "Enter") return;
-                    setActiveIndex(index);
+                    goToIndex(index);
                   }}
                   role={isActive ? undefined : "button"}
                   tabIndex={isActive ? undefined : 0}
@@ -359,9 +360,9 @@ export function DishCarousel({
             })}
           </div>
 
-          {/* Mobile arrows — below track so they never cover dish images */}
+          {/* Mobile arrows — static, strictly below the image track (never absolute) */}
           {showArrows && (
-            <div className="mt-5 flex items-center justify-center gap-8 sm:hidden">
+            <div className="mt-4 flex items-center justify-center gap-6 md:hidden">
               <NavArrowButton
                 direction="prev"
                 accentColor={accentColor}
@@ -384,12 +385,30 @@ export function DishCarousel({
             </div>
           )}
 
-          {/* Desktop: three-slot layout */}
+          {/* Desktop: three-slot layout + absolute side arrows */}
           <div
-            className="hidden overflow-visible sm:block"
+            className="relative hidden overflow-visible md:block"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
+            {showArrows && (
+              <>
+                <NavArrowButton
+                  direction="prev"
+                  accentColor={accentColor}
+                  arrowColor={arrowColor}
+                  onClick={goPrevious}
+                  className="absolute left-0 top-1/2 -translate-y-1/2"
+                />
+                <NavArrowButton
+                  direction="next"
+                  accentColor={accentColor}
+                  arrowColor={arrowColor}
+                  onClick={goNext}
+                  className="absolute right-0 top-1/2 -translate-y-1/2"
+                />
+              </>
+            )}
             <div className="flex items-center justify-center gap-6">
               {desktopSlots.map((slot) => {
                 const isActive = slot.position === "center";
@@ -398,8 +417,8 @@ export function DishCarousel({
                   <div
                     key={slot.key}
                     className={cn(
-                      "shrink-0 sm:w-[min(34vw,200px)]",
-                      isActive && "sm:w-[min(78vw,320px)]",
+                      "w-[min(34vw,200px)] shrink-0",
+                      isActive && "w-[min(78vw,320px)]",
                       !isActive && "cursor-pointer"
                     )}
                     onClick={() => {
