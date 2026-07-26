@@ -11,12 +11,29 @@ const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gi
 const ACCEPT_ATTR = ACCEPTED_IMAGE_TYPES.join(",");
 const CLIPBOARD_EMPTY =
   "No image found in clipboard. Copy a photo subject first.";
+/** Cap canvas size to avoid Safari OOM / null toBlob on large mobile cutouts. */
+const MAX_PASTE_DIMENSION = 1200;
 
 interface DishImageUploaderProps {
   imageUrl: string | null;
   onImageUrlChange: (url: string | null) => void;
   onImageUpload: (file: File) => Promise<string | null>;
   uploading?: boolean;
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message: unknown }).message === "string" &&
+    (error as { message: string }).message.trim()
+  ) {
+    return (error as { message: string }).message;
+  }
+  return fallback;
 }
 
 function isAcceptedImageFile(file: File): boolean {
@@ -53,9 +70,33 @@ function pickClipboardImageType(types: readonly string[]): string | null {
   return types.find((type) => type.toLowerCase().startsWith("image/")) ?? null;
 }
 
+function scaleToMaxDimension(
+  width: number,
+  height: number,
+  maxDimension: number
+): { width: number; height: number } {
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+  if (safeWidth <= maxDimension && safeHeight <= maxDimension) {
+    return { width: safeWidth, height: safeHeight };
+  }
+  const scale = Math.min(maxDimension / safeWidth, maxDimension / safeHeight);
+  return {
+    width: Math.max(1, Math.round(safeWidth * scale)),
+    height: Math.max(1, Math.round(safeHeight * scale)),
+  };
+}
+
+function fallbackClipboardFile(source: Blob): File {
+  return new File([source], `paste-${Date.now()}.png`, {
+    type: source.type && source.type.startsWith("image/") ? source.type : "image/png",
+    lastModified: Date.now(),
+  });
+}
+
 /**
- * Re-encode any clipboard cutout/sticker blob as a real PNG via canvas.
- * Mobile clipboard MIME types are often non-standard and fail Supabase validation.
+ * Re-encode clipboard cutouts as PNG via canvas (downscaled for mobile memory).
+ * Falls back to the raw blob if canvas conversion fails.
  */
 async function convertBlobToPngFile(source: Blob): Promise<File> {
   const objectUrl = URL.createObjectURL(source);
@@ -67,8 +108,23 @@ async function convertBlobToPngFile(source: Blob): Promise<File> {
       img.src = objectUrl;
     });
 
-    const width = Math.max(1, image.naturalWidth || image.width || 1);
-    const height = Math.max(1, image.naturalHeight || image.height || 1);
+    // Ensure decoded pixels are ready before drawImage (Safari).
+    if (typeof image.decode === "function") {
+      try {
+        await image.decode();
+      } catch {
+        // Some browsers reject decode() on already-loaded blob URLs — draw anyway.
+      }
+    }
+
+    const naturalWidth = Math.max(1, image.naturalWidth || image.width || 1);
+    const naturalHeight = Math.max(1, image.naturalHeight || image.height || 1);
+    const { width, height } = scaleToMaxDimension(
+      naturalWidth,
+      naturalHeight,
+      MAX_PASTE_DIMENSION
+    );
+
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -82,20 +138,22 @@ async function convertBlobToPngFile(source: Blob): Promise<File> {
     context.drawImage(image, 0, 0, width, height);
 
     const pngBlob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (blob) => {
-          if (blob && blob.size > 0) resolve(blob);
-          else reject(new Error("PNG conversion produced an empty blob"));
-        },
-        "image/png",
-        1
-      );
+      canvas.toBlob((blob) => {
+        if (blob && blob.size > 0) resolve(blob);
+        else reject(new Error("PNG conversion produced an empty blob"));
+      }, "image/png");
     });
 
     return new File([pngBlob], `paste-${Date.now()}.png`, {
       type: "image/png",
       lastModified: Date.now(),
     });
+  } catch (error) {
+    console.error(
+      "[DishImageUploader.convertBlobToPngFile] falling back to raw blob:",
+      errorMessage(error, "canvas conversion failed")
+    );
+    return fallbackClipboardFile(source);
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
@@ -180,8 +238,9 @@ export function DishImageUploader({
         }
         toast.error("Image upload failed.");
         return false;
-      } catch {
-        toast.error("Image upload failed.");
+      } catch (error) {
+        console.error("[DishImageUploader.handleFile]", errorMessage(error, "upload failed"));
+        toast.error(errorMessage(error, "Image upload failed."));
         return false;
       } finally {
         URL.revokeObjectURL(objectUrl);
@@ -205,9 +264,9 @@ export function DishImageUploader({
     } catch (error) {
       console.error(
         "[DishImageUploader.paste]",
-        error instanceof Error ? error.message : error
+        errorMessage(error, "clipboard paste failed")
       );
-      toast.error(CLIPBOARD_EMPTY);
+      toast.error(errorMessage(error, CLIPBOARD_EMPTY));
     } finally {
       setClipboardUploading(false);
     }

@@ -466,20 +466,26 @@ export function MenuBuilder() {
   }, [currentRestaurant?.id, loadMenu]);
 
   async function handleImageUpload(file: File): Promise<string | null> {
-    if (!currentRestaurant?.id) return null;
+    if (!currentRestaurant?.id) {
+      throw new Error("Select a restaurant before uploading images.");
+    }
 
     const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
     const normalizedType =
       file.type === "image/jpg" ? "image/jpeg" : file.type || "image/png";
     const isImage =
       normalizedType.startsWith("image/") && allowed.includes(normalizedType);
-    if (!isImage || file.size > 5 * 1024 * 1024) {
-      console.error("[menu.handleImageUpload] rejected file", {
+    if (!isImage) {
+      const message = `Unsupported image type: ${file.type || "unknown"}`;
+      console.error("[menu.handleImageUpload]", message, {
         type: file.type,
         size: file.size,
         name: file.name,
       });
-      return null;
+      throw new Error(message);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error("Image must be smaller than 5MB.");
     }
 
     setUploadingImage(true);
@@ -510,7 +516,7 @@ export function MenuBuilder() {
           uploadError.message,
           uploadError
         );
-        throw uploadError;
+        throw new Error(uploadError.message || "Supabase storage upload failed.");
       }
       const { data } = supabase.storage.from("menu-images").getPublicUrl(fileName);
       return data.publicUrl;
@@ -519,7 +525,9 @@ export function MenuBuilder() {
         "[menu.handleImageUpload]",
         err instanceof Error ? err.message : err
       );
-      return null;
+      throw err instanceof Error
+        ? err
+        : new Error("Image upload failed.");
     } finally {
       setUploadingImage(false);
     }
