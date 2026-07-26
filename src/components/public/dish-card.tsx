@@ -227,7 +227,7 @@ function DishCardInner({
     <div
       className={cn(
         "flex w-full min-w-0 max-w-none flex-1 flex-col space-y-2",
-        isLeftAligned ? "text-left" : "text-center",
+        isLeftAligned ? "items-start text-left" : "items-center text-center",
         isCarouselPeek && "space-y-1"
       )}
     >

@@ -416,3 +416,33 @@
   animation: public-menu-loading-dot 1s ease-in-out infinite;
   will-change: transform, opacity;
 }
+
+@keyframes menulia-carousel-slide-next {
+  from {
+    transform: translateX(1.25rem);
+    opacity: 0.72;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes menulia-carousel-slide-prev {
+  from {
+    transform: translateX(-1.25rem);
+    opacity: 0.72;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.menulia-carousel-slide-next {
+  animation: menulia-carousel-slide-next 500ms ease-in-out;
+}
+
+.menulia-carousel-slide-prev {
+  animation: menulia-carousel-slide-prev 500ms ease-in-out;
+}

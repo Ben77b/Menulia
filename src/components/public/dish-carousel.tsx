@@ -50,7 +50,7 @@ function CarouselCardFrame({
   return (
     <div
       className={cn(
-        "origin-center transition-all duration-300 ease-out will-change-transform",
+        "origin-center transition-all duration-500 ease-in-out will-change-transform",
         isActive
           ? "z-[1] scale-100 opacity-100"
           : "z-0 scale-90 opacity-40"
@@ -117,7 +117,9 @@ export function DishCarousel({
     [dishes]
   );
   const [activeIndex, setActiveIndex] = useState(0);
+  const [slideDir, setSlideDir] = useState<"prev" | "next" | null>(null);
   const touchStartX = useRef<number | null>(null);
+  const slideClearRef = useRef<number | null>(null);
   const isPreview = usePreviewCanvas();
   const arrowColor = isPreview
     ? pv("carouselArrowIcon")
@@ -125,6 +127,7 @@ export function DishCarousel({
 
   useEffect(() => {
     setActiveIndex(0);
+    setSlideDir(null);
   }, [safeDishes]);
 
   useEffect(() => {
@@ -132,6 +135,12 @@ export function DishCarousel({
       setActiveIndex(Math.max(0, safeDishes.length - 1));
     }
   }, [activeIndex, safeDishes.length]);
+
+  useEffect(() => {
+    return () => {
+      if (slideClearRef.current !== null) window.clearTimeout(slideClearRef.current);
+    };
+  }, []);
 
   const slots = useMemo(() => {
     if (safeDishes.length === 0) return [];
@@ -164,11 +173,22 @@ export function DishCarousel({
     );
   }
 
+  function triggerSlide(direction: "prev" | "next") {
+    if (slideClearRef.current !== null) window.clearTimeout(slideClearRef.current);
+    setSlideDir(direction);
+    slideClearRef.current = window.setTimeout(() => {
+      setSlideDir(null);
+      slideClearRef.current = null;
+    }, 500);
+  }
+
   function goPrevious() {
+    triggerSlide("prev");
     setActiveIndex((current) => mod(current - 1, safeDishes.length));
   }
 
   function goNext() {
+    triggerSlide("next");
     setActiveIndex((current) => mod(current + 1, safeDishes.length));
   }
 
@@ -243,7 +263,13 @@ export function DishCarousel({
       ) : null}
 
       {/* Three-slot peek row: left (faded) | center (focus) | right (faded) */}
-      <div className="flex w-full items-start justify-center gap-2 overflow-visible px-9 sm:gap-5 sm:px-14">
+      <div
+        className={cn(
+          "flex w-full items-center justify-center gap-2 overflow-visible px-9 scroll-smooth sm:gap-5 sm:px-14",
+          slideDir === "next" && "menulia-carousel-slide-next",
+          slideDir === "prev" && "menulia-carousel-slide-prev"
+        )}
+      >
         {slots.map((slot) => {
           const isActive = slot.position === "center";
 
@@ -251,7 +277,7 @@ export function DishCarousel({
             <div
               key={slot.key}
               className={cn(
-                "shrink-0 overflow-visible",
+                "shrink-0 overflow-visible transition-all duration-500 ease-in-out",
                 // Peek slides: always partially on-screen beside the center dish
                 slot.position !== "center" &&
                   "w-[22%] max-w-[110px] sm:w-[min(28vw,180px)] sm:max-w-[180px]",
