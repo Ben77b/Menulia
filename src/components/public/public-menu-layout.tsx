@@ -12,7 +12,6 @@ import {
   filterDishesByTags,
   sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
-import { sortByMenuOrder } from "@/lib/menu-order";
 import { collectPresentTagAppearances } from "@/lib/dietary-tags";
 import {
   detectGuestMenuLanguage,
@@ -108,14 +107,12 @@ function DishSection({
   tagLabelMap?: Record<string, string>;
 }) {
   const filteredDishes = useMemo(() => {
-    const dishes = subcategory?.dishes ?? [];
-    const withIds = dishes.filter((dish) => Boolean(dish?.id));
-    const ordered = sortByMenuOrder(withIds);
+    const dishes = (subcategory?.dishes ?? []).filter((dish) => Boolean(dish?.id));
+    // Server payload is already in dashboard sequence — do not re-sort here.
     if (!display?.showDietary || activeFilters.size === 0) {
-      return ordered;
+      return dishes;
     }
-    // filterDishesByTags preserves relative order from the sorted input.
-    return filterDishesByTags(ordered, activeFilters);
+    return filterDishesByTags(dishes, activeFilters);
   }, [subcategory?.dishes, activeFilters, display?.showDietary]);
 
   const emptyMessage =

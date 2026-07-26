@@ -46,7 +46,6 @@ export function mapDishRow(dish: {
   tags?: string[] | null;
   allergens?: string[] | null;
   display_order?: number | null;
-  created_at?: string | null;
 }): PublicMenuDish {
   try {
     const normalized = parseDishTagsFromDb(dish ?? {});
@@ -65,7 +64,6 @@ export function mapDishRow(dish: {
       tags: normalized.tags,
       allergens: normalized.allergens,
       display_order: Number(dish?.display_order ?? 0),
-      created_at: typeof dish?.created_at === "string" ? dish.created_at : null,
     };
   } catch (error) {
     console.error("[mapDishRow]", error);
@@ -80,7 +78,6 @@ export function mapDishRow(dish: {
       tags: [],
       allergens: [],
       display_order: Number(dish?.display_order ?? 0),
-      created_at: typeof dish?.created_at === "string" ? dish.created_at : null,
     };
   }
 }
@@ -97,7 +94,8 @@ export function buildMenuHierarchy(
     description: row.description ?? null,
     layout_type: normalizeCategoryLayoutType(row.layout_type),
     order_index: row.order_index ?? 0,
-    dishes: sortByMenuOrder(dishesByCategoryId[row.id] ?? []),
+    // Dish arrays are already in dashboard sequence from the ordered SQL fetch.
+    dishes: dishesByCategoryId[row.id] ?? [],
   });
 
   const parents = sorted.filter((row) => !row.parent_id);
@@ -133,7 +131,8 @@ export function buildMenuHierarchy(
       id: parent.id,
       name: parent.name,
       order_index: parent.order_index ?? 0,
-      subcategories: sortByMenuOrder(subcategories),
+      // childRows already positional-sorted; keep that exact array sequence.
+      subcategories,
     };
   });
 }

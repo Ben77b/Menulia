@@ -8,7 +8,7 @@ import {
   type PublicMenuParentCategory,
   type PublicMenuSubcategory,
 } from "@/lib/menu-hierarchy";
-import { compareMenuOrder, sortByMenuOrder } from "@/lib/menu-order";
+import { compareMenuOrder } from "@/lib/menu-order";
 import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 
 export function hasNestedMenuStructure(categoryRows: CategoryRow[]): boolean {
@@ -25,7 +25,7 @@ function rowToSubcategory(
     description: row.description ?? null,
     layout_type: normalizeCategoryLayoutType(row.layout_type),
     order_index: row.order_index ?? 0,
-    dishes: sortByMenuOrder(dishesByCategoryId[row.id] ?? []),
+    dishes: dishesByCategoryId[row.id] ?? [],
   };
 }
 
@@ -50,7 +50,7 @@ export function buildFlatCategories(
 }
 
 const PUBLIC_DISH_COLUMNS_CORE =
-  "id, category_id, name, description, price, image, tags, price_variations, created_at";
+  "id, category_id, name, description, price, image, tags, price_variations";
 const PUBLIC_DISH_COLUMNS_BASE = `${PUBLIC_DISH_COLUMNS_CORE}, display_order`;
 const PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_BASE}, hide_price`;
 const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE}, is_available`;
@@ -65,18 +65,9 @@ function stripPriceVariationsColumn(columns: string): string {
     .join(", ");
 }
 
-function stripCreatedAtColumn(columns: string): string {
-  return columns
-    .split(",")
-    .map((part) => part.trim())
-    .filter((part) => part !== "created_at")
-    .join(", ");
-}
-
 type DishQueryRow = Parameters<typeof mapDishRow>[0] & {
   category_id?: string | null;
   display_order?: number | null;
-  created_at?: string | null;
 };
 
 async function selectDishesForCategories(
@@ -92,9 +83,12 @@ async function selectDishesForCategories(
   }
 
   if (options?.orderByDisplayOrder) {
-    query = query.order("display_order", { ascending: true }).order("id", { ascending: true });
+    // Match dashboard sequence: positional display_order, then created_at among ties.
+    query = query
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true });
   } else {
-    query = query.order("id", { ascending: true });
+    query = query.order("created_at", { ascending: true });
   }
 
   return query;
@@ -121,15 +115,6 @@ async function selectDishesWithPriceVariationsFallback(
     );
   }
 
-  if (result.error && isMissingColumnError(result.error) && columns.includes("created_at")) {
-    result = await selectDishesForCategories(
-      supabase,
-      categoryIds,
-      stripCreatedAtColumn(columns),
-      options
-    );
-  }
-
   // Older schemas may lack display_order — retry without that order clause.
   if (result.error && isMissingColumnError(result.error) && options?.orderByDisplayOrder) {
     result = await selectDishesForCategories(supabase, categoryIds, columns, {
@@ -144,30 +129,22 @@ async function selectDishesWithPriceVariationsFallback(
 function groupDishesByCategory(
   rows: DishQueryRow[]
 ): Record<string, ReturnType<typeof mapDishRow>[]> {
-  const byCategory: Record<string, DishQueryRow[]> = {};
+  const byCategory: Record<string, ReturnType<typeof mapDishRow>[]> = {};
 
+  // Preserve the exact SQL row sequence (already ordered like the dashboard).
   for (const row of rows) {
     const categoryId = typeof row.category_id === "string" ? row.category_id : "";
     if (!categoryId) continue;
     if (!byCategory[categoryId]) byCategory[categoryId] = [];
-    byCategory[categoryId].push(row);
+    try {
+      const dish = mapDishRow(row);
+      if (dish?.id) byCategory[categoryId].push(dish);
+    } catch (error) {
+      console.error("[Supabase Audit Error]:", "public-menu-fetch.mapDishRow", error);
+    }
   }
 
-  const mapped: Record<string, ReturnType<typeof mapDishRow>[]> = {};
-  for (const [categoryId, categoryRows] of Object.entries(byCategory)) {
-    const ordered = sortByMenuOrder(categoryRows);
-    mapped[categoryId] = ordered.flatMap((row) => {
-      try {
-        const dish = mapDishRow(row);
-        return dish?.id ? [dish] : [];
-      } catch (error) {
-        console.error("[Supabase Audit Error]:", "public-menu-fetch.mapDishRow", error);
-        return [];
-      }
-    });
-  }
-
-  return mapped;
+  return byCategory;
 }
 
 /** One batched dishes query for all leaf categories (avoids N+1 waterfalls). */

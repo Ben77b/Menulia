@@ -1,10 +1,10 @@
 import type { MenuBuilderDish } from "./menu-builder-types";
 import { sortByMenuOrder } from "./menu-order";
 
-export function sortRecordsByDisplayOrder<T extends { display_order?: number | null; id?: string; name?: unknown; created_at?: string | null }>(
-  records: readonly T[]
-): T[] {
-  return sortByMenuOrder(records as Array<T & { id?: string }>);
+export function sortRecordsByDisplayOrder<
+  T extends { display_order?: number | null },
+>(records: readonly T[]): T[] {
+  return sortByMenuOrder(records);
 }
 
 export function sortDishesByDisplayOrder(dishes: MenuBuilderDish[]): MenuBuilderDish[] {

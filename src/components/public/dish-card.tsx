@@ -41,8 +41,6 @@ export interface PublicMenuDish {
   allergens: string[];
   /** Dashboard sort position within the category */
   display_order?: number;
-  /** Stable tiebreaker when display_order ties */
-  created_at?: string | null;
 }
 
 interface DishCardProps {

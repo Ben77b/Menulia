@@ -273,9 +273,27 @@ async function fetchDishesForCategory(categoryId: string): Promise<MenuDishRecor
     .from("dishes")
     .select("*")
     .eq("category_id", categoryId)
+    .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) {
+    // display_order may be missing on older schemas — fall back to created_at only.
+    if (isMissingColumnError(error)) {
+      const fallback = await supabase
+        .from("dishes")
+        .select("*")
+        .eq("category_id", categoryId)
+        .order("created_at", { ascending: true });
+      if (fallback.error) {
+        logSupabaseFailure("menu.fetchDishes", fallback.error);
+        throw fallback.error;
+      }
+      const mappedFallback = (fallback.data ?? []).map((dish, index) => ({
+        ...mapDishRecord(dish as Record<string, unknown>),
+        display_order: Number((dish as Record<string, unknown>).display_order ?? index),
+      }));
+      return sortRecordsByDisplayOrder(mappedFallback);
+    }
     logSupabaseFailure("menu.fetchDishes", error);
     throw error;
   }
