@@ -32,6 +32,61 @@ export function normalizeImageUrl(url: string | null | undefined): string | null
   return null;
 }
 
+export interface PublicMenuImageOptimizeOptions {
+  width?: number;
+  quality?: number;
+}
+
+/**
+ * Prefer Supabase image transforms for storage public URLs (smaller WebP-capable delivery).
+ * Non-Supabase / data / relative URLs pass through unchanged.
+ */
+export function optimizePublicMenuImageUrl(
+  url: string | null | undefined,
+  options: PublicMenuImageOptimizeOptions = {}
+): string | null {
+  const normalized = normalizeImageUrl(url);
+  if (!normalized) return null;
+  if (normalized.startsWith("data:") || normalized.startsWith("/")) return normalized;
+
+  const width = options.width ?? 480;
+  const quality = options.quality ?? 70;
+
+  try {
+    const parsed = new URL(normalized);
+    const objectMarker = "/storage/v1/object/public/";
+    const renderMarker = "/storage/v1/render/image/public/";
+
+    if (parsed.pathname.includes(objectMarker)) {
+      parsed.pathname = parsed.pathname.replace(objectMarker, renderMarker);
+      parsed.searchParams.set("width", String(width));
+      parsed.searchParams.set("quality", String(quality));
+      parsed.searchParams.set("resize", "contain");
+      return parsed.toString();
+    }
+
+    if (parsed.pathname.includes(renderMarker)) {
+      parsed.searchParams.set("width", String(width));
+      parsed.searchParams.set("quality", String(quality));
+      if (!parsed.searchParams.has("resize")) {
+        parsed.searchParams.set("resize", "contain");
+      }
+      return parsed.toString();
+    }
+  } catch {
+    return normalized;
+  }
+
+  return normalized;
+}
+
+/** True when Next/Image can safely optimize this remote URL. */
+export function isNextImageableUrl(url: string | null | undefined): boolean {
+  const normalized = normalizeImageUrl(url);
+  if (!normalized) return false;
+  return normalized.startsWith("https://") || normalized.startsWith("http://");
+}
+
 /**
  * Public-menu logo src that never embeds large Base64 into the RSC stream.
  * - http(s) / relative / small data: → returned as-is

@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase";
 import { parseMenuThemeColors, DEFAULT_MENU_THEME } from "@/lib/theme-colors";
 import {
@@ -9,6 +11,9 @@ import type { PublicRestaurantProfile } from "@/lib/public-menu-seo";
 import { logSupabaseAuditError, withSupabaseFallback } from "@/lib/supabase-safe";
 import { getLocalizedText } from "@/lib/utils/i18n-text";
 import { resolvePublicMenuLogoSrc } from "@/lib/public-menu-utils";
+
+/** Edge/data-cache TTL for public menu payloads (seconds). */
+export const PUBLIC_MENU_REVALIDATE_SECONDS = 60;
 
 export interface PublicMenuSplashTheme {
   restaurantName: string;
@@ -26,6 +31,29 @@ export const DEFAULT_PUBLIC_MENU_SPLASH: PublicMenuSplashTheme = {
 
 type RestaurantRow = Record<string, unknown>;
 
+/** Columns needed for public menu SSR — avoid select("*"). */
+const PUBLIC_RESTAURANT_COLUMNS = [
+  "id",
+  "name",
+  "slug",
+  "logo",
+  "location",
+  "hours",
+  "contact_info",
+  "footer_slogan",
+  "meta_title",
+  "meta_description",
+  "custom_links",
+  "primary_language",
+  "theme_colors",
+  "advanced_theme",
+  "typography",
+  "show_prices",
+  "show_descriptions",
+  "show_images",
+  "show_dietary",
+].join(", ");
+
 async function queryRestaurantBySlug(slug: string): Promise<RestaurantRow | null> {
   return withSupabaseFallback(
     "public-menu.queryRestaurantBySlug",
@@ -33,12 +61,18 @@ async function queryRestaurantBySlug(slug: string): Promise<RestaurantRow | null
       const supabase = createAnonClient();
       const { data, error } = await supabase
         .from("restaurants")
-        .select("*")
+        .select(PUBLIC_RESTAURANT_COLUMNS)
         .eq("slug", slug)
         .single();
+
       if (error) {
-        logSupabaseAuditError("public-menu.queryRestaurantBySlug", error);
-        return null;
+        // Narrow column set may fail on older schemas — fall back to *.
+        const fallback = await supabase.from("restaurants").select("*").eq("slug", slug).single();
+        if (fallback.error) {
+          logSupabaseAuditError("public-menu.queryRestaurantBySlug", fallback.error);
+          return null;
+        }
+        return (fallback.data as RestaurantRow) ?? null;
       }
       return (data as RestaurantRow) ?? null;
     },
@@ -46,7 +80,34 @@ async function queryRestaurantBySlug(slug: string): Promise<RestaurantRow | null
   );
 }
 
-export function restaurantRowToProfile(row: RestaurantRow, slugFallback: string): PublicRestaurantProfile {
+function cachedRestaurantBySlug(slug: string) {
+  const normalized = slug.trim().toLowerCase();
+  return unstable_cache(
+    () => queryRestaurantBySlug(normalized),
+    ["public-restaurant", normalized],
+    {
+      revalidate: PUBLIC_MENU_REVALIDATE_SECONDS,
+      tags: ["public-menu", `public-menu:${normalized}`],
+    }
+  )();
+}
+
+function cachedMenuPayload(restaurantId: string, slug: string) {
+  const normalizedSlug = slug.trim().toLowerCase();
+  return unstable_cache(
+    () => fetchPublicMenuData(restaurantId),
+    ["public-menu-payload", restaurantId],
+    {
+      revalidate: PUBLIC_MENU_REVALIDATE_SECONDS,
+      tags: ["public-menu", `public-menu:${normalizedSlug}`],
+    }
+  )();
+}
+
+export function restaurantRowToProfile(
+  row: RestaurantRow,
+  slugFallback: string
+): PublicRestaurantProfile {
   const slug = (row.slug as string) ?? slugFallback;
   return {
     id: row.id as string,
@@ -73,7 +134,6 @@ export function restaurantRowToSplashTheme(row: RestaurantRow | null): PublicMen
     return {
       restaurantName: getLocalizedText(row.name),
       logo: resolvePublicMenuLogoSrc((row.logo as string | null) ?? null, slug),
-      // Match Design Studio header / logo-area so loading overlays align with the header.
       backgroundColor:
         theme.logoAreaBg ||
         theme.headerBackgroundColor ||
@@ -89,17 +149,23 @@ export function restaurantRowToSplashTheme(row: RestaurantRow | null): PublicMen
   }
 }
 
-export async function getPublicRestaurantRow(slug: string): Promise<RestaurantRow | null> {
-  return queryRestaurantBySlug(slug);
-}
+/** Request-deduped + edge-cached restaurant row for public menu routes. */
+export const getPublicRestaurantRow = cache(async (slug: string): Promise<RestaurantRow | null> => {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return null;
+  return cachedRestaurantBySlug(normalized);
+});
 
-export async function getPublicMenuPayload(restaurantId: string) {
-  return withSupabaseFallback(
-    "public-menu.getPublicMenuPayload",
-    () => fetchPublicMenuData(restaurantId),
-    { menu: [], flatCategories: [], hasNestedStructure: false }
-  );
-}
+/** Request-deduped + edge-cached menu tree (categories + dishes). */
+export const getPublicMenuPayload = cache(
+  async (restaurantId: string, slug: string) => {
+    return withSupabaseFallback(
+      "public-menu.getPublicMenuPayload",
+      () => cachedMenuPayload(restaurantId, slug),
+      { menu: [], flatCategories: [], hasNestedStructure: false }
+    );
+  }
+);
 
 export async function getPublicMenuSplashBySlug(slug: string): Promise<PublicMenuSplashTheme> {
   const row = await getPublicRestaurantRow(slug);

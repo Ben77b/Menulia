@@ -230,7 +230,7 @@ export function DishCarousel({
     layout: "carousel" as const,
     compact: !isActive,
     imageClassName: "w-full max-w-[82vw] sm:max-w-none",
-    priority: isActive && activeIndex < 3,
+    priority: false,
     tagLabelMap,
   });
 
@@ -262,7 +262,7 @@ export function DishCarousel({
       {safeDishes.length === 1 ? (
         <div className="mx-auto w-full max-w-[82vw] sm:max-w-[320px]">
           <CarouselCardFrame isActive>
-            <DishCard {...dishCardProps(safeDishes[0], true)} priority />
+            <DishCard {...dishCardProps(safeDishes[0], true)} />
           </CarouselCardFrame>
         </div>
       ) : (

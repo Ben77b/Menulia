@@ -10,8 +10,8 @@ import { contrastingTextColor } from "@/lib/contrast";
 import { resolvePublicMenuLogoSrc } from "@/lib/public-menu-utils";
 import { cn } from "@/lib/utils";
 
-const HOLD_MS = 1100;
-const FADE_MS = 450;
+const HOLD_MS = 320;
+const FADE_MS = 280;
 
 export interface PublicMenuLoadingOverlayProps {
   restaurantName?: string;

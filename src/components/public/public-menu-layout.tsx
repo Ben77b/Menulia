@@ -217,7 +217,7 @@ function DishSection({
             display={display}
             layout={subcategory.layout_type}
             imageClassName="w-full"
-            priority={index < 3}
+            priority={false}
             tagLabelMap={tagLabelMap}
           />
           </div>

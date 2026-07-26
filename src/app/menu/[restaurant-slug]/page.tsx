@@ -1,5 +1,3 @@
-export const revalidate = 86400;
-
 import { notFound } from "next/navigation";
 import { parseMenuThemeColors, DEFAULT_MENU_THEME } from "@/lib/theme-colors";
 import {
@@ -15,11 +13,7 @@ import {
   getPublicRestaurantRow,
   restaurantRowToProfile,
 } from "@/lib/public-menu-cache";
-import {
-  buildPublicMenuPageMetadata,
-  fetchPublicRestaurantBySlug,
-  normalizePublicMenuLang,
-} from "@/lib/public-menu-seo";
+import { buildPublicMenuPageMetadata } from "@/lib/public-menu-seo";
 import { parseCustomLinks } from "@/lib/restaurant-links";
 import { DEFAULT_DISPLAY_OPTIONS, parseDisplayOptions } from "@/lib/display-options";
 import { normalizePrimaryLanguage } from "@/lib/menu-content-languages";
@@ -29,6 +23,9 @@ import { getLocalizedText } from "@/lib/utils/i18n-text";
 import { resolvePublicMenuLogoSrc } from "@/lib/public-menu-utils";
 import type { PublicMenuParentCategory, PublicMenuSubcategory } from "@/lib/menu-hierarchy";
 import type { ResolvedMenuTheme } from "@/lib/advanced-theme";
+
+/** Edge ISR for public menus — owner edits bust via revalidateTag. */
+export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ "restaurant-slug": string }>;
@@ -49,11 +46,6 @@ function resolveFonts(typography: Record<string, unknown> | null | undefined) {
   }
 }
 
-function pickLangParam(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
 function safeTheme(restaurant: Record<string, unknown> | null): ResolvedMenuTheme {
   try {
     const basicTheme = parseMenuThemeColors(restaurant?.theme_colors);
@@ -67,21 +59,22 @@ function safeTheme(restaurant: Record<string, unknown> | null): ResolvedMenuThem
   }
 }
 
-export async function generateMetadata({ params, searchParams }: PageProps) {
+export async function generateMetadata({ params }: PageProps) {
   try {
     const resolvedParams = await params;
-    const resolvedSearch = searchParams ? await searchParams : {};
     const slugParam = resolvedParams["restaurant-slug"];
-    const lang = normalizePublicMenuLang(pickLangParam(resolvedSearch.lang));
-    const restaurant = await fetchPublicRestaurantBySlug(slugParam);
+    // Avoid awaiting searchParams so the route stays ISR-cacheable at the edge.
+    const row = await getPublicRestaurantRow(slugParam);
 
-    if (!restaurant) {
+    if (!row) {
       return {
         title: { absolute: `Menu — ${slugParam}` },
         description: "Restaurant menu on Menulia",
       };
     }
 
+    const lang = normalizePrimaryLanguage(row.primary_language);
+    const restaurant = restaurantRowToProfile(row, slugParam);
     return buildPublicMenuPageMetadata(restaurant, lang);
   } catch (error) {
     console.error("[public-menu.generateMetadata]", error);
@@ -92,16 +85,10 @@ export async function generateMetadata({ params, searchParams }: PageProps) {
   }
 }
 
-export default async function PublicMenuPage({ params, searchParams }: PageProps) {
-  console.error("[public-menu.page] render start");
-
+export default async function PublicMenuPage({ params }: PageProps) {
   try {
     const resolvedParams = await params;
-    const resolvedSearch = searchParams ? await searchParams : {};
     const slugParam = resolvedParams?.["restaurant-slug"] ?? "";
-    const lang = normalizePublicMenuLang(pickLangParam(resolvedSearch?.lang));
-
-    console.error("[public-menu.page] slug", slugParam, "lang", lang);
 
     const restaurant = await getPublicRestaurantRow(slugParam);
     if (!restaurant) {
@@ -122,7 +109,7 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
 
     if (restaurantId) {
       try {
-        const payload = await getPublicMenuPayload(restaurantId);
+        const payload = await getPublicMenuPayload(restaurantId, slugParam);
         menu = Array.isArray(payload?.menu) ? payload.menu : [];
         flatCategories = Array.isArray(payload?.flatCategories)
           ? payload.flatCategories
@@ -132,14 +119,6 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
         console.error("[public-menu.page] menu payload", menuError);
       }
     }
-
-    console.error(
-      "[public-menu.page] data",
-      "categories",
-      hasNestedStructure ? menu?.length : flatCategories?.length,
-      "nested",
-      hasNestedStructure
-    );
 
     const theme = safeTheme(restaurant);
     const fonts = resolveFonts(
@@ -162,7 +141,6 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
       }
     })();
 
-    // http(s) logos pass through; large data: logos become `/api/public-menu-logo?slug=…`
     const logo = resolvePublicMenuLogoSrc(
       typeof restaurant?.logo === "string" ? restaurant.logo : null,
       slugParam
@@ -183,7 +161,7 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
           menu={menu}
           flatCategories={flatCategories}
           hasNestedStructure={hasNestedStructure}
-          lang={lang}
+          lang={defaultLocale}
         />
         <PublicMenuDocumentBackground
           color={
@@ -221,7 +199,6 @@ export default async function PublicMenuPage({ params, searchParams }: PageProps
     );
   } catch (error) {
     console.error("[public-menu.page] FATAL", error);
-    // Last-resort visible shell — never an empty/black document.
     return (
       <div className="flex min-h-screen flex-col bg-white px-4 py-10 text-slate-900">
         <p className="mx-auto w-full max-w-4xl text-lg font-semibold tracking-tight">

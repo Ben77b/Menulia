@@ -8,7 +8,6 @@ import {
   type PublicMenuParentCategory,
   type PublicMenuSubcategory,
 } from "@/lib/menu-hierarchy";
-import { parseCustomLinks } from "@/lib/restaurant-links";
 import { sortRecordsByDisplayOrder } from "@/lib/menu-dish-order";
 import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 
@@ -40,18 +39,13 @@ export function buildFlatCategories(
   return leafRows.map((row) => rowToSubcategory(row, dishesByCategoryId));
 }
 
-const PUBLIC_DISH_COLUMNS_CORE = "id, name, description, price, image, tags, price_variations";
+const PUBLIC_DISH_COLUMNS_CORE =
+  "id, category_id, name, description, price, image, tags, price_variations";
 const PUBLIC_DISH_COLUMNS_BASE = `${PUBLIC_DISH_COLUMNS_CORE}, display_order`;
 const PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_BASE}, hide_price`;
 const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE}, is_available`;
 const PUBLIC_DISH_COLUMNS_CORE_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS_CORE}, is_available`;
 const PUBLIC_DISH_COLUMNS_CORE_WITH_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_CORE}, hide_price`;
-
-function sortDishRowsByDisplayOrder<T extends { display_order?: number | null }>(
-  rows: T[]
-): T[] {
-  return sortRecordsByDisplayOrder(rows);
-}
 
 function stripPriceVariationsColumn(columns: string): string {
   return columns
@@ -61,17 +55,18 @@ function stripPriceVariationsColumn(columns: string): string {
     .join(", ");
 }
 
-async function selectDishesForCategory(
+type DishQueryRow = Parameters<typeof mapDishRow>[0] & {
+  category_id?: string | null;
+  display_order?: number | null;
+};
+
+async function selectDishesForCategories(
   supabase: ReturnType<typeof createAnonClient>,
-  categoryId: string,
+  categoryIds: string[],
   columns: string,
   options?: { requireAvailable?: boolean }
 ) {
-  let query = supabase
-    .from("dishes")
-    .select(columns)
-    .eq("category_id", categoryId)
-    .order("created_at", { ascending: true });
+  let query = supabase.from("dishes").select(columns).in("category_id", categoryIds);
 
   if (options?.requireAvailable) {
     query = query.eq("is_available", true);
@@ -82,20 +77,20 @@ async function selectDishesForCategory(
 
 async function selectDishesWithPriceVariationsFallback(
   supabase: ReturnType<typeof createAnonClient>,
-  categoryId: string,
+  categoryIds: string[],
   columns: string,
   options?: { requireAvailable?: boolean }
 ) {
-  let result = await selectDishesForCategory(supabase, categoryId, columns, options);
+  let result = await selectDishesForCategories(supabase, categoryIds, columns, options);
 
   if (
     result.error &&
     isMissingColumnError(result.error) &&
     columns.includes("price_variations")
   ) {
-    result = await selectDishesForCategory(
+    result = await selectDishesForCategories(
       supabase,
-      categoryId,
+      categoryIds,
       stripPriceVariationsColumn(columns),
       options
     );
@@ -104,10 +99,47 @@ async function selectDishesWithPriceVariationsFallback(
   return result;
 }
 
-async function fetchActiveDishesForCategory(
+function groupDishesByCategory(
+  rows: DishQueryRow[],
+  sortByDisplayOrder: boolean
+): Record<string, ReturnType<typeof mapDishRow>[]> {
+  const byCategory: Record<string, DishQueryRow[]> = {};
+
+  for (const row of rows) {
+    const categoryId = typeof row.category_id === "string" ? row.category_id : "";
+    if (!categoryId) continue;
+    if (!byCategory[categoryId]) byCategory[categoryId] = [];
+    byCategory[categoryId].push(row);
+  }
+
+  const mapped: Record<string, ReturnType<typeof mapDishRow>[]> = {};
+  for (const [categoryId, categoryRows] of Object.entries(byCategory)) {
+    const ordered = sortByDisplayOrder
+      ? sortRecordsByDisplayOrder(categoryRows)
+      : categoryRows;
+    mapped[categoryId] = ordered.flatMap((row) => {
+      try {
+        const dish = mapDishRow(row);
+        return dish?.id ? [dish] : [];
+      } catch (error) {
+        console.error("[Supabase Audit Error]:", "public-menu-fetch.mapDishRow", error);
+        return [];
+      }
+    });
+  }
+
+  return mapped;
+}
+
+/** One batched dishes query for all leaf categories (avoids N+1 waterfalls). */
+async function fetchActiveDishesByCategoryIds(
   supabase: ReturnType<typeof createAnonClient>,
-  categoryId: string
-): Promise<ReturnType<typeof mapDishRow>[]> {
+  categoryIds: string[]
+): Promise<Record<string, ReturnType<typeof mapDishRow>[]>> {
+  const empty: Record<string, ReturnType<typeof mapDishRow>[]> = {};
+  for (const id of categoryIds) empty[id] = [];
+  if (categoryIds.length === 0) return empty;
+
   const attempts: Array<{
     columns: string;
     requireAvailable: boolean;
@@ -148,31 +180,27 @@ async function fetchActiveDishesForCategory(
   for (const attempt of attempts) {
     const { data, error } = await selectDishesWithPriceVariationsFallback(
       supabase,
-      categoryId,
+      categoryIds,
       attempt.columns,
       { requireAvailable: attempt.requireAvailable }
     );
 
     if (error) {
-      if (!isMissingColumnError(error)) return [];
+      if (!isMissingColumnError(error)) {
+        console.error("[Supabase Audit Error]:", "public-menu-fetch.dishes.batch", error);
+        return empty;
+      }
       continue;
     }
 
-    const rows = attempt.sortByDisplayOrder
-      ? sortDishRowsByDisplayOrder(data ?? [])
-      : data ?? [];
-    return (rows as Array<Parameters<typeof mapDishRow>[0]>).flatMap((row) => {
-      try {
-        const mapped = mapDishRow(row);
-        return mapped?.id ? [mapped] : [];
-      } catch (error) {
-        console.error("[Supabase Audit Error]:", "public-menu-fetch.mapDishRow", error);
-        return [];
-      }
-    });
+    const grouped = groupDishesByCategory(
+      (data ?? []) as DishQueryRow[],
+      attempt.sortByDisplayOrder
+    );
+    return { ...empty, ...grouped };
   }
 
-  return [];
+  return empty;
 }
 
 export async function fetchPublicMenuData(restaurantId: string): Promise<{
@@ -206,7 +234,11 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
         .order("order_index", { ascending: true });
       categorySource = fallback.data;
       if (fallback.error) {
-        console.error("[Supabase Audit Error]:", "public-menu-fetch.categories.fallback", fallback.error);
+        console.error(
+          "[Supabase Audit Error]:",
+          "public-menu-fetch.categories.fallback",
+          fallback.error
+        );
       }
       if (fallback.error || !categorySource?.length) {
         return { menu: [], flatCategories: [], hasNestedStructure: false };
@@ -245,23 +277,12 @@ export async function fetchPublicMenuData(restaurantId: string): Promise<{
     }
 
     const leafCategoryIds = categoryRows
-      .filter((row) => {
-        const hasChildren = categoryRows.some((child) => child.parent_id === row.id);
-        return !hasChildren;
-      })
+      .filter((row) => !categoryRows.some((child) => child.parent_id === row.id))
       .map((row) => row.id);
 
-    const dishesByCategoryId: Record<string, ReturnType<typeof mapDishRow>[]> = {};
-
-    await Promise.all(
-      leafCategoryIds.map(async (categoryId) => {
-        try {
-          dishesByCategoryId[categoryId] = await fetchActiveDishesForCategory(supabase, categoryId);
-        } catch (error) {
-          console.error("[Supabase Audit Error]:", "public-menu-fetch.dishes", categoryId, error);
-          dishesByCategoryId[categoryId] = [];
-        }
-      })
+    const dishesByCategoryId = await fetchActiveDishesByCategoryIds(
+      supabase,
+      leafCategoryIds
     );
 
     const nested = hasNestedMenuStructure(categoryRows);

@@ -5,7 +5,7 @@ import {
 } from "@/lib/public-menu-cache";
 import { PublicMenuRouteShell } from "@/components/public/public-menu-route-shell";
 
-export const revalidate = 86400;
+export const revalidate = 60;
 
 export default async function PublicMenuLayout({
   children,

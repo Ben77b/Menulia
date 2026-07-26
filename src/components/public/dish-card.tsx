@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useState, type ReactElement } from "react";
+import Image from "next/image";
 import { cn, formatPrice } from "@/lib/utils";
 import { getAllergenTagMeta, getTagMeta } from "@/lib/dietary-tags";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import { resolveLocalizedText, type LocalizedTextValue } from "@/lib/localized-text";
-import { normalizeImageUrl } from "@/lib/public-menu-utils";
+import {
+  isNextImageableUrl,
+  normalizeImageUrl,
+  optimizePublicMenuImageUrl,
+} from "@/lib/public-menu-utils";
 import {
   hasPriceVariations,
   parsePriceVariationsFromDb,
@@ -124,9 +129,10 @@ function DishCardInner({
   layout = "carousel",
   compact = false,
   imageClassName = "w-full max-w-xs",
-  priority = false,
+  priority: _priority = false,
   tagLabelMap,
 }: DishCardProps) {
+  void _priority;
   const [imageFailed, setImageFailed] = useState(false);
 
   if (!dish?.id) return null;
@@ -137,7 +143,15 @@ function DishCardInner({
     showImages: true,
     showDietary: true,
   };
-  const imageSrc = normalizeImageUrl(dish?.image);
+  const rawImageSrc = normalizeImageUrl(dish?.image);
+  const useNextImage = isNextImageableUrl(rawImageSrc);
+  // Prefer Next/Image (Vercel AVIF/WebP). Fall back to Supabase transform URLs for native <img>.
+  const imageSrc = useNextImage
+    ? rawImageSrc
+    : optimizePublicMenuImageUrl(rawImageSrc, {
+        width: isStackedLeftCategoryLayout(layout) ? 352 : 480,
+        quality: 70,
+      }) ?? rawImageSrc;
   const showImage = Boolean(safeDisplay.showImages && imageSrc && !imageFailed);
 
   const resolvedTitle = titleColor ?? textColor;
@@ -177,17 +191,35 @@ function DishCardInner({
             : undefined
         }
       >
-        {/* Native img — avoids next/image host/config throws on public menus */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={imageSrc}
-          alt={imageAlt}
-          className="absolute inset-0 h-full w-full object-contain"
-          loading={priority ? "eager" : "lazy"}
-          decoding="async"
-          fetchPriority={priority ? "high" : "auto"}
-          onError={() => setImageFailed(true)}
-        />
+        {useNextImage ? (
+          <Image
+            src={imageSrc}
+            alt={imageAlt}
+            fill
+            sizes={
+              isStackedLeft
+                ? "176px"
+                : "(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 240px"
+            }
+            className="object-contain"
+            quality={70}
+            // Priority reserved for header/overlay logo only — dishes stay lazy.
+            loading="lazy"
+            fetchPriority="auto"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            className="absolute inset-0 h-full w-full object-contain"
+            loading="lazy"
+            decoding="async"
+            fetchPriority="auto"
+            onError={() => setImageFailed(true)}
+          />
+        )}
       </div>
     ) : null;
 
