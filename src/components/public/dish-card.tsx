@@ -179,41 +179,56 @@ function DishCardInner({
 
   const imageBlock =
     showImage && imageSrc ? (
-      <div
-        className={cn(
-          "relative aspect-square overflow-hidden",
-          isCarouselLayout ? "w-full rounded-none" : "rounded-xl",
-          isStackedLeft ? "h-44 w-44 shrink-0" : imageClassName
-        )}
-        style={
-          isStackedLeft
-            ? { width: "176px", height: "176px", flexShrink: 0, borderRadius: "12px" }
-            : isCarouselLayout
-              ? { borderRadius: 0 }
-              : undefined
-        }
-      >
-        {/* Native img — avoids next/image remotePatterns failures on public menus */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={imageSrc}
-          alt={imageAlt}
+      isCarouselLayout ? (
+        <div className="flex w-full justify-center rounded-none">
+          {/* Native size — no forced aspect box; capped only by the slide max-width */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            data-carousel-image
+            src={imageSrc}
+            alt={imageAlt}
+            className="block h-auto w-auto max-w-full rounded-none"
+            loading="lazy"
+            decoding="async"
+            onError={() => {
+              if (!useOriginalImage && rawImageSrc && imageSrc !== rawImageSrc) {
+                setUseOriginalImage(true);
+                return;
+              }
+              setImageFailed(true);
+            }}
+          />
+        </div>
+      ) : (
+        <div
           className={cn(
-            "absolute inset-0 h-full w-full",
-            isCarouselLayout ? "rounded-none object-contain" : "object-contain"
+            "relative aspect-square overflow-hidden rounded-xl",
+            isStackedLeft ? "h-44 w-44 shrink-0" : imageClassName
           )}
-          loading="lazy"
-          decoding="async"
-          onError={() => {
-            // Transform endpoint may be unavailable — fall back to the original public URL.
-            if (!useOriginalImage && rawImageSrc && imageSrc !== rawImageSrc) {
-              setUseOriginalImage(true);
-              return;
-            }
-            setImageFailed(true);
-          }}
-        />
-      </div>
+          style={
+            isStackedLeft
+              ? { width: "176px", height: "176px", flexShrink: 0, borderRadius: "12px" }
+              : undefined
+          }
+        >
+          {/* Native img — avoids next/image remotePatterns failures on public menus */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            className="absolute inset-0 h-full w-full object-contain"
+            loading="lazy"
+            decoding="async"
+            onError={() => {
+              if (!useOriginalImage && rawImageSrc && imageSrc !== rawImageSrc) {
+                setUseOriginalImage(true);
+                return;
+              }
+              setImageFailed(true);
+            }}
+          />
+        </div>
+      )
     ) : null;
 
   const titleClampClass = isStackedLayout

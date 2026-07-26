@@ -98,8 +98,24 @@ export function DishCarousel({
     [dishes]
   );
   const [activeIndex, setActiveIndex] = useState(0);
+  const [arrowMetrics, setArrowMetrics] = useState({ top: 0, width: 0 });
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
+
+  const measureActiveImage = useCallback(() => {
+    const root = rootRef.current;
+    const slide = slideRefs.current[activeIndex];
+    if (!root || !slide) return;
+    const img = slide.querySelector("[data-carousel-image]") as HTMLImageElement | null;
+    if (!img) return;
+    const rootRect = root.getBoundingClientRect();
+    const imgRect = img.getBoundingClientRect();
+    setArrowMetrics({
+      top: imgRect.top - rootRect.top + imgRect.height / 2,
+      width: Math.max(imgRect.width, 1),
+    });
+  }, [activeIndex]);
 
   const getSlideStep = useCallback(() => {
     const first = slideRefs.current[0];
@@ -190,6 +206,21 @@ export function DishCarousel({
     return () => observer.disconnect();
   }, [safeDishes.length]);
 
+  useEffect(() => {
+    measureActiveImage();
+    const slide = slideRefs.current[activeIndex];
+    const img = slide?.querySelector("[data-carousel-image]") as HTMLImageElement | null;
+    img?.addEventListener("load", measureActiveImage);
+    window.addEventListener("resize", measureActiveImage);
+    const container = containerRef.current;
+    container?.addEventListener("scroll", measureActiveImage, { passive: true });
+    return () => {
+      img?.removeEventListener("load", measureActiveImage);
+      window.removeEventListener("resize", measureActiveImage);
+      container?.removeEventListener("scroll", measureActiveImage);
+    };
+  }, [measureActiveImage, activeIndex, safeDishes.length]);
+
   if (safeDishes.length === 0) {
     return (
       <p className="text-center text-sm" style={{ color: mainTextColor }}>
@@ -240,7 +271,7 @@ export function DishCarousel({
     priceColor,
     layout: "carousel" as const,
     compact: !isActive,
-    imageClassName: "w-full rounded-none",
+    imageClassName: "w-auto max-w-full rounded-none",
     priority: false,
     tagLabelMap,
   });
@@ -248,24 +279,18 @@ export function DishCarousel({
   const showArrows = safeDishes.length > 1;
 
   return (
-    <div className="relative mx-auto w-full overflow-visible py-4">
-      {/*
-        Arrows sit on the outer edges of the active center image box,
-        vertically at image mid-height (half of 60vw / 40vw square).
-      */}
-      {showArrows ? (
+    <div ref={rootRef} data-carousel-root className="relative mx-auto w-full overflow-visible py-4">
+      {/* Arrows track the active image’s real box (variable height/width). */}
+      {showArrows && arrowMetrics.width > 0 ? (
         <div
-          className="pointer-events-none absolute left-1/2 top-[30vw] z-20 flex w-[60vw] -translate-x-1/2 -translate-y-1/2 items-center justify-between md:top-[20vw] md:w-[40vw]"
-          aria-hidden={false}
+          className="pointer-events-none absolute left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-between"
+          style={{ top: arrowMetrics.top, width: arrowMetrics.width }}
         >
           <NavArrowButton direction="prev" onClick={goPrevious} />
           <NavArrowButton direction="next" onClick={goNext} />
         </div>
       ) : null}
 
-      {/*
-        Padding centers the active card: 20vw + 60vw + 20vw (mobile), 30vw + 40vw + 30vw (desktop).
-      */}
       <div
         ref={containerRef}
         className="flex w-full snap-x snap-mandatory items-start gap-4 overflow-x-auto scroll-smooth px-[20vw] md:gap-6 md:px-[30vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -283,7 +308,7 @@ export function DishCarousel({
                 slideRefs.current[index] = node;
               }}
               className={cn(
-                "w-[60vw] shrink-0 snap-center rounded-none origin-center will-change-transform md:w-[40vw]",
+                "w-max max-w-[60vw] shrink-0 snap-center rounded-none origin-center will-change-transform md:max-w-[40vw]",
                 isActive
                   ? "z-[1] scale-100 opacity-100 transition-all duration-500 ease-out"
                   : "z-0 scale-[0.85] opacity-40 transition-all duration-500 ease-out cursor-pointer"
