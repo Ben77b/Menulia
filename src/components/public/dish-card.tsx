@@ -200,7 +200,7 @@ function DishCardInner({
           alt={imageAlt}
           className={cn(
             "absolute inset-0 h-full w-full",
-            isCarouselLayout ? "rounded-none object-cover" : "object-contain"
+            isCarouselLayout ? "rounded-none object-contain" : "object-contain"
           )}
           loading="lazy"
           decoding="async"
