@@ -469,7 +469,12 @@ export function MenuBuilder() {
     if (!currentRestaurant?.id) return null;
 
     const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-    const isImage = file.type.startsWith("image/") && (allowed.includes(file.type) || file.type === "image/jpg");
+    // Clipboard pastes are coerced to image/png; also accept image/jpg aliases.
+    const normalizedType =
+      file.type === "image/jpg" ? "image/jpeg" : file.type || "image/png";
+    const isImage =
+      normalizedType.startsWith("image/") &&
+      (allowed.includes(normalizedType) || normalizedType === "image/png");
     if (!isImage || file.size > 5 * 1024 * 1024) return null;
 
     setUploadingImage(true);
@@ -482,13 +487,19 @@ export function MenuBuilder() {
         "image/gif": "gif",
       };
       const ext =
-        file.name.includes(".")
-          ? file.name.split(".").pop()?.toLowerCase() ?? "png"
-          : extensionFromType[file.type] ?? "png";
+        file.name === "pasted-image.png"
+          ? "png"
+          : file.name.includes(".")
+            ? file.name.split(".").pop()?.toLowerCase() ?? "png"
+            : extensionFromType[normalizedType] ?? "png";
       const fileName = `${currentRestaurant.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("menu-images")
-        .upload(fileName, file, { cacheControl: "3600", upsert: false, contentType: file.type || undefined });
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: normalizedType,
+        });
       if (uploadError) throw uploadError;
       const { data } = supabase.storage.from("menu-images").getPublicUrl(fileName);
       return data.publicUrl;

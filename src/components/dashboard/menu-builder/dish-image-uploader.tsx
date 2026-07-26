@@ -9,6 +9,7 @@ import { normalizeImageUrl } from "@/lib/public-menu-utils";
 
 const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const ACCEPT_ATTR = ACCEPTED_IMAGE_TYPES.join(",");
+const PASTE_ERROR = "Could not process pasted image. Try uploading directly.";
 
 interface DishImageUploaderProps {
   imageUrl: string | null;
@@ -21,9 +22,7 @@ function isAcceptedImageFile(file: File): boolean {
   if (file.type.startsWith("image/")) {
     return (
       ACCEPTED_IMAGE_TYPES.includes(file.type) ||
-      file.type === "image/jpg" ||
-      // iOS cutouts / screenshots sometimes report generic image/* 
-      file.type === "image/*"
+      file.type === "image/jpg"
     );
   }
 
@@ -33,9 +32,7 @@ function isAcceptedImageFile(file: File): boolean {
     extension === "jpg" ||
     extension === "jpeg" ||
     extension === "webp" ||
-    extension === "gif" ||
-    // Clipboard blobs often have no filename extension
-    !file.name.includes(".")
+    extension === "gif"
   );
 }
 
@@ -46,30 +43,38 @@ function extensionFromMime(mime: string): string {
   return "jpg";
 }
 
-function normalizeClipboardImageFile(file: File): File {
-  const mime = file.type?.startsWith("image/") ? file.type : "image/png";
-  const hasUsefulName = Boolean(file.name?.trim()) && file.name.includes(".");
-  if (hasUsefulName && file.type.startsWith("image/")) return file;
-  return new File([file], `clipboard-photo.${extensionFromMime(mime)}`, {
-    type: mime === "image/*" ? "image/png" : mime,
-    lastModified: file.lastModified,
+/** Force clipboard cutouts/stickers into a valid PNG File the upload path accepts. */
+function coercePastedImageFile(blob: Blob): File {
+  return new File([blob], "pasted-image.png", {
+    type: "image/png",
+    lastModified: Date.now(),
   });
 }
 
-function getClipboardImageFile(clipboardData: DataTransfer | null): File | null {
+function clipboardHasImage(clipboardData: DataTransfer | null): boolean {
+  if (!clipboardData) return false;
+
+  if (Array.from(clipboardData.files ?? []).some((file) => file.type.includes("image"))) {
+    return true;
+  }
+
+  return Array.from(clipboardData.items ?? []).some(
+    (item) => item.kind === "file" && item.type.includes("image")
+  );
+}
+
+function extractClipboardImageBlob(clipboardData: DataTransfer | null): Blob | null {
   if (!clipboardData) return null;
 
-  const fromFiles = Array.from(clipboardData.files ?? []).find(
-    (file) => file.type.startsWith("image/") || (!file.type && file.size > 0)
+  const fromFiles = Array.from(clipboardData.files ?? []).find((file) =>
+    file.type.includes("image")
   );
-  if (fromFiles) return normalizeClipboardImageFile(fromFiles);
+  if (fromFiles) return fromFiles;
 
   for (const item of Array.from(clipboardData.items ?? [])) {
-    if (item.kind === "file" && (item.type.startsWith("image/") || !item.type)) {
+    if (item.kind === "file" && item.type.includes("image")) {
       const file = item.getAsFile();
-      if (file && (file.type.startsWith("image/") || file.size > 0)) {
-        return normalizeClipboardImageFile(file);
-      }
+      if (file) return file;
     }
   }
 
@@ -94,10 +99,15 @@ export function DishImageUploader({
   const busy = uploading || fetchingUrl || pasteUploading;
 
   const handleFile = useCallback(
-    async (file: File) => {
-      if (!isAcceptedImageFile(file)) {
+    async (file: File, options?: { skipTypeCheck?: boolean }) => {
+      if (!options?.skipTypeCheck && !isAcceptedImageFile(file)) {
         toast.error("Please use a PNG, JPG, or WebP image.");
-        return;
+        return false;
+      }
+
+      if (!file.size) {
+        toast.error(PASTE_ERROR);
+        return false;
       }
 
       const objectUrl = URL.createObjectURL(file);
@@ -107,9 +117,13 @@ export function DishImageUploader({
         const uploadedUrl = await onImageUpload(file);
         if (uploadedUrl) {
           onImageUrlChange(uploadedUrl);
-        } else {
-          toast.error("Image upload failed.");
+          return true;
         }
+        toast.error(options?.skipTypeCheck ? PASTE_ERROR : "Image upload failed.");
+        return false;
+      } catch {
+        toast.error(options?.skipTypeCheck ? PASTE_ERROR : "Image upload failed.");
+        return false;
       } finally {
         URL.revokeObjectURL(objectUrl);
         setLocalPreviewUrl(null);
@@ -120,34 +134,41 @@ export function DishImageUploader({
 
   const handleClipboardImagePaste = useCallback(
     async (event: ClipboardEvent, options?: { fromUrlField?: boolean }) => {
-      const imageFile = getClipboardImageFile(event.clipboardData);
-      if (!imageFile) {
-        // Plain text URL paste — allow default input behavior.
+      // Image cutouts/stickers — never treat as URL text.
+      if (clipboardHasImage(event.clipboardData)) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const blob = extractClipboardImageBlob(event.clipboardData);
+        if (!blob) {
+          toast.error(PASTE_ERROR);
+          return;
+        }
+
         if (options?.fromUrlField) {
-          event.stopPropagation();
+          setPasteUploading(true);
+          setUrlInput("");
+        }
+
+        try {
+          const pastedFile = coercePastedImageFile(blob);
+          await handleFile(pastedFile, { skipTypeCheck: true });
+        } catch {
+          toast.error(PASTE_ERROR);
+        } finally {
+          if (options?.fromUrlField) {
+            setPasteUploading(false);
+          }
         }
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
-
+      // Plain text URL paste — allow default input behavior.
       if (options?.fromUrlField) {
-        setPasteUploading(true);
-      }
-
-      try {
-        await handleFile(imageFile);
-        if (options?.fromUrlField) {
-          setUrlInput("");
-        }
-      } finally {
-        if (options?.fromUrlField) {
-          setPasteUploading(false);
-        }
+        event.stopPropagation();
       }
     },
-    [handleFile]
+    [handleFile, toast]
   );
 
   const handleDropzonePaste = useCallback(
@@ -295,8 +316,8 @@ export function DishImageUploader({
             onChange={(event) => setUrlInput(event.target.value)}
             onPaste={handleUrlFieldPaste}
             disabled={busy}
-            placeholder="Paste image URL or copied photo (iOS/Android cutout)..."
-            aria-label="Paste image URL or copied photo"
+            placeholder="Paste a link or image..."
+            aria-label="Paste a link or image"
             className="w-full rounded-xl border border-neutral-200/80 bg-white py-2.5 pl-10 pr-3 text-sm text-neutral-800 shadow-sm placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5 disabled:cursor-not-allowed disabled:opacity-70"
           />
         </div>
