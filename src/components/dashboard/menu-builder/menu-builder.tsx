@@ -469,13 +469,18 @@ export function MenuBuilder() {
     if (!currentRestaurant?.id) return null;
 
     const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-    // Clipboard pastes are coerced to image/png; also accept image/jpg aliases.
     const normalizedType =
       file.type === "image/jpg" ? "image/jpeg" : file.type || "image/png";
     const isImage =
-      normalizedType.startsWith("image/") &&
-      (allowed.includes(normalizedType) || normalizedType === "image/png");
-    if (!isImage || file.size > 5 * 1024 * 1024) return null;
+      normalizedType.startsWith("image/") && allowed.includes(normalizedType);
+    if (!isImage || file.size > 5 * 1024 * 1024) {
+      console.error("[menu.handleImageUpload] rejected file", {
+        type: file.type,
+        size: file.size,
+        name: file.name,
+      });
+      return null;
+    }
 
     setUploadingImage(true);
     try {
@@ -486,12 +491,11 @@ export function MenuBuilder() {
         "image/webp": "webp",
         "image/gif": "gif",
       };
-      const ext =
-        file.name.startsWith("pasted-sticker.") || file.name === "pasted-image.png"
+      const ext = file.name.startsWith("paste-")
+        ? "png"
+        : file.name.includes(".")
           ? file.name.split(".").pop()?.toLowerCase() ?? "png"
-          : file.name.includes(".")
-            ? file.name.split(".").pop()?.toLowerCase() ?? "png"
-            : extensionFromType[normalizedType] ?? "png";
+          : extensionFromType[normalizedType] ?? "png";
       const fileName = `${currentRestaurant.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("menu-images")
@@ -500,11 +504,21 @@ export function MenuBuilder() {
           upsert: false,
           contentType: normalizedType,
         });
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error(
+          "[menu.handleImageUpload] supabase upload failed:",
+          uploadError.message,
+          uploadError
+        );
+        throw uploadError;
+      }
       const { data } = supabase.storage.from("menu-images").getPublicUrl(fileName);
       return data.publicUrl;
     } catch (err) {
-      console.error(err);
+      console.error(
+        "[menu.handleImageUpload]",
+        err instanceof Error ? err.message : err
+      );
       return null;
     } finally {
       setUploadingImage(false);

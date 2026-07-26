@@ -53,6 +53,54 @@ function pickClipboardImageType(types: readonly string[]): string | null {
   return types.find((type) => type.toLowerCase().startsWith("image/")) ?? null;
 }
 
+/**
+ * Re-encode any clipboard cutout/sticker blob as a real PNG via canvas.
+ * Mobile clipboard MIME types are often non-standard and fail Supabase validation.
+ */
+async function convertBlobToPngFile(source: Blob): Promise<File> {
+  const objectUrl = URL.createObjectURL(source);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Could not decode clipboard image"));
+      img.src = objectUrl;
+    });
+
+    const width = Math.max(1, image.naturalWidth || image.width || 1);
+    const height = Math.max(1, image.naturalHeight || image.height || 1);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Canvas is not available in this browser");
+    }
+
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const pngBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob && blob.size > 0) resolve(blob);
+          else reject(new Error("PNG conversion produced an empty blob"));
+        },
+        "image/png",
+        1
+      );
+    });
+
+    return new File([pngBlob], `paste-${Date.now()}.png`, {
+      type: "image/png",
+      lastModified: Date.now(),
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 /** Click-gesture clipboard read — works for iOS/Android cutouts & stickers. */
 async function readImageBlobFromClipboardApi(): Promise<Blob | null> {
   if (typeof navigator === "undefined" || !navigator.clipboard?.read) {
@@ -152,13 +200,13 @@ export function DishImageUploader({
         return;
       }
 
-      const mime = blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
-      const file = new File([blob], "pasted-image.png", {
-        type: mime,
-        lastModified: Date.now(),
-      });
+      const file = await convertBlobToPngFile(blob);
       await handleFile(file);
-    } catch {
+    } catch (error) {
+      console.error(
+        "[DishImageUploader.paste]",
+        error instanceof Error ? error.message : error
+      );
       toast.error(CLIPBOARD_EMPTY);
     } finally {
       setClipboardUploading(false);
