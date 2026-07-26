@@ -38,7 +38,7 @@ export interface PublicMenuImageOptimizeOptions {
 }
 
 /**
- * Prefer Supabase image transforms for storage public URLs (smaller WebP-capable delivery).
+ * Prefer Supabase image transforms for storage public URLs (smaller delivery).
  * Non-Supabase / data / relative URLs pass through unchanged.
  */
 export function optimizePublicMenuImageUrl(
@@ -49,8 +49,8 @@ export function optimizePublicMenuImageUrl(
   if (!normalized) return null;
   if (normalized.startsWith("data:") || normalized.startsWith("/")) return normalized;
 
-  const width = options.width ?? 480;
-  const quality = options.quality ?? 70;
+  const width = options.width ?? 400;
+  const quality = options.quality ?? 75;
 
   try {
     const parsed = new URL(normalized);
@@ -61,6 +61,7 @@ export function optimizePublicMenuImageUrl(
       parsed.pathname = parsed.pathname.replace(objectMarker, renderMarker);
       parsed.searchParams.set("width", String(width));
       parsed.searchParams.set("quality", String(quality));
+      parsed.searchParams.set("format", "origin");
       parsed.searchParams.set("resize", "contain");
       return parsed.toString();
     }
@@ -68,6 +69,7 @@ export function optimizePublicMenuImageUrl(
     if (parsed.pathname.includes(renderMarker)) {
       parsed.searchParams.set("width", String(width));
       parsed.searchParams.set("quality", String(quality));
+      parsed.searchParams.set("format", "origin");
       if (!parsed.searchParams.has("resize")) {
         parsed.searchParams.set("resize", "contain");
       }
@@ -78,13 +80,6 @@ export function optimizePublicMenuImageUrl(
   }
 
   return normalized;
-}
-
-/** True when Next/Image can safely optimize this remote URL. */
-export function isNextImageableUrl(url: string | null | undefined): boolean {
-  const normalized = normalizeImageUrl(url);
-  if (!normalized) return false;
-  return normalized.startsWith("https://") || normalized.startsWith("http://");
 }
 
 /**

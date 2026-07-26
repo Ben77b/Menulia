@@ -8,10 +8,6 @@ import { DEFAULT_PUBLIC_MENU_SPLASH } from "@/lib/public-menu-cache";
 import { DEFAULT_MENU_THEME } from "@/lib/theme-colors";
 import { contrastingTextColor } from "@/lib/contrast";
 import { resolvePublicMenuLogoSrc } from "@/lib/public-menu-utils";
-import { cn } from "@/lib/utils";
-
-const HOLD_MS = 320;
-const FADE_MS = 280;
 
 export interface PublicMenuLoadingOverlayProps {
   restaurantName?: string;
@@ -27,8 +23,8 @@ export interface PublicMenuLoadingOverlayProps {
 }
 
 /**
- * Unconditional client loading overlay — paints header brand color instantly,
- * then fades out to reveal the menu.
+ * Brief client loading overlay — paints header brand color for the first paint,
+ * then unmounts immediately on hydration (no artificial hold).
  */
 export default function PublicMenuLoadingOverlay({
   restaurantName: nameProp,
@@ -41,9 +37,7 @@ export default function PublicMenuLoadingOverlay({
 }: PublicMenuLoadingOverlayProps) {
   const splash = usePublicMenuSplash();
   const [visible, setVisible] = useState(true);
-  const [fading, setFading] = useState(false);
 
-  // Prefer Design Studio header/logo-area background for a seamless header match.
   const headerBg =
     headerBackgroundColor ||
     bgProp ||
@@ -65,29 +59,21 @@ export default function PublicMenuLoadingOverlay({
     null;
 
   useEffect(() => {
-    const fadeTimer = window.setTimeout(() => setFading(true), HOLD_MS);
-    const hideTimer = window.setTimeout(() => setVisible(false), HOLD_MS + FADE_MS);
-    return () => {
-      window.clearTimeout(fadeTimer);
-      window.clearTimeout(hideTimer);
-    };
+    // Drop the overlay as soon as the client mounts — no artificial delay.
+    setVisible(false);
   }, []);
 
   if (!visible) return null;
 
   return (
     <div
-      className={cn(
-        "pointer-events-auto fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6 transition-opacity duration-500 ease-out",
-        fading && "pointer-events-none opacity-0"
-      )}
+      className="pointer-events-none fixed inset-0 z-[9999] flex flex-col items-center justify-center px-6"
       style={{
         backgroundColor: headerBg,
-        // Synchronous paint vars — avoid white/dark flash before theme resolves.
         ["--public-menu-header-bg" as string]: headerBg,
         ["--public-menu-header-fg" as string]: headerFg,
       }}
-      aria-busy={!fading}
+      aria-busy="true"
       aria-live="polite"
       aria-label={restaurantName ? `Loading ${restaurantName} menu` : "Loading menu"}
     >
@@ -115,19 +101,6 @@ export default function PublicMenuLoadingOverlay({
             <UtensilsCrossed className="h-10 w-10" strokeWidth={1.5} aria-hidden />
           </div>
         )}
-
-        <div className="flex items-center gap-3" aria-hidden="true">
-          {[0, 1, 2].map((index) => (
-            <span
-              key={index}
-              className="public-menu-loading-dot h-2.5 w-2.5 rounded-full"
-              style={{
-                backgroundColor: headerFg,
-                animationDelay: `${index * 150}ms`,
-              }}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );
