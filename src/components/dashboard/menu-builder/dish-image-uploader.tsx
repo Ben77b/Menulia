@@ -19,11 +19,24 @@ interface DishImageUploaderProps {
 
 function isAcceptedImageFile(file: File): boolean {
   if (file.type.startsWith("image/")) {
-    return ACCEPTED_IMAGE_TYPES.includes(file.type) || file.type === "image/jpg";
+    return (
+      ACCEPTED_IMAGE_TYPES.includes(file.type) ||
+      file.type === "image/jpg" ||
+      // iOS cutouts / screenshots sometimes report generic image/* 
+      file.type === "image/*"
+    );
   }
 
   const extension = file.name.split(".").pop()?.toLowerCase();
-  return extension === "png" || extension === "jpg" || extension === "jpeg" || extension === "webp";
+  return (
+    extension === "png" ||
+    extension === "jpg" ||
+    extension === "jpeg" ||
+    extension === "webp" ||
+    extension === "gif" ||
+    // Clipboard blobs often have no filename extension
+    !file.name.includes(".")
+  );
 }
 
 function extensionFromMime(mime: string): string {
@@ -33,18 +46,30 @@ function extensionFromMime(mime: string): string {
   return "jpg";
 }
 
+function normalizeClipboardImageFile(file: File): File {
+  const mime = file.type?.startsWith("image/") ? file.type : "image/png";
+  const hasUsefulName = Boolean(file.name?.trim()) && file.name.includes(".");
+  if (hasUsefulName && file.type.startsWith("image/")) return file;
+  return new File([file], `clipboard-photo.${extensionFromMime(mime)}`, {
+    type: mime === "image/*" ? "image/png" : mime,
+    lastModified: file.lastModified,
+  });
+}
+
 function getClipboardImageFile(clipboardData: DataTransfer | null): File | null {
   if (!clipboardData) return null;
 
-  const fromFiles = Array.from(clipboardData.files ?? []).find((file) =>
-    file.type.startsWith("image/")
+  const fromFiles = Array.from(clipboardData.files ?? []).find(
+    (file) => file.type.startsWith("image/") || (!file.type && file.size > 0)
   );
-  if (fromFiles) return fromFiles;
+  if (fromFiles) return normalizeClipboardImageFile(fromFiles);
 
   for (const item of Array.from(clipboardData.items ?? [])) {
-    if (item.kind === "file" && item.type.startsWith("image/")) {
+    if (item.kind === "file" && (item.type.startsWith("image/") || !item.type)) {
       const file = item.getAsFile();
-      if (file) return file;
+      if (file && (file.type.startsWith("image/") || file.size > 0)) {
+        return normalizeClipboardImageFile(file);
+      }
     }
   }
 
@@ -63,9 +88,10 @@ export function DishImageUploader({
   const [urlInput, setUrlInput] = useState("");
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
   const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [pasteUploading, setPasteUploading] = useState(false);
 
   const previewUrl = imageUrl ?? localPreviewUrl;
-  const busy = uploading || fetchingUrl;
+  const busy = uploading || fetchingUrl || pasteUploading;
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -92,16 +118,50 @@ export function DishImageUploader({
     [onImageUpload, onImageUrlChange, toast]
   );
 
-  const handlePaste = useCallback(
-    (event: ClipboardEvent<HTMLDivElement>) => {
+  const handleClipboardImagePaste = useCallback(
+    async (event: ClipboardEvent, options?: { fromUrlField?: boolean }) => {
       const imageFile = getClipboardImageFile(event.clipboardData);
-      if (!imageFile) return;
+      if (!imageFile) {
+        // Plain text URL paste — allow default input behavior.
+        if (options?.fromUrlField) {
+          event.stopPropagation();
+        }
+        return;
+      }
 
       event.preventDefault();
       event.stopPropagation();
-      void handleFile(imageFile);
+
+      if (options?.fromUrlField) {
+        setPasteUploading(true);
+      }
+
+      try {
+        await handleFile(imageFile);
+        if (options?.fromUrlField) {
+          setUrlInput("");
+        }
+      } finally {
+        if (options?.fromUrlField) {
+          setPasteUploading(false);
+        }
+      }
     },
     [handleFile]
+  );
+
+  const handleDropzonePaste = useCallback(
+    (event: ClipboardEvent<HTMLDivElement>) => {
+      void handleClipboardImagePaste(event);
+    },
+    [handleClipboardImagePaste]
+  );
+
+  const handleUrlFieldPaste = useCallback(
+    (event: ClipboardEvent<HTMLInputElement>) => {
+      void handleClipboardImagePaste(event, { fromUrlField: true });
+    },
+    [handleClipboardImagePaste]
   );
 
   const handleDrop = useCallback(
@@ -165,7 +225,7 @@ export function DishImageUploader({
             if (!busy) fileInputRef.current?.click();
           }
         }}
-        onPaste={handlePaste}
+        onPaste={handleDropzonePaste}
         onDragOver={(event) => {
           event.preventDefault();
           setDragOver(true);
@@ -223,17 +283,21 @@ export function DishImageUploader({
 
       <div className="flex flex-col gap-2">
         <div className="relative">
-          <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          {pasteUploading || fetchingUrl ? (
+            <Loader2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-neutral-400" />
+          ) : (
+            <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          )}
           <input
-            type="url"
+            type="text"
+            inputMode="url"
             value={urlInput}
             onChange={(event) => setUrlInput(event.target.value)}
-            onPaste={(event) => {
-              // Allow normal URL text paste into this field.
-              event.stopPropagation();
-            }}
-            placeholder="Or paste an image link..."
-            className="w-full rounded-xl border border-neutral-200/80 bg-white py-2.5 pl-10 pr-3 text-sm text-neutral-800 shadow-sm placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5"
+            onPaste={handleUrlFieldPaste}
+            disabled={busy}
+            placeholder="Paste image URL or copied photo (iOS/Android cutout)..."
+            aria-label="Paste image URL or copied photo"
+            className="w-full rounded-xl border border-neutral-200/80 bg-white py-2.5 pl-10 pr-3 text-sm text-neutral-800 shadow-sm placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-900/5 disabled:cursor-not-allowed disabled:opacity-70"
           />
         </div>
         <Button
@@ -244,7 +308,7 @@ export function DishImageUploader({
           onClick={() => void handleApplyUrl()}
           className="min-h-10 w-full border border-neutral-200/80 bg-white shadow-sm"
         >
-          {fetchingUrl ? "Fetching…" : "Use image link"}
+          {fetchingUrl ? "Fetching…" : pasteUploading ? "Uploading…" : "Use image link"}
         </Button>
       </div>
 
