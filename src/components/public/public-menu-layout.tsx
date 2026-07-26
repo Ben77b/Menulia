@@ -12,6 +12,7 @@ import {
   filterDishesByTags,
   sanitizePublicMenuTree,
 } from "@/lib/public-menu-utils";
+import { sortByMenuOrder } from "@/lib/menu-order";
 import { collectPresentTagAppearances } from "@/lib/dietary-tags";
 import {
   detectGuestMenuLanguage,
@@ -108,10 +109,13 @@ function DishSection({
 }) {
   const filteredDishes = useMemo(() => {
     const dishes = subcategory?.dishes ?? [];
+    const withIds = dishes.filter((dish) => Boolean(dish?.id));
+    const ordered = sortByMenuOrder(withIds);
     if (!display?.showDietary || activeFilters.size === 0) {
-      return dishes.filter((dish) => Boolean(dish?.id));
+      return ordered;
     }
-    return filterDishesByTags(dishes, activeFilters).filter((dish) => Boolean(dish?.id));
+    // filterDishesByTags preserves relative order from the sorted input.
+    return filterDishesByTags(ordered, activeFilters);
   }, [subcategory?.dishes, activeFilters, display?.showDietary]);
 
   const emptyMessage =

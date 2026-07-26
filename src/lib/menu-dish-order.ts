@@ -1,15 +1,10 @@
 import type { MenuBuilderDish } from "./menu-builder-types";
+import { sortByMenuOrder } from "./menu-order";
 
-export function sortRecordsByDisplayOrder<T extends { display_order?: number | null; id?: string }>(
+export function sortRecordsByDisplayOrder<T extends { display_order?: number | null; id?: string; name?: unknown; created_at?: string | null }>(
   records: readonly T[]
 ): T[] {
-  return [...(records ?? [])].sort((a, b) => {
-    const orderDiff = (Number(a.display_order) || 0) - (Number(b.display_order) || 0);
-    if (orderDiff !== 0) return orderDiff;
-    const idA = typeof a.id === "string" ? a.id : "";
-    const idB = typeof b.id === "string" ? b.id : "";
-    return idA.localeCompare(idB);
-  });
+  return sortByMenuOrder(records as Array<T & { id?: string }>);
 }
 
 export function sortDishesByDisplayOrder(dishes: MenuBuilderDish[]): MenuBuilderDish[] {

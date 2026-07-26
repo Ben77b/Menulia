@@ -15,12 +15,14 @@ export interface PublicMenuSubcategory {
   name: LocalizedTextValue;
   description?: LocalizedTextValue;
   layout_type: CategoryLayoutType;
+  order_index?: number;
   dishes: PublicMenuDish[];
 }
 
 export interface PublicMenuParentCategory {
   id: string;
   name: LocalizedTextValue;
+  order_index?: number;
   subcategories: PublicMenuSubcategory[];
 }
 
@@ -31,6 +33,7 @@ import {
   normalizeCategoryLayoutType,
   type CategoryLayoutType,
 } from "@/lib/category-layout";
+import { sortByMenuOrder } from "@/lib/menu-order";
 
 export function mapDishRow(dish: {
   id: string;
@@ -43,6 +46,7 @@ export function mapDishRow(dish: {
   tags?: string[] | null;
   allergens?: string[] | null;
   display_order?: number | null;
+  created_at?: string | null;
 }): PublicMenuDish {
   try {
     const normalized = parseDishTagsFromDb(dish ?? {});
@@ -61,6 +65,7 @@ export function mapDishRow(dish: {
       tags: normalized.tags,
       allergens: normalized.allergens,
       display_order: Number(dish?.display_order ?? 0),
+      created_at: typeof dish?.created_at === "string" ? dish.created_at : null,
     };
   } catch (error) {
     console.error("[mapDishRow]", error);
@@ -75,28 +80,24 @@ export function mapDishRow(dish: {
       tags: [],
       allergens: [],
       display_order: Number(dish?.display_order ?? 0),
+      created_at: typeof dish?.created_at === "string" ? dish.created_at : null,
     };
   }
-}
-
-function compareCategoryOrder(a: CategoryRow, b: CategoryRow): number {
-  const orderDiff = (a.order_index ?? 0) - (b.order_index ?? 0);
-  if (orderDiff !== 0) return orderDiff;
-  return a.id.localeCompare(b.id);
 }
 
 export function buildMenuHierarchy(
   categoryRows: CategoryRow[],
   dishesByCategoryId: Record<string, PublicMenuDish[]>
 ): PublicMenuParentCategory[] {
-  const sorted = [...categoryRows].sort(compareCategoryOrder);
+  const sorted = sortByMenuOrder(categoryRows);
 
   const toSubcategory = (row: CategoryRow): PublicMenuSubcategory => ({
     id: row.id,
     name: row.name,
     description: row.description ?? null,
     layout_type: normalizeCategoryLayoutType(row.layout_type),
-    dishes: dishesByCategoryId[row.id] ?? [],
+    order_index: row.order_index ?? 0,
+    dishes: sortByMenuOrder(dishesByCategoryId[row.id] ?? []),
   });
 
   const parents = sorted.filter((row) => !row.parent_id);
@@ -110,15 +111,15 @@ export function buildMenuHierarchy(
       childrenByParent.set(row.parent_id!, list);
     });
 
-  // Keep sibling categories in dashboard order within each parent.
   for (const [parentId, children] of childrenByParent) {
-    childrenByParent.set(parentId, [...children].sort(compareCategoryOrder));
+    childrenByParent.set(parentId, sortByMenuOrder(children));
   }
 
   if (parents.length === 0 && sorted.length > 0) {
     return sorted.map((row) => ({
       id: row.id,
       name: row.name,
+      order_index: row.order_index ?? 0,
       subcategories: [toSubcategory(row)],
     }));
   }
@@ -131,7 +132,8 @@ export function buildMenuHierarchy(
     return {
       id: parent.id,
       name: parent.name,
-      subcategories,
+      order_index: parent.order_index ?? 0,
+      subcategories: sortByMenuOrder(subcategories),
     };
   });
 }

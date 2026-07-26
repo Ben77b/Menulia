@@ -4,7 +4,7 @@ import { fieldHasGuestTranslations, type LocalizedTextValue } from "@/lib/locali
 import { dishTagLabel } from "@/lib/dietary-tags";
 import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 import { parsePriceVariationsFromDb } from "@/lib/price-variations";
-import { sortRecordsByDisplayOrder } from "@/lib/menu-dish-order";
+import { sortByMenuOrder } from "@/lib/menu-order";
 
 /** Max inline data-URL size allowed through RSC → client props (avoids flight blowups). */
 const MAX_INLINE_DATA_URL_CHARS = 4096;
@@ -145,6 +145,7 @@ export function sanitizePublicMenuDish(
     tags: Array.isArray(dish.tags) ? dish.tags.filter(Boolean) : [],
     allergens: Array.isArray(dish.allergens) ? dish.allergens.filter(Boolean) : [],
     display_order: Number(dish.display_order ?? 0),
+    created_at: typeof dish.created_at === "string" ? dish.created_at : null,
   };
 }
 
@@ -159,7 +160,8 @@ export function sanitizePublicMenuSubcategory(
     name: subcategory.name ?? "",
     description: subcategory.description ?? null,
     layout_type: normalizeCategoryLayoutType(subcategory.layout_type),
-    dishes: sortRecordsByDisplayOrder(
+    order_index: Number(subcategory.order_index ?? 0),
+    dishes: sortByMenuOrder(
       (subcategory.dishes ?? [])
         .map(sanitizePublicMenuDish)
         .filter((dish): dish is PublicMenuDish => dish !== null)
@@ -171,24 +173,33 @@ export function sanitizePublicMenuTree(
   menu: PublicMenuParentCategory[],
   flatCategories: PublicMenuSubcategory[]
 ): { menu: PublicMenuParentCategory[]; flatCategories: PublicMenuSubcategory[] } {
-  return {
-    menu: (menu ?? [])
+  const sortedParents = sortByMenuOrder(
+    (menu ?? [])
       .map((parent) => {
         if (!parent || typeof parent !== "object") return null;
-        const subcategories = (parent.subcategories ?? [])
-          .map(sanitizePublicMenuSubcategory)
-          .filter((sub): sub is PublicMenuSubcategory => sub !== null);
+        const subcategories = sortByMenuOrder(
+          (parent.subcategories ?? [])
+            .map(sanitizePublicMenuSubcategory)
+            .filter((sub): sub is PublicMenuSubcategory => sub !== null)
+        );
         return {
           ...parent,
           id: parent.id ?? "",
           name: parent.name ?? "",
+          order_index: Number(parent.order_index ?? 0),
           subcategories,
         } satisfies PublicMenuParentCategory;
       })
-      .filter((parent): parent is PublicMenuParentCategory => parent !== null),
-    flatCategories: (flatCategories ?? [])
-      .map(sanitizePublicMenuSubcategory)
-      .filter((category): category is PublicMenuSubcategory => category !== null),
+      .filter((parent): parent is PublicMenuParentCategory => parent !== null)
+  );
+
+  return {
+    menu: sortedParents,
+    flatCategories: sortByMenuOrder(
+      (flatCategories ?? [])
+        .map(sanitizePublicMenuSubcategory)
+        .filter((category): category is PublicMenuSubcategory => category !== null)
+    ),
   };
 }
 

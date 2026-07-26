@@ -8,7 +8,7 @@ import {
   type PublicMenuParentCategory,
   type PublicMenuSubcategory,
 } from "@/lib/menu-hierarchy";
-import { sortRecordsByDisplayOrder } from "@/lib/menu-dish-order";
+import { compareMenuOrder, sortByMenuOrder } from "@/lib/menu-order";
 import { normalizeCategoryLayoutType } from "@/lib/category-layout";
 
 export function hasNestedMenuStructure(categoryRows: CategoryRow[]): boolean {
@@ -24,7 +24,8 @@ function rowToSubcategory(
     name: row.name,
     description: row.description ?? null,
     layout_type: normalizeCategoryLayoutType(row.layout_type),
-    dishes: dishesByCategoryId[row.id] ?? [],
+    order_index: row.order_index ?? 0,
+    dishes: sortByMenuOrder(dishesByCategoryId[row.id] ?? []),
   };
 }
 
@@ -37,23 +38,19 @@ export function buildFlatCategories(
   const leafRows = categoryRows
     .filter((row) => !categoryRows.some((child) => child.parent_id === row.id))
     .sort((a, b) => {
-      // Nested leaves: parent section order first, then sibling order_index.
       const parentA = a.parent_id ? byId.get(a.parent_id) : null;
       const parentB = b.parent_id ? byId.get(b.parent_id) : null;
-      const parentOrderA = parentA?.order_index ?? a.order_index ?? 0;
-      const parentOrderB = parentB?.order_index ?? b.order_index ?? 0;
+      const parentOrderA = parentA?.order_index ?? (a.parent_id ? 0 : a.order_index ?? 0);
+      const parentOrderB = parentB?.order_index ?? (b.parent_id ? 0 : b.order_index ?? 0);
       if (parentOrderA !== parentOrderB) return parentOrderA - parentOrderB;
-      if ((a.order_index ?? 0) !== (b.order_index ?? 0)) {
-        return (a.order_index ?? 0) - (b.order_index ?? 0);
-      }
-      return a.id.localeCompare(b.id);
+      return compareMenuOrder(a, b);
     });
 
   return leafRows.map((row) => rowToSubcategory(row, dishesByCategoryId));
 }
 
 const PUBLIC_DISH_COLUMNS_CORE =
-  "id, category_id, name, description, price, image, tags, price_variations";
+  "id, category_id, name, description, price, image, tags, price_variations, created_at";
 const PUBLIC_DISH_COLUMNS_BASE = `${PUBLIC_DISH_COLUMNS_CORE}, display_order`;
 const PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE = `${PUBLIC_DISH_COLUMNS_BASE}, hide_price`;
 const PUBLIC_DISH_COLUMNS_WITH_AVAILABILITY = `${PUBLIC_DISH_COLUMNS_WITH_HIDE_PRICE}, is_available`;
@@ -68,9 +65,18 @@ function stripPriceVariationsColumn(columns: string): string {
     .join(", ");
 }
 
+function stripCreatedAtColumn(columns: string): string {
+  return columns
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "created_at")
+    .join(", ");
+}
+
 type DishQueryRow = Parameters<typeof mapDishRow>[0] & {
   category_id?: string | null;
   display_order?: number | null;
+  created_at?: string | null;
 };
 
 async function selectDishesForCategories(
@@ -115,6 +121,15 @@ async function selectDishesWithPriceVariationsFallback(
     );
   }
 
+  if (result.error && isMissingColumnError(result.error) && columns.includes("created_at")) {
+    result = await selectDishesForCategories(
+      supabase,
+      categoryIds,
+      stripCreatedAtColumn(columns),
+      options
+    );
+  }
+
   // Older schemas may lack display_order — retry without that order clause.
   if (result.error && isMissingColumnError(result.error) && options?.orderByDisplayOrder) {
     result = await selectDishesForCategories(supabase, categoryIds, columns, {
@@ -127,8 +142,7 @@ async function selectDishesWithPriceVariationsFallback(
 }
 
 function groupDishesByCategory(
-  rows: DishQueryRow[],
-  sortByDisplayOrder: boolean
+  rows: DishQueryRow[]
 ): Record<string, ReturnType<typeof mapDishRow>[]> {
   const byCategory: Record<string, DishQueryRow[]> = {};
 
@@ -141,9 +155,7 @@ function groupDishesByCategory(
 
   const mapped: Record<string, ReturnType<typeof mapDishRow>[]> = {};
   for (const [categoryId, categoryRows] of Object.entries(byCategory)) {
-    const ordered = sortByDisplayOrder
-      ? sortRecordsByDisplayOrder(categoryRows)
-      : [...categoryRows].sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? "")));
+    const ordered = sortByMenuOrder(categoryRows);
     mapped[categoryId] = ordered.flatMap((row) => {
       try {
         const dish = mapDishRow(row);
@@ -223,10 +235,7 @@ async function fetchActiveDishesByCategoryIds(
       continue;
     }
 
-    const grouped = groupDishesByCategory(
-      (data ?? []) as DishQueryRow[],
-      attempt.sortByDisplayOrder
-    );
+    const grouped = groupDishesByCategory((data ?? []) as DishQueryRow[]);
     return { ...empty, ...grouped };
   }
 
