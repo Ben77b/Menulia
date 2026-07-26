@@ -2,7 +2,7 @@
 
 /**
  * Public menu dish carousel — pure React + Tailwind CSS scroll-snap.
- * Physical sliding via native scrollBy / scrollTo (no translate reorder tricks).
+ * Peek math: px-[15vw] + w-[70vw] → 15vw side peeks. Physical slide via scrollBy.
  */
 import {
   useCallback,
@@ -164,7 +164,6 @@ export function DishCarousel({
     }
   }, [activeIndex, safeDishes.length]);
 
-  // Sync active index from physical scroll position (swipe or scrollBy)
   useEffect(() => {
     const container = containerRef.current;
     if (!container || safeDishes.length <= 1) return;
@@ -251,30 +250,33 @@ export function DishCarousel({
 
   return (
     <div className="relative mx-auto w-full max-w-4xl overflow-visible py-4">
-      {/* Side arrows — aligned with the dish image, no border/ring/shadow */}
+      {/*
+        Arrow band height = active square image (card is 70vw wide → image is 70vw tall).
+        top-1/2 on this band centers arrows on the photo, not the text below.
+      */}
       {showArrows ? (
-        <>
+        <div className="pointer-events-none absolute left-0 right-0 top-4 z-20 h-[70vw]">
           <NavArrowButton
             direction="prev"
             accentColor={accentColor}
             arrowColor={arrowColor}
             onClick={goPrevious}
-            className="absolute left-0 top-[18vw] z-20 -translate-y-1/2 sm:left-1 sm:top-[min(18vw,110px)]"
+            className="absolute left-0 top-1/2 -translate-y-1/2 sm:left-1"
           />
           <NavArrowButton
             direction="next"
             accentColor={accentColor}
             arrowColor={arrowColor}
             onClick={goNext}
-            className="absolute right-0 top-[18vw] z-20 -translate-y-1/2 sm:right-1 sm:top-[min(18vw,110px)]"
+            className="absolute right-0 top-1/2 -translate-y-1/2 sm:right-1"
           />
-        </>
+        </div>
       ) : null}
 
-      {/* Peek track: 10vw side padding + 80vw cards → adjacent dishes always visible */}
+      {/* Peek track: 15vw padding + 70vw cards → 15vw peeks on each side */}
       <div
         ref={containerRef}
-        className="flex w-full snap-x snap-mandatory items-center gap-4 overflow-x-auto scroll-smooth px-[10vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full snap-x snap-mandatory items-start gap-4 overflow-x-auto scroll-smooth px-[15vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {safeDishes.map((dish, index) => {
@@ -287,7 +289,7 @@ export function DishCarousel({
                 slideRefs.current[index] = node;
               }}
               className={cn(
-                "w-[80vw] shrink-0 snap-center",
+                "w-[70vw] shrink-0 snap-center",
                 !isActive && "cursor-pointer"
               )}
               onClick={() => {
