@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * Public menu dish carousel — pure React + Tailwind CSS scroll-snap.
- * Peek math: px-[20vw] + w-[60vw] → 20vw side peeks. Physical slide via scrollBy.
- * Active = scale-100 opacity-100; inactive peeks = scale-90 opacity-40.
+ * Public menu dish carousel — fixed card sizes, snap peeks, native scrollBy.
+ * Mobile 260px / Desktop 400px. Active scale-100; peeks scale-[0.85] opacity-40.
  */
 import {
   useCallback,
@@ -14,9 +13,6 @@ import {
 } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { contrastingTextColor } from "@/lib/contrast";
-import { usePreviewCanvas } from "@/contexts/preview-canvas-context";
-import { pv } from "@/lib/preview-theme-vars";
 import type { PublicMenuDisplayOptions } from "@/lib/display-options";
 import type { PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { DishCard, type PublicMenuDish } from "./dish-card";
@@ -45,14 +41,10 @@ interface DishCarouselProps {
 
 function NavArrowButton({
   direction,
-  accentColor,
-  arrowColor,
   onClick,
   className,
 }: {
   direction: "prev" | "next";
-  accentColor: string;
-  arrowColor: string;
   onClick: () => void;
   className?: string;
 }) {
@@ -63,12 +55,10 @@ function NavArrowButton({
       aria-label={direction === "prev" ? "Previous dish" : "Next dish"}
       onClick={onClick}
       className={cn(
-        "pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border-0 outline-none ring-0 shadow-none transition-transform duration-200 ease-out hover:scale-105 focus:outline-none focus-visible:outline-none active:scale-95 sm:h-11 sm:w-11",
+        "pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border-0 bg-black text-white outline-none ring-0 shadow-none transition-transform duration-200 ease-out hover:scale-105 focus:outline-none focus-visible:outline-none active:scale-95 md:h-11 md:w-11",
         className
       )}
       style={{
-        backgroundColor: accentColor,
-        color: arrowColor,
         border: "none",
         boxShadow: "none",
         outline: "none",
@@ -84,8 +74,8 @@ export function DishCarousel({
   lang,
   fallbackLang = "en",
   restaurantName,
-  accentColor,
-  arrowIconColor,
+  accentColor: _accentColor,
+  arrowIconColor: _arrowIconColor,
   mainTextColor,
   titleFont,
   bodyFont,
@@ -100,6 +90,9 @@ export function DishCarousel({
   emptyMessage = "No dishes in this category.",
   tagLabelMap,
 }: DishCarouselProps) {
+  void _accentColor;
+  void _arrowIconColor;
+
   const safeDishes = useMemo(
     () => (dishes ?? []).filter((dish): dish is PublicMenuDish => Boolean(dish?.id)),
     [dishes]
@@ -107,10 +100,6 @@ export function DishCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const isPreview = usePreviewCanvas();
-  const arrowColor = isPreview
-    ? pv("carouselArrowIcon")
-    : arrowIconColor ?? contrastingTextColor(accentColor);
 
   const getSlideStep = useCallback(() => {
     const first = slideRefs.current[0];
@@ -143,7 +132,6 @@ export function DishCarousel({
     }
   }, [activeIndex, safeDishes.length]);
 
-  // Scroll-position sync for active (centered) index
   useEffect(() => {
     const container = containerRef.current;
     if (!container || safeDishes.length <= 1) return;
@@ -169,7 +157,6 @@ export function DishCarousel({
     return () => container.removeEventListener("scroll", syncActiveFromScroll);
   }, [safeDishes.length]);
 
-  // IntersectionObserver backup — reinforces centered active index for peek styling
   useEffect(() => {
     const container = containerRef.current;
     if (!container || safeDishes.length <= 1) return;
@@ -220,8 +207,7 @@ export function DishCarousel({
       return;
     }
 
-    const distance = getSlideStep();
-    container.scrollBy({ left: -distance, behavior: "smooth" });
+    container.scrollBy({ left: -getSlideStep(), behavior: "smooth" });
   }
 
   function goNext() {
@@ -233,8 +219,7 @@ export function DishCarousel({
       return;
     }
 
-    const distance = getSlideStep();
-    container.scrollBy({ left: distance, behavior: "smooth" });
+    container.scrollBy({ left: getSlideStep(), behavior: "smooth" });
   }
 
   const dishCardProps = (dish: PublicMenuDish, isActive: boolean) => ({
@@ -255,7 +240,7 @@ export function DishCarousel({
     priceColor,
     layout: "carousel" as const,
     compact: !isActive,
-    imageClassName: "w-full",
+    imageClassName: "w-full rounded-none",
     priority: false,
     tagLabelMap,
   });
@@ -263,31 +248,28 @@ export function DishCarousel({
   const showArrows = safeDishes.length > 1;
 
   return (
-    <div className="relative mx-auto w-full max-w-4xl overflow-visible py-4">
-      {/* Arrow band = square image height (60vw card → 60vw image). Centers on photo only. */}
+    <div className="relative mx-auto w-full overflow-visible py-4">
+      {/*
+        Arrows sit on the outer edges of the active center image box
+        (260px mobile / 400px desktop), vertically at image mid-height.
+      */}
       {showArrows ? (
-        <div className="pointer-events-none absolute left-0 right-0 top-4 z-20 h-[60vw]">
-          <NavArrowButton
-            direction="prev"
-            accentColor={accentColor}
-            arrowColor={arrowColor}
-            onClick={goPrevious}
-            className="absolute left-0 top-1/2 -translate-y-1/2 sm:left-1"
-          />
-          <NavArrowButton
-            direction="next"
-            accentColor={accentColor}
-            arrowColor={arrowColor}
-            onClick={goNext}
-            className="absolute right-0 top-1/2 -translate-y-1/2 sm:right-1"
-          />
+        <div
+          className="pointer-events-none absolute left-1/2 top-[130px] z-20 flex w-[260px] -translate-x-1/2 -translate-y-1/2 items-center justify-between md:top-[200px] md:w-[400px]"
+          aria-hidden={false}
+        >
+          <NavArrowButton direction="prev" onClick={goPrevious} />
+          <NavArrowButton direction="next" onClick={goNext} />
         </div>
       ) : null}
 
-      {/* Peek track: 20vw padding + 60vw cards → 20vw peeks on each side */}
+      {/*
+        Padding = half viewport minus half card so first/last snap to true center.
+        Mobile: 50vw - 130px | Desktop: 50vw - 200px
+      */}
       <div
         ref={containerRef}
-        className="flex w-full snap-x snap-mandatory items-start gap-3 overflow-x-auto scroll-smooth px-[20vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full snap-x snap-mandatory items-start gap-4 overflow-x-auto scroll-smooth px-[calc(50vw-130px)] md:gap-6 md:px-[calc(50vw-200px)] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {safeDishes.map((dish, index) => {
@@ -302,11 +284,10 @@ export function DishCarousel({
                 slideRefs.current[index] = node;
               }}
               className={cn(
-                "w-[60vw] shrink-0 snap-center origin-center will-change-transform",
-                // RESTORED out-of-focus peek styling — applied on the slide DOM node
+                "w-[260px] shrink-0 snap-center rounded-none origin-center will-change-transform md:w-[400px]",
                 isActive
-                  ? "z-[1] scale-100 opacity-100 transition-all duration-500 ease-in-out"
-                  : "z-0 scale-90 opacity-40 transition-all duration-500 ease-in-out cursor-pointer"
+                  ? "z-[1] scale-100 opacity-100 transition-all duration-500 ease-out"
+                  : "z-0 scale-[0.85] opacity-40 transition-all duration-500 ease-out cursor-pointer"
               )}
               onClick={() => {
                 if (!isActive) scrollToIndex(index);

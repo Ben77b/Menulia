@@ -173,20 +173,24 @@ function DishCardInner({
   const isStackedTop = isStackedTopCategoryLayout(layout);
   const isStackedLeft = isStackedLeftCategoryLayout(layout);
   const isStackedLayout = isStackedCategoryLayout(layout);
-  const isCarouselPeek = layout === "carousel" && compact;
+  const isCarouselLayout = layout === "carousel";
+  const isCarouselPeek = isCarouselLayout && compact;
   const isLeftAligned = isStackedLeft;
 
   const imageBlock =
     showImage && imageSrc ? (
       <div
         className={cn(
-          "relative aspect-square overflow-hidden rounded-xl",
+          "relative aspect-square overflow-hidden",
+          isCarouselLayout ? "w-full rounded-none" : "rounded-xl",
           isStackedLeft ? "h-44 w-44 shrink-0" : imageClassName
         )}
         style={
           isStackedLeft
             ? { width: "176px", height: "176px", flexShrink: 0, borderRadius: "12px" }
-            : undefined
+            : isCarouselLayout
+              ? { borderRadius: 0 }
+              : undefined
         }
       >
         {/* Native img — avoids next/image remotePatterns failures on public menus */}
@@ -194,7 +198,10 @@ function DishCardInner({
         <img
           src={imageSrc}
           alt={imageAlt}
-          className="absolute inset-0 h-full w-full object-contain"
+          className={cn(
+            "absolute inset-0 h-full w-full",
+            isCarouselLayout ? "rounded-none object-cover" : "object-contain"
+          )}
           loading="lazy"
           decoding="async"
           onError={() => {
@@ -406,9 +413,22 @@ function DishCardInner({
   }
 
   return (
-    <article className={cn("flex w-full flex-col items-center", imageBlock ? "" : "w-full")}>
+    <article
+      className={cn(
+        "flex w-full flex-col items-center",
+        isCarouselLayout && "rounded-none",
+        imageBlock ? "" : "w-full"
+      )}
+    >
       {imageBlock}
-      <div className={cn(imageBlock ? "mt-3 sm:mt-4" : "w-full", isCarouselPeek && "mt-2 sm:mt-4")}>
+      <div
+        className={cn(
+          "w-full text-center",
+          imageBlock ? "mt-3 sm:mt-4" : "",
+          isCarouselPeek && "mt-2 sm:mt-4",
+          isCarouselLayout && "items-center"
+        )}
+      >
         {textBlock}
       </div>
     </article>
