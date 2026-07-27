@@ -293,7 +293,7 @@ export function DishCarousel({
 
       <div
         ref={containerRef}
-        className="flex w-full snap-x snap-mandatory items-start gap-2 overflow-x-auto scroll-smooth px-[29vw] md:gap-4 md:px-[36vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full snap-x snap-mandatory items-start gap-1.5 overflow-x-auto scroll-smooth px-[33vw] md:gap-4 md:px-[36vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {safeDishes.map((dish, index) => {
@@ -308,10 +308,11 @@ export function DishCarousel({
                 slideRefs.current[index] = node;
               }}
               className={cn(
-                "w-max max-w-[42vw] shrink-0 snap-center rounded-none origin-center will-change-transform md:max-w-[28vw]",
+                // Mobile: ~34vw center → ~33vw peek each side (clearly visible neighbors)
+                "w-max max-w-[34vw] shrink-0 snap-center rounded-none origin-center will-change-transform md:max-w-[28vw]",
                 isActive
                   ? "z-[1] scale-100 opacity-100 transition-all duration-500 ease-out"
-                  : "z-0 scale-[0.85] opacity-40 transition-all duration-500 ease-out cursor-pointer"
+                  : "z-0 scale-[0.9] opacity-55 transition-all duration-500 ease-out cursor-pointer md:scale-[0.85] md:opacity-40"
               )}
               onClick={() => {
                 if (!isActive) scrollToIndex(index);
