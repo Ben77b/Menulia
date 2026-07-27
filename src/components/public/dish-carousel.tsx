@@ -2,7 +2,7 @@
 
 /**
  * Public menu dish carousel — fixed slide slots, snap peeks, native scrollBy.
- * Mobile: 52vw slots + 24vw padding (side peeks). Starts on dish 1.
+ * Mobile: 40vw slots + 30vw padding. Images capped by max-h so the dish fits on-screen.
  */
 import {
   useCallback,
@@ -270,12 +270,12 @@ export function DishCarousel({
       ) : null}
 
       {/*
-        Smaller fixed slots + side padding so neighbors peek without filling the screen.
-        Mobile: 52vw card, 24vw pad (~24vw peek). Desktop: 36vw card, 32vw pad.
+        Compact slots so image + text fit without page scroll; side peeks stay visible.
+        Mobile: 40vw card, 30vw pad. Desktop: 28vw card, 36vw pad.
       */}
       <div
         ref={containerRef}
-        className="flex w-full snap-x snap-mandatory items-center gap-6 overflow-x-auto scroll-smooth px-[24vw] md:gap-8 md:px-[32vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full snap-x snap-mandatory items-center gap-5 overflow-x-auto scroll-smooth px-[30vw] md:gap-6 md:px-[36vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {safeDishes.map((dish, index) => {
@@ -290,7 +290,7 @@ export function DishCarousel({
                 slideRefs.current[index] = node;
               }}
               className={cn(
-                "flex w-[52vw] shrink-0 snap-center flex-col items-center rounded-none origin-center will-change-transform md:w-[36vw]",
+                "flex w-[40vw] shrink-0 snap-center flex-col items-center rounded-none origin-center will-change-transform md:w-[28vw]",
                 isActive
                   ? "z-[1] scale-100 opacity-100 transition-all duration-500 ease-out"
                   : "z-0 scale-[0.85] opacity-40 transition-all duration-500 ease-out cursor-pointer"
