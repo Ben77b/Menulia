@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Public menu dish carousel — compact images, infinite loop, smooth eased scroll.
+ * Public menu carousel — fluid scroll, soft snap, seamless infinite loop.
  */
 import {
   useCallback,
@@ -17,11 +17,21 @@ import type { PublicMenuLocale } from "@/lib/public-menu-i18n";
 import { DishCard, type PublicMenuDish } from "./dish-card";
 
 const SLIDE_WIDTH_PX = 200;
-const SLIDE_GAP_PX = 24;
-const SCROLL_MS = 680;
+const SLIDE_GAP_PX = 28;
+const ARROW_SCROLL_MS = 980;
+const SETTLE_SCROLL_MS = 520;
 
-function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function easeOutQuart(t: number) {
+  return 1 - Math.pow(1 - t, 4);
+}
+
+function easeOutExpo(t: number) {
+  return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t);
+}
+
+function smoothstep(t: number) {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
 }
 
 function lerp(min: number, max: number, t: number) {
@@ -69,7 +79,7 @@ function NavArrowButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border-0 bg-black text-white outline-none ring-0 shadow-none transition-transform duration-300 ease-out hover:scale-105 focus:outline-none focus-visible:outline-none active:scale-95 disabled:pointer-events-none disabled:opacity-40",
+        "pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border-0 bg-black/90 text-white outline-none ring-0 shadow-none backdrop-blur-sm transition-all duration-500 ease-out hover:scale-105 hover:bg-black focus:outline-none focus-visible:outline-none active:scale-95 disabled:pointer-events-none disabled:opacity-35",
         className
       )}
       style={{ border: "none", boxShadow: "none", outline: "none" }}
@@ -130,14 +140,23 @@ export function DishCarousel({
   const middleStart = canLoop ? count : 0;
 
   const [trackIndex, setTrackIndex] = useState(middleStart);
+  const [trackPhase, setTrackPhase] = useState<"idle" | "dragging" | "animating" | "settling">("idle");
   const [arrowMetrics, setArrowMetrics] = useState({ top: 0, width: 0 });
-  const [isAnimating, setIsAnimating] = useState(false);
+
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
   const skipScrollSyncRef = useRef(false);
   const animatingRef = useRef(false);
-  const rafRef = useRef<number | null>(null);
+  const visualLoopRef = useRef<number | null>(null);
+  const settleTimerRef = useRef<number | null>(null);
+
+  const setTrackVisualPhase = useCallback((phase: typeof trackPhase) => {
+    setTrackPhase(phase);
+    const container = containerRef.current;
+    if (!container) return;
+    container.dataset.phase = phase;
+  }, []);
 
   const getScrollTarget = useCallback((index: number) => {
     const container = containerRef.current;
@@ -153,19 +172,36 @@ export function DishCarousel({
     const container = containerRef.current;
     if (!container) return;
     const center = container.scrollLeft + container.clientWidth / 2;
-    const influence = SLIDE_WIDTH_PX + SLIDE_GAP_PX;
+    const influence = (SLIDE_WIDTH_PX + SLIDE_GAP_PX) * 1.75;
 
     slideRefs.current.forEach((slide) => {
       if (!slide) return;
       const slideCenter = slide.offsetLeft + slide.clientWidth / 2;
       const dist = Math.abs(slideCenter - center);
-      const t = Math.max(0, Math.min(1, 1 - dist / influence));
-      const scale = lerp(0.85, 1, t);
-      const opacity = lerp(0.4, 1, t);
-      slide.style.transform = `scale(${scale.toFixed(3)})`;
-      slide.style.opacity = opacity.toFixed(3);
-      slide.style.zIndex = t > 0.55 ? "1" : "0";
+      const raw = Math.max(0, 1 - dist / influence);
+      const t = smoothstep(raw);
+      const scale = lerp(0.88, 1, t);
+      const opacity = lerp(0.42, 1, t);
+      slide.style.transform = `scale(${scale.toFixed(4)}) translateZ(0)`;
+      slide.style.opacity = opacity.toFixed(4);
+      slide.style.zIndex = t > 0.45 ? "1" : "0";
     });
+  }, []);
+
+  const startVisualLoop = useCallback(() => {
+    if (visualLoopRef.current !== null) return;
+    const tick = () => {
+      applyProximityStyles();
+      visualLoopRef.current = requestAnimationFrame(tick);
+    };
+    visualLoopRef.current = requestAnimationFrame(tick);
+  }, [applyProximityStyles]);
+
+  const stopVisualLoop = useCallback(() => {
+    if (visualLoopRef.current !== null) {
+      cancelAnimationFrame(visualLoopRef.current);
+      visualLoopRef.current = null;
+    }
   }, []);
 
   const getNearestTrackIndex = useCallback(() => {
@@ -197,30 +233,37 @@ export function DishCarousel({
       setTrackIndex(index);
       applyProximityStyles();
       requestAnimationFrame(() => {
-        container.style.scrollSnapType = "x mandatory";
-        skipScrollSyncRef.current = false;
+        requestAnimationFrame(() => {
+          container.style.scrollSnapType = "";
+          skipScrollSyncRef.current = false;
+        });
       });
     },
     [applyProximityStyles, getScrollTarget]
   );
 
   const normalizeLoopPosition = useCallback(() => {
-    if (!canLoop || animatingRef.current) return;
+    if (!canLoop || animatingRef.current) return false;
     const nearest = getNearestTrackIndex();
     if (nearest < count) {
       jumpToTrackIndex(nearest + count);
-      return;
+      return true;
     }
     if (nearest >= count * 2) {
       jumpToTrackIndex(nearest - count);
-      return;
+      return true;
     }
     setTrackIndex(nearest);
     applyProximityStyles();
+    return false;
   }, [applyProximityStyles, canLoop, count, getNearestTrackIndex, jumpToTrackIndex]);
 
   const animateScrollTo = useCallback(
-    (index: number) =>
+    (
+      index: number,
+      duration = ARROW_SCROLL_MS,
+      easing: (t: number) => number = easeOutQuart
+    ) =>
       new Promise<void>((resolve) => {
         const container = containerRef.current;
         const target = getScrollTarget(index);
@@ -231,7 +274,7 @@ export function DishCarousel({
 
         const start = container.scrollLeft;
         const delta = target - start;
-        if (Math.abs(delta) < 1) {
+        if (Math.abs(delta) < 0.5) {
           setTrackIndex(index);
           applyProximityStyles();
           resolve();
@@ -239,43 +282,77 @@ export function DishCarousel({
         }
 
         animatingRef.current = true;
-        setIsAnimating(true);
+        setTrackVisualPhase("animating");
         skipScrollSyncRef.current = true;
         container.style.scrollSnapType = "none";
+        startVisualLoop();
 
         const startTime = performance.now();
 
         const tick = (now: number) => {
           const elapsed = now - startTime;
-          const progress = Math.min(1, elapsed / SCROLL_MS);
-          const eased = easeInOutCubic(progress);
+          const progress = Math.min(1, elapsed / duration);
+          const eased = easing(progress);
           container.scrollLeft = start + delta * eased;
-          applyProximityStyles();
 
           if (progress < 1) {
-            rafRef.current = requestAnimationFrame(tick);
+            requestAnimationFrame(tick);
             return;
           }
 
           container.scrollLeft = target;
-          container.style.scrollSnapType = "x mandatory";
+          container.style.scrollSnapType = "";
           skipScrollSyncRef.current = false;
           animatingRef.current = false;
-          setIsAnimating(false);
           setTrackIndex(index);
           applyProximityStyles();
+          stopVisualLoop();
+          setTrackVisualPhase("idle");
           resolve();
         };
 
-        rafRef.current = requestAnimationFrame(tick);
+        requestAnimationFrame(tick);
       }),
-    [applyProximityStyles, getScrollTarget]
+    [
+      applyProximityStyles,
+      getScrollTarget,
+      setTrackVisualPhase,
+      startVisualLoop,
+      stopVisualLoop,
+    ]
   );
+
+  const softSettleToNearest = useCallback(async () => {
+    if (animatingRef.current || count <= 1) return;
+    const nearest = getNearestTrackIndex();
+    const target = getScrollTarget(nearest);
+    const container = containerRef.current;
+    if (!container || target === null) return;
+
+    if (Math.abs(container.scrollLeft - target) > 1.5) {
+      setTrackVisualPhase("settling");
+      await animateScrollTo(nearest, SETTLE_SCROLL_MS, easeOutExpo);
+    } else {
+      setTrackIndex(nearest);
+      applyProximityStyles();
+    }
+
+    normalizeLoopPosition();
+    setTrackVisualPhase("idle");
+  }, [
+    animateScrollTo,
+    applyProximityStyles,
+    count,
+    getNearestTrackIndex,
+    getScrollTarget,
+    normalizeLoopPosition,
+    setTrackVisualPhase,
+  ]);
 
   const navigateTo = useCallback(
     async (index: number) => {
       if (animatingRef.current || count <= 1) return;
-      await animateScrollTo(index);
+      await animateScrollTo(index, ARROW_SCROLL_MS, easeOutQuart);
       normalizeLoopPosition();
     },
     [animateScrollTo, count, normalizeLoopPosition]
@@ -301,30 +378,53 @@ export function DishCarousel({
     const container = containerRef.current;
     if (!container || count <= 1) return;
 
+    const scheduleSettle = () => {
+      if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = window.setTimeout(() => {
+        settleTimerRef.current = null;
+        if (skipScrollSyncRef.current || animatingRef.current) return;
+        stopVisualLoop();
+        void softSettleToNearest();
+      }, 90);
+    };
+
     const onScroll = () => {
       if (skipScrollSyncRef.current) return;
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const nearest = getNearestTrackIndex();
-        setTrackIndex(nearest);
-        applyProximityStyles();
-      });
+      if (trackPhase !== "dragging") setTrackVisualPhase("dragging");
+      startVisualLoop();
+      const nearest = getNearestTrackIndex();
+      setTrackIndex(nearest);
+      scheduleSettle();
     };
 
     const onScrollEnd = () => {
       if (skipScrollSyncRef.current || animatingRef.current) return;
-      normalizeLoopPosition();
+      if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+      stopVisualLoop();
+      void softSettleToNearest();
     };
+
+    const onTouchEnd = () => scheduleSettle();
 
     container.addEventListener("scroll", onScroll, { passive: true });
     container.addEventListener("scrollend", onScrollEnd);
+    container.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
       container.removeEventListener("scroll", onScroll);
       container.removeEventListener("scrollend", onScrollEnd);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      container.removeEventListener("touchend", onTouchEnd);
+      if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+      stopVisualLoop();
     };
-  }, [applyProximityStyles, count, getNearestTrackIndex, normalizeLoopPosition]);
+  }, [
+    count,
+    getNearestTrackIndex,
+    setTrackVisualPhase,
+    softSettleToNearest,
+    startVisualLoop,
+    stopVisualLoop,
+    trackPhase,
+  ]);
 
   const measureActiveImage = useCallback(() => {
     const root = rootRef.current;
@@ -361,6 +461,7 @@ export function DishCarousel({
   }
 
   const activeLogical = canLoop ? trackIndex % count : trackIndex;
+  const isBusy = trackPhase === "animating" || trackPhase === "settling";
 
   const dishCardProps = (dish: PublicMenuDish, isActive: boolean) => ({
     dish,
@@ -394,17 +495,17 @@ export function DishCarousel({
     <div ref={rootRef} data-carousel-root className="relative mx-auto w-full overflow-visible py-4">
       {showArrows ? (
         <div
-          className="pointer-events-none absolute left-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center justify-between transition-[top,width] duration-300 ease-out"
+          className="pointer-events-none absolute left-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center justify-between transition-[top,width,opacity] duration-500 ease-out"
           style={{ top: arrowTop, width: Math.max(arrowWidth, 180) }}
         >
           <NavArrowButton
             direction="prev"
-            disabled={isAnimating}
+            disabled={isBusy}
             onClick={() => navigateTo(trackIndex - 1)}
           />
           <NavArrowButton
             direction="next"
-            disabled={isAnimating}
+            disabled={isBusy}
             onClick={() => navigateTo(trackIndex + 1)}
           />
         </div>
@@ -412,7 +513,8 @@ export function DishCarousel({
 
       <div
         ref={containerRef}
-        className="menulia-carousel-track flex w-full snap-x snap-mandatory items-center overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-phase="idle"
+        className="menulia-carousel-track flex w-full snap-x snap-proximity items-center overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{
           WebkitOverflowScrolling: "touch",
           gap: SLIDE_GAP_PX,
@@ -433,15 +535,15 @@ export function DishCarousel({
                 slideRefs.current[slot.trackIndex] = node;
               }}
               className={cn(
-                "menulia-carousel-slide flex shrink-0 snap-center snap-always flex-col items-center rounded-none origin-center will-change-[transform,opacity]",
-                !isActive && "cursor-pointer"
+                "menulia-carousel-slide flex shrink-0 snap-center flex-col items-center rounded-none origin-center will-change-[transform,opacity]",
+                !isActive && !isBusy && "cursor-pointer"
               )}
               style={{ width: SLIDE_WIDTH_PX }}
               onClick={() => {
-                if (!isActive && !isAnimating) navigateTo(slot.trackIndex);
+                if (!isActive && !isBusy) navigateTo(slot.trackIndex);
               }}
               onKeyDown={(event) => {
-                if (isActive || isAnimating || event.key !== "Enter") return;
+                if (isActive || isBusy || event.key !== "Enter") return;
                 navigateTo(slot.trackIndex);
               }}
               role={isActive ? undefined : "button"}
