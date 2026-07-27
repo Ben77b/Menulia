@@ -317,13 +317,16 @@ export function DishCarousel({
 
   const showArrows = count > 1;
   const sidePad = `calc(50% - ${SLIDE_WIDTH_PX / 2}px)`;
+  // Fallback: center of the capped 180px image inside the 200px slide
+  const arrowTop = arrowMetrics.top > 0 ? arrowMetrics.top : 16 + 90;
+  const arrowWidth = arrowMetrics.width > 0 ? arrowMetrics.width : 180;
 
   return (
     <div ref={rootRef} data-carousel-root className="relative mx-auto w-full overflow-visible py-4">
-      {showArrows && arrowMetrics.width > 0 ? (
+      {showArrows ? (
         <div
-          className="pointer-events-none absolute left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-between"
-          style={{ top: arrowMetrics.top, width: arrowMetrics.width }}
+          className="pointer-events-none absolute left-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center justify-between"
+          style={{ top: arrowTop, width: Math.max(arrowWidth, 180) }}
         >
           <NavArrowButton direction="prev" onClick={goPrevious} />
           <NavArrowButton direction="next" onClick={goNext} />
