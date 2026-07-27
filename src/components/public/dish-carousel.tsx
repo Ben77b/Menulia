@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Public menu dish carousel — responsive vw card sizes, snap peeks, native scrollBy.
- * Mobile 60vw / Desktop 40vw. Active scale-100; peeks scale-[0.85] opacity-40.
+ * Public menu dish carousel — fixed slide slots, snap peeks, native scrollBy.
+ * Mobile: 74vw slots + 13vw padding (small side peeks). Starts on dish 1.
  */
 import {
   useCallback,
@@ -102,6 +102,7 @@ export function DishCarousel({
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const skipScrollSyncRef = useRef(false);
 
   const measureActiveImage = useCallback(() => {
     const root = rootRef.current;
@@ -127,20 +128,31 @@ export function DishCarousel({
     return containerRef.current?.clientWidth ?? 0;
   }, []);
 
-  const scrollToIndex = useCallback((index: number) => {
+  const scrollToIndex = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
     const container = containerRef.current;
     const slide = slideRefs.current[index];
     if (!container || !slide) return;
     const target =
       slide.offsetLeft - (container.clientWidth - slide.clientWidth) / 2;
-    container.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+    skipScrollSyncRef.current = true;
+    container.scrollTo({ left: Math.max(0, target), behavior });
+    window.setTimeout(() => {
+      skipScrollSyncRef.current = false;
+    }, behavior === "smooth" ? 450 : 0);
   }, []);
 
+  // Always open on the first dish, centered in the viewport
   useEffect(() => {
     setActiveIndex(0);
-    const container = containerRef.current;
-    if (container) container.scrollTo({ left: 0, behavior: "auto" });
-  }, [safeDishes]);
+    skipScrollSyncRef.current = true;
+    const frame = requestAnimationFrame(() => {
+      scrollToIndex(0, "auto");
+      window.setTimeout(() => {
+        skipScrollSyncRef.current = false;
+      }, 0);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [safeDishes, scrollToIndex]);
 
   useEffect(() => {
     if (activeIndex >= safeDishes.length) {
@@ -153,6 +165,7 @@ export function DishCarousel({
     if (!container || safeDishes.length <= 1) return;
 
     const syncActiveFromScroll = () => {
+      if (skipScrollSyncRef.current) return;
       const center = container.scrollLeft + container.clientWidth / 2;
       let nearest = 0;
       let nearestDist = Number.POSITIVE_INFINITY;
@@ -169,41 +182,7 @@ export function DishCarousel({
     };
 
     container.addEventListener("scroll", syncActiveFromScroll, { passive: true });
-    syncActiveFromScroll();
     return () => container.removeEventListener("scroll", syncActiveFromScroll);
-  }, [safeDishes.length]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || safeDishes.length <= 1) return;
-
-    const ratios = new Map<number, number>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const index = Number((entry.target as HTMLElement).dataset.index);
-          if (Number.isNaN(index)) continue;
-          ratios.set(index, entry.isIntersecting ? entry.intersectionRatio : 0);
-        }
-        let bestIndex = 0;
-        let bestRatio = -1;
-        ratios.forEach((ratio, index) => {
-          if (ratio > bestRatio) {
-            bestRatio = ratio;
-            bestIndex = index;
-          }
-        });
-        if (bestRatio >= 0.5) {
-          setActiveIndex((current) => (current === bestIndex ? current : bestIndex));
-        }
-      },
-      { root: container, threshold: [0.4, 0.5, 0.6, 0.75, 0.9, 1] }
-    );
-
-    slideRefs.current.forEach((slide) => {
-      if (slide) observer.observe(slide);
-    });
-    return () => observer.disconnect();
   }, [safeDishes.length]);
 
   useEffect(() => {
@@ -271,7 +250,7 @@ export function DishCarousel({
     priceColor,
     layout: "carousel" as const,
     compact: !isActive,
-    imageClassName: "w-auto max-w-full rounded-none",
+    imageClassName: "w-full rounded-none",
     priority: false,
     tagLabelMap,
   });
@@ -280,7 +259,6 @@ export function DishCarousel({
 
   return (
     <div ref={rootRef} data-carousel-root className="relative mx-auto w-full overflow-visible py-4">
-      {/* Arrows track the active image’s real box (variable height/width). */}
       {showArrows && arrowMetrics.width > 0 ? (
         <div
           className="pointer-events-none absolute left-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 items-center justify-between"
@@ -291,9 +269,13 @@ export function DishCarousel({
         </div>
       ) : null}
 
+      {/*
+        Fixed slide widths (not w-max) so layout math actually applies.
+        74vw slot + 13vw padding → ~13vw side peek. gap-10 separates dishes clearly.
+      */}
       <div
         ref={containerRef}
-        className="flex w-full snap-x snap-mandatory items-center justify-center gap-4 overflow-x-auto scroll-smooth px-[33vw] md:gap-6 md:px-[36vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full snap-x snap-mandatory items-center gap-10 overflow-x-auto scroll-smooth px-[13vw] md:gap-12 md:px-[26vw] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {safeDishes.map((dish, index) => {
@@ -308,11 +290,10 @@ export function DishCarousel({
                 slideRefs.current[index] = node;
               }}
               className={cn(
-                // Mobile: ~34vw center → ~33vw peek each side (clearly visible neighbors)
-                "mx-auto flex w-max max-w-[34vw] shrink-0 snap-center flex-col items-center rounded-none origin-center will-change-transform md:max-w-[28vw]",
+                "flex w-[74vw] shrink-0 snap-center flex-col items-center rounded-none origin-center will-change-transform md:w-[48vw]",
                 isActive
                   ? "z-[1] scale-100 opacity-100 transition-all duration-500 ease-out"
-                  : "z-0 scale-[0.9] opacity-55 transition-all duration-500 ease-out cursor-pointer md:scale-[0.85] md:opacity-40"
+                  : "z-0 scale-[0.85] opacity-40 transition-all duration-500 ease-out cursor-pointer"
               )}
               onClick={() => {
                 if (!isActive) scrollToIndex(index);

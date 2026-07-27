@@ -181,13 +181,13 @@ function DishCardInner({
     showImage && imageSrc ? (
       isCarouselLayout ? (
         <div className="flex w-full justify-center rounded-none">
-          {/* Native size — no forced aspect box; capped only by the slide max-width */}
+          {/* Natural height; width follows the fixed slide slot (w-full max-w-full) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             data-carousel-image
             src={imageSrc}
             alt={imageAlt}
-            className="block h-auto w-auto max-w-full rounded-none"
+            className="mx-auto block h-auto w-full max-w-full rounded-none"
             loading="lazy"
             decoding="async"
             onError={() => {
