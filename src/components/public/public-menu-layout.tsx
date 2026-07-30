@@ -189,8 +189,8 @@ function DishSection({
       {sectionNote}
       <div
         className={cn(
-          "w-full space-y-12",
-          centerDishes && "flex flex-col items-center"
+          "w-full",
+          centerDishes ? "flex flex-col items-center space-y-12" : "space-y-6 sm:space-y-10"
         )}
       >
         {(filteredDishes ?? []).map((dish, index) => {
@@ -583,7 +583,7 @@ export function PublicMenuLayout({
       </PreviewHotspot>
 
       <main
-        className="flex-1 overflow-x-visible overflow-y-visible px-2 py-8 sm:px-6"
+        className="flex-1 overflow-x-visible overflow-y-visible px-4 py-8 sm:px-6"
         style={{ borderTop: `1px solid ${themedColor(isPreview, "dividerLine", theme.dividerLineColor)}` }}
       >
         {!hasMenu || !activeSubcategory ? (

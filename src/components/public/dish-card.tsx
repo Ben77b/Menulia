@@ -209,20 +209,20 @@ function DishCardInner({
         <div
           className={cn(
             "relative aspect-square overflow-hidden rounded-xl",
-            isStackedLeft ? "h-44 w-44 shrink-0" : imageClassName
-          )}
-          style={
             isStackedLeft
-              ? { width: "176px", height: "176px", flexShrink: 0, borderRadius: "12px" }
-              : undefined
-          }
+              ? "h-28 w-28 shrink-0 sm:h-40 sm:w-40"
+              : imageClassName
+          )}
         >
           {/* Native img — avoids next/image remotePatterns failures on public menus */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageSrc}
             alt={imageAlt}
-            className="absolute inset-0 h-full w-full object-contain"
+            className={cn(
+              "absolute inset-0 h-full w-full",
+              isStackedLeft ? "object-cover" : "object-contain"
+            )}
             loading="lazy"
             decoding="async"
             onError={() => {
@@ -238,14 +238,22 @@ function DishCardInner({
     ) : null;
 
   const titleClampClass = isStackedLayout
-    ? "text-base sm:text-lg"
+    ? cn(
+        isStackedLeft
+          ? "text-sm leading-snug sm:text-base sm:leading-tight"
+          : "text-base sm:text-lg"
+      )
     : cn(
         "line-clamp-2",
         isCarouselPeek ? "text-[11px] leading-snug sm:text-sm" : "text-sm sm:text-base"
       );
 
   const descriptionClampClass = isStackedLayout
-    ? "text-sm leading-relaxed"
+    ? cn(
+        isStackedLeft
+          ? "line-clamp-3 text-xs leading-relaxed sm:line-clamp-4 sm:text-sm"
+          : "text-sm leading-relaxed"
+      )
     : cn(
         "leading-relaxed",
         isCarouselPeek ? "hidden sm:line-clamp-2 sm:text-xs" : "line-clamp-3 text-xs sm:text-sm"
@@ -413,27 +421,15 @@ function DishCardInner({
 
   if (isStackedLeft) {
     return (
-      <article className="flex w-full items-center gap-6">
+      <article className="flex w-full items-start gap-3 sm:items-center sm:gap-5">
         {safeDisplay.showImages ? (
           imageBlock ? (
-            <div
-              className="h-44 w-44 shrink-0"
-              style={{ width: "176px", height: "176px", flexShrink: 0 }}
-            >
-              {imageBlock}
-            </div>
+            <div className="h-28 w-28 shrink-0 sm:h-40 sm:w-40">{imageBlock}</div>
           ) : (
-            <div
-              className="w-44 shrink-0 bg-transparent"
-              style={{ width: "176px", flexShrink: 0 }}
-              aria-hidden
-            />
+            <div className="h-28 w-28 shrink-0 sm:h-40 sm:w-40" aria-hidden />
           )
         ) : null}
-        <div
-          className="w-full min-w-0 max-w-none flex-1 text-left"
-          style={{ flex: "1 1 0%", minWidth: "0px", width: "100%" }}
-        >
+        <div className="min-w-0 flex-1 pt-0.5 text-left sm:pt-0">
           {textBlock}
         </div>
       </article>
