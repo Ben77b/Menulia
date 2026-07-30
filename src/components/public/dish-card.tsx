@@ -254,14 +254,18 @@ function DishCardInner({
   const textBlock = (
     <div
       className={cn(
-        "flex w-full min-w-0 max-w-none flex-1 flex-col space-y-2",
+        "flex min-w-0 flex-1 flex-col space-y-2",
+        isCarouselLayout
+          ? "mx-auto w-full max-w-[180px] px-2"
+          : "w-full max-w-none",
         isLeftAligned ? "items-start text-left" : "items-center text-center",
         isCarouselPeek && "space-y-1"
       )}
     >
       <h3
         className={cn(
-          "w-full max-w-none font-semibold uppercase leading-tight tracking-wide",
+          "font-semibold uppercase leading-tight tracking-wide",
+          isCarouselLayout ? "w-full max-w-full" : "w-full max-w-none",
           titleClampClass
         )}
         style={{
@@ -275,7 +279,10 @@ function DishCardInner({
       </h3>
       {safeDisplay.showDescriptions && localizedDescription ? (
         <p
-          className={cn("w-full max-w-none", descriptionClampClass)}
+          className={cn(
+            isCarouselLayout ? "w-full max-w-full" : "w-full max-w-none",
+            descriptionClampClass
+          )}
           style={{
             color: resolvedDescription,
             fontFamily: bodyFont,
@@ -444,10 +451,12 @@ function DishCardInner({
       {imageBlock}
       <div
         className={cn(
-          "w-full text-center",
+          "text-center",
           imageBlock ? "mt-3 sm:mt-4" : "",
           isCarouselPeek && "mt-2 sm:mt-4",
-          isCarouselLayout && "items-center"
+          isCarouselLayout
+            ? "mx-auto w-full max-w-[180px] px-2"
+            : "w-full"
         )}
       >
         {textBlock}
